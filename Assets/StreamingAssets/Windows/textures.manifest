@@ -1,0 +1,23 @@
+ManifestFileVersion: 0
+CRC: 400126972
+Hashes:
+  AssetFileHash:
+    serializedVersion: 2
+    Hash: 2c1a8c5d8df61905a385616d6776131e
+  TypeTreeHash:
+    serializedVersion: 2
+    Hash: cb3f6df5cbc4a2990c44c2787bc9553a
+HashAppended: 0
+ClassTypes:
+- Class: 28
+  Script: {instanceID: 0}
+- Class: 213
+  Script: {instanceID: 0}
+Assets:
+- Assets/Application/AssetBundle/Textures/dirt.png
+- Assets/Application/AssetBundle/Textures/grass_carried.png
+- Assets/Application/AssetBundle/Textures/terrain.png
+- Assets/Application/AssetBundle/Textures/terrain 6.26.56 PM.png
+- Assets/Application/AssetBundle/Textures/Face.png
+- Assets/Application/AssetBundle/Textures/grass_side_carried.png
+Dependencies: []
