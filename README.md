@@ -1,2 +1,2 @@
-# BoxelWorld
-This is BoxelWorld
+# VoxelWorld
+This is VoxelWorld
