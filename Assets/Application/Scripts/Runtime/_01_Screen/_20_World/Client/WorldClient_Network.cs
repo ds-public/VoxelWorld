@@ -27,12 +27,6 @@ namespace DBS.World
 	/// </summary>
 	public partial class WorldClient
 	{
-		private SynchronizationContext	m_MainThreadContext ;
-
-		// ストレージへの書き込みを中断するキャンセルトークンを生成する
-		private CancellationTokenSource	m_CancellationSource ;
-
-
 		// クライアント用の WebSocket
 		private ExWebSocket	m_WebSocket ;
 

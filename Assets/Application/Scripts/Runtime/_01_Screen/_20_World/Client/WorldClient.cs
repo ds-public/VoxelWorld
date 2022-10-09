@@ -201,6 +201,19 @@ namespace DBS.World
 		// チャンクのリクエスト状態が保存される
 		private readonly List<int>							m_ChunkSetRequests			= new List<int>() ;
 
+		//-----------------------------------------------------------
+
+		// メインスレッドのコンテキスト
+		private SynchronizationContext						m_MainThreadContext ;
+
+		// 全てのサブスレッドの動作を停止するキャンセレーショントークン
+		private CancellationTokenSource						m_CancellationSource ;
+
+		//-----------------------------------
+#if false
+		// サブスレッドのコンテキスト
+		private SynchronizationContext						m_SubThreadContext ;
+#endif
 		//-------------------------------------------------------------------------------------------
 
 		// 接続までの準備が整ったかどうか
@@ -445,6 +458,16 @@ namespace DBS.World
 				}
 			}
 
+			//----------------------------------
+#if false
+			// チャンクのメッシュアセンブリを生成するためのサブスレッドを起動する
+			MakeChunkMeshAssembly() ;
+
+			// サブスレッドのコンテキストが取得されるのを待つ
+			await WaitUntil( () => m_SubThreadContext != null ) ;
+#endif
+			//----------------------------------
+
 			// 基本的な準備は整った
 			m_IsReady = true ;
 
@@ -674,13 +697,12 @@ namespace DBS.World
 		// プレイヤー情報をセーブする
 		private bool SaveLocalPlayer()
 		{
-			var player = new LocalPlayerData() ;
-
-			player.ServerAddress	= PlayerData.ServerAddress ;
-			player.ServerPortNumber	= PlayerData.ServerPortNumber ;
-
-			// 識別子のみ保存する
-			player.PlayerId = m_PlayerId ;
+			var player = new LocalPlayerData()
+			{
+				ServerAddress		= PlayerData.ServerAddress,
+				ServerPortNumber	= PlayerData.ServerPortNumber,
+				PlayerId			= m_PlayerId	// プレイヤー識別子を更新する
+			} ;
 
 			var data = DataPacker.Serialize( player, false, Settings.DataTypes.Json ) ;
 			if( data == null || data.Length == 0 )

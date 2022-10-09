@@ -223,6 +223,11 @@ namespace DBS.World
 				new Vector3( x0, y1, z1 ),
 				new Vector3( x1, y1, z1 ),
 			} ;
+
+			//----------------------------------------------------------
+
+			m_IsInitialized = false ;
+			m_IsCompleted	= false ;
 		}
 
 		//-------------------------------------------------------------------------------------------
@@ -458,16 +463,16 @@ namespace DBS.World
 			{
 				// 表示対象ブロックが１つ以上存在する場合のみ初期のメッシュ形成情報を生成する
 
-				int bx, bz, by ;
+				int blx, blz, bly ;
 
 				// 全ブロックの表示される面から頂点・法線・発色・ＵＶを設定する
-				for( by  =  0 ; by <= 15 ; by ++ )
+				for( bly  =  0 ; bly <= 15 ; bly ++ )
 				{
-					for( bz  =  0 ; bz <= 15 ; bz ++ )
+					for( blz  =  0 ; blz <= 15 ; blz ++ )
 					{
-						for( bx  =  0 ; bx <= 15 ; bx ++ )
+						for( blx  =  0 ; blx <= 15 ; blx ++ )
 						{
-							AddBlockFaces( owner, bx, bz, by, ref m_Vertices, ref m_Normals, ref m_Colors, ref m_UVs ) ;
+							AddBlockFaces( owner, blx, blz, bly, ref m_Vertices, ref m_Normals, ref m_Colors, ref m_UVs ) ;
 						}
 					}
 				}
