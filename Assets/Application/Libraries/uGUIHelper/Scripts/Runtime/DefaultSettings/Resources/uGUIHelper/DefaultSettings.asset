@@ -1,0 +1,38 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: be287209401ad174dbf9b7e1ef42d252, type: 3}
+  m_Name: DefaultSettings
+  m_EditorClassIdentifier: 
+  ButtonFrame: {fileID: 0}
+  ButtonDisabledColor: {r: 1, g: 1, b: 1, a: 1}
+  ButtonLabelFontSize: 24
+  ButtonLabelColor: {r: 0, g: 0, b: 0, a: 1}
+  ButtonLabelShadow: 0
+  ButtonLabelOutline: 0
+  ProgressbarFrame: {fileID: 0}
+  ProgressbarThumb: {fileID: 0}
+  TextColor: {r: 1, g: 1, b: 1, a: 1}
+  Text_Font: {fileID: 12800000, guid: 78203506eef816f438b9f9fba3aac04a, type: 3}
+  Text_FontSize: 20
+  Number_Font: {fileID: 12800000, guid: 78203506eef816f438b9f9fba3aac04a, type: 3}
+  Number_FontSize: 20
+  TextMesh_FontAsset: {fileID: 11400000, guid: b4767c95c9e364f48b472c8703624517, type: 2}
+  TextMesh_FontMaterial: {fileID: 2100000, guid: 3753bf3bb07045e43a6d3ef4c79f262b,
+    type: 2}
+  TextMesh_FontSize: 20
+  NumberMesh_FontAsset: {fileID: 11400000, guid: b4767c95c9e364f48b472c8703624517,
+    type: 2}
+  NumberMesh_FontMaterial: {fileID: 2100000, guid: a53b46c4d8eb7de42ba365a8f2a92f58,
+    type: 2}
+  NumberMesh_FontSize: 20
+  FontFilter: {fileID: 11400000, guid: f03b9715ce7410448affdaed89b0bb95, type: 2}
+  FontAlternateCode: 88

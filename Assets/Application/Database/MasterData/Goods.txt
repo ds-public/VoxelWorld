@@ -1,0 +1,10 @@
+識別子	名称	リレーション	有効状況	対象陣営	効果範囲	効果距離	生死状態	効果	必要素材0	必要素材1	必要素材2	必要素材3
+id	name	#id_name	environs	area	width	range	alive	influence_id	materials[0]	materials[1]	materials[2]	materials[3]
+long	string	string	int	int	int	int	bool	long	string	string	string	string
+0	なし	|0|なし	0	0	0	0	FALSE	0				
+100000	アリアドネの糸	|100000|アリアドネの糸	1	-1	-1	-1	TRUE	1	300001			
+100001	テント	|100001|テント	1	-1	-1	-1	TRUE	2	300001	300002		
+100002	コンパス	|100002|コンパス	1	-1	-1	-1	TRUE	3	300001	300002	300003	
+100100	薬草	|100100|薬草	3	0	1	3	TRUE	1	300001|2			
+100101	回復鱗粉	|100101|回復鱗粉	3	0	1	0	TRUE	2	300001|2	300002|2		
+100200	炎の巻物	|100200|炎の巻物	2	1	2	0	TRUE	3	300001|2	300002|2	300003|2	

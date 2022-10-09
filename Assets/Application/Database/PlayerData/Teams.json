@@ -1,0 +1,32 @@
+[
+	{
+		"id":1,
+		"front":[1,2,3],	// 前衛(PlayerUnitData.id)
+		"back":[4,5,0],		// 後衛(PlayerUnitData.id)
+	},
+	{
+		"id":2,
+		"front":[1,2,3],	// 前衛(PlayerUnitData.id)
+		"back":[4,5,0],		// 後衛(PlayerUnitData.id)
+	},
+	{
+		"id":3,
+		"front":[1,2,3],	// 前衛(PlayerUnitData.id)
+		"back":[4,5,0],		// 後衛(PlayerUnitData.id)
+	},
+	{
+		"id":4,
+		"front":[1,2,3],	// 前衛(PlayerUnitData.id)
+		"back":[4,5,0],		// 後衛(PlayerUnitData.id)
+	},
+	{
+		"id":5,
+		"front":[1,2,3],	// 前衛(PlayerUnitData.id)
+		"back":[4,5,0],		// 後衛(PlayerUnitData.id)
+	},
+	{
+		"id":6,
+		"front":[1,2,3],	// 前衛(PlayerUnitData.id)
+		"back":[4,5,0],		// 後衛(PlayerUnitData.id)
+	},
+]

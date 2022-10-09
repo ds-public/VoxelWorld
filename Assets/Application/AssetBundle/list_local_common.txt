@@ -1,0 +1,4 @@
+~Sounds_ADX2/DBS.acf
+~Sounds_ADX2/SE_System.acb
+~Sounds_ADX2/BGM_001.acb
+~Sounds_ADX2/BGM_001.awb

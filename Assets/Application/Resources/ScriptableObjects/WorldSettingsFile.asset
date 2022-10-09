@@ -1,0 +1,36 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 03ec56082f18bd044b68b5f71447b535, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  DISPLAY_CHUNK_RANGE: 12
+  WORLD_X_MIN: 0
+  WORLD_X_MAX: 65536
+  WORLD_Z_MIN: 0
+  WORLD_Z_MAX: 65536
+  WORLD_Y_MIN: 0
+  WORLD_Y_MAX: 1024
+  CHUNK_SET_X_MIN: 0
+  CHUNK_SET_X_MAX: 4095
+  CHUNK_SET_Z_MIN: 0
+  CHUNK_SET_Z_MAX: 4095
+  CHUNK_Y_MIN: 0
+  CHUNK_Y_MAX: 64
+  PlayerActorColors:
+  - serializedVersion: 2
+    rgba: 4278190335
+  - serializedVersion: 2
+    rgba: 4294901760
+  - serializedVersion: 2
+    rgba: 4278255615
+  - serializedVersion: 2
+    rgba: 4278255360

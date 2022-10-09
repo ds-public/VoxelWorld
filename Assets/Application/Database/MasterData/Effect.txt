@@ -1,0 +1,21 @@
+識別子	名称	リレーション	リソース名	速度係数	SE
+id	#name	#id_name	resource_id	speed	se_id
+long	string	string	string	float	string
+0	なし	|0|なし		0	
+1	斬	|1|斬	Battle//01_Slash	1	SE_Battle:001_Slash
+2	打	|2|打	Battle//02_Strike	1	SE_Battle:002_Strike
+3	突	|3|突	Battle//03_Sting	1	SE_Battle:003_Sting
+4	炎	|4|炎	Battle//04_Fire	1	SE_Battle:004_Fire
+5	氷	|5|氷	Battle//05_Ice	1	SE_Battle:005_Ice
+6	雷	|6|雷	Battle//06_Thunder	1	SE_Battle:006_Thunder
+7	回復	|7|回復	Common//01_Healing	1	SE_System:012_Recover
+8		|8|	Effect03_Wind	1	
+9		|9|	Effect04_Flash	1	
+10		|10|	Effect05_Pain	1	
+11		|11|	Effect06_Poison	1	
+12		|12|	Effect07_Charm	1	
+13		|13|	Effect08_Sleep	1	
+14		|14|	Effect09_Death	1	
+15		|15|	Effect10_Up	1	
+16		|16|	Effect11_Down	1	
+17		|17|	Effect12_Flare	1	

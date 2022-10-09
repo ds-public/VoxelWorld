@@ -1,0 +1,18 @@
+{
+    "name": "Plugin.Editor",
+    "rootNamespace": "",
+    "references": [
+        "Plugins"
+    ],
+    "includePlatforms": [
+        "Editor"
+    ],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": false,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

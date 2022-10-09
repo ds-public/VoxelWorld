@@ -1,0 +1,528 @@
+// ユニットデータ
+[
+	{
+		"id":1,
+		"category":0,
+		"name":"レッド",
+		"class_code":0,
+		"fixed_experience":0,
+		"experience":120,
+		"hp":-1,
+		"sp":-1,
+		"mp":-1,
+		"skill_ids":[1002,2041,2042,2043,2051,2052,2053,2061,2062,2063,2071,2072,2073],
+		"regist":[0,0,0,0,0,0,0,0],
+		"image":1,
+		"equipments": // 装備
+		[
+			{ // 武器
+				"id": 0,
+				"item_id": 200000,
+				"is_identified":true,
+				"basis_grade":0,
+				"grade_enhancement":0,
+				"number_of_gem_slots":0,
+				"gem_ids":[0,0,0],
+				"special_effect_id":0,
+				"curse_effect_id":0
+			},
+			{ // 盾
+				"id": 0,
+				"item_id": 210100,
+				"is_identified":true,
+				"basis_grade":0,
+				"grade_enhancement":0,
+				"number_of_gem_slots":0,
+				"gem_ids":[0,0,0],
+				"special_effect_id":0,
+				"curse_effect_id":0
+			},
+			{ // 体
+				"id": 0,
+				"item_id": 220000,
+				"is_identified":true,
+				"basis_grade":0,
+				"grade_enhancement":0,
+				"number_of_gem_slots":0,
+				"gem_ids":[0,0,0],
+				"special_effect_id":0,
+				"curse_effect_id":0
+			},
+			{ // 頭
+				"id": 0,
+				"item_id": 230000,
+				"is_identified":true,
+				"basis_grade":0,
+				"grade_enhancement":0,
+				"number_of_gem_slots":0,
+				"gem_ids":[0,0,0],
+				"special_effect_id":0,
+				"curse_effect_id":0
+			},
+			{ // 手
+				"id": 0,
+				"item_id": 240000,
+				"is_identified":true,
+				"basis_grade":0,
+				"grade_enhancement":0,
+				"number_of_gem_slots":0,
+				"gem_ids":[0,0,0],
+				"special_effect_id":0,
+				"curse_effect_id":0
+			},
+			{ // 足
+				"id": 0,
+				"item_id": 250100,
+				"is_identified":true,
+				"basis_grade":0,
+				"grade_enhancement":0,
+				"number_of_gem_slots":0,
+				"gem_ids":[0,0,0],
+				"special_effect_id":0,
+				"curse_effect_id":0
+			},
+			{ // 飾
+				"id": 0,
+				"item_id": 260100,
+				"is_identified":true,
+				"basis_grade":0,
+				"grade_enhancement":0,
+				"number_of_gem_slots":0,
+				"gem_ids":[0,0,0],
+				"special_effect_id":0,
+				"curse_effect_id":0
+			},
+			{ // 宝
+				"id": 0,
+				"item_id": 270000,
+				"is_identified":true,
+				"basis_grade":0,
+				"grade_enhancement":0,
+				"number_of_gem_slots":0,
+				"gem_ids":[0,0,0],
+				"special_effect_id":0,
+				"curse_effect_id":0
+			}
+		]
+	},
+	{
+		"id":2,
+		"category":1,
+		"name":"ブルー",
+		"class_code":1,
+		"fixed_experience":0,
+		"experience":0,
+		"hp":-1,
+		"sp":-1,
+		"mp":-1,
+		"skill_ids":[1002,2041,2042,2043,2051,2052,2053,2061,2062,2063,2071,2072,2073],
+		"regist":[0,0,0,0,0,0,0,0],
+		"image":2,
+		"equipments": // 装備
+		[
+			{ // 武器
+				"id": 0,
+				"item_id": 200000,
+				"is_identified":true,
+				"basis_grade":0,
+				"grade_enhancement":0,
+				"number_of_gem_slots":0,
+				"gem_ids":[0,0,0],
+				"special_effect_id":0,
+				"curse_effect_id":0
+			},
+			{ // 盾
+				"id": 0,
+				"item_id": 210100,
+				"is_identified":true,
+				"basis_grade":0,
+				"grade_enhancement":0,
+				"number_of_gem_slots":0,
+				"gem_ids":[0,0,0],
+				"special_effect_id":0,
+				"curse_effect_id":0
+			},
+			{ // 体
+				"id": 0,
+				"item_id": 220000,
+				"is_identified":true,
+				"basis_grade":0,
+				"grade_enhancement":0,
+				"number_of_gem_slots":0,
+				"gem_ids":[0,0,0],
+				"special_effect_id":0,
+				"curse_effect_id":0
+			},
+			{ // 頭
+				"id": 0,
+				"item_id": 230000,
+				"is_identified":true,
+				"basis_grade":0,
+				"grade_enhancement":0,
+				"number_of_gem_slots":0,
+				"gem_ids":[0,0,0],
+				"special_effect_id":0,
+				"curse_effect_id":0
+			},
+			{ // 手
+				"id": 0,
+				"item_id": 240000,
+				"is_identified":true,
+				"basis_grade":0,
+				"grade_enhancement":0,
+				"number_of_gem_slots":0,
+				"gem_ids":[0,0,0],
+				"special_effect_id":0,
+				"curse_effect_id":0
+			},
+			{ // 足
+				"id": 0,
+				"item_id": 250100,
+				"is_identified":true,
+				"basis_grade":0,
+				"grade_enhancement":0,
+				"number_of_gem_slots":0,
+				"gem_ids":[0,0,0],
+				"special_effect_id":0,
+				"curse_effect_id":0
+			},
+			{ // 飾
+				"id": 0,
+				"item_id": 260100,
+				"is_identified":true,
+				"basis_grade":0,
+				"grade_enhancement":0,
+				"number_of_gem_slots":0,
+				"gem_ids":[0,0,0],
+				"special_effect_id":0,
+				"curse_effect_id":0
+			},
+			{ // 宝
+				"id": 0,
+				"item_id": 270000,
+				"is_identified":true,
+				"basis_grade":0,
+				"grade_enhancement":0,
+				"number_of_gem_slots":0,
+				"gem_ids":[0,0,0],
+				"special_effect_id":0,
+				"curse_effect_id":0
+			}
+		]
+	},
+	{
+		"id":3,
+		"category":2,
+		"name":"イエロー",
+		"class_code":2,
+		"fixed_experience":0,
+		"experience":150,
+		"hp":-1,
+		"sp":-1,
+		"mp":-1,
+		"skill_ids":[1002,2041,2042,2043,2051,2052,2053,2061,2062,2063,2071,2072,2073],
+		"regist":[0,0,0,0,0,0,0,0],
+		"image":3,
+		"equipments": // 装備
+		[
+			{ // 武器
+				"id": 0,
+				"item_id": 200000,
+				"is_identified":true,
+				"basis_grade":0,
+				"grade_enhancement":0,
+				"number_of_gem_slots":0,
+				"gem_ids":[0,0,0],
+				"special_effect_id":0,
+				"curse_effect_id":0
+			},
+			{ // 盾
+				"id": 0,
+				"item_id": 210100,
+				"is_identified":true,
+				"basis_grade":0,
+				"grade_enhancement":0,
+				"number_of_gem_slots":0,
+				"gem_ids":[0,0,0],
+				"special_effect_id":0,
+				"curse_effect_id":0
+			},
+			{ // 体
+				"id": 0,
+				"item_id": 220000,
+				"is_identified":true,
+				"basis_grade":0,
+				"grade_enhancement":0,
+				"number_of_gem_slots":0,
+				"gem_ids":[0,0,0],
+				"special_effect_id":0,
+				"curse_effect_id":0
+			},
+			{ // 頭
+				"id": 0,
+				"item_id": 230000,
+				"is_identified":true,
+				"basis_grade":0,
+				"grade_enhancement":0,
+				"number_of_gem_slots":0,
+				"gem_ids":[0,0,0],
+				"special_effect_id":0,
+				"curse_effect_id":0
+			},
+			{ // 手
+				"id": 0,
+				"item_id": 240000,
+				"is_identified":true,
+				"basis_grade":0,
+				"grade_enhancement":0,
+				"number_of_gem_slots":0,
+				"gem_ids":[0,0,0],
+				"special_effect_id":0,
+				"curse_effect_id":0
+			},
+			{ // 足
+				"id": 0,
+				"item_id": 250100,
+				"is_identified":true,
+				"basis_grade":0,
+				"grade_enhancement":0,
+				"number_of_gem_slots":0,
+				"gem_ids":[0,0,0],
+				"special_effect_id":0,
+				"curse_effect_id":0
+			},
+			{ // 飾
+				"id": 0,
+				"item_id": 260100,
+				"is_identified":true,
+				"basis_grade":0,
+				"grade_enhancement":0,
+				"number_of_gem_slots":0,
+				"gem_ids":[0,0,0],
+				"special_effect_id":0,
+				"curse_effect_id":0
+			},
+			{ // 宝
+				"id": 0,
+				"item_id": 270000,
+				"is_identified":true,
+				"basis_grade":0,
+				"grade_enhancement":0,
+				"number_of_gem_slots":0,
+				"gem_ids":[0,0,0],
+				"special_effect_id":0,
+				"curse_effect_id":0
+			}
+		]
+	},
+	{
+		"id":4,
+		"category":2,
+		"name":"グリーン",
+		"class_code":3,
+		"fixed_experience":0,
+		"experience":0,
+		"hp":-1,
+		"sp":-1,
+		"mp":-1,
+		"skill_ids":[2041,2042,2043,2051,2052,2053,2061,2062,2063,2071,2072,2073],
+		"regist":[0,0,0,0,0,0,0,0],
+		"image":4,
+		"equipments": // 装備
+		[
+			{ // 武器
+				"id": 0,
+				"item_id": 200000,
+				"is_identified":true,
+				"basis_grade":0,
+				"grade_enhancement":0,
+				"number_of_gem_slots":0,
+				"gem_ids":[0,0,0],
+				"special_effect_id":0,
+				"curse_effect_id":0
+			},
+			{ // 盾
+				"id": 0,
+				"item_id": 210100,
+				"is_identified":true,
+				"basis_grade":0,
+				"grade_enhancement":0,
+				"number_of_gem_slots":0,
+				"gem_ids":[0,0,0],
+				"special_effect_id":0,
+				"curse_effect_id":0
+			},
+			{ // 体
+				"id": 0,
+				"item_id": 220000,
+				"is_identified":true,
+				"basis_grade":0,
+				"grade_enhancement":0,
+				"number_of_gem_slots":0,
+				"gem_ids":[0,0,0],
+				"special_effect_id":0,
+				"curse_effect_id":0
+			},
+			{ // 頭
+				"id": 0,
+				"item_id": 230000,
+				"is_identified":true,
+				"basis_grade":0,
+				"grade_enhancement":0,
+				"number_of_gem_slots":0,
+				"gem_ids":[0,0,0],
+				"special_effect_id":0,
+				"curse_effect_id":0
+			},
+			{ // 手
+				"id": 0,
+				"item_id": 240000,
+				"is_identified":true,
+				"basis_grade":0,
+				"grade_enhancement":0,
+				"number_of_gem_slots":0,
+				"gem_ids":[0,0,0],
+				"special_effect_id":0,
+				"curse_effect_id":0
+			},
+			{ // 足
+				"id": 0,
+				"item_id": 250100,
+				"is_identified":true,
+				"basis_grade":0,
+				"grade_enhancement":0,
+				"number_of_gem_slots":0,
+				"gem_ids":[0,0,0],
+				"special_effect_id":0,
+				"curse_effect_id":0
+			},
+			{ // 飾
+				"id": 0,
+				"item_id": 260100,
+				"is_identified":true,
+				"basis_grade":0,
+				"grade_enhancement":0,
+				"number_of_gem_slots":0,
+				"gem_ids":[0,0,0],
+				"special_effect_id":0,
+				"curse_effect_id":0
+			},
+			{ // 宝
+				"id": 0,
+				"item_id": 270000,
+				"is_identified":true,
+				"basis_grade":0,
+				"grade_enhancement":0,
+				"number_of_gem_slots":0,
+				"gem_ids":[0,0,0],
+				"special_effect_id":0,
+				"curse_effect_id":0
+			}
+		]
+	},
+	{
+		"id":5,
+		"category":2,
+		"name":"ピンク",
+		"class_code":9,
+		"fixed_experience":0,
+		"experience":250,
+		"hp":-1,
+		"sp":-1,
+		"mp":-1,
+		"skill_ids":[2041,2042,2043,2051,2052,2053,2061,2062,2063,2071,2072,2073],
+		"regist":[0,0,0,0,0,0,0,0],		// 耐性値
+		"image":5,
+		"equipments":	// 装備
+		[
+			{ // 武器
+				"id": 0,
+				"item_id": 200000,
+				"is_identified":true,
+				"basis_grade":0,
+				"grade_enhancement":0,
+				"number_of_gem_slots":0,
+				"gem_ids":[0,0,0],
+				"special_effect_id":0,
+				"curse_effect_id":0
+			},
+			{ // 盾
+				"id": 0,
+				"item_id": 210100,
+				"is_identified":true,
+				"basis_grade":0,
+				"grade_enhancement":0,
+				"number_of_gem_slots":0,
+				"gem_ids":[0,0,0],
+				"special_effect_id":0,
+				"curse_effect_id":0
+			},
+			{ // 体
+				"id": 0,
+				"item_id": 220000,
+				"is_identified":true,
+				"basis_grade":0,
+				"grade_enhancement":0,
+				"number_of_gem_slots":0,
+				"gem_ids":[0,0,0],
+				"special_effect_id":0,
+				"curse_effect_id":0
+			},
+			{ // 頭
+				"id": 0,
+				"item_id": 230000,
+				"is_identified":true,
+				"basis_grade":0,
+				"grade_enhancement":0,
+				"number_of_gem_slots":0,
+				"gem_ids":[0,0,0],
+				"special_effect_id":0,
+				"curse_effect_id":0
+			},
+			{ // 手
+				"id": 0,
+				"item_id": 240000,
+				"is_identified":true,
+				"basis_grade":0,
+				"grade_enhancement":0,
+				"number_of_gem_slots":0,
+				"gem_ids":[0,0,0],
+				"special_effect_id":0,
+				"curse_effect_id":0
+			},
+			{ // 足
+				"id": 0,
+				"item_id": 250100,
+				"is_identified":true,
+				"basis_grade":0,
+				"grade_enhancement":0,
+				"number_of_gem_slots":0,
+				"gem_ids":[0,0,0],
+				"special_effect_id":0,
+				"curse_effect_id":0
+			},
+			{ // 飾
+				"id": 0,
+				"item_id": 260100,
+				"is_identified":true,
+				"basis_grade":0,
+				"grade_enhancement":0,
+				"number_of_gem_slots":0,
+				"gem_ids":[0,0,0],
+				"special_effect_id":0,
+				"curse_effect_id":0
+			},
+			{ // 宝
+				"id": 0,
+				"item_id": 270000,
+				"is_identified":true,
+				"basis_grade":0,
+				"grade_enhancement":0,
+				"number_of_gem_slots":0,
+				"gem_ids":[0,0,0],
+				"special_effect_id":0,
+				"curse_effect_id":0
+			}
+		]
+	}
+]
