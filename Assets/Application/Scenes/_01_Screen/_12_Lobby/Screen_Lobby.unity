@@ -2333,7 +2333,6 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 874551902}
-  - component: {fileID: 874551907}
   - component: {fileID: 874551905}
   - component: {fileID: 874551904}
   - component: {fileID: 874551903}
@@ -2454,20 +2453,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: b37f202cf3f81114a85c3eee25444b52, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
---- !u!114 &874551907
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 874551901}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: cb6acf4afe0cb1a409cd6b314f28e651, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  m_DisableTaskCancellation: 0
-  m_SafeAreaEnabled: 1
 --- !u!1 &921495907
 GameObject:
   m_ObjectHideFlags: 0
@@ -3081,9 +3066,9 @@ MonoBehaviour:
   m_IsApplyColorToChildren: 0
   m_EffectiveColorReplacing: 1
   m_EffectiveColor: {r: 1, g: 1, b: 1, a: 1}
-  m_LocalPosition: {x: 329.5, y: 187.25, z: 0}
+  m_LocalPosition: {x: 369.5, y: 175.25, z: 0}
   m_LocalRotation: {x: -0, y: 0, z: 0}
-  m_LocalScale: {x: 0.68645835, y: 0.68645835, z: 0.68645835}
+  m_LocalScale: {x: 0.6490741, y: 0.6490741, z: 0.6490741}
   m_LocalAlpha: 1
   m_MaterialType: 0
   m_SepiaDark: 0.1
