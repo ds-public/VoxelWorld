@@ -350,11 +350,11 @@ namespace DBS.World
 			//----------------------------------
 
 			// ファークリップを設定する
-			float farClip = 16 * 8 ;
+			float farClip = 16 * WorldSettings.DISPLAY_CHUNK_RANGE ;
 			m_Camera.farClipPlane = farClip ;
 
-			// フォグはシーンのライト設定で行う
-//			SetFog( true, farClip + 0.1f ) ;
+			// フォグはシーンのライト設定の有効化も必要
+//			SetFog( true, farClip ) ;
 
 			//----------------------------------
 			// アイテム選択ＵＩ設定

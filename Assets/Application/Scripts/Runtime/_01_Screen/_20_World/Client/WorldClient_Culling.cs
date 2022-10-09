@@ -25,10 +25,15 @@ namespace DBS.World
 			{
 				RenderSettings.fog = true ;
 				RenderSettings.fogColor = new Color32(   0, 255, 255, 255 ) ;
-				RenderSettings.fogMode = FogMode.Linear ;
-				RenderSettings.fogDensity = 1.0f ;
-				RenderSettings.fogStartDistance = 0 ;
-				RenderSettings.fogEndDistance = distance ;
+
+				// ＰＣだと線形フォグが効かない
+//				RenderSettings.fogMode = FogMode.Linear ;
+//				RenderSettings.fogDensity = 1.0f ;
+//				RenderSettings.fogStartDistance = 0 ;
+//				RenderSettings.fogEndDistance = distance ;
+
+				RenderSettings.fogMode = FogMode.ExponentialSquared ;
+				RenderSettings.fogDensity = 0.01f ;
 			}
 			else
 			{

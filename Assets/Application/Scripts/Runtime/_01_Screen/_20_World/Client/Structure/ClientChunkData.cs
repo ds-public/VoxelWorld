@@ -51,8 +51,11 @@ namespace DBS.World
 		}
 
 		//-----------------------------------
-		// 隣接する上下左右前後のチャンクの識別子
 
+		// チャンク内の表示対象となっている総ブロック数
+		private int			m_SolidBlickCount ;
+
+		// 隣接する上下左右前後６方向のチャンクの識別子
 		private readonly int m_CIdX0 ;
 		private readonly int m_CIdX1 ;
 		private readonly int m_CIdZ0 ;
@@ -60,58 +63,18 @@ namespace DBS.World
 		private readonly int m_CIdY0 ;
 		private readonly int m_CIdY1 ;
 
-		// チャンク内の表示対象となっている総ブロック数
-		private int		m_SolidBlickCount ;
-
-		//-----------------------------------------------------------
-
 		/// <summary>
-		/// 入力されたワールド座標からチャンクの中心のワールド座標までの距離を取得する(３次元)
+		/// チャンクのバウンディングボックス(視錐台による表示判定用)
 		/// </summary>
-		/// <param name="px"></param>
-		/// <param name="pz"></param>
-		/// <param name="py"></param>
-		/// <returns></returns>
-		public float GetDistance( float px, float pz, float py )
-		{
-			// チャンクの中心のワールド座標
-			float cx = ( X * 16.0f ) + 8.0f ;
-			float cz = ( Z * 16.0f ) + 8.0f ;
-			float cy = ( Y * 16.0f ) + 8.0f ;
-
-			float dx = cx - px ;
-			float dz = cz - pz ;
-			float dy = cy - py ;
-
-			return Mathf.Sqrt( dx * dx + dz * dz + dy * dy ) ;
-		}
-
-		/// <summary>
-		/// 入力されたワールド座標からチャンクの中心のワールド座標までの距離を取得する(２次元)
-		/// </summary>
-		/// <param name="px"></param>
-		/// <param name="pz"></param>
-		/// <param name="py"></param>
-		/// <returns></returns>
-		public float GetDistance( float px, float pz )
-		{
-			// チャンクの中心のワールド座標
-			float cx = ( X * 16.0f ) + 8.0f ;
-			float cz = ( Z * 16.0f ) + 8.0f ;
-
-			float dx = cx - px ;
-			float dz = cz - pz ;
-
-			return Mathf.Sqrt( dx * dx + dz * dz ) ;
-		}
+		public Vector3[]	BoundingBox ;
 
 		//-----------------------------------------------------------
 
 		/// <summary>
 		/// メッシュは存在しないが基本的な準備は済んでいるかどうか
 		/// </summary>
-		public	bool		  IsPrepared	=> m_IsPrepared ;
-		private	bool		m_IsPrepared ;
+		public	bool		  IsInitialized	=> m_IsInitialized ;
+		private	bool		m_IsInitialized ;
 
 		/// <summary>
 		/// メッシュも含めてチャンクは完成した状態であるかどうか
@@ -138,8 +101,6 @@ namespace DBS.World
 		
 		private readonly List<short>	m_BlockIndices = new List<short>() ;
 
-		public Vector3[]		BoundingBox ;
-
 		//-----------------------------------------------------
 
 		/// <summary>
@@ -157,6 +118,41 @@ namespace DBS.World
 			Y = y ;
 
 			//----------------------------------
+
+			int bx, bz, by ;
+
+			m_SolidBlickCount = 0 ;
+
+			if( packer != null && size >  0 )
+			{
+				// 差分圧縮テスト
+//				short delta = 0 ;
+//				short value ;
+
+				for( by  = 0 ; by <= 15 ; by ++ )
+				{
+					for( bz  = 0 ; bz <= 15 ; bz ++ )
+					{
+						for( bx  = 0 ; bx <= 15 ; bx ++ )
+						{
+							// 差分圧縮テスト
+//							value = packer.GetShort() ;
+//							Block[ bx, bz, by ] = ( short )( value + delta ) ;
+//							delta = Block[ bx, bz, by ] ;
+
+							Block[ bx, bz, by ] = packer.GetShort() ;
+
+							if( Block[ bx, bz, by ] != 0 )
+							{
+								m_SolidBlickCount ++ ;
+							}
+						}
+					}
+				}
+			}
+
+			//----------------------------------
+			// 上下左右前後６方向のチャンク識別子
 
 			// X-方向のチャンク
 			int cxMin = WorldSettings.CHUNK_SET_X_MIN ;
@@ -206,39 +202,27 @@ namespace DBS.World
 				m_CIdY1 = ( int )( ( Y + 1 ) << 24 ) | ( int )( Z << 12 ) | ( int )X ;
 			}
 
-			//----------------------------------
+			//-------------
+			// バウンディングボックスを作る(ビューボリューム判定用)
 
-			int bx, bz, by ;
+			float x0 = X  * 16 ;
+			float y0 = Y  * 16 ;
+			float z0 = Z  * 16 ;
+			float x1 = x0 + 16 ;
+			float y1 = y0 + 16 ;
+			float z1 = z0 + 16 ;
 
-			m_SolidBlickCount = 0 ;
-
-			if( packer != null && size >  0 )
+			BoundingBox = new Vector3[]
 			{
-				// 差分圧縮テスト
-//				short delta = 0 ;
-//				short value ;
-
-				for( by  = 0 ; by <= 15 ; by ++ )
-				{
-					for( bz  = 0 ; bz <= 15 ; bz ++ )
-					{
-						for( bx  = 0 ; bx <= 15 ; bx ++ )
-						{
-							// 差分圧縮テスト
-//							value = packer.GetShort() ;
-//							Block[ bx, bz, by ] = ( short )( value + delta ) ;
-//							delta = Block[ bx, bz, by ] ;
-
-							Block[ bx, bz, by ] = packer.GetShort() ;
-
-							if( Block[ bx, bz, by ] != 0 )
-							{
-								m_SolidBlickCount ++ ;
-							}
-						}
-					}
-				}
-			}
+				new Vector3( x0, y0, z0 ),
+				new Vector3( x1, y0, z0 ),
+				new Vector3( x0, y1, z0 ),
+				new Vector3( x1, y1, z0 ),
+				new Vector3( x0, y0, z1 ),
+				new Vector3( x1, y0, z1 ),
+				new Vector3( x0, y1, z1 ),
+				new Vector3( x1, y1, z1 ),
+			} ;
 		}
 
 		//-------------------------------------------------------------------------------------------
@@ -424,6 +408,7 @@ namespace DBS.World
 				{
 					// まだメッシュの生成が可能になっていないチャンク(隣接する周囲にロードされていないチャンクが存在する)
 					m_IsCompleted = false ;	// 隣接するチャンクが再び全て揃った際に作り直しが必要になる
+					m_IsInitialized = false ;
 					return false ;
 				}
 			}
@@ -438,67 +423,10 @@ namespace DBS.World
 
 			//-------------------------
 
-			if( m_IsPrepared == false )
+			if( m_IsInitialized == false )
 			{
 				// まだ何も用意していない状態
-
-				//------------------------------------------------------------------------------------------
-
-				m_Vertices.Clear() ;
-				m_Normals.Clear() ;
-				m_Colors.Clear() ;
-				m_UVs.Clear() ;
-
-				m_BlockIndices.Clear() ;	// ブロック配置情報をクリアする
-
-				//---------------------------------------------------------
-				// 登録されている面情報からメッシュを形成する情報を生成する
-
-				if( m_SolidBlickCount >  0 )
-				{
-					// 表示対象ブロックが１つ以上存在する場合のみ初期のメッシュ形成情報を生成する
-
-					int bx, bz, by ;
-
-					// 全ブロックの表示される面から頂点・法線・発色・ＵＶを設定する
-					for( by  =  0 ; by <= 15 ; by ++ )
-					{
-						for( bz  =  0 ; bz <= 15 ; bz ++ )
-						{
-							for( bx  =  0 ; bx <= 15 ; bx ++ )
-							{
-								AddBlockFaces( owner, bx, bz, by, ref m_Vertices, ref m_Normals, ref m_Colors, ref m_UVs ) ;
-							}
-						}
-					}
-				}
-
-				//-------------
-				// バウンディングボックスを作る(ビューボリューム判定用)
-
-				float x0 = X  * 16 ;
-				float y0 = Y  * 16 ;
-				float z0 = Z  * 16 ;
-				float x1 = x0 + 16 ;
-				float y1 = y0 + 16 ;
-				float z1 = z0 + 16 ;
-
-				BoundingBox = new Vector3[]
-				{
-					new Vector3( x0, y0, z0 ),
-					new Vector3( x1, y0, z0 ),
-					new Vector3( x0, y1, z0 ),
-					new Vector3( x1, y1, z0 ),
-					new Vector3( x0, y0, z1 ),
-					new Vector3( x1, y0, z1 ),
-					new Vector3( x0, y1, z1 ),
-					new Vector3( x1, y1, z1 ),
-				} ;
-
-				//---------------------------------------------------------
-
-				// 最初の設定は行った
-				m_IsPrepared = true ;
+				InitializeAssembly( owner ) ;
 			}
 
 			//----------------------------------
@@ -509,6 +437,46 @@ namespace DBS.World
 			//----------------------------------
 
 			return true ;
+		}
+
+		/// <summary>
+		/// メッシュを形成するための頂点・法線・発色・ＵＶを設定する
+		/// </summary>
+		public void InitializeAssembly( WorldClient owner )
+		{
+			m_Vertices.Clear() ;
+			m_Normals.Clear() ;
+			m_Colors.Clear() ;
+			m_UVs.Clear() ;
+
+			m_BlockIndices.Clear() ;	// ブロック配置情報をクリアする
+
+			//---------------------------------------------------------
+			// 登録されている面情報からメッシュを形成する情報を生成する
+
+			if( m_SolidBlickCount >  0 )
+			{
+				// 表示対象ブロックが１つ以上存在する場合のみ初期のメッシュ形成情報を生成する
+
+				int bx, bz, by ;
+
+				// 全ブロックの表示される面から頂点・法線・発色・ＵＶを設定する
+				for( by  =  0 ; by <= 15 ; by ++ )
+				{
+					for( bz  =  0 ; bz <= 15 ; bz ++ )
+					{
+						for( bx  =  0 ; bx <= 15 ; bx ++ )
+						{
+							AddBlockFaces( owner, bx, bz, by, ref m_Vertices, ref m_Normals, ref m_Colors, ref m_UVs ) ;
+						}
+					}
+				}
+			}
+
+			//----------------------------------------------------------
+
+			// 最初の設定は行った
+			m_IsInitialized = true ;
 		}
 
 		// Advanced Mesh API
@@ -594,7 +562,7 @@ namespace DBS.World
 		public void CleanupModel()
 		{
 			m_IsCompleted	= false ;
-			m_IsPrepared	= false ;
+			m_IsInitialized	= false ;
 
 			//----------------------------------
 
@@ -673,7 +641,7 @@ namespace DBS.World
 		/// <param name="y"></param>
 		public void UpdateBlockFaces( WorldClient owner, int blx, int blz, int bly )
 		{
-			if( m_IsPrepared == false )
+			if( m_IsInitialized == false )
 			{
 				// メッシュを作るための情報が用意されていない
 				return ;
@@ -1078,6 +1046,48 @@ namespace DBS.World
 			m_UVs.RemoveRange( offset, length ) ;
 
 			return true ;
+		}
+
+		//-------------------------------------------------------------------------------------------
+
+		/// <summary>
+		/// 入力されたワールド座標からチャンクの中心のワールド座標までの距離を取得する(３次元)
+		/// </summary>
+		/// <param name="px"></param>
+		/// <param name="pz"></param>
+		/// <param name="py"></param>
+		/// <returns></returns>
+		public float GetDistance( float px, float pz, float py )
+		{
+			// チャンクの中心のワールド座標
+			float cx = ( X * 16.0f ) + 8.0f ;
+			float cz = ( Z * 16.0f ) + 8.0f ;
+			float cy = ( Y * 16.0f ) + 8.0f ;
+
+			float dx = cx - px ;
+			float dz = cz - pz ;
+			float dy = cy - py ;
+
+			return Mathf.Sqrt( dx * dx + dz * dz + dy * dy ) ;
+		}
+
+		/// <summary>
+		/// 入力されたワールド座標からチャンクの中心のワールド座標までの距離を取得する(２次元)
+		/// </summary>
+		/// <param name="px"></param>
+		/// <param name="pz"></param>
+		/// <param name="py"></param>
+		/// <returns></returns>
+		public float GetDistance( float px, float pz )
+		{
+			// チャンクの中心のワールド座標
+			float cx = ( X * 16.0f ) + 8.0f ;
+			float cz = ( Z * 16.0f ) + 8.0f ;
+
+			float dx = cx - px ;
+			float dz = cz - pz ;
+
+			return Mathf.Sqrt( dx * dx + dz * dz ) ;
 		}
 	}
 }

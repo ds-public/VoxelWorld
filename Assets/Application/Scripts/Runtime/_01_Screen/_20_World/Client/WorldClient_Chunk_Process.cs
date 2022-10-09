@@ -54,16 +54,11 @@ namespace DBS.World
 				// パフォーマンスモニタリング(読込チャンクセット数)
 				m_P_ChunkSet_L.Value = ltCsIds.Count ;
 
-				Debug.Log( "lt:" + ltCsIds.Count ) ;
-
 				// 維持が必要なチャンクセット識別子群
-				var ktCsIds = GetTargetChunkSetIds( px, pz, WorldSettings.DISPLAY_CHUNK_RANGE + 1 ) ;
+				var ktCsIds = GetTargetChunkSetIds( px, pz, WorldSettings.DISPLAY_CHUNK_RANGE + 2 ) ;
 
 				// パフォーマンスモニタリング(維持チャンクセット数)
 				m_P_ChunkSet_K.Value = ktCsIds.Count - ltCsIds.Count ;
-
-				Debug.Log( "kt:" + ktCsIds.Count ) ;
-
 
 				foreach( var tCsId in ktCsIds )
 				{
