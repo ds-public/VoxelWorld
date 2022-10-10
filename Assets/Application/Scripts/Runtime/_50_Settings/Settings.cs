@@ -10,13 +10,13 @@ using UnityEditor ;
 namespace DBS
 {
 	/// <summary>
-	/// 起動時の各種設定クラス Version 2022/10/02
+	/// 起動時の各種設定クラス Version 2022/10/10
 	/// </summary>
 	[CreateAssetMenu( fileName = "Settings", menuName = "ScriptableObject/DBS/Settings" )]
 	public class Settings : ScriptableObject
 	{
 		[Header( "システムバージョン名" )]
-		public string	SystemVersionName = "0.2.1" ;
+		public string	SystemVersionName = "0.2.2" ;
 
 		[Header( "リビジョン[Android] (システムバージョン名が変ったら0にリセットする事)" )]
 		public int		Revision_Android = 0 ;

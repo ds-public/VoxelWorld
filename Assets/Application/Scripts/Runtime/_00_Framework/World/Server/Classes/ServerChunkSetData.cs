@@ -73,7 +73,7 @@ namespace DBS.WorldServerClasses
 
 
 		// 現在のクライアントからの参照状態
-		private List<string>	m_CliendIds = new List<string>() ;
+		private readonly List<string>	m_ClientIds = new List<string>() ;
 
 		/// <summary>
 		/// クライアント識別子を参照リストに追加する
@@ -82,12 +82,12 @@ namespace DBS.WorldServerClasses
 		/// <returns></returns>
 		public int AddCliendId( string clientId )
 		{
-			if( m_CliendIds.Contains( clientId ) == false )
+			if( m_ClientIds.Contains( clientId ) == false )
 			{
-				m_CliendIds.Add( clientId ) ;
+				m_ClientIds.Add( clientId ) ;
 			}
 
-			return m_CliendIds.Count ;
+			return m_ClientIds.Count ;
 		}
 
 		/// <summary>
@@ -97,16 +97,23 @@ namespace DBS.WorldServerClasses
 		/// <returns></returns>
 		public int RemoveClientId( string clientId )
 		{
-			if( m_CliendIds.Contains( clientId ) == true )
+			if( m_ClientIds.Contains( clientId ) == true )
 			{
-				m_CliendIds.Remove( clientId ) ;
+				m_ClientIds.Remove( clientId ) ;
 			}
 
-			return m_CliendIds.Count ;
+			return m_ClientIds.Count ;
 		}
 
-
-
+		/// <summary>
+		/// 参照リストに指定のクライアント識別子が含まれているか確認する
+		/// </summary>
+		/// <param name="clientId"></param>
+		/// <returns></returns>
+		public bool ContainsClientId( string clientId )
+		{
+			return m_ClientIds.Contains( clientId ) ;
+		}
 
 		//-----------------------------------------------------------
 

@@ -84,6 +84,9 @@ namespace DBS.World
 						{
 							// 既に存在しているので継続して使用する
 							m_ActiveChunkSets[ tCsId ].IsUsing = true ;
+
+							// 属しているチャンクが左右上下前後の６方向にチャンクが存在しているか確認する
+							m_ActiveChunkSets[ tCsId ].CheckChunks( this ) ;
 						}
 					}
 				}
@@ -98,7 +101,7 @@ namespace DBS.World
 					// 展開が必要なチャンクセットを視点から距離が近い順に並び替える
 					loadTargetChunkSets = loadTargetChunkSets.OrderBy( _ => _.GetDistance( px, pz ) ).ToList() ;
 
-					// サーバーに転送要求を出す
+					// サーバーにチャンクセットの転送要求を出す
 					foreach( var loadTargetChunkSet in loadTargetChunkSets )
 					{
 						WS_Send_Request_LoadWorldChunkSet( loadTargetChunkSet.CsId ) ;

@@ -105,5 +105,27 @@ namespace DBS.World
 			// 使用中のフラグを立てる
 			IsUsing = true ;
 		}
+
+		//-------------------------------------------------------------------------------------------
+
+		/// <summary>
+		/// チャンクセットが維持領域になった際に属するチャンク群の左右前後上下すべてにチャンクが存在するか確認し無い場合は外側のフェース情報を削る
+		/// </summary>
+		/// <param name="owner"></param>
+		public void CheckChunks( WorldClient owner )
+		{
+			int cy, cl = Chunks.Length ;
+
+			for( cy  = 0 ; cy <  cl ; cy ++ )
+			{
+				if( Chunks[ cy ].CanCreate( owner ) == false )
+				{
+					// 左右前後上下のチャンクが不明になりチャンクのメッシュモデルの状態が不確定になった
+
+					// 外側のフェース情報を削る
+					Chunks[ cy ].RemoveOuterBlockFaces() ;
+				}
+			}
+		}
 	}
 }

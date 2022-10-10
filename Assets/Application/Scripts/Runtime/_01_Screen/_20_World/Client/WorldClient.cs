@@ -209,11 +209,6 @@ namespace DBS.World
 		// 全てのサブスレッドの動作を停止するキャンセレーショントークン
 		private CancellationTokenSource						m_CancellationSource ;
 
-		//-----------------------------------
-#if false
-		// サブスレッドのコンテキスト
-		private SynchronizationContext						m_SubThreadContext ;
-#endif
 		//-------------------------------------------------------------------------------------------
 
 		// 接続までの準備が整ったかどうか
@@ -458,14 +453,6 @@ namespace DBS.World
 				}
 			}
 
-			//----------------------------------
-#if false
-			// チャンクのメッシュアセンブリを生成するためのサブスレッドを起動する
-			MakeChunkMeshAssembly() ;
-
-			// サブスレッドのコンテキストが取得されるのを待つ
-			await WaitUntil( () => m_SubThreadContext != null ) ;
-#endif
 			//----------------------------------
 
 			// 基本的な準備は整った

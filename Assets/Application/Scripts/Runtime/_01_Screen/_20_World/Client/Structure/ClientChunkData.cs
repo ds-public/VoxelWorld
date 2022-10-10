@@ -73,8 +73,17 @@ namespace DBS.World
 		/// <summary>
 		/// メッシュは存在しないが基本的な準備は済んでいるかどうか
 		/// </summary>
-		public	bool		  IsInitialized	=> m_IsInitialized ;
-		private	bool		m_IsInitialized ;
+		public	bool		  IsInitialized
+		{
+			get
+			{
+				return ( m_IsInnerInitialized == true && m_IsOuterInitialized == true ) ;
+			}
+		}
+
+		private bool		m_IsInnerInitialized ;
+		private bool		m_IsOuterInitialized ;
+
 
 		/// <summary>
 		/// メッシュも含めてチャンクは完成した状態であるかどうか
@@ -226,8 +235,22 @@ namespace DBS.World
 
 			//----------------------------------------------------------
 
-			m_IsInitialized = false ;
+			m_IsInnerInitialized = false ;
+			m_IsOuterInitialized = false ;
+
 			m_IsCompleted	= false ;
+
+			//------------------------------------------------------------------------------------------
+			// 内側だけフェース情報を展開する
+
+			m_Vertices.Clear() ;
+			m_Normals.Clear() ;
+			m_Colors.Clear() ;
+			m_UVs.Clear() ;
+
+			m_BlockIndices.Clear() ;	// ブロック配置情報をクリアする
+
+			AddInnerBlockFaces() ;
 		}
 
 		//-------------------------------------------------------------------------------------------
@@ -413,7 +436,6 @@ namespace DBS.World
 				{
 					// まだメッシュの生成が可能になっていないチャンク(隣接する周囲にロードされていないチャンクが存在する)
 					m_IsCompleted = false ;	// 隣接するチャンクが再び全て揃った際に作り直しが必要になる
-					m_IsInitialized = false ;
 					return false ;
 				}
 			}
@@ -428,10 +450,16 @@ namespace DBS.World
 
 			//-------------------------
 
-			if( m_IsInitialized == false )
+			if( m_IsInnerInitialized == false )
 			{
-				// まだ何も用意していない状態
-				InitializeAssembly( owner ) ;
+				// 内側のフェース情報を展開する
+				AddInnerBlockFaces() ;
+			}
+
+			if( m_IsOuterInitialized == false )
+			{
+				// 外側のフェース情報を展開する
+				AddOuterBlockfaces( owner ) ;
 			}
 
 			//----------------------------------
@@ -442,46 +470,6 @@ namespace DBS.World
 			//----------------------------------
 
 			return true ;
-		}
-
-		/// <summary>
-		/// メッシュを形成するための頂点・法線・発色・ＵＶを設定する
-		/// </summary>
-		public void InitializeAssembly( WorldClient owner )
-		{
-			m_Vertices.Clear() ;
-			m_Normals.Clear() ;
-			m_Colors.Clear() ;
-			m_UVs.Clear() ;
-
-			m_BlockIndices.Clear() ;	// ブロック配置情報をクリアする
-
-			//---------------------------------------------------------
-			// 登録されている面情報からメッシュを形成する情報を生成する
-
-			if( m_SolidBlickCount >  0 )
-			{
-				// 表示対象ブロックが１つ以上存在する場合のみ初期のメッシュ形成情報を生成する
-
-				int blx, blz, bly ;
-
-				// 全ブロックの表示される面から頂点・法線・発色・ＵＶを設定する
-				for( bly  =  0 ; bly <= 15 ; bly ++ )
-				{
-					for( blz  =  0 ; blz <= 15 ; blz ++ )
-					{
-						for( blx  =  0 ; blx <= 15 ; blx ++ )
-						{
-							AddBlockFaces( owner, blx, blz, bly, ref m_Vertices, ref m_Normals, ref m_Colors, ref m_UVs ) ;
-						}
-					}
-				}
-			}
-
-			//----------------------------------------------------------
-
-			// 最初の設定は行った
-			m_IsInitialized = true ;
 		}
 
 		// Advanced Mesh API
@@ -566,8 +554,9 @@ namespace DBS.World
 		/// </summary>
 		public void CleanupModel()
 		{
-			m_IsCompleted	= false ;
-			m_IsInitialized	= false ;
+			m_IsCompleted			= false ;
+			m_IsOuterInitialized	= false ;
+			m_IsInnerInitialized	= false ;
 
 			//----------------------------------
 
@@ -646,21 +635,133 @@ namespace DBS.World
 		/// <param name="y"></param>
 		public void UpdateBlockFaces( WorldClient owner, int blx, int blz, int bly )
 		{
-			if( m_IsInitialized == false )
+			if( m_IsInnerInitialized == false || m_IsOuterInitialized == false )
 			{
-				// メッシュを作るための情報が用意されていない
+				// 指定ブロックのみのフェース情報を更新できるようになるための条件が整っていない
 				return ;
 			}
 
 			RemoveBlockFaces( blx, blz, bly ) ;
-			AddBlockFaces( owner, blx, blz, bly, ref m_Vertices, ref m_Normals, ref m_Colors, ref m_UVs ) ;
+			AddBlockFaces( owner, blx, blz, bly ) ;
 
 			// チャンクをダーティ状態にする
 			m_IsCompleted = false ;
 		}
 
+		/// <summary>
+		/// 内側のブロック群のフェース情報を追加する
+		/// </summary>
+		private void AddInnerBlockFaces()
+		{
+			if( m_SolidBlickCount == 0 )
+			{
+				m_IsInnerInitialized = true ;
+				return ;
+			}
+
+			//----------------------------------
+
+			int blx, blz, bly ;
+
+			// 全ブロックの表示される面から頂点・法線・発色・ＵＶを設定する
+			for( bly  =  1 ; bly <= 14 ; bly ++ )
+			{
+				for( blz  =  1 ; blz <= 14 ; blz ++ )
+				{
+					for( blx  =  1 ; blx <= 14 ; blx ++ )
+					{
+						AddBlockFacesForInner( blx, blz, bly ) ;
+					}
+				}
+			}
+
+			m_IsInnerInitialized = true ;
+		}
+
+		/// <summary>
+		/// 外側のブロック群のフェース情報を追加する
+		/// </summary>
+		private void AddOuterBlockfaces( WorldClient owner )
+		{
+			int blx, blz, bly ;
+
+			// 全ブロックの表示される面から頂点・法線・発色・ＵＶを設定する
+			for( bly  =  0 ; bly <= 15 ; bly ++ )
+			{
+				for( blz  =  0 ; blz <= 15 ; blz ++ )
+				{
+					for( blx  =  0 ; blx <= 15 ; blx ++ )
+					{
+						if( blx ==  0 || blx == 15 || blz ==  0 || blz == 15 || bly ==  0 || bly == 15 )
+						{
+							AddBlockFaces( owner, blx, blz, bly ) ;
+						}
+					}
+				}
+			}
+
+			m_IsOuterInitialized = true ;
+		}
+
+		//-----------------------------------------------------------
+
+		// １つのブロックの全ての面を追加する(内側用)
+		private void AddBlockFacesForInner( int blx, int blz, int bly )
+		{
+			if( Block[ blx, blz, bly ] == 0 )
+			{
+				return ;	// 無し
+			}
+
+			short bc = Block[ blx, blz, bly ] ;
+			short bi = ( short )( ( bly << 8 ) | ( blz << 4 ) | blx ) ;
+
+			short upperBlock ;
+
+			// 上方向のブロック(現状は土ブロックの繋がり判別のためのみ利用)
+			upperBlock = Block[ blx, blz, bly + 1 ] ;
+
+			// 軽い処理
+			if( Block[ blx - 1, blz, bly ] == 0 )
+			{
+				// X-面の追加
+				AddFaceX0( blx, blz, bly, bc, upperBlock ) ;
+				m_BlockIndices.Add( bi ) ;
+			}
+			if( Block[ blx + 1, blz, bly ] == 0 )
+			{
+				// X-面の追加
+				AddFaceX1( blx, blz, bly, bc, upperBlock ) ;
+				m_BlockIndices.Add( bi ) ;
+			}
+			if( Block[ blx, blz - 1, bly ] == 0 )
+			{
+				// Z-面の追加
+				AddFaceZ0( blx, blz, bly, bc, upperBlock ) ;
+				m_BlockIndices.Add( bi ) ;
+			}
+			if( Block[ blx, blz + 1, bly ] == 0 )
+			{
+				// Z+面の追加
+				AddFaceZ1( blx, blz, bly, bc, upperBlock ) ;
+				m_BlockIndices.Add( bi ) ;
+			}
+			if( Block[ blx, blz, bly - 1 ] == 0 )
+			{
+				// Y-面の追加
+				AddFaceY0( blx, blz, bly, bc, upperBlock ) ;
+				m_BlockIndices.Add( bi ) ;
+			}
+			if( Block[ blx, blz, bly + 1 ] == 0 )
+			{
+				// Y+面の追加
+				AddFaceY1( blx, blz, bly, bc, upperBlock ) ;
+				m_BlockIndices.Add( bi ) ;
+			}
+		}
+
 		// １つのブロックの全ての面を追加する
-		private void AddBlockFaces( WorldClient owner, int blx, int blz, int bly, ref List<Vector3> aV, ref List<Vector3> aN, ref List<Color32> aC, ref List<Vector2> aT )
+		private void AddBlockFaces( WorldClient owner, int blx, int blz, int bly )
 		{
 			if( Block[ blx, blz, bly ] == 0 )
 			{
@@ -710,7 +811,7 @@ namespace DBS.World
 				if( neighborEmpty == true )
 				{
 					// X-面の追加
-					AddFaceX0( blx, blz, bly, bc, ref aV, ref aN, ref aC, ref aT, upperBlock ) ;
+					AddFaceX0( blx, blz, bly, bc, upperBlock ) ;
 					m_BlockIndices.Add( bi ) ;
 				}
 
@@ -726,7 +827,7 @@ namespace DBS.World
 				if( neighborEmpty == true )
 				{
 					// X+面の追加
-					AddFaceX1( blx, blz, bly, bc, ref aV, ref aN, ref aC, ref aT, upperBlock ) ;
+					AddFaceX1( blx, blz, bly, bc, upperBlock ) ;
 					m_BlockIndices.Add( bi ) ;
 				}
 
@@ -742,7 +843,7 @@ namespace DBS.World
 				if( neighborEmpty == true )
 				{
 					// Z-面の追加
-					AddFaceZ0( blx, blz, bly, bc, ref aV, ref aN, ref aC, ref aT, upperBlock ) ;
+					AddFaceZ0( blx, blz, bly, bc, upperBlock ) ;
 					m_BlockIndices.Add( bi ) ;
 				}
 
@@ -758,7 +859,7 @@ namespace DBS.World
 				if( neighborEmpty == true )
 				{
 					// Z+面の追加
-					AddFaceZ1( blx, blz, bly, bc, ref aV, ref aN, ref aC, ref aT, upperBlock ) ;
+					AddFaceZ1( blx, blz, bly, bc, upperBlock ) ;
 					m_BlockIndices.Add( bi ) ;
 				}
 
@@ -774,7 +875,7 @@ namespace DBS.World
 				if( neighborEmpty == true )
 				{
 					// Y-面の追加
-					AddFaceY0( blx, blz, bly, bc, ref aV, ref aN, ref aC, ref aT, upperBlock ) ;
+					AddFaceY0( blx, blz, bly, bc, upperBlock ) ;
 					m_BlockIndices.Add( bi ) ;
 				}
 
@@ -790,7 +891,7 @@ namespace DBS.World
 				if( neighborEmpty == true )
 				{
 					// Y+面の追加
-					AddFaceY1( blx, blz, bly, bc, ref aV, ref aN, ref aC, ref aT, upperBlock ) ;
+					AddFaceY1( blx, blz, bly, bc, upperBlock ) ;
 					m_BlockIndices.Add( bi ) ;
 				}
 			}
@@ -800,37 +901,37 @@ namespace DBS.World
 				if( Block[ blx - 1, blz, bly ] == 0 )
 				{
 					// X-面の追加
-					AddFaceX0( blx, blz, bly, bc, ref aV, ref aN, ref aC, ref aT, upperBlock ) ;
+					AddFaceX0( blx, blz, bly, bc, upperBlock ) ;
 					m_BlockIndices.Add( bi ) ;
 				}
 				if( Block[ blx + 1, blz, bly ] == 0 )
 				{
 					// X-面の追加
-					AddFaceX1( blx, blz, bly, bc, ref aV, ref aN, ref aC, ref aT, upperBlock ) ;
+					AddFaceX1( blx, blz, bly, bc, upperBlock ) ;
 					m_BlockIndices.Add( bi ) ;
 				}
 				if( Block[ blx, blz - 1, bly ] == 0 )
 				{
 					// Z-面の追加
-					AddFaceZ0( blx, blz, bly, bc, ref aV, ref aN, ref aC, ref aT, upperBlock ) ;
+					AddFaceZ0( blx, blz, bly, bc, upperBlock ) ;
 					m_BlockIndices.Add( bi ) ;
 				}
 				if( Block[ blx, blz + 1, bly ] == 0 )
 				{
 					// Z+面の追加
-					AddFaceZ1( blx, blz, bly, bc, ref aV, ref aN, ref aC, ref aT, upperBlock ) ;
+					AddFaceZ1( blx, blz, bly, bc, upperBlock ) ;
 					m_BlockIndices.Add( bi ) ;
 				}
 				if( Block[ blx, blz, bly - 1 ] == 0 )
 				{
 					// Y-面の追加
-					AddFaceY0( blx, blz, bly, bc, ref aV, ref aN, ref aC, ref aT, upperBlock ) ;
+					AddFaceY0( blx, blz, bly, bc, upperBlock ) ;
 					m_BlockIndices.Add( bi ) ;
 				}
 				if( Block[ blx, blz, bly + 1 ] == 0 )
 				{
 					// Y+面の追加
-					AddFaceY1( blx, blz, bly, bc, ref aV, ref aN, ref aC, ref aT, upperBlock ) ;
+					AddFaceY1( blx, blz, bly, bc, upperBlock ) ;
 					m_BlockIndices.Add( bi ) ;
 				}
 			}
@@ -839,95 +940,96 @@ namespace DBS.World
 		//---------------------------------------------------------------------------
 
 		// X-面の追加
-		private void AddFaceX0( int x, int z, int y, int ti, ref List<Vector3> aV, ref List<Vector3> aN, ref List<Color32> aC, ref List<Vector2> aT, int upperBlock )
+		private void AddFaceX0( int blx, int blz, int bly, int ti, int upperBlock )
 		{
-			aV.Add( new Vector3( x, y,     z + 1 ) ) ;
-			aV.Add( new Vector3( x, y + 1, z + 1 ) ) ;
-			aV.Add( new Vector3( x, y + 1, z     ) ) ;
-			aV.Add( new Vector3( x, y,     z     ) ) ;
+			m_Vertices.Add( new Vector3( blx, bly,     blz + 1 ) ) ;
+			m_Vertices.Add( new Vector3( blx, bly + 1, blz + 1 ) ) ;
+			m_Vertices.Add( new Vector3( blx, bly + 1, blz     ) ) ;
+			m_Vertices.Add( new Vector3( blx, bly,     blz     ) ) ;
 
-			aN.AddRange( m_Nx0s ) ;
-			aC.AddRange( GetBlockVC( ti, 2, upperBlock ) ) ;
+			m_Normals.AddRange( m_Nx0s ) ;
+			m_Colors.AddRange( GetBlockVC( ti, 2, upperBlock ) ) ;
 
 			// ブロックの種類で変わる
-			aT.AddRange( GetBlockUV( ti, 2, upperBlock ) ) ;
+			m_UVs.AddRange( GetBlockUV( ti, 2, upperBlock ) ) ;
 		}
 
 		// X+面の追加
-		private void AddFaceX1( int x, int z, int y, int ti, ref List<Vector3> aV, ref List<Vector3> aN, ref List<Color32> aC, ref List<Vector2> aT, int upperBlock )
+		private void AddFaceX1( int blx, int blz, int bly, int ti, int upperBlock )
 		{
-			aV.Add( new Vector3( x + 1, y,     z     ) ) ;
-			aV.Add( new Vector3( x + 1, y + 1, z     ) ) ;
-			aV.Add( new Vector3( x + 1, y + 1, z + 1 ) ) ;
-			aV.Add( new Vector3( x + 1, y,     z + 1 ) ) ;
+			m_Vertices.Add( new Vector3( blx + 1, bly,     blz     ) ) ;
+			m_Vertices.Add( new Vector3( blx + 1, bly + 1, blz     ) ) ;
+			m_Vertices.Add( new Vector3( blx + 1, bly + 1, blz + 1 ) ) ;
+			m_Vertices.Add( new Vector3( blx + 1, bly,     blz + 1 ) ) ;
 
-			aN.AddRange( m_Nx1s ) ;
-			aC.AddRange( GetBlockVC( ti, 2, upperBlock ) ) ;
+			m_Normals.AddRange( m_Nx1s ) ;
+			m_Colors.AddRange( GetBlockVC( ti, 2, upperBlock ) ) ;
 
 			// ブロックの種類で変わる
-			aT.AddRange( GetBlockUV( ti, 2, upperBlock ) ) ;
+			m_UVs.AddRange( GetBlockUV( ti, 2, upperBlock ) ) ;
 		}
 
 		// Y-面の追加
-		private void AddFaceY0( int x, int z, int y, int ti, ref List<Vector3> aV, ref List<Vector3> aN, ref List<Color32> aC, ref List<Vector2> aT, int upperBlock )
+		private void AddFaceY0( int blx, int blz, int bly, int ti, int upperBlock )
 		{
-			aV.Add( new Vector3( x,     y,     z + 1 ) ) ;
-			aV.Add( new Vector3( x,     y,     z     ) ) ;
-			aV.Add( new Vector3( x + 1, y,     z     ) ) ;
-			aV.Add( new Vector3( x + 1, y,     z + 1 ) ) ;
+			m_Vertices.Add( new Vector3( blx,     bly,     blz + 1 ) ) ;
+			m_Vertices.Add( new Vector3( blx,     bly,     blz     ) ) ;
+			m_Vertices.Add( new Vector3( blx + 1, bly,     blz     ) ) ;
+			m_Vertices.Add( new Vector3( blx + 1, bly,     blz + 1 ) ) ;
 
-			aN.AddRange( m_Ny0s ) ;
-			aC.AddRange( GetBlockVC( ti, 1, upperBlock ) ) ;
+			m_Normals.AddRange( m_Ny0s ) ;
+			m_Colors.AddRange( GetBlockVC( ti, 1, upperBlock ) ) ;
 
 			// ブロックの種類で変わる
-			aT.AddRange( GetBlockUV( ti, 1, upperBlock ) ) ;
+			m_UVs.AddRange( GetBlockUV( ti, 1, upperBlock ) ) ;
 		}
 
 		// Y+面の追加
-		private void AddFaceY1( int x, int z, int y, int ti, ref List<Vector3> aV, ref List<Vector3> aN, ref List<Color32> aC, ref List<Vector2> aT, int upperBlock )
+		private void AddFaceY1( int blx, int blz, int bly, int ti, int upperBlock )
 		{
-			aV.Add( new Vector3( x,     y + 1, z     ) ) ;
-			aV.Add( new Vector3( x,     y + 1, z + 1 ) ) ;
-			aV.Add( new Vector3( x + 1, y + 1, z + 1 ) ) ;
-			aV.Add( new Vector3( x + 1, y + 1, z     ) ) ;
+			m_Vertices.Add( new Vector3( blx,     bly + 1, blz     ) ) ;
+			m_Vertices.Add( new Vector3( blx,     bly + 1, blz + 1 ) ) ;
+			m_Vertices.Add( new Vector3( blx + 1, bly + 1, blz + 1 ) ) ;
+			m_Vertices.Add( new Vector3( blx + 1, bly + 1, blz     ) ) ;
 
-			aN.AddRange( m_Ny1s ) ;
-			aC.AddRange( GetBlockVC( ti, 0, upperBlock ) ) ;
+			m_Normals.AddRange( m_Ny1s ) ;
+			m_Colors.AddRange( GetBlockVC( ti, 0, upperBlock ) ) ;
 
 			// ブロックの種類で変わる
-			aT.AddRange( GetBlockUV( ti, 0, upperBlock ) ) ;
+			m_UVs.AddRange( GetBlockUV( ti, 0, upperBlock ) ) ;
 		}
 
 		// Z-面の追加
-		private void AddFaceZ0( int x, int z, int y, int ti, ref List<Vector3> aV, ref List<Vector3> aN, ref List<Color32> aC, ref List<Vector2> aT, int upperBlock )
+		private void AddFaceZ0( int blx, int blz, int bly, int ti, int upperBlock )
 		{
-			aV.Add( new Vector3( x,     y,     z     ) ) ;
-			aV.Add( new Vector3( x,     y + 1, z     ) ) ;
-			aV.Add( new Vector3( x + 1, y + 1, z     ) ) ;
-			aV.Add( new Vector3( x + 1, y,     z     ) ) ;
+			m_Vertices.Add( new Vector3( blx,     bly,     blz     ) ) ;
+			m_Vertices.Add( new Vector3( blx,     bly + 1, blz     ) ) ;
+			m_Vertices.Add( new Vector3( blx + 1, bly + 1, blz     ) ) ;
+			m_Vertices.Add( new Vector3( blx + 1, bly,     blz     ) ) ;
 
-			aN.AddRange( m_Nz0s ) ;
-			aC.AddRange( GetBlockVC( ti, 2, upperBlock ) ) ;
+			m_Normals.AddRange( m_Nz0s ) ;
+			m_Colors.AddRange( GetBlockVC( ti, 2, upperBlock ) ) ;
 
 			// ブロックの種類で変わる
-			aT.AddRange( GetBlockUV( ti, 2, upperBlock ) ) ;
+			m_UVs.AddRange( GetBlockUV( ti, 2, upperBlock ) ) ;
 		}
 
 		// Z+面の追加
-		private void AddFaceZ1( int x, int z, int y, int ti, ref List<Vector3> aV, ref List<Vector3> aN, ref List<Color32> aC, ref List<Vector2> aT, int upperBlock )
+		private void AddFaceZ1( int blx, int blz, int bly, int ti, int upperBlock )
 		{
-			aV.Add( new Vector3( x + 1, y,     z + 1 ) ) ;
-			aV.Add( new Vector3( x + 1, y + 1, z + 1 ) ) ;
-			aV.Add( new Vector3( x,     y + 1, z + 1 ) ) ;
-			aV.Add( new Vector3( x,     y,     z + 1 ) ) ;
+			m_Vertices.Add( new Vector3( blx + 1, bly,     blz + 1 ) ) ;
+			m_Vertices.Add( new Vector3( blx + 1, bly + 1, blz + 1 ) ) ;
+			m_Vertices.Add( new Vector3( blx,     bly + 1, blz + 1 ) ) ;
+			m_Vertices.Add( new Vector3( blx,     bly,     blz + 1 ) ) ;
 
-			aN.AddRange( m_Nz1s ) ;
-			aC.AddRange( GetBlockVC( ti, 2, upperBlock ) ) ;
+			m_Normals.AddRange( m_Nz1s ) ;
+			m_Colors.AddRange( GetBlockVC( ti, 2, upperBlock ) ) ;
 
 			// ブロックの種類で変わる
-			aT.AddRange( GetBlockUV( ti, 2, upperBlock ) ) ;
+			m_UVs.AddRange( GetBlockUV( ti, 2, upperBlock ) ) ;
 		}
 
+		//---------------
 
 		// ブロックの配色を取得する
 		private Color32[] GetBlockVC( int index, int direction, int upperBlock )
@@ -1005,21 +1107,53 @@ namespace DBS.World
 		//---------------------------------------------------------------------------
 
 		/// <summary>
+		/// チャンク内の外側のブロック群に関連するフェース情報を全て削除する
+		/// </summary>
+		public void RemoveOuterBlockFaces()
+		{
+			if( m_IsOuterInitialized == false )
+			{
+				// 外側のフェース情報はまだ生成されていない
+				return ;
+			}
+
+			//----------------------------------
+
+			int blx, blz, bly ;
+
+			for( bly  =  0 ; bly <= 15 ; bly ++ )
+			{
+				for( blz  =  0 ; blz <= 15 ; blz ++ )
+				{
+					for( blx  =  0 ; blx <= 15 ; blx ++ )
+					{
+						if( blx ==  0 || blx == 15 || blz ==  0 || blz == 15 || bly ==  0 || bly == 15 )
+						{
+							RemoveBlockFaces( blx, blz, bly ) ;
+						}
+					}
+				}
+			}
+
+			m_IsOuterInitialized = false ;
+		}
+
+		/// <summary>
 		/// チャンク内のブロックを削除する
 		/// </summary>
 		/// <param name="x"></param>
 		/// <param name="z"></param>
 		/// <param name="y"></param>
-		public bool RemoveBlockFaces( int x, int z, int y )
+		public bool RemoveBlockFaces( int blx, int blz, int bly )
 		{
 			if( m_BlockIndices.Count == 0 )
 			{
 				return false ;	// ブロックは１つも存在しない
 			}
 
-			short bi = ( short )( ( y << 8 ) | ( z << 4 ) | x ) ;
+			short bo = ( short )( ( bly << 8 ) | ( blz << 4 ) | blx ) ;
 
-			int offset = m_BlockIndices.IndexOf( bi ) ;
+			int offset = m_BlockIndices.IndexOf( bo ) ;
 			if( offset <  0 )
 			{
 				// この位置にブロックは存在しない
@@ -1031,14 +1165,14 @@ namespace DBS.World
 			int index ;
 			for( index  = offset + 1 ; index <  m_BlockIndices.Count ; index ++ )
 			{
-				if( m_BlockIndices[ index ] != bi )
+				if( m_BlockIndices[ index ] != bo )
 				{
 					break ;
 				}
 				length ++ ;
 			}
 
-			// offset から length ぶんの情報を削除する
+			// offset から length 分の情報を削除する
 			m_BlockIndices.RemoveRange( offset, length ) ;
 
 			// offset と length は面単位なので点単位にするには値を４倍にする必要がある

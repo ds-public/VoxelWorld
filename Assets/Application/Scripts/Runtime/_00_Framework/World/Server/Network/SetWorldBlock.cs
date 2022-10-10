@@ -44,7 +44,7 @@ namespace DBS.World
 		}
 
 		// 他のプレイヤーへ位置と方向の通知
-		private void WS_Send_Response_SetWorldBlock_Other( ActiveClient client, short x, short z, short y, short block )
+		private void WS_Send_Response_SetWorldBlock_Other( ActiveClient client, short bx, short bz, short by, short block )
 		{
 			//----------------------------------------------------------
 			// 他人へのレスポンス
@@ -52,18 +52,25 @@ namespace DBS.World
 			// その他のアクティブなクライアントに対してワールドのブロックの状態が変化した事を通知する
 			if( m_ActiveClients != null && m_ActiveClients.Count >  1 )
 			{
+				// パケット情報生成
 				var response = Packet.ServerResponseTypes.SetWorldBlock_Other.Encode
 				(
-					x,
-					z,
-					y,
+					bx,
+					bz,
+					by,
 					block
 				) ;
 
+				// チャンクセット識別子
+				int csId = ( int )( ( bz & 0xFFF0 ) <<  8 ) | ( int )( ( bx & 0xFFF0 ) >> 4 ) ;
+
+				// 他のクライアント全てにブロック状態が変化した事を通知する
 				foreach( var activeClient in m_ActiveClients.Values )
 				{
-					if( activeClient.ID != client.ID )
+					if( activeClient.ID != client.ID && m_ActiveChunkSets[ csId ].ContainsClientId( activeClient.ID ) == true )
 					{
+						// 送信者と異なるクライアント識別子・且つ・そのクライアント識別子が対象ブロックの属するチャンクセットをロード済みの場合のみ
+						// 遠く離れた(ローカルではそのチャンクセットを持っていない)他のプレイヤーに通知するのは無駄なので省く
 						activeClient.SendData( response ) ;
 					}
 				}

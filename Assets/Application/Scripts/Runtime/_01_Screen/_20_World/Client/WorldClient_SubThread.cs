@@ -77,47 +77,5 @@ namespace DBS.World
 
 			return true ;
 		}
-
-		//-------------------------------------------------------------------------------------------
-#if false
-		// チャンクセットを展開する
-		private void MakeChunkMeshAssembly()
-		{
-			// サブスレッドでチャンクの展開を行う(メインスレッドを専有すると重くなるため)
-			Task<bool> task = Task.Run( () => MakeChunkMeshAssembly_Task( m_MainThreadContext, m_CancellationSource.Token ) ) ; 
-		}
-
-
-
-		// チャンクのメッシュ形成情報を生成するためのサブスレッド
-		private bool MakeChunkMeshAssembly_Task( SynchronizationContext mainThreadContext, CancellationToken cancellationToken )
-		{
-			// メインスレッドのコンテキストを取得する
-			m_SubThreadContext = SynchronizationContext.Current ;
-
-			//----------------------------------------------------------
-
-			while( true )
-			{
-				if( cancellationToken.IsCancellationRequested == true )
-				{
-					// サブスレッドが中断された
-					break ;
-				}
-
-				//---------------------------------------------------------
-
-				// 積まれているキューがあれば処理する
-
-
-				//---------------------------------------------------------
-
-				// サブスレッドをスリープする
-				Thread.Sleep( 1 ) ;
-			}
-
-			return true ;
-		}
-#endif
 	}
 }
