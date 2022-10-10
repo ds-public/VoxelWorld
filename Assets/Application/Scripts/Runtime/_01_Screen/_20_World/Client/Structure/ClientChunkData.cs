@@ -26,8 +26,8 @@ namespace DBS.World
 		// ブロック情報
 //		public short[,,]	Block = new short[ 16, 16, 16 ] ;	// x z y
 
-		private Packer	m_ChunkSetStream ;
-		private int		m_Offset ;
+		private ChunkSetStreamData	m_ChunkSetStream ;
+		private int					m_Offset ;
 
 		//-----------------------------------
 
@@ -122,7 +122,7 @@ namespace DBS.World
 		/// <param name="x"></param>
 		/// <param name="y"></param>
 		/// <param name="z"></param>
-		public ClientChunkData( int x, int z, int y, Packer chunkSetStream, int offset )
+		public ClientChunkData( int x, int z, int y, ChunkSetStreamData chunkSetStream, int offset )
 		{
 			// チャンク座標
 			X = x ;
@@ -140,7 +140,7 @@ namespace DBS.World
 			int i ;
 			for( i  =    0 ; i <  4096 ; i ++ )
 			{
-				if( m_ChunkSetStream.GetShortFirst( offset ) != 0 )
+				if( m_ChunkSetStream.GetShort( offset ) != 0 )
 				{
 					m_SolidBlickCount ++ ;
 				}
@@ -252,7 +252,7 @@ namespace DBS.World
 		/// <returns></returns>
 		public short GetBlock( int blx, int blz, int bly )
 		{
-			return m_ChunkSetStream.GetShortFirst( m_Offset + ( ( ( bly << 8 ) + ( ( blz << 4 ) + blx ) ) << 1 ) ) ;
+			return m_ChunkSetStream.GetShort( m_Offset + ( ( ( bly << 8 ) + ( ( blz << 4 ) + blx ) ) << 1 ) ) ;
 		}
 
 		/// <summary>
@@ -264,7 +264,7 @@ namespace DBS.World
 		/// <param name="bi"></param>
 		public void SetBlock( int blx, int blz, int bly, short bi )
 		{
-			m_ChunkSetStream.SetShortFirst( bi,	m_Offset + ( ( ( bly << 8 ) + ( ( blz << 4 ) + blx ) ) << 1 ) ) ;
+			m_ChunkSetStream.SetShort( m_Offset + ( ( ( bly << 8 ) + ( ( blz << 4 ) + blx ) ) << 1 ), bi ) ;
 		}
 
 		//-------------------------------------------------------------------------------------------

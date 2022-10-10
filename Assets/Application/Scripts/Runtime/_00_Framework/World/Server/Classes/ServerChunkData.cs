@@ -26,7 +26,7 @@ namespace DBS.WorldServerClasses
 		private ServerChunkSetData	m_Owner ;
 
 		// チャンクセットのストリーム
-		private Packer				m_ChunkSetStream ;
+		private ChunkSetStreamData	m_ChunkSetStream ;
 
 		// チャンクセットストリーム内のこのチャンクの場所
 		private int					m_Offset ;
@@ -37,7 +37,7 @@ namespace DBS.WorldServerClasses
 		/// チャンクセットのストリームを設定する
 		/// </summary>
 		/// <param name="data"></param>
-		public ServerChunkData( ServerChunkSetData owner, Packer chunkSetStream, int offset )
+		public ServerChunkData( ServerChunkSetData owner, ChunkSetStreamData chunkSetStream, int offset )
 		{
 			m_Owner				= owner ;
 
@@ -58,9 +58,9 @@ namespace DBS.WorldServerClasses
 		{
 			int offset = m_Offset + ( ( ( bly << 8 ) + ( blz << 4 ) + blx ) << 1 ) ;
 
-			if( m_ChunkSetStream.GetShortFirst( offset ) != bi )
+			if( m_ChunkSetStream.GetShort( offset ) != bi )
 			{
-				m_ChunkSetStream.SetShortFirst( bi, offset ) ;
+				m_ChunkSetStream.SetShort( offset, bi ) ;
 
 				// チャンクに変更があった
 				m_Owner.IsDirty	= true ;
@@ -76,7 +76,7 @@ namespace DBS.WorldServerClasses
 		/// <param name="v"></param>
 		public void SetBlockFirst( int blx, int blz, int bly, short bi )
 		{
-			m_ChunkSetStream.SetShortFirst( bi, m_Offset + ( ( ( bly << 8 ) + ( blz << 4 ) + blx ) << 1 ) ) ;
+			m_ChunkSetStream.SetShort( m_Offset + ( ( ( bly << 8 ) + ( blz << 4 ) + blx ) << 1 ), bi ) ;
 		}
 
 		/// <summary>
@@ -88,9 +88,7 @@ namespace DBS.WorldServerClasses
 		/// <returns></returns>
 		public short GetBlock( int blx, int blz, int bly )
 		{
-			return m_ChunkSetStream.GetShortFirst( m_Offset + ( ( ( bly << 8 ) + ( blz << 4 ) + blx ) << 1 ) ) ;
+			return m_ChunkSetStream.GetShort( m_Offset + ( ( ( bly << 8 ) + ( blz << 4 ) + blx ) << 1 ) ) ;
 		}
-
-
 	}
 }

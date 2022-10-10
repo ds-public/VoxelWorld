@@ -74,7 +74,7 @@ namespace DBS.WorldServerClasses
 		private byte[]		m_CompressedData ;
 
 		// 伸長されたチャンクセットデータ
-		private Packer		m_ChunkSetStream ;
+		private ChunkSetStreamData		m_ChunkSetStream ;
 
 		//-------------------------------------------------------------------------------------------
 
@@ -85,7 +85,7 @@ namespace DBS.WorldServerClasses
 		{
 			m_CompressedData	= null ;
 
-			m_ChunkSetStream	= new Packer( new byte[ Chunks.Length * 8192 ] ) ;	// 512KB
+			m_ChunkSetStream	= new ChunkSetStreamData( Chunks.Length * 8192 ) ;	// 512KB
 
 			//----------------------------------------------------------
 			// デフォルトのチャンクセット状態を生成する
@@ -198,22 +198,14 @@ namespace DBS.WorldServerClasses
 		{
 			//----------------------------------------------------------
 
-			var packer = new Packer( m_CompressedData ) ;
-
-			// 空読み
-			int csId = packer.GetInt() ;
-
-			// 圧縮状態のデータサイズ
-			int size = packer.GetInt() ;
-
 			// 圧縮状態のデータを伸長する
-			byte[] decompressData = GZip.Decompress( packer.Data, packer.Offest, size ) ;
+			byte[] decompressedData = GZip.Decompress( m_CompressedData ) ;
 
 			//----------------------------------
 
-			m_ChunkSetStream = new Packer( decompressData ) ;
+			m_ChunkSetStream = new ChunkSetStreamData( decompressedData ) ;
 
-			// チャンク単位でGZIP圧縮をかける(既に圧縮済みならそのままコピーする:無圧縮で8192バイト)
+			// 各チャンクにチャンクセットストリームのインスタンスとオフセットを渡す
 			int cy ;
 			for( cy  = 0 ; cy <  Chunks.Length ; cy ++ )
 			{
@@ -239,19 +231,8 @@ namespace DBS.WorldServerClasses
 
 			//----------------------------------------------------------
 
-			var packer = new Packer() ;
-
-			// チャンクセット識別子を格納する
-			packer.SetInt( CsId ) ;
-
-			//----------------------------------
-
 			// 圧縮する
-			byte[] compressedData = GZip.Compress( m_ChunkSetStream.Data ) ;
-			packer.SetInt( compressedData.Length ) ;
-			packer.SetBytes( compressedData ) ;
-
-			m_CompressedData = packer.Data ;
+			m_CompressedData = GZip.Compress( m_ChunkSetStream.Data ) ;
 
 			// 圧縮状態のデータを生成した
 			m_IsCompressed = true ;
@@ -322,7 +303,5 @@ namespace DBS.WorldServerClasses
 		{
 			m_IsDirty = true ;
 		}
-
-
 	}
 }

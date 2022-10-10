@@ -44,7 +44,7 @@ namespace DBS.World
 
 
 		// チャンクセットのストリーム
-		private Packer m_ChunkSetStream ;
+		private ChunkSetStreamData m_ChunkSetStream ;
 
 
 		/// <summary>
@@ -72,42 +72,16 @@ namespace DBS.World
 
 			//----------------------------------
 
-			// 最初の４バイトはチャンクセット識別子
-			if( csId != packer.GetInt() )
-			{
-				Debug.LogWarning( "[CLIENT]チャンクセット識別子に異常あり" ) ;
-				return ;
-			}
-
-			//----------------------------------
-
-			// 全体でGZIP圧縮がかかっている
-			int size = packer.GetInt() ;
-
 			// 圧縮データを伸長する
-			byte[] decompressedData = GZip.Decompress( packer.Data, packer.Offest, size ) ;
+			byte[] decompressedData = GZip.Decompress( data ) ;
 
 			// チャンクセットのストリーム
-			m_ChunkSetStream = new Packer( decompressedData ) ;
+			m_ChunkSetStream = new ChunkSetStreamData( decompressedData ) ;
 
 			int cy ;
 			for( cy  = 0 ; cy <  Chunks.Length ; cy ++ )
 			{
 				Chunks[ cy ] = new ClientChunkData( X, Z, cy, m_ChunkSetStream, cy * 8192 ) ;
-/*
-
-
-				size = chunks.GetShort() ;
-				if( size >  0 )
-				{
-					// データが存在する
-					Chunks[ cy ] = new ClientChunkData( X, Z, cy, chunks, size ) ;
-				}
-				else
-				{
-					// データが存在しない
-					Chunks[ cy ] = new ClientChunkData( X, Z, cy, null, 0 ) ;
-				}*/
 			}
 
 			//----------------------------------

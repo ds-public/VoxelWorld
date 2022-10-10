@@ -226,10 +226,13 @@ namespace DBS.World
 
 					StorageAccessor.Seek( m_CSDB, record.BlockOffset * m_DataBlockSize, SeekOrigin.Begin ) ;
 
-					var header = new Packer() ;
-					header.SetInt( size ) ;
+					byte[] work = new byte[ 4 ] ;
+					work[ 0 ] = ( byte )(   size         & 0xFF ) ;
+					work[ 1 ] = ( byte )( ( size >>  8 ) & 0xFF ) ;
+					work[ 2 ] = ( byte )( ( size >> 16 ) & 0xFF ) ;
+					work[ 3 ] = ( byte )( ( size >> 24 ) & 0xFF ) ;
 
-					StorageAccessor.Write( m_CSDB, header.Data ) ;	// 最初の４バイトは実サイズ
+					StorageAccessor.Write( m_CSDB, work ) ;	// 最初の４バイトは実サイズ
 					StorageAccessor.Write( m_CSDB, data ) ;
 
 					isSaved = true ;
@@ -271,10 +274,13 @@ namespace DBS.World
 
 				StorageAccessor.Seek( m_CSDB, m_TotalLength * m_DataBlockSize, SeekOrigin.Begin ) ;
 
-				var header = new Packer() ;
-				header.SetInt( size ) ;
+				byte[] work = new byte[ 4 ] ;
+				work[ 0 ] = ( byte )(   size         & 0xFF ) ;
+				work[ 1 ] = ( byte )( ( size >>  8 ) & 0xFF ) ;
+				work[ 2 ] = ( byte )( ( size >> 16 ) & 0xFF ) ;
+				work[ 3 ] = ( byte )( ( size >> 24 ) & 0xFF ) ;
 
-				StorageAccessor.Write( m_CSDB, header.Data ) ;	// 最初の４バイトは実サイズ
+				StorageAccessor.Write( m_CSDB, work ) ;	// 最初の４バイトは実サイズ
 				StorageAccessor.Write( m_CSDB, data ) ;
 
 				//---------------------------------
@@ -321,8 +327,7 @@ namespace DBS.World
 
 			StorageAccessor.Read( m_CSDB, work ) ;
 
-			var header = new Packer( work ) ;
-			int size = header.GetInt() ;
+			int size = ( int )( work[ 0 ] | ( work[ 1 ] << 8 ) | ( work[ 2 ] << 16 ) | work[ 3 ] << 24 ) ;
 
 			// データを読み込む
 			byte[] data = new byte[ size ] ;
