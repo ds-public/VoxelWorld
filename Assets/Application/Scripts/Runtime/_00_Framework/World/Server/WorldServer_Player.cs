@@ -196,7 +196,7 @@ namespace DBS.World
 			player.Name			= playerName ;
 			player.ColorType	= colorType ;
 
-			player.Position = new Vector3( 16.5f, 520, 27.5f ) ;
+			player.Position = new Vector3( 16.5f, 720, 27.5f ) ;
 			player.Direction = new Vector3( 0, 0, 1 ) ;
 
 			//----------------------------------------------------------

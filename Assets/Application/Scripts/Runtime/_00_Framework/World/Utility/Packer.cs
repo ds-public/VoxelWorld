@@ -88,7 +88,17 @@ namespace DBS.World
 		/// <summary>
 		/// オフセット
 		/// </summary>
-		public int Offest	=> m_Offset ;
+		public int Offest
+		{
+			get
+			{
+				return m_Offset ;
+			}
+			set
+			{
+				m_Offset = value ;
+			}
+		}
 
 		/// <summary>
 		/// オフセット位置を増加させる
@@ -159,7 +169,7 @@ namespace DBS.World
 		/// </summary>
 		/// <param name="value"></param>
 		/// <returns></returns>
-		public int SetShort( short value )
+		public int AddShort( short value )
 		{
 			m_Data.Add( ( byte )(   value         & 0xFF ) ) ;
 			m_Data.Add( ( byte )( ( value >>  8 ) & 0xFF ) ) ;
@@ -168,19 +178,97 @@ namespace DBS.World
 		}
 
 		/// <summary>
+		/// 値を設定する
+		/// </summary>
+		/// <param name="value"></param>
+		/// <param name="offset"></param>
+		/// <returns></returns>
+		public bool SetShort( short value, int offset = -1 )
+		{
+			if( offset <  0 )
+			{
+				offset = m_Offset ;
+			}
+
+			if( ( offset + 2 ) >  m_Data.Count )
+			{
+				// オーバーする
+				return false ;
+			}
+
+			m_Data[ offset + 0 ] = ( byte )(   value        & 0xFF ) ;
+			m_Data[ offset + 1 ] = ( byte )( ( value >> 8 ) & 0xFF ) ;
+
+			return true ;
+		}
+
+		/// <summary>
+		/// 値を設定する
+		/// </summary>
+		/// <param name="value"></param>
+		/// <param name="offset"></param>
+		/// <returns></returns>
+		public bool SetShortFirst( short value, int offset )
+		{
+			m_Data[ offset + 0 ] = ( byte )(   value        & 0xFF ) ;
+			m_Data[ offset + 1 ] = ( byte )( ( value >> 8 ) & 0xFF ) ;
+
+			return true ;
+		}
+
+
+		/// <summary>
 		/// ショートインテジャーデータを出力する
 		/// </summary>
 		/// <returns></returns>
-		public short GetShort()
+		public short GetShort( bool isOffsetMove = true )
 		{
 			short value = ( short )(
 				( short )( m_Data[ m_Offset + 1 ] <<  8 ) |
 				( short )( m_Data[ m_Offset     ]       )
 			) ;
-			m_Offset += 2 ;
+
+			if( isOffsetMove == true )
+			{
+				m_Offset += 2 ;
+			}
 
 			return value ;
 		}
+
+		/// <summary>
+		/// ショートインテジャーデータを出力する
+		/// </summary>
+		/// <returns></returns>
+		public short GetShort( int offset )
+		{
+			if( offset <  0 || ( offset + 2 ) >  m_Data.Count )
+			{
+				offset = m_Offset ;
+			}
+
+			short value = ( short )(
+				( short )( m_Data[ offset + 1 ] <<  8 ) |
+				( short )( m_Data[ offset     ]       )
+			) ;
+
+			return value ;
+		}
+
+		/// <summary>
+		/// ショートインテジャーデータを出力する
+		/// </summary>
+		/// <returns></returns>
+		public short GetShortFirst( int offset )
+		{
+			short value = ( short )(
+				( short )( m_Data[ offset + 1 ] <<  8 ) |
+				( short )( m_Data[ offset     ]       )
+			) ;
+
+			return value ;
+		}
+
 
 		/// <summary>
 		/// インテジャーデータを入力する

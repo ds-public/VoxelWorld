@@ -24,7 +24,10 @@ namespace DBS.World
 		public int	Y ;	// チャンクのＹ座標
 
 		// ブロック情報
-		public short[,,]	Block = new short[ 16, 16, 16 ] ;	// x z y
+//		public short[,,]	Block = new short[ 16, 16, 16 ] ;	// x z y
+
+		private Packer	m_ChunkSetStream ;
+		private int		m_Offset ;
 
 		//-----------------------------------
 
@@ -119,45 +122,30 @@ namespace DBS.World
 		/// <param name="x"></param>
 		/// <param name="y"></param>
 		/// <param name="z"></param>
-		public ClientChunkData( int x, int z, int y, Packer packer, int size )
+		public ClientChunkData( int x, int z, int y, Packer chunkSetStream, int offset )
 		{
 			// チャンク座標
 			X = x ;
 			Z = z ;
 			Y = y ;
 
-			//----------------------------------
+			m_ChunkSetStream	= chunkSetStream ;
+			m_Offset			= offset ;
 
-			int bx, bz, by ;
+			//----------------------------------
+			// 空気ではないブロック数をカウントする
 
 			m_SolidBlickCount = 0 ;
 
-			if( packer != null && size >  0 )
+			int i ;
+			for( i  =    0 ; i <  4096 ; i ++ )
 			{
-				// 差分圧縮テスト
-//				short delta = 0 ;
-//				short value ;
-
-				for( by  = 0 ; by <= 15 ; by ++ )
+				if( m_ChunkSetStream.GetShortFirst( offset ) != 0 )
 				{
-					for( bz  = 0 ; bz <= 15 ; bz ++ )
-					{
-						for( bx  = 0 ; bx <= 15 ; bx ++ )
-						{
-							// 差分圧縮テスト
-//							value = packer.GetShort() ;
-//							Block[ bx, bz, by ] = ( short )( value + delta ) ;
-//							delta = Block[ bx, bz, by ] ;
-
-							Block[ bx, bz, by ] = packer.GetShort() ;
-
-							if( Block[ bx, bz, by ] != 0 )
-							{
-								m_SolidBlickCount ++ ;
-							}
-						}
-					}
+					m_SolidBlickCount ++ ;
 				}
+
+				offset += 2 ;
 			}
 
 			//----------------------------------
@@ -254,6 +242,33 @@ namespace DBS.World
 		}
 
 		//-------------------------------------------------------------------------------------------
+
+		/// <summary>
+		/// ブロックを取得する
+		/// </summary>
+		/// <param name="blx"></param>
+		/// <param name="blz"></param>
+		/// <param name="bly"></param>
+		/// <returns></returns>
+		public short GetBlock( int blx, int blz, int bly )
+		{
+			return m_ChunkSetStream.GetShortFirst( m_Offset + ( ( ( bly << 8 ) + ( ( blz << 4 ) + blx ) ) << 1 ) ) ;
+		}
+
+		/// <summary>
+		/// ブロックを設定する
+		/// </summary>
+		/// <param name="blx"></param>
+		/// <param name="blz"></param>
+		/// <param name="bly"></param>
+		/// <param name="bi"></param>
+		public void SetBlock( int blx, int blz, int bly, short bi )
+		{
+			m_ChunkSetStream.SetShortFirst( bi,	m_Offset + ( ( ( bly << 8 ) + ( ( blz << 4 ) + blx ) ) << 1 ) ) ;
+		}
+
+		//-------------------------------------------------------------------------------------------
+		// テクスチャユーティリティ
 
 		private static Vector3				m_Nx0 = new Vector3( -1,  0,  0 ) ;
 		private static Vector3				m_Nx1 = new Vector3(  1,  0,  0 ) ;
@@ -600,23 +615,21 @@ namespace DBS.World
 		/// <param name="blz"></param>
 		/// <param name="bly"></param>
 		/// <param name="bi"></param>
-		public void SetBlock( WorldClient owner, int blx, int blz, int bly, int bi )
+		public void SetBlock( WorldClient owner, int blx, int blz, int bly, short bi )
 		{
 			// 変更前の値
-			short bio = Block[ blx, blz, bly ] ;
+			short bio = GetBlock( blx, blz, bly ) ;
 
-			Block[ blx, blz, bly ] = ( short )( bi & 0xFFFF ) ;
+			SetBlock( blx, blz, bly, bi ) ;
 
-			// 変更後の値
-			short bin = Block[ blx, blz, bly ] ;
-
-			if( bio == 0 && bin != 0 )
+			// 変更後の値との比較
+			if( bio == 0 && bi != 0 )
 			{
 				// 表示ブロック数増加
 				m_SolidBlickCount ++ ;
 			}
 			else
-			if( bio != 0 && bin == 0 )
+			if( bio != 0 && bi == 0 )
 			{
 				// 表示ブロック数減少
 				m_SolidBlickCount -- ;
@@ -708,68 +721,68 @@ namespace DBS.World
 		// １つのブロックの全ての面を追加する(内側用)
 		private void AddBlockFacesForInner( int blx, int blz, int bly )
 		{
-			if( Block[ blx, blz, bly ] == 0 )
+			short bc = GetBlock( blx, blz, bly ) ;
+			if( bc == 0 )
 			{
 				return ;	// 無し
 			}
 
-			short bc = Block[ blx, blz, bly ] ;
-			short bi = ( short )( ( bly << 8 ) | ( blz << 4 ) | blx ) ;
+			short bmi = ( short )( ( bly << 8 ) | ( blz << 4 ) | blx ) ;
 
 			short upperBlock ;
 
 			// 上方向のブロック(現状は土ブロックの繋がり判別のためのみ利用)
-			upperBlock = Block[ blx, blz, bly + 1 ] ;
+			upperBlock = GetBlock( blx, blz, bly + 1 ) ;
 
 			// 軽い処理
-			if( Block[ blx - 1, blz, bly ] == 0 )
+			if( GetBlock( blx - 1, blz, bly ) == 0 )
 			{
 				// X-面の追加
 				AddFaceX0( blx, blz, bly, bc, upperBlock ) ;
-				m_BlockIndices.Add( bi ) ;
+				m_BlockIndices.Add( bmi ) ;
 			}
-			if( Block[ blx + 1, blz, bly ] == 0 )
+			if( GetBlock( blx + 1, blz, bly ) == 0 )
 			{
 				// X-面の追加
 				AddFaceX1( blx, blz, bly, bc, upperBlock ) ;
-				m_BlockIndices.Add( bi ) ;
+				m_BlockIndices.Add( bmi ) ;
 			}
-			if( Block[ blx, blz - 1, bly ] == 0 )
+			if( GetBlock( blx, blz - 1, bly ) == 0 )
 			{
 				// Z-面の追加
 				AddFaceZ0( blx, blz, bly, bc, upperBlock ) ;
-				m_BlockIndices.Add( bi ) ;
+				m_BlockIndices.Add( bmi ) ;
 			}
-			if( Block[ blx, blz + 1, bly ] == 0 )
+			if( GetBlock( blx, blz + 1, bly ) == 0 )
 			{
 				// Z+面の追加
 				AddFaceZ1( blx, blz, bly, bc, upperBlock ) ;
-				m_BlockIndices.Add( bi ) ;
+				m_BlockIndices.Add( bmi ) ;
 			}
-			if( Block[ blx, blz, bly - 1 ] == 0 )
+			if( GetBlock( blx, blz, bly - 1 ) == 0 )
 			{
 				// Y-面の追加
 				AddFaceY0( blx, blz, bly, bc, upperBlock ) ;
-				m_BlockIndices.Add( bi ) ;
+				m_BlockIndices.Add( bmi ) ;
 			}
-			if( Block[ blx, blz, bly + 1 ] == 0 )
+			if( GetBlock( blx, blz, bly + 1 ) == 0 )
 			{
 				// Y+面の追加
 				AddFaceY1( blx, blz, bly, bc, upperBlock ) ;
-				m_BlockIndices.Add( bi ) ;
+				m_BlockIndices.Add( bmi ) ;
 			}
 		}
 
 		// １つのブロックの全ての面を追加する
 		private void AddBlockFaces( WorldClient owner, int blx, int blz, int bly )
 		{
-			if( Block[ blx, blz, bly ] == 0 )
+			short bc = GetBlock( blx, blz, bly ) ;
+			if( bc == 0 )
 			{
 				return ;	// 無し
 			}
 
-			short bc = Block[ blx, blz, bly ] ;
-			short bi = ( short )( ( bly << 8 ) | ( blz << 4 ) | blx ) ;
+			short bmi = ( short )( ( bly << 8 ) | ( blz << 4 ) | blx ) ;
 
 			bool neighborEmpty ;
 			int upperBlock ;
@@ -783,7 +796,7 @@ namespace DBS.World
 				if( activeChunks.ContainsKey( m_CIdY1 ) == true )
 				{
 					// 上チャンクの一番下のブロック
-					upperBlock = activeChunks[ m_CIdY1 ].Block[ blx, blz,  0 ] ;
+					upperBlock = activeChunks[ m_CIdY1 ].GetBlock( blx, blz,  0 ) ;
 				}
 				else
 				{
@@ -792,7 +805,7 @@ namespace DBS.World
 			}
 			else
 			{
-				upperBlock = Block[ blx, blz, bly + 1 ] ;
+				upperBlock = GetBlock( blx, blz, bly + 1 ) ;
 			}
 
 			if( blx ==  0 || blx == 15 || blz ==  0 || blz == 15 || bly ==  0 || bly == 15 )
@@ -802,137 +815,137 @@ namespace DBS.World
 				// X-面の判定
 				if( blx ==  0 )
 				{
-					neighborEmpty = !( activeChunks.ContainsKey( m_CIdX0 ) == true && activeChunks[ m_CIdX0 ].Block[ 15, blz, bly ] != 0 ) ;
+					neighborEmpty = !( activeChunks.ContainsKey( m_CIdX0 ) == true && activeChunks[ m_CIdX0 ].GetBlock( 15, blz, bly ) != 0 ) ;
 				}
 				else
 				{
-					neighborEmpty =	( Block[ blx - 1, blz, bly ] == 0 ) ;
+					neighborEmpty =	( GetBlock( blx - 1, blz, bly ) == 0 ) ;
 				}
 				if( neighborEmpty == true )
 				{
 					// X-面の追加
 					AddFaceX0( blx, blz, bly, bc, upperBlock ) ;
-					m_BlockIndices.Add( bi ) ;
+					m_BlockIndices.Add( bmi ) ;
 				}
 
 				// X+面の判定
 				if( blx == 15 )
 				{
-					neighborEmpty = !( activeChunks.ContainsKey( m_CIdX1 ) == true && activeChunks[ m_CIdX1 ].Block[  0, blz, bly ] != 0 ) ;
+					neighborEmpty = !( activeChunks.ContainsKey( m_CIdX1 ) == true && activeChunks[ m_CIdX1 ].GetBlock(  0, blz, bly ) != 0 ) ;
 				}
 				else
 				{
-					neighborEmpty =	( Block[ blx + 1, blz, bly ] == 0 ) ;
+					neighborEmpty =	( GetBlock( blx + 1, blz, bly ) == 0 ) ;
 				}
 				if( neighborEmpty == true )
 				{
 					// X+面の追加
 					AddFaceX1( blx, blz, bly, bc, upperBlock ) ;
-					m_BlockIndices.Add( bi ) ;
+					m_BlockIndices.Add( bmi ) ;
 				}
 
 				// Z-面の判定
 				if( blz ==  0 )
 				{
-					neighborEmpty = !( activeChunks.ContainsKey( m_CIdZ0 ) == true && activeChunks[ m_CIdZ0 ].Block[ blx, 15, bly ] != 0 ) ;
+					neighborEmpty = !( activeChunks.ContainsKey( m_CIdZ0 ) == true && activeChunks[ m_CIdZ0 ].GetBlock( blx, 15, bly ) != 0 ) ;
 				}
 				else
 				{
-					neighborEmpty =	( Block[ blx, blz - 1, bly ] == 0 ) ;
+					neighborEmpty =	( GetBlock( blx, blz - 1, bly ) == 0 ) ;
 				}
 				if( neighborEmpty == true )
 				{
 					// Z-面の追加
 					AddFaceZ0( blx, blz, bly, bc, upperBlock ) ;
-					m_BlockIndices.Add( bi ) ;
+					m_BlockIndices.Add( bmi ) ;
 				}
 
 				// Z+面の判定
 				if( blz == 15 )
 				{
-					neighborEmpty = !( activeChunks.ContainsKey( m_CIdZ1 ) == true && activeChunks[ m_CIdZ1 ].Block[ blx,  0, bly ] != 0 ) ;
+					neighborEmpty = !( activeChunks.ContainsKey( m_CIdZ1 ) == true && activeChunks[ m_CIdZ1 ].GetBlock( blx,  0, bly ) != 0 ) ;
 				}
 				else
 				{
-					neighborEmpty =	( Block[ blx, blz + 1, bly ] == 0 ) ;
+					neighborEmpty =	( GetBlock( blx, blz + 1, bly ) == 0 ) ;
 				}
 				if( neighborEmpty == true )
 				{
 					// Z+面の追加
 					AddFaceZ1( blx, blz, bly, bc, upperBlock ) ;
-					m_BlockIndices.Add( bi ) ;
+					m_BlockIndices.Add( bmi ) ;
 				}
 
 				// Y-面の判定
 				if( bly ==  0 )
 				{
-					neighborEmpty = !( activeChunks.ContainsKey( m_CIdY0 ) == true && activeChunks[ m_CIdY0 ].Block[ blx, blz, 15 ] != 0 ) ;
+					neighborEmpty = !( activeChunks.ContainsKey( m_CIdY0 ) == true && activeChunks[ m_CIdY0 ].GetBlock( blx, blz, 15 ) != 0 ) ;
 				}
 				else
 				{
-					neighborEmpty =	( Block[ blx, blz, bly - 1 ] == 0 ) ;
+					neighborEmpty =	( GetBlock( blx, blz, bly - 1 ) == 0 ) ;
 				}
 				if( neighborEmpty == true )
 				{
 					// Y-面の追加
 					AddFaceY0( blx, blz, bly, bc, upperBlock ) ;
-					m_BlockIndices.Add( bi ) ;
+					m_BlockIndices.Add( bmi ) ;
 				}
 
 				// Y+面の判定
 				if( bly == 15 )
 				{
-					neighborEmpty = !( activeChunks.ContainsKey( m_CIdY1 ) == true && activeChunks[ m_CIdY1 ].Block[ blx, blz,  0 ] != 0 ) ;
+					neighborEmpty = !( activeChunks.ContainsKey( m_CIdY1 ) == true && activeChunks[ m_CIdY1 ].GetBlock( blx, blz,  0 ) != 0 ) ;
 				}
 				else
 				{
-					neighborEmpty =	( Block[ blx, blz, bly + 1 ] == 0 ) ;
+					neighborEmpty =	( GetBlock( blx, blz, bly + 1 ) == 0 ) ;
 				}
 				if( neighborEmpty == true )
 				{
 					// Y+面の追加
 					AddFaceY1( blx, blz, bly, bc, upperBlock ) ;
-					m_BlockIndices.Add( bi ) ;
+					m_BlockIndices.Add( bmi ) ;
 				}
 			}
 			else
 			{
 				// 軽い処理
-				if( Block[ blx - 1, blz, bly ] == 0 )
+				if( GetBlock( blx - 1, blz, bly ) == 0 )
 				{
 					// X-面の追加
 					AddFaceX0( blx, blz, bly, bc, upperBlock ) ;
-					m_BlockIndices.Add( bi ) ;
+					m_BlockIndices.Add( bmi ) ;
 				}
-				if( Block[ blx + 1, blz, bly ] == 0 )
+				if( GetBlock( blx + 1, blz, bly ) == 0 )
 				{
 					// X-面の追加
 					AddFaceX1( blx, blz, bly, bc, upperBlock ) ;
-					m_BlockIndices.Add( bi ) ;
+					m_BlockIndices.Add( bmi ) ;
 				}
-				if( Block[ blx, blz - 1, bly ] == 0 )
+				if( GetBlock( blx, blz - 1, bly ) == 0 )
 				{
 					// Z-面の追加
 					AddFaceZ0( blx, blz, bly, bc, upperBlock ) ;
-					m_BlockIndices.Add( bi ) ;
+					m_BlockIndices.Add( bmi ) ;
 				}
-				if( Block[ blx, blz + 1, bly ] == 0 )
+				if( GetBlock( blx, blz + 1, bly ) == 0 )
 				{
 					// Z+面の追加
 					AddFaceZ1( blx, blz, bly, bc, upperBlock ) ;
-					m_BlockIndices.Add( bi ) ;
+					m_BlockIndices.Add( bmi ) ;
 				}
-				if( Block[ blx, blz, bly - 1 ] == 0 )
+				if( GetBlock( blx, blz, bly - 1 ) == 0 )
 				{
 					// Y-面の追加
 					AddFaceY0( blx, blz, bly, bc, upperBlock ) ;
-					m_BlockIndices.Add( bi ) ;
+					m_BlockIndices.Add( bmi ) ;
 				}
-				if( Block[ blx, blz, bly + 1 ] == 0 )
+				if( GetBlock( blx, blz, bly + 1 ) == 0 )
 				{
 					// Y+面の追加
 					AddFaceY1( blx, blz, bly, bc, upperBlock ) ;
-					m_BlockIndices.Add( bi ) ;
+					m_BlockIndices.Add( bmi ) ;
 				}
 			}
 		}

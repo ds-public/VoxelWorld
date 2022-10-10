@@ -245,7 +245,7 @@ namespace DBS.World
 				return 0 ;
 			}
 
-			return m_ActiveChunks[ cId ].Block[ bx & 0x0F, bz & 0x0F, by & 0x0F ] ;
+			return m_ActiveChunks[ cId ].GetBlock( bx & 0x0F, bz & 0x0F, by & 0x0F ) ;
 		}
 
 		/// <summary>
@@ -255,7 +255,7 @@ namespace DBS.World
 		/// <param name="z"></param>
 		/// <param name="y"></param>
 		/// <param name="b"></param>
-		private bool SetBlock( int bx, int bz, int by, int bi )
+		private bool SetBlock( int bx, int bz, int by, short bi )
 		{
 			if( bx <  0x0000 || bx >  0xFFFF || bz <  0x0000 || bz >= 0xFFFF || by <  0x0000 || by >  0x03FF )
 			{
@@ -276,7 +276,7 @@ namespace DBS.World
 			int blz = bz & 0x0F ;
 			int bly = by & 0x0F ;
 
-			m_ActiveChunks[ cId ].Block[ blx, blz, bly ] = ( short )( bi & 0xFFFF ) ;
+			m_ActiveChunks[ cId ].SetBlock( blx, blz, bly, bi ) ;
 			m_ActiveChunks[ cId ].UpdateBlockFaces( this, blx, blz, bly ) ;
 
 			//------------------------------------------------------------------------------------------

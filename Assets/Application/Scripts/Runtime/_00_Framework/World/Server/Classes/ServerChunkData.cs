@@ -19,110 +19,31 @@ namespace DBS.WorldServerClasses
 	/// </summary>
 	public class ServerChunkData
 	{
-		// ブロック情報
-		private short[,,]	m_Blocks = new short[ 16, 16, 16 ] ;	// x z y
-
-		/// <summary>
-		/// ブロック情報
-		/// </summary>
-		public short[,,]	  Blocks	=> m_Blocks ;
-
 		//-------------------------------------------------------------------------------------------
 		// Server 限定
 
-		// チャンク内の状態に変化が生じたかどうか
-		private bool		m_IsDirty = true ;
+		// 属しているチャンクセット
+		private ServerChunkSetData	m_Owner ;
 
-		// 圧縮されたチャンクデータ
-		private byte[]		m_PackedData ;
+		// チャンクセットのストリーム
+		private Packer				m_ChunkSetStream ;
+
+		// チャンクセットストリーム内のこのチャンクの場所
+		private int					m_Offset ;
 
 		//-----------------------------------------------------------
 
 		/// <summary>
-		/// パックしたデータを取得する
-		/// </summary>
-		/// <returns></returns>
-		public byte[] Pack()
-		{
-			if( m_IsDirty == false && m_PackedData != null )
-			{
-				// 変化なし
-				return m_PackedData ;
-			}
-
-			//----------------------------------------------------------
-
-			var blocks = new Packer() ;
-
-			//--------------
-
-			int bx, bz, by ;
-
-//			short delta = 0 ;
-//			short value ;
-
-			for( by  =  0 ; by <  16 ; by ++ )
-			{
-				for( bz  =  0 ; bz <  16 ; bz ++ )
-				{
-					for( bx  =  0 ; bx <  16 ; bx ++ )
-					{
-//						value = m_Blocks[ bx, bz, by ] ;
-//						blocks.SetShort( ( short )( value - delta ) ) ;	// 差分を格納する
-//						delta = value ;
-
-						blocks.SetShort(  m_Blocks[ bx, bz, by ] ) ;	// 差分を格納する
-					}
-				}
-			}
-
-			//----------------------------------------------------------
-
-			m_PackedData = blocks.GetData() ;
-
-			//----------------------------------------------------------
-
-			m_IsDirty = false ;
-
-			return m_PackedData ;
-		}
-
-		/// <summary>
-		/// パック済みデータを設定する
+		/// チャンクセットのストリームを設定する
 		/// </summary>
 		/// <param name="data"></param>
-		public void SetPackData( byte[] data )
+		public ServerChunkData( ServerChunkSetData owner, Packer chunkSetStream, int offset )
 		{
-			m_PackedData = data ;
+			m_Owner				= owner ;
+
+			m_ChunkSetStream	= chunkSetStream ;
+			m_Offset			= offset ;
 		}
-
-		/// <summary>
-		/// パック済みデータを展開する
-		/// </summary>
-		public void Unpack()
-		{
-			var blocks = new Packer( m_PackedData ) ;
-
-			//--------------
-
-			int bx, bz, by ;
-
-			for( by  =  0 ; by <  16 ; by ++ )
-			{
-				for( bz  =  0 ; bz <  16 ; bz ++ )
-				{
-					for( bx  =  0 ; bx <  16 ; bx ++ )
-					{
-						m_Blocks[ bx, bz, by ] = blocks.GetShort() ;
-					}
-				}
-			}
-
-			//----------------------------------------------------------
-
-			m_IsDirty = false ;
-		}
-
 
 		//-------------------------------------------------------------------------------------------
 
@@ -135,13 +56,27 @@ namespace DBS.WorldServerClasses
 		/// <param name="v"></param>
 		public void SetBlock( int blx, int blz, int bly, short bi )
 		{
-			if( m_Blocks[ blx, blz, bly ] != bi )
+			int offset = m_Offset + ( ( ( bly << 8 ) + ( blz << 4 ) + blx ) << 1 ) ;
+
+			if( m_ChunkSetStream.GetShortFirst( offset ) != bi )
 			{
-				m_Blocks[ blx, blz, bly ]  = bi ;
+				m_ChunkSetStream.SetShortFirst( bi, offset ) ;
 
 				// チャンクに変更があった
-				m_IsDirty	= true ;
+				m_Owner.IsDirty	= true ;
 			}
+		}
+
+		/// <summary>
+		/// ブロックを設定する
+		/// </summary>
+		/// <param name="x"></param>
+		/// <param name="z"></param>
+		/// <param name="y"></param>
+		/// <param name="v"></param>
+		public void SetBlockFirst( int blx, int blz, int bly, short bi )
+		{
+			m_ChunkSetStream.SetShortFirst( bi, m_Offset + ( ( ( bly << 8 ) + ( blz << 4 ) + blx ) << 1 ) ) ;
 		}
 
 		/// <summary>
@@ -151,9 +86,9 @@ namespace DBS.WorldServerClasses
 		/// <param name="z"></param>
 		/// <param name="y"></param>
 		/// <returns></returns>
-		public short GetBlock( int x, int z, int y )
+		public short GetBlock( int blx, int blz, int bly )
 		{
-			return m_Blocks[ x, z, y ] ;
+			return m_ChunkSetStream.GetShortFirst( m_Offset + ( ( ( bly << 8 ) + ( blz << 4 ) + blx ) << 1 ) ) ;
 		}
 
 

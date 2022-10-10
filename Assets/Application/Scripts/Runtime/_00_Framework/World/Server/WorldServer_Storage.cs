@@ -200,6 +200,8 @@ namespace DBS.World
 			// 実データサイズ
 			int size = data.Length ;
 
+//			Debug.Log( "サイズ:" + size ) ;
+
 			// データブロック単位でのサイズ
 			int blockLength = size / m_DataBlockSize ;
 			if( ( size % m_DataBlockSize ) >  0 )
