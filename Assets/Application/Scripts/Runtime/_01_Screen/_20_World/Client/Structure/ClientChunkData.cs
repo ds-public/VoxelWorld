@@ -122,7 +122,7 @@ namespace DBS.World
 		/// <param name="x"></param>
 		/// <param name="y"></param>
 		/// <param name="z"></param>
-		public ClientChunkData( int x, int z, int y, ChunkSetStreamData chunkSetStream, int offset )
+		public ClientChunkData( int x, int z, int y, ChunkSetStreamData chunkSetStream, int offset, bool isEmpty )
 		{
 			// チャンク座標
 			X = x ;
@@ -133,19 +133,22 @@ namespace DBS.World
 			m_Offset			= offset ;
 
 			//----------------------------------
-			// 空気ではないブロック数をカウントする
+			// 空ではないブロック数をカウントする
 
 			m_SolidBlickCount = 0 ;
 
-			int i ;
-			for( i  =    0 ; i <  4096 ; i ++ )
+			if( isEmpty == false )
 			{
-				if( m_ChunkSetStream.GetShort( offset ) != 0 )
+				int i ;
+				for( i  =    0 ; i <  4096 ; i ++ )
 				{
-					m_SolidBlickCount ++ ;
-				}
+					if( m_ChunkSetStream.GetShort( offset ) != 0 )
+					{
+						m_SolidBlickCount ++ ;
+					}
 
-				offset += 2 ;
+					offset += 2 ;
+				}
 			}
 
 			//----------------------------------

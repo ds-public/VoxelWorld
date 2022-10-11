@@ -71,7 +71,20 @@ namespace DBS.WorldServerClasses
 		}
 
 		// 圧縮されたチャンクセットデータ
-		private byte[]		m_CompressedData ;
+		private byte[]					m_CompressedData ;
+
+		/// <summary>
+		/// 圧縮されたチャンクセットデータのサイズを取得する
+		/// </summary>
+		/// <returns></returns>
+		public int GetCompressedDataSize()
+		{
+			if( m_CompressedData == null )
+			{
+				return 0 ;
+			}
+			return m_CompressedData.Length ;
+		}
 
 		// 伸長されたチャンクセットデータ
 		private ChunkSetStreamData		m_ChunkSetStream ;
@@ -123,9 +136,7 @@ namespace DBS.WorldServerClasses
 			int cy, hy ;
 			for( cy  =  0 ; cy <  Chunks.Length ; cy ++ )
 			{
-				Chunks[ cy ] = new ServerChunkData( this, m_ChunkSetStream, cy * 8192 ) ;
-				
-				//---------------------------------
+				Chunks[ cy ] = new ServerChunkData( this, m_ChunkSetStream, cy * 8192, isEmpty:true ) ;
 
 				by0 = cy * 16 ;
 				by1 = by0 + 15 ;
@@ -199,17 +210,46 @@ namespace DBS.WorldServerClasses
 			//----------------------------------------------------------
 
 			// 圧縮状態のデータを伸長する
-			byte[] decompressedData = GZip.Decompress( m_CompressedData ) ;
 
-			//----------------------------------
+			GZipReader gzr = new GZipReader( m_CompressedData ) ;
 
-			m_ChunkSetStream = new ChunkSetStreamData( decompressedData ) ;
+			// ８バイト＝６４ビットの６４チャンクの有効フラグを取得する
+			byte[] work = gzr.Get( 8 ) ;
 
-			// 各チャンクにチャンクセットストリームのインスタンスとオフセットを渡す
+			ulong flags = ( ulong )(
+				( work[ 0 ] <<  0 ) |
+				( work[ 1 ] <<  8 ) |
+				( work[ 2 ] << 16 ) |
+				( work[ 3 ] << 24 ) |
+				( work[ 4 ] << 32 ) |
+				( work[ 5 ] << 40 ) |
+				( work[ 6 ] << 48 ) |
+				( work[ 7 ] << 56 ) ) ;
+
+
+			byte[] chunkSetStream = new byte[ Chunks.Length * 8192 ] ;	// 512KB
+
 			int cy ;
 			for( cy  = 0 ; cy <  Chunks.Length ; cy ++ )
 			{
-				Chunks[ cy ] = new ServerChunkData( this, m_ChunkSetStream, cy * 8192  ) ;	// １チャンクあたり８ＫＢ
+				if( ( flags & ( ulong )( 1 << cy ) ) != 0 )
+				{
+					// このチャンクのデータは存在する
+					gzr.Get( chunkSetStream, cy * 8192, 8192 ) ;
+				}
+			}
+
+			// 伸長終了
+			gzr.Close() ;
+
+			//----------------------------------
+
+			m_ChunkSetStream = new ChunkSetStreamData( chunkSetStream ) ;
+
+			// 各チャンクにチャンクセットストリームのインスタンスとオフセットを渡す
+			for( cy  = 0 ; cy <  Chunks.Length ; cy ++ )
+			{
+				Chunks[ cy ] = new ServerChunkData( this, m_ChunkSetStream, cy * 8192, isEmpty:( ( flags & ( ulong )( 1 << cy ) ) == 0 ) ) ;	// １チャンクあたり８ＫＢ
 			}
 
 			//----------------------------------------------------------
@@ -231,8 +271,49 @@ namespace DBS.WorldServerClasses
 
 			//----------------------------------------------------------
 
+			// チャンクの有効フラグ
+			ulong flags = 0 ;
+
+			int cy ;
+			for( cy  = 0 ; cy <  Chunks.Length ; cy ++ )
+			{
+				if( Chunks[ cy ].SolidBlockCount >  0 )
+				{
+					// 有効なチャンク
+					flags |= ( ( ulong )1 << cy ) ;
+				}
+			}
+
+			//--------------
+
+			// 圧縮開始
+			GZipWriter gzw = new GZipWriter() ;
+
+			byte[] work = new byte[ 8 ] ;
+
+			// 各チャンクの有効フラグを格納する
+			work[ 0 ] = ( byte )(   flags         & 0xFF ) ;
+			work[ 1 ] = ( byte )( ( flags >>  8 ) & 0xFF ) ;
+			work[ 2 ] = ( byte )( ( flags >> 16 ) & 0xFF ) ;
+			work[ 3 ] = ( byte )( ( flags >> 24 ) & 0xFF ) ;
+			work[ 4 ] = ( byte )( ( flags >> 32 ) & 0xFF ) ;
+			work[ 5 ] = ( byte )( ( flags >> 40 ) & 0xFF ) ;
+			work[ 6 ] = ( byte )( ( flags >> 48 ) & 0xFF ) ;
+			work[ 7 ] = ( byte )( ( flags >> 56 ) & 0xFF ) ;
+
+			gzw.Set( work ) ;
+
+			for( cy  = 0 ; cy <  Chunks.Length ; cy ++ )
+			{
+				if( Chunks[ cy ].SolidBlockCount >  0 )
+				{
+					// 有効なチャンク
+					gzw.Set( m_ChunkSetStream.Data, cy * 8192, 8192 ) ;
+				}
+			}
+
 			// 圧縮する
-			m_CompressedData = GZip.Compress( m_ChunkSetStream.Data ) ;
+			m_CompressedData = gzw.Close() ;
 
 			// 圧縮状態のデータを生成した
 			m_IsCompressed = true ;

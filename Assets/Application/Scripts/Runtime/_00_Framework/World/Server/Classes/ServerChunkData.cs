@@ -31,21 +31,62 @@ namespace DBS.WorldServerClasses
 		// チャンクセットストリーム内のこのチャンクの場所
 		private int					m_Offset ;
 
+		// 空ではないブロックの数
+		private int					m_SolidBlockCount ;
+
+		/// <summary>
+		/// 空ではないブロックの数
+		/// </summary>
+		public	int					  SolidBlockCount	=> m_SolidBlockCount ;
+
 		//-----------------------------------------------------------
 
 		/// <summary>
 		/// チャンクセットのストリームを設定する
 		/// </summary>
 		/// <param name="data"></param>
-		public ServerChunkData( ServerChunkSetData owner, ChunkSetStreamData chunkSetStream, int offset )
+		public ServerChunkData( ServerChunkSetData owner, ChunkSetStreamData chunkSetStream, int offset, bool isEmpty )
 		{
 			m_Owner				= owner ;
 
 			m_ChunkSetStream	= chunkSetStream ;
 			m_Offset			= offset ;
+
+			//----------------------------------
+
+			m_SolidBlockCount = 0 ;
+
+			if( isEmpty == false )
+			{
+				// 空ではないブロックの数をカウントする
+				int i ;
+				for( i  =    0 ; i <  4096 ; i ++ )
+				{
+					if( m_ChunkSetStream.GetShort( offset ) != 0 )
+					{
+						m_SolidBlockCount ++ ;
+					}
+
+					offset += 2 ;
+				}
+			}
 		}
 
 		//-------------------------------------------------------------------------------------------
+
+		/// <summary>
+		/// ブロックを設定する(デフォルト地形生成用)
+		/// </summary>
+		/// <param name="x"></param>
+		/// <param name="z"></param>
+		/// <param name="y"></param>
+		/// <param name="v"></param>
+		public void SetBlockFirst( int blx, int blz, int bly, short bi )
+		{
+			m_ChunkSetStream.SetShort( m_Offset + ( ( ( bly << 8 ) + ( blz << 4 ) + blx ) << 1 ), bi ) ;
+
+			m_SolidBlockCount ++ ;
+		}
 
 		/// <summary>
 		/// ブロックを設定する
@@ -58,25 +99,24 @@ namespace DBS.WorldServerClasses
 		{
 			int offset = m_Offset + ( ( ( bly << 8 ) + ( blz << 4 ) + blx ) << 1 ) ;
 
-			if( m_ChunkSetStream.GetShort( offset ) != bi )
+			short bio = m_ChunkSetStream.GetShort( offset ) ;
+			if( bio != bi )
 			{
 				m_ChunkSetStream.SetShort( offset, bi ) ;
+
+				if( bio == 0 && bi != 0 )
+				{
+					m_SolidBlockCount ++ ;
+				}
+				else
+				if( bio != 0 && bi == 0 )
+				{
+					m_SolidBlockCount -- ;
+				}
 
 				// チャンクに変更があった
 				m_Owner.IsDirty	= true ;
 			}
-		}
-
-		/// <summary>
-		/// ブロックを設定する
-		/// </summary>
-		/// <param name="x"></param>
-		/// <param name="z"></param>
-		/// <param name="y"></param>
-		/// <param name="v"></param>
-		public void SetBlockFirst( int blx, int blz, int bly, short bi )
-		{
-			m_ChunkSetStream.SetShort( m_Offset + ( ( ( bly << 8 ) + ( blz << 4 ) + blx ) << 1 ), bi ) ;
 		}
 
 		/// <summary>

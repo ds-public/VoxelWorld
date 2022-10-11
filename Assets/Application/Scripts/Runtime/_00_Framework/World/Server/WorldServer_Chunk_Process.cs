@@ -179,7 +179,7 @@ namespace DBS.World
 				{
 					if( m_ChunkSetExistAllocations.ContainsKey( activeChunkSet.CsId ) == false || activeChunkSet.IsDirty == true )
 					{
-						Debug.Log( "<color=#FFFF00>[SERVER]チャンクが破棄される際にストレージに保存する:" + activeChunkSet.CsId.ToString( "X4" ) + "</color>" ) ;
+						Debug.Log( "<color=#FFFF00>[SERVER]チャンクが破棄される際にストレージに保存する:" + activeChunkSet.CsId.ToString( "X4" ) + " Size = " + activeChunkSet.GetCompressedDataSize() + "</color>" ) ;
 						SaveDataBlocks( activeChunkSet.CsId, activeChunkSet.Inflate() ) ;
 					}
 				}

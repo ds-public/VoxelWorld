@@ -61,10 +61,8 @@ namespace DBS.World
 		/// コンストラクタ
 		/// </summary>
 		/// <param name="packer"></param>
-		public ClientChunkSetData( int csId, byte[] data )
+		public ClientChunkSetData( int csId, byte[] compressedData )
 		{
-			Packer packer = new Packer( data ) ;
-
 			//----------------------------------------------------------
 
 			X =   csId         & 0x0FFF ;
@@ -73,15 +71,45 @@ namespace DBS.World
 			//----------------------------------
 
 			// 圧縮データを伸長する
-			byte[] decompressedData = GZip.Decompress( data ) ;
+			GZipReader gzr = new GZipReader( compressedData ) ;
 
-			// チャンクセットのストリーム
-			m_ChunkSetStream = new ChunkSetStreamData( decompressedData ) ;
+			// ８バイト＝６４ビットの６４チャンクの有効フラグを取得する
+			byte[] work = gzr.Get( 8 ) ;
+
+			ulong flags = ( ulong )(
+				( work[ 0 ] <<  0 ) |
+				( work[ 1 ] <<  8 ) |
+				( work[ 2 ] << 16 ) |
+				( work[ 3 ] << 24 ) |
+				( work[ 4 ] << 32 ) |
+				( work[ 5 ] << 40 ) |
+				( work[ 6 ] << 48 ) |
+				( work[ 7 ] << 56 ) ) ;
+
+
+			byte[] chunkSetStream = new byte[ Chunks.Length * 8192 ] ;	// 512KB
 
 			int cy ;
 			for( cy  = 0 ; cy <  Chunks.Length ; cy ++ )
 			{
-				Chunks[ cy ] = new ClientChunkData( X, Z, cy, m_ChunkSetStream, cy * 8192 ) ;
+				if( ( flags & ( ulong )( 1 << cy ) ) != 0 )
+				{
+					// このチャンクのデータは存在する
+					gzr.Get( chunkSetStream, cy * 8192, 8192 ) ;
+				}
+			}
+
+			// 伸長終了
+			gzr.Close() ;
+
+			//----------------------------------
+
+			// チャンクセットのストリーム
+			m_ChunkSetStream = new ChunkSetStreamData( chunkSetStream ) ;
+
+			for( cy  = 0 ; cy <  Chunks.Length ; cy ++ )
+			{
+				Chunks[ cy ] = new ClientChunkData( X, Z, cy, m_ChunkSetStream, cy * 8192, isEmpty:( ( flags & ( ulong )( 1 << cy ) ) == 0 ) ) ;
 			}
 
 			//----------------------------------
