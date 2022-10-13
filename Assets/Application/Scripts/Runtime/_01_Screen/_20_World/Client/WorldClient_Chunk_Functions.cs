@@ -194,26 +194,6 @@ namespace DBS.World
 
 			//----------------------------------
 
-			// パフォーマンスモニタリング(処理対象チャンク数)
-			if( m_P_ProcrssingChunk_T_Now.Value == 0 )
-			{
-				if( targetChunks.Length >  0 )
-				{
-					m_P_ProcrssingChunk_T_Max.Value = targetChunks.Length ;
-				}
-			}
-			m_P_ProcrssingChunk_T_Now.Value = targetChunks.Length ;
-
-			// パフォーマンスモニタリング(処理完了チャンク数)
-			if( m_P_ProcrssingChunk_C_Now.Value == 0 )
-			{
-				if( c1 >  0 )
-				{
-					m_P_ProcrssingChunk_C_Max.Value = c1 ;
-				}
-			}
-			m_P_ProcrssingChunk_C_Now.Value = c1 ;
-
 //			if( c0 >  0  || c1 >  0 || targetChunks.Length >  0 )
 //			{
 //				Debug.Log( "<color=#00FF00>[CLIENT] メッシュ作成数:" + c0 + " " + c1 + " " + targetChunks.Length + " " + m_ActiveChunks.Count + "</color>" ) ;

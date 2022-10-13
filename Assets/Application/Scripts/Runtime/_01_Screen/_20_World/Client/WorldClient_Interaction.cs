@@ -125,6 +125,27 @@ namespace DBS.World
 		// 入力を処理する
 		private void ProcessInteraction()
 		{
+			if( Input.GetKeyDown( KeyCode.F5 ) == true )
+			{
+				// プレイヤーの視点の種別を切り替える
+				switch( m_PlayerViewType )
+				{
+					case PlayerViewTypes.FirstPerson		: m_PlayerViewType = PlayerViewTypes.ThirdPerson_Normal	; break ;
+					case PlayerViewTypes.ThirdPerson_Normal	: m_PlayerViewType = PlayerViewTypes.ThirdPerson_Invert	; break ;
+					case PlayerViewTypes.ThirdPerson_Invert	: m_PlayerViewType = PlayerViewTypes.FirstPerson		; break ;
+				}
+			}
+
+			m_IsPlayerSneaking = false ;
+			if( Input.GetKey( KeyCode.LeftShift ) == true )
+			{
+				// スニーク有効
+				m_IsPlayerSneaking = true ;
+			}
+
+			// プレイヤーアクターの状態を視点の種別に応じて切り替える
+			UpdatePlayerActor() ;
+
 			//-------------------------
 			// フォーカスに関係なくエンターキーでログを表示する
 
@@ -133,7 +154,6 @@ namespace DBS.World
 				m_LogDisplayKeepTime = 10 ;	// 表示を維持する時間
 				m_Log.Alpha = 1 ;
 			}
-
 
 			//-------------------------
 			// カメラの回転(移動方向設定)
@@ -370,32 +390,12 @@ namespace DBS.World
 			int slice = ( int )( 60.0f / Application.targetFrameRate ) ;
 
 			int times ;
-
-			bool isSneak = false ;
-			if( Input.GetKey( KeyCode.LeftShift ) == true )
-			{
-				// スニーク有効
-				isSneak = true ;
-			}
-
-			// カメラ(目)の位置を設定
-			if( isSneak == false )
-			{
-				// ノーマル状態
-				m_Camera.transform.localPosition = new Vector3( 0, 1.2f, 0 ) ;
-			}
-			else
-			{
-				// スニーク状態
-				m_Camera.transform.localPosition = new Vector3( 0, 0.9f, 0.1f ) ;
-			}
-
 			if( Input.GetKey( KeyCode.W ) == true )
 			{
 				// 前進
 				for( times  = 0 ; times <  slice ; times ++ )
 				{
-					if( ProcessMoving_Slice(   ( velocity * ahead ), isSneak ) == false )
+					if( ProcessMoving_Slice(   ( velocity * ahead ), m_IsPlayerSneaking ) == false )
 					{
 						break ;
 					}
@@ -407,7 +407,7 @@ namespace DBS.World
 				// 後退
 				for( times  = 0 ; times <  slice ; times ++ )
 				{
-					if( ProcessMoving_Slice( - ( velocity * ahead ), isSneak ) == false )
+					if( ProcessMoving_Slice( - ( velocity * ahead ), m_IsPlayerSneaking ) == false )
 					{
 						break ;
 					}
@@ -419,7 +419,7 @@ namespace DBS.World
 				// 左移動
 				for( times  = 0 ; times <  slice ; times ++ )
 				{
-					if( ProcessMoving_Slice( - ( velocity * shift ), isSneak ) == false )
+					if( ProcessMoving_Slice( - ( velocity * shift ), m_IsPlayerSneaking ) == false )
 					{
 						break ;
 					}
@@ -431,7 +431,7 @@ namespace DBS.World
 				// 右移動
 				for( times  = 0 ; times <  slice ; times ++ )
 				{
-					if( ProcessMoving_Slice(   ( velocity * shift ), isSneak ) == false )
+					if( ProcessMoving_Slice(   ( velocity * shift ), m_IsPlayerSneaking ) == false )
 					{
 						break ;
 					}
