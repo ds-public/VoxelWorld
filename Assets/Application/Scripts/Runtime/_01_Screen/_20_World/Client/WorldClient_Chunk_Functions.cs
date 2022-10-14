@@ -391,10 +391,10 @@ namespace DBS.World
 		/// <returns></returns>
 		private bool GetRaycastTargetBlock( float distance, out BlockPosition exist, out BlockPosition empty )
 		{
-			Vector3 fv = m_Camera.transform.forward ;
+			Vector3 fv = m_PlayerActor.Eye.forward ;
 			
-			Vector3 p0 = m_Camera.transform.position ;
-			Vector3 p1 = m_Camera.transform.position + fv * distance ;
+			Vector3 p0 = m_PlayerActor.Eye.position ;
+			Vector3 p1 = m_PlayerActor.Eye.position + fv * distance ;
 
 			// p0 から p1 に含まれるセルで最初にブロックが存在するセルの座標を取得する
 

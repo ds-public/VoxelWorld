@@ -26,8 +26,8 @@ namespace DBS.World
 		{
 			// 現在の位置から周囲を展開する
 
-			float px = m_Camera.transform.position.x ;
-			float pz = m_Camera.transform.position.z ;
+			float px = m_PlayerActor.GetCamera().transform.position.x ;
+			float pz = m_PlayerActor.GetCamera().transform.position.z ;
 
 			// チャンク単位の座標を求める
 			int cpx = ( int )( px / 16 ) ;

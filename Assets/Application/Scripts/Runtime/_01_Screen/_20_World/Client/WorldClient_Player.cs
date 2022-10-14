@@ -87,17 +87,20 @@ namespace DBS.World
 			{
 				// 主観視点
 
-				// カメラ(目)の位置を設定
+				// 目の位置を設定
 				if( m_IsPlayerSneaking == false )
 				{
 					// ノーマル状態
-					m_Camera.transform.localPosition = new Vector3( 0, 1.2f, 0 ) ;
+					m_PlayerActor.Eye.localPosition = new Vector3( 0, 1.2f, 0 ) ;
 				}
 				else
 				{
 					// スニーク状態
-					m_Camera.transform.localPosition = new Vector3( 0, 0.9f, 0.1f ) ;
+					m_PlayerActor.Eye.localPosition = new Vector3( 0, 0.9f, 0.1f ) ;
 				}
+
+				m_PlayerActor.GetCamera().transform.localPosition = Vector3.zero ;
+				m_PlayerActor.GetCamera().transform.localRotation = Quaternion.identity ;
 
 				// 自身の見た目は表示しない
 				m_PlayerActor.HideFigure() ;
@@ -107,7 +110,12 @@ namespace DBS.World
 			{
 				// 客観視点(通常)
 
-				m_Camera.transform.localPosition = new Vector3( 0, 3f, -3.5f ) ;
+				m_PlayerActor.Eye.localPosition = new Vector3( 0, 2f, 0 ) ;
+
+				float d = GetAvailableDistance( -6f ) ;
+				Debug.Log( "Distance:" + d ) ;
+				m_PlayerActor.GetCamera().transform.localPosition = new Vector3( 0, 0, d ) ;
+				m_PlayerActor.GetCamera().transform.localRotation = Quaternion.identity ;
 
 				// 自身の見た目は表示する
 				m_PlayerActor.ShowFigure() ;
@@ -117,10 +125,181 @@ namespace DBS.World
 			{
 				// 客観視点(反対)
 
-				m_Camera.transform.localPosition = new Vector3( 0, 4f,  4f ) ;
+				m_PlayerActor.Eye.localPosition = new Vector3( 0, 1.2f, 0 ) ;
+
+				float d = GetAvailableDistance(  4f ) ;
+				m_PlayerActor.GetCamera().transform.localPosition = new Vector3( 0, 0, d ) ;
+				m_PlayerActor.GetCamera().transform.localRotation = Quaternion.Euler( 0, 180f, 0 ) ;
 
 				// 自身の見た目は表示する
 				m_PlayerActor.ShowFigure() ;
+			}
+		}
+
+		// 目からカメラまでの可能な最大距離を取得する
+		private float GetAvailableDistance( float max )
+		{
+			Transform ct = m_PlayerActor.GetCamera().transform ;
+			Transform et = m_PlayerActor.Eye ;
+			Vector3 p ;
+			int bx, bz, by ;
+			Vector3 d ;
+
+			int fa ;
+			float fm, fv ;
+
+			float fx, fz, fy ;
+
+			float sign ;
+
+
+			if( max != 0 )
+			{
+				if( max >  0 )
+				{
+					sign =  1 ;
+				}
+				else
+				{
+					sign = -1 ;
+					max = -max ;
+				}
+
+				//---------------------------------
+
+				// +0.5 ずつ増減させる
+				float now = 0 ;
+
+				while( now <  max )
+				{
+					now += 0.5f ;
+					if( now >  max )
+					{
+						now  = max ;
+					}
+
+					ct.localPosition = new Vector3( 0, 0, now * sign ) ;
+					p = ct.position ;
+
+					bx = ( int )p.x ;
+					bz = ( int )p.z ;
+					by = ( int )p.y ;
+
+					if( GetBlock( bx, bz, by ) != 0 )
+					{
+						// ブロックにヒットする
+
+						// 目からカメラへの方向ベクトル
+						d = ( ct.position - et.position ).normalized ;
+
+						// X Z Y の絶対値で最も小さい面に接触する
+						fa = 0 ;
+						fm = Mathf.Infinity ;
+
+						fv = Mathf.Abs( d.x ) ;
+						if( fv <  fm )
+						{
+							// X の差分
+							fa = 0 ;
+							fm  = fv ;
+						}
+						fv = Mathf.Abs( d.z ) ;
+						if( fv <  fm )
+						{
+							// Z の差分
+							fa = 1 ;
+							fm  = fv ;
+						}
+						fv = Mathf.Abs( d.y ) ;
+						if( fv <  fm )
+						{
+							// Y の差分
+							fa = 2 ;
+							fm  = fv ;
+						}
+
+						if( fa == 0 )
+						{
+							// X の差分が最も小さく　X 面と接触する
+							if( d.x >  0 )
+							{
+								// -X 方向の面と接触
+								fx = ( float )( bx + 0 ) ;
+								d *= ( Mathf.Abs( fx - et.position.x ) / fm ) ;
+								return + d.magnitude ;
+							}
+							else
+							if( d.x <  0 )
+							{
+								// +X 方向の面と接触
+								fx = ( float )( bx + 1 ) ;
+								d *= ( Mathf.Abs( fx - et.position.x ) / fm ) ;
+								return + d.magnitude ;
+							}
+							else
+							{
+								// 接触
+								return 0 ;
+							}
+						}
+						if( fa == 1 )
+						{
+							// Z の差分が最も小さく　Z 面と接触する
+							if( d.z >  0 )
+							{
+								// -Z 方向の面と接触
+								fz = ( float )( bz + 0 ) ;
+								d *= ( Mathf.Abs( fz - et.position.z ) / fm ) ;
+								return + d.magnitude ;
+							}
+							else
+							if( d.z <  0 )
+							{
+								// +Z 方向の面と接触
+								fz = ( float )( bz + 1 ) ;
+								d *= ( Mathf.Abs( fz - et.position.z ) / fm ) ;
+								return + d.magnitude ;
+							}
+							else
+							{
+								// 接触
+								return 0 ;
+							}
+						}
+						if( fa == 1 )
+						{
+							// Y の差分が最も小さく　Y 面と接触する
+							if( d.y >  0 )
+							{
+								// -Y 方向の面と接触
+								fy = ( float )( by + 0 ) ;
+								d *= ( Mathf.Abs( fy - et.position.y ) / fm ) ;
+								return + d.magnitude ;
+							}
+							else
+							if( d.y <  0 )
+							{
+								// +Y 方向の面と接触
+								fy = ( float )( by + 1 ) ;
+								d *= ( Mathf.Abs( fy - et.position.y ) / fm ) ;
+								return + d.magnitude ;
+							}
+							else
+							{
+								// 接触
+								return 0 ;
+							}
+						}
+						break ;
+					}
+				}
+
+				// どのブロックともヒットしなければここに来る
+				return now * sign ;
+			}
+			else
+			{
+				return max ;
 			}
 		}
 
@@ -136,14 +315,13 @@ namespace DBS.World
 		{
 			m_PlayerActor.SetPosition( px, py, pz ) ;
 
+			// Up を先に設定してから
+			m_PlayerActor.Up = Vector3.up ;
+
+			// Forward を後に設定する必要がある
 			Vector3 direction = new Vector3( dx, 0, dz ) ;
 			direction.Normalize() ;	// 念のため正規化する
-
-			m_PlayerActor.Forward = direction ;
-			m_PlayerActor.Up = new Vector3( 0, 1, 0 ) ;
+			m_PlayerActor.Forward = direction ;	// Up を Forward の後に設定してはいけない(Forward が強制的に[0,0,1]にされてしまう)
 		}
-
-
-
 	}
 }

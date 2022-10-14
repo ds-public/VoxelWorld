@@ -13,6 +13,9 @@ namespace DBS.World
 	public class PlayerActor : ExMonoBehaviour
 	{
 		[SerializeField]
+		protected Transform		m_Eye ;
+		
+		[SerializeField]
 		protected Camera		m_Camera ;
 
 		[SerializeField]
@@ -32,6 +35,18 @@ namespace DBS.World
 
 
 		//-----------------------------------------------------------
+
+		/// <summary>
+		/// 目の位置を取得する
+		/// </summary>
+		public Transform Eye	=> m_Eye ;
+
+		/// <summary>
+		/// カメラを取得する
+		/// </summary>
+		/// <returns></returns>
+		public Camera	GetCamera()	=> m_Camera ;
+
 
 		/// <summary>
 		/// アクティブ状態を切り替える
@@ -140,15 +155,6 @@ namespace DBS.World
 			{
 				ActorTransform.Forward = value ;
 			}
-		}
-
-		/// <summary>
-		/// カメラを取得する
-		/// </summary>
-		/// <returns></returns>
-		public Camera GetCamera()
-		{
-			return m_Camera ;
 		}
 
 		/// <summary>

@@ -196,7 +196,7 @@ namespace DBS.World
 
 //				Quaternion q0 = m_Camera.transform.localRotation ;
 				Quaternion q1 = Quaternion.AngleAxis( - deltaPosition.y * m_RotationSpeed, Vector3.right ) *
-					m_Camera.transform.localRotation ;
+					m_PlayerActor.Eye.localRotation ;
 
 //				Vector3 u0 = q0 * Vector3.up ;
 				Vector3 u1 = q1 * Vector3.up ;
@@ -204,16 +204,16 @@ namespace DBS.World
 				if( u1.y >= 0 )
 				{
 					// 限界以下までの回転
-					m_Camera.transform.localRotation =
+					m_PlayerActor.Eye.localRotation =
 						Quaternion.AngleAxis( - deltaPosition.y * m_RotationSpeed, Vector3.right ) *
-						m_Camera.transform.localRotation ;
+						m_PlayerActor.Eye.localRotation ;
 				}
 				else
 				{
 					// 回転量を限界までの量に抑える
 
 					// 現在の方向ベクトル
-					Vector3 f0 = m_Camera.transform.localRotation * Vector3.forward ;
+					Vector3 f0 = m_PlayerActor.Eye.localRotation * Vector3.forward ;
 
 					Vector3 f1 = q1 * Vector3.forward ;
 					if( f1.y >  0 )
@@ -229,15 +229,15 @@ namespace DBS.World
 
 					q1 = Quaternion.FromToRotation( f0, f1 ) ;
 
-					m_Camera.transform.localRotation =
+					m_PlayerActor.Eye.localRotation =
 						q1 *
-						m_Camera.transform.localRotation ;
+						m_PlayerActor.Eye.transform.localRotation ;
 				}
 
 				// 横回転
 				m_PlayerActor.Rotation =
 					Quaternion.AngleAxis( deltaPosition.x * m_RotationSpeed, Vector3.up ) *
-					m_PlayerActor.transform.rotation ;
+					m_PlayerActor.Rotation ;
 
 				// コンパスの表示を更新する
 				UpdateCompas() ;
@@ -285,12 +285,11 @@ namespace DBS.World
 			BlockPosition exist ;
 			BlockPosition empty ;
 
-			if( GetRaycastTargetBlock( 4.0f, out exist, out empty ) == true )
+			if( GetRaycastTargetBlock( 5.0f, out exist, out empty ) == true )
 			{
 				m_CrossHairPointer.Color = Color.yellow ;
 
-				Vector3 p = m_Camera.transform.position ;
-
+//				Vector3 p = m_PlayerActor.Eye.position ;
 //				m_Log.text = "ヒット:" + exist.ToString() + " px = " + ( int )p.x + " pz = " + ( int )p.z + " py = " + ( int )p.y ;
 
 				if( Input.GetMouseButtonDown( 0 ) == true )

@@ -38,9 +38,6 @@ namespace DBS.World
 		protected SoftTransform		m_ChunkRoot ;
 
 		[SerializeField]
-		protected Camera			m_Camera ;
-
-		[SerializeField]
 		protected Light				m_Light ;
 
 		[Header( "ネームプレート用" )]
@@ -371,7 +368,7 @@ namespace DBS.World
 
 			// ファークリップを設定する
 			float farClip = 16 * WorldSettings.DISPLAY_CHUNK_RANGE ;
-			m_Camera.farClipPlane = farClip ;
+			m_PlayerActor.GetCamera().farClipPlane = farClip ;
 
 			// フォグはシーンのライト設定の有効化も必要
 //			SetFog( true, farClip ) ;
@@ -606,7 +603,7 @@ namespace DBS.World
 			UpdateChunks() ;
 
 			// オクルージョンカリングで見えないチャンクを非アクティブにする
-			OcclusionCulling( m_Camera.transform.position ) ;
+			OcclusionCulling( m_PlayerActor.GetCamera().transform.position ) ;
 
 			// ネームプレートの表示位置を更新する
 			UpdatePlayerNamePlates() ;

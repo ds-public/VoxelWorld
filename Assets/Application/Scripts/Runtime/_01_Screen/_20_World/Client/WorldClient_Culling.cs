@@ -53,7 +53,7 @@ namespace DBS.World
 
 			// 各チャンクが視錐台に含まれるか確認する
 
-			Camera fpsCamera = m_Camera ;
+			Camera fpsCamera = m_PlayerActor.GetCamera() ;
 			if( fpsCamera == null )
 			{
 				return ;
