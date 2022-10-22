@@ -1,3 +1,4 @@
+using System ;
 using System.Collections ;
 using System.Collections.Generic ;
 
@@ -1077,5 +1078,415 @@ namespace DBS.World
 
 
 		//-------------------------------------------------------------------------------------
+
+		/// <summary>
+		/// 立方体の構造体
+		/// </summary>
+		public class CubeStructure
+		{
+			/// <summary>
+			/// 頂点(８)
+			/// </summary>
+			public Vector3[]	Vertices ;
+
+			/// <summary>
+			/// インデックス(６×４)
+			/// </summary>
+			public byte[][]		Indices ;
+
+			//----------------------------------------------------------
+
+			public ( bool, Vector3 ) IsHitSphere( Vector3 center, float radius )
+			{
+				int fi, fl = Indices.Length ;
+				int vi, vl ;
+
+
+				Vector3 normal ;
+				Vector3 v0, v1, v2 ;
+				float distance ;
+				Vector3 direction ;
+				float width ;
+
+				Vector3 crossingPoint ;
+
+				List<int> nearFaces = new List<int>() ;
+
+				int innerCount = 0 ;
+
+				byte[] fvi ;
+				for( fi  = 0 ; fi <  fl ; fi ++ )
+				{
+					// 面の頂点インデックス群
+					fvi = Indices[ fi ] ;
+
+					// 面の頂点数(最低３)
+					vl = fvi.Length ;
+
+					// 面の外側に向かって垂直な単位ベクトルを算出する
+					v0 = Vertices[ fvi[ 0      ] ] ;
+					v1 = Vertices[ fvi[ 1      ] ] ;
+					v2 = Vertices[ fvi[ vl - 1 ] ] ;
+
+					// 外積単位ベクトル(面の法線ベクトル)
+					normal = Vector3.Cross( v1 - v0, v2 - v0 ).normalized ;
+
+//					Debug.Log( "法線ベクトル:" + fi + " n = " + normal ) ;
+
+					// 内積から面から球の中心への距離を算出
+//					direction = center - v0 ;
+//					Debug.Log( "面の基準頂点から球の中心へのベクトル:" + fi + " d = " + direction ) ;
+
+					distance = Vector3.Dot( ( center - v0 ), normal ) ;
+
+					if( distance >= radius )
+					{
+//						Debug.Log( "完全に面の外側:" + fi + " d = " + distance + " r = " + radius ) ;
+
+						// １つの面であっても外側にあれば接触はしないと判定する
+						return ( false, center ) ;
+					}
+
+//					Debug.Log( "面からの距離: " + fi + " d= " + distance ) ;
+
+					if( distance <  radius && distance >  ( - radius ) )
+					{
+						// 面と接触する
+
+						// 接触点が面の内側にあるならその面とだけ接触すると判定する
+
+						crossingPoint = center - ( normal * distance ) ;
+
+						for( vi  = 0 ; vi <  vl ; vi ++ )
+						{
+							v0 = Vertices[ fvi[   vi            ] ] ;
+							v1 = Vertices[ fvi[ ( vi + 1 ) % vl ] ] ;
+
+							// 外積が面の外側と内側のどちらを向いているか算出する
+							direction = Vector3.Cross( v1 - v0, crossingPoint - v0 ) ;
+
+							// 面の外側を向いている垂直単位ベクトルと内積を計算し接触点が面の内側か外側か判定する
+							if( Vector3.Dot( normal, direction ) <  0 )
+							{
+								// 面の外側にある
+								break ;
+							}
+						}
+
+						if( vi >= vl )
+						{
+							// すべての面の線分との判定で内側にあると判定された
+							// すなわち接触点は面の内側にある
+
+//							Debug.Log( "接触点は面内部にある:" + fi ) ;
+
+							// この面とのみ接触すると判断し押し戻しを行う
+							center += ( normal * ( radius - distance ) ) ;
+
+							return ( true, center ) ;
+						}
+
+						// 接触点は面の内側にはないのでこの面を角線分との接触候補とする
+						nearFaces.Add( fi ) ;
+					}
+					else
+					{
+						// 球は完全の面の内側にある
+						innerCount ++ ;
+					}
+				}
+
+				// すべての面との検査完了
+				//---------------------------------
+
+//				Debug.Log( "近くにある面の数:" + nearFaces.Count ) ;
+
+				if( innerCount == fl )
+				{
+//					Debug.Log( "球は完全に立方体の内側にある" ) ;
+
+					// すべての面の内側にあるため押し戻しができない
+					return ( true, center ) ;
+				}
+
+				//---------------------------------
+
+				if( nearFaces.Count >  3 )
+				{
+					// ４つ以上の面と近接関係にある場合は球と立方体が融合した状態なので押し戻しができない(立方体より球が大きい等)
+					return ( true, center ) ;
+				}
+
+				//---------------------------------------------------------
+
+				if( nearFaces.Count == 1 )
+				{
+					// 球は立方体に近いだけで接触はしていない
+					return ( false, center ) ;
+				}
+
+				if( nearFaces.Count == 2 )
+				{
+					// 球は立方体の２つの面に近いため立方体の端(線分)と接触している可能性がある
+					List<byte> shareIndices = new List<byte>() ;
+
+					fvi = Indices[ nearFaces[ 0 ] ] ;
+
+					var fvi1 = Indices[ nearFaces[ 1 ] ] ;
+
+					foreach( var index in fvi )
+					{
+						if( fvi1.Contains( index ) == true )
+						{
+							// こんインデックスは対象の面全てに含まれる
+							shareIndices.Add( index ) ;
+						}
+					}
+
+					// 共有頂点は必ず２点だけのはずである
+					if( shareIndices.Count != 2 )
+					{
+						Debug.LogWarning( "異常発生:" + shareIndices.Count ) ;
+						return ( true, center ) ;
+					}
+
+					// 端の頂点
+					v0 = Vertices[ shareIndices[ 0 ] ] ;
+					v1 = Vertices[ shareIndices[ 1 ] ] ;
+
+					// 線分中の球の中心に最も近い場所(垂直)を算出する
+					normal = ( v1 - v0 ).normalized ;
+
+					distance = Vector3.Dot( normal, center - v0 ) ;
+
+					// 線分の長さ
+					width = ( v1 - v0 ).magnitude ;
+					if( distance <  0 || distance >  width )
+					{
+						// この場合は近い面は３つにならなければおかしい
+						Debug.LogWarning( "異常発生: width = " + width + " distance = " + distance ) ;
+						return ( false, center ) ;
+					}
+
+					// 線分の中の球の中心に最も近い点
+					crossingPoint = v0 + ( normal * distance ) ;
+
+					// 線分の中の球の中心に最も近い点から球の中心までの距離
+					distance = ( center - crossingPoint ).magnitude ;
+
+					if( distance >= radius )
+					{
+						// 接触しない
+						return ( false, center ) ;
+					}
+
+					// 接触するので押し戻す
+					normal = ( center - crossingPoint ).normalized ;
+					center += ( normal * ( radius - distance ) ) ;
+
+//					Debug.Log( "線に対して押し戻しを行う : " + ( radius - distance ) ) ;
+
+					return ( true, center ) ;
+				}
+
+				if( nearFaces.Count == 3 )
+				{
+					// 球は立方体の３つの面に近いため立方体の角(頂点)と接触している可能性がある
+					List<byte> shareIndices = new List<byte>() ;
+
+					fvi = Indices[ nearFaces[ 0 ] ] ;
+
+					var fvi1 = Indices[ nearFaces[ 1 ] ] ;
+					var fvi2 = Indices[ nearFaces[ 2 ] ] ;
+
+					foreach( var index in fvi )
+					{
+						if( fvi1.Contains( index ) == true && fvi2.Contains( index ) == true )
+						{
+							// こんインデックスは対象の面全てに含まれる
+							shareIndices.Add( index ) ;
+						}
+					}
+
+					// 共有頂点は必ず１点だけのはずである
+					if( shareIndices.Count != 1 )
+					{
+						Debug.LogWarning( "異常発生:" + shareIndices.Count ) ;
+						return ( true, center ) ;
+					}
+
+					// 角の頂点
+					crossingPoint = Vertices[ shareIndices[ 0 ] ] ;
+
+					// 角の頂点から球の中心までの距離
+					distance = ( center - crossingPoint ).magnitude ;
+
+					if( distance >= radius )
+					{
+						// 接触しない
+						return ( false, center ) ;
+					}
+
+					// 接触するので押し戻す
+					normal = ( center - crossingPoint ).normalized ;
+					center += ( normal * ( radius - distance ) ) ;
+
+//					Debug.Log( "点に対して押し戻しを行う:" + ( radius - distance ) ) ;
+
+					return ( true, center ) ;
+				}
+
+				// 通常はここには来ない
+				Debug.LogWarning( "異常発生" ) ;
+				return ( false, center ) ;
+			}
+		}
+
+		//-----------------------------------------------------------
+
+		// 球と立方体の接触判定及び押し戻しを行う
+		private ( bool, Vector3 ) IsHitSphereAndCube( Vector3 center, float radius, CubeStructure cube )
+		{
+			// いずれかの面より外側にあれば接触しないと判定する
+			return cube.IsHitSphere( center, radius ) ;
+		}
+
+		// 球と立方体の接触判定及び押し戻しを行う
+		private ( bool, Vector3 ) IsHitSphereAndCube( Vector3 center, float radius, int bx, int bz, int by )
+		{
+			float bx0 = bx ;
+			float bx1 = bx + 1 ;
+
+			float bz0 = bz ;
+			float bz1 = bz + 1 ;
+
+			float by0 = by ;
+			float by1 = by + 1 ;
+
+			//----------------------------------
+
+			var cube = new CubeStructure() ;
+
+			cube.Vertices = new Vector3[]
+			{
+				new Vector3( bx0, by0, bz0 ),
+				new Vector3( bx1, by0, bz0 ),
+				new Vector3( bx0, by0, bz1 ),
+				new Vector3( bx1, by0, bz1 ),
+
+				new Vector3( bx0, by1, bz0 ),
+				new Vector3( bx1, by1, bz0 ),
+				new Vector3( bx0, by1, bz1 ),
+				new Vector3( bx1, by1, bz1 ),
+			} ;
+
+			cube.Indices = new byte[][]
+			{
+				new byte[]{ 0, 1, 3, 2 },
+				new byte[]{ 4, 5, 1, 0 },
+				new byte[]{ 6, 7, 5, 4 },
+				new byte[]{ 2, 3, 7, 6 },
+				new byte[]{ 6, 4, 0, 2 },
+				new byte[]{ 5, 7, 3, 1 },
+			} ;
+
+			// いずれかの面より外側にあれば接触しないと判定する
+			return cube.IsHitSphere( center, radius ) ;
+		}
+
+		// 指定した位置の周辺のブロックと接触があるか判定する
+		private ( bool, Vector3 ) IsHotSphereAdnCube( Vector3 position, float radius )
+		{
+			// 周囲のブロックと接触判定を行う
+
+			float px0 = position.x - radius ;
+			float px1 = position.x + radius ;
+
+			float pz0 = position.z - radius ;
+			float pz1 = position.z + radius ;
+
+			float py0 = position.y - radius ;
+			float py1 = position.y + radius ;
+
+			int bx0 = ( int )px0 ;
+			int bx1 = ( int )px1 ;
+			if( ( px1 % 1 ) == 0 )
+			{
+				bx1 -- ; 
+			}
+
+			int bz0 = ( int )pz0 ;
+			int bz1 = ( int )pz1 ;
+			if( ( pz1 % 1 ) == 0 )
+			{
+				bz1 -- ; 
+			}
+
+			int by0 = ( int )py0 ;
+			int by1 = ( int )py1 ;
+			if( ( py1 % 1 ) == 0 )
+			{
+				by1 -- ; 
+			}
+
+			int xMin = WorldSettings.WORLD_X_MIN ;
+			if( bx0 <  xMin )
+			{
+				bx0  = xMin ;
+			}
+			int xMax = WorldSettings.WORLD_X_MAX - 1 ;
+			if( bx1 >  xMax )
+			{
+				bx1  = xMax ;
+			}
+
+			int zMin = WorldSettings.WORLD_Z_MIN ;
+			if( bz0 <  zMin )
+			{
+				bz0  = zMin ;
+			}
+			int zMax = WorldSettings.WORLD_Z_MAX - 1 ;
+			if( bz1 >  zMax )
+			{
+				bz1  = zMax ;
+			}
+
+			int yMin = WorldSettings.WORLD_Y_MIN ;
+			if( by0 <  yMin )
+			{
+				by0  = yMin ;
+			}
+			int yMax = WorldSettings.WORLD_Y_MAX - 1 ;
+			if( by1 >  yMax )
+			{
+				by1  = yMax ;
+			}
+
+			int bx, bz, by ;
+
+			bool isTotalHit = false, isBlockHit ;
+			Vector3 movedPosition = position ;
+
+			for( by  = by0 ; by <= by1 ; by ++ )
+			{
+				for( bz  = bz0 ; bz <= bz1 ; bz ++ )
+				{
+					for( bx  = bx0 ; bx <= bx1 ; bx ++ )
+					{
+						if( GetBlock( bx, bz, by ) != 0 )
+						{
+							// ブロックが存在する
+							( isBlockHit, movedPosition ) = IsHitSphereAndCube( movedPosition, radius, bx, bz, by ) ;
+							if( isBlockHit == true )
+							{
+								isTotalHit = true ;
+							}
+						}
+					}
+				}
+			}
+
+			return ( isTotalHit, movedPosition ) ;
+		}
 	}
 }

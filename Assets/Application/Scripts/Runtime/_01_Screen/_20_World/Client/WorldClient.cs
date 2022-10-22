@@ -288,6 +288,16 @@ namespace DBS.World
 		/// <returns></returns>
 		public async UniTask<bool> Prepare()
 		{
+
+			Vector3 center = new Vector3( -0.2f,-0.2f,-0.2f ) ;
+//			Vector3 center = new Vector3(  0.5f, 0.5f, 0.5f ) ;
+			float radius = 0.4f ;
+			( bool isHit, Vector3 p ) = IsHitSphereAndCube( center, radius, 0, 0, 0 ) ;
+			Debug.Log( "<color=#FFFF00>--------------->結果:" + isHit + " p = " + p + "</color>" ) ;
+
+			//----------------------------------------------------------
+
+
 			// 状態を初期化する
 			m_IsReady	= false ;
 			m_IsQuit	= false ;

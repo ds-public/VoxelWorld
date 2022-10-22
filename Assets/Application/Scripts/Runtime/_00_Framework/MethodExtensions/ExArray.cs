@@ -6,7 +6,7 @@ using UnityEngine ;
 namespace DBS
 {
 	/// <summary>
-	/// Array 型のメソッド拡張 Version 2022/07/13
+	/// Array 型のメソッド拡張 Version 2022/10/22
 	/// </summary>
 	public static class ExArray
 	{
@@ -69,7 +69,7 @@ namespace DBS
 		/// <param name="array"></param>
 		/// <param name="pattern"></param>
 		/// <returns></returns>
-		public static bool Contains<T>( this T[] array, T pattern ) where T : class
+		public static bool Contains<T>( this T[] array, T pattern )// where T : class
 		{
 			if( array == null || array.Length == 0 )
 			{

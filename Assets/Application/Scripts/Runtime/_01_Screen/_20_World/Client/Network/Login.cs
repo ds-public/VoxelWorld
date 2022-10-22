@@ -133,6 +133,9 @@ namespace DBS.World
 			// 終了ボタンを押せるようにする
 			m_EndButton.Interactable = true ;
 
+			// ポーズ中のＵＩを表示する
+			ShowPausingUI() ;
+
 			AddLog( "ログインしました(PID=" + m_PlayerId + ")" ) ;
 		}
 	}

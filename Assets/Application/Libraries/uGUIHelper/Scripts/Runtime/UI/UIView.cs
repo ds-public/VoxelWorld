@@ -25,7 +25,7 @@ namespace uGUIHelper
 	/// </summary>
 	public class UIView : UIBehaviour
 	{
-		public const string Version = "Version 2022/10/06  0" ;
+		public const string Version = "Version 2022/10/19  0" ;
 		// ソースコード
 		// https://bitbucket.org/Unity-Technologies/ui/src/2019.1/
 
@@ -112,14 +112,13 @@ namespace uGUIHelper
 			}
 			set
 			{
-				if( m_EffectiveColor.r != value.r || m_EffectiveColor.g != value.g || m_EffectiveColor.b != value.b || m_EffectiveColor.a != value.a )
-				{
-					m_EffectiveColor = value ;
+				// 変化の判定をしてはいけない(非アクティブ→アクティブの際に色が変わっていなくて１フレーム反映されない事がある)
 
-					if( m_IsApplyColorToChildren == true && this.GetType() != typeof( UIButton ) )
-					{
-						ApplyColorToChidren( m_EffectiveColor, true ) ;
-					}
+				m_EffectiveColor = value ;
+
+				if( m_IsApplyColorToChildren == true && this.GetType() != typeof( UIButton ) )
+				{
+					ApplyColorToChidren( m_EffectiveColor, true ) ;
 				}
 			}
 		}
@@ -198,9 +197,11 @@ namespace uGUIHelper
 		{
 			base.OnDisable() ;
 
-			m_HoverAtFirst = false ;	// 非アクティブになったら一度ホバーフラグはクリアする
+			m_RefreshChildrenColor	= true ;	// 子への影響色は再び設定が必要
 
-			m_SingleClickCheck = false ;	// スマートクリックのシングルクリックを計測していたなら無効化
+			m_HoverAtFirst			= false ;	// 非アクティブになったら一度ホバーフラグはクリアする
+
+			m_SingleClickCheck		= false ;	// スマートクリックのシングルクリックを計測していたなら無効化
 
 			if( m_ActiveAnimations != null )
 			{
@@ -920,7 +921,7 @@ namespace uGUIHelper
 								targetRect = parentRect.GetComponent<RectTransform>() ;
 								if( targetRect != null )
 								{
-									if( targetRect.anchorMin.x == targetRect.anchorMax.x  )
+									if( targetRect.anchorMin.x == targetRect.anchorMax.x )
 									{
 										// 発見
 										delta = targetRect.sizeDelta.x ;
@@ -9139,7 +9140,7 @@ namespace uGUIHelper
 		/// </summary>
 		private void ProcessMultiTouch()
 		{
-			( int states, Vector2[] pointers ) = GetMultiPointer() ;
+			( int states, Vector2[] pointers ) = GetMultiPointer( true ) ;	// レイキャストのチェックを有効にする
 
 			if( OnPinchAction != null || OnPinchDelegate != null )
 			{
@@ -10546,7 +10547,7 @@ namespace uGUIHelper
 		/// </summary>
 		/// <param name="rPosition"></param>
 		/// <returns></returns>
-		public ( int, Vector2 ) GetSinglePointer()
+		public ( int, Vector2 ) GetSinglePointer( bool isRaycastCheck = false )
 		{
 			int i ;
 			int state = 0 ;
@@ -10629,7 +10630,7 @@ namespace uGUIHelper
 		/// </summary>
 		/// <param name="rPointer"></param>
 		/// <returns></returns>
-		public ( int, Vector2[] ) GetMultiPointer()
+		public ( int, Vector2[] ) GetMultiPointer( bool isRaycastCheck = false )
 		{
 			int i, l ;
 			int states = 0 ;
@@ -10652,39 +10653,52 @@ namespace uGUIHelper
 					int fingerId = touch.fingerId ;
 					Vector2 position = touch.position ;
 
-					e = -1 ;
-					for( j  = 0 ; j <  l ; j ++ )
+					bool isHit = true ;
+					if( isRaycastCheck == true )
 					{
-						if( m_MultiTouchState[ j ] == true )
+						// このビューにレイキャストヒットしなければ無効
+						if( IsRaycastHit( position ) == false )
 						{
-							if( m_MultiTouchFingerId[ j ] == fingerId )
-							{
-								// 既に登録済み
-								entries[ j ] = true ;
-								pointers[ j ] = position ;
-								states |= ( 1 << j ) ;
-								break ;
-							}
+							isHit = false ;
 						}
-						else
-						{
-							// 空いているスロットを発見した
-							if( e <  0 )
-							{
-								e  = j ;
-							}
-						}	
 					}
 
-					if( j >= l && e <  l )
+					if( isHit == true )
 					{
-						// 新規登録
-						m_MultiTouchState[ e ] = true ;
-						m_MultiTouchFingerId[ e ] = fingerId ;
+						e = -1 ;
+						for( j  = 0 ; j <  l ; j ++ )
+						{
+							if( m_MultiTouchState[ j ] == true )
+							{
+								if( m_MultiTouchFingerId[ j ] == fingerId )
+								{
+									// 既に登録済み
+									entries[ j ] = true ;
+									pointers[ j ] = position ;
+									states |= ( 1 << j ) ;
+									break ;
+								}
+							}
+							else
+							{
+								// 空いているスロットを発見した
+								if( e <  0 )
+								{
+									e  = j ;
+								}
+							}	
+						}
 
-						entries[ e ] = true ;
-						pointers[ e ] = position ;
-						states |= ( 1 << e ) ;
+						if( j >= l && e <  l )
+						{
+							// 新規登録
+							m_MultiTouchState[ e ] = true ;
+							m_MultiTouchFingerId[ e ] = fingerId ;
+
+							entries[ e ] = true ;
+							pointers[ e ] = position ;
+							states |= ( 1 << e ) ;
+						}
 					}
 				}
 			}
@@ -10705,6 +10719,7 @@ namespace uGUIHelper
 				{
 					if( entries[ i ] == true )
 					{
+						// 登録があったスロットのみローカル座標に変換する
 						pointers[ i ] = GetLocalPosition( pointers[ i ] ) ;
 					}
 				}
@@ -10722,20 +10737,48 @@ namespace uGUIHelper
 				{
 					if( Input.GetMouseButton( i ) == true )
 					{
-						states |= ( 1 << i ) ;
-						entries[ i ] = true ;
-						pointers[ i ] = GetLocalPosition( Input.mousePosition ) ;
+						Vector2 position = Input.mousePosition ;
 
-						c ++ ;
-						j = i ;
+						bool isHit = true ;
+						if( isRaycastCheck == true )
+						{
+							// このビューにレイキャストヒットしなければ無効
+							if( IsRaycastHit( position ) == false )
+							{
+								isHit = false ;
+							}
+						}
+
+						if( isHit == true )
+						{
+							states |= ( 1 << i ) ;
+							entries[ i ] = true ;
+							pointers[ i ] = GetLocalPosition( position ) ;
+
+							c ++ ;
+							j = i ;
+						}
 					}
 				}
 
+
+				//-----------------------------------------------------------------------------------------
+				// ピンチ動作のエミュレート(強制的に２点タッチに変える)
+
 				// 注意:Unity Remote 5 を起動しているとキーボードの押下が取れない
 
+#if UNITY_EDITOR
 				if( c == 1 )
 				{
-#if UNITY_EDITOR
+					if( Input.GetKey( KeyCode.LeftControl ) == true || Input.GetKey( KeyCode.RightControl ) == true )
+					{
+						if( m_PinchEmulateMessage == false )
+						{
+							m_PinchEmulateMessage  = true ;
+							Debug.Log( "<color=#00FF00>[UIView] CTRL + X => Pinch X | CTRL + Y => Pinch Y</color>" ) ;
+						}
+					}
+
 					if( ( Input.GetKey( KeyCode.LeftControl ) == true || Input.GetKey( KeyCode.RightControl ) == true ) && Input.GetKey( KeyCode.X ) == true )
 					{
 						j ++ ;
@@ -10748,14 +10791,22 @@ namespace uGUIHelper
 						states |= ( 1 << j ) ;
 						pointers[ j ] = new Vector2( pointers[ j - 1 ].x, - pointers[ j - 1 ].y ) ;
 					}
-#endif
 				}
+				else
+				{
+					m_PinchEmulateMessage = false ;
+				}
+#endif
 			}
 
 			//----------------------------------------------------------
 
 			return ( states, pointers ) ;
 		}
+
+#if UNITY_EDITOR
+		private bool m_PinchEmulateMessage = false ;
+#endif
 
 		/// <summary>
 		/// スクリーン座標に該当するビュー上の座標を取得する
@@ -11247,7 +11298,7 @@ namespace uGUIHelper
 		{
 			if( CAnimator == null )
 			{
-				Debug.LogWarning( "Not found Animator Component" ) ;
+				Debug.LogWarning( "Not found Animator Component : " + Path ) ;
 				return false ;
 			}
 
@@ -11295,7 +11346,7 @@ namespace uGUIHelper
 		{
 			if( CAnimator == null )
 			{
-				Debug.LogWarning( "Not found Animator Component" ) ;
+				Debug.LogWarning( "Not found Animator Component : Path " + Path ) ;
 				return false ;
 			}
 
@@ -11395,7 +11446,7 @@ namespace uGUIHelper
 		{
 			if( CAnimator == null )
 			{
-				Debug.LogWarning( "Not found Animator Component : [PlayAnimator] StateName = " + stateName + " Path = " + Path ) ;
+				Debug.LogWarning( "Not found Animator Component : [PlayAnimator] StateName = " + stateName + " Path = " + Path, this ) ;
 				return null ;
 			}
 
@@ -11675,7 +11726,7 @@ namespace uGUIHelper
 		private List<RaycastResult>	m_VRH_Results		= null ;
 
 		/// <summary>
-		/// ポインターが上にあるリストビュー内のアイテムのインデックスを取得する
+		/// ポインターがこのビューにヒットするか判定する
 		/// </summary>
 		/// <returns></returns>
 		public bool IsRaycastHit()
@@ -11708,6 +11759,33 @@ namespace uGUIHelper
 #else
 			return false ;
 #endif
+			return IsRaycastHit( position ) ;
+		}
+
+		/// <summary>
+		/// 指定したスクリーン座標がこのビューにヒットするか判定する
+		/// </summary>
+		/// <returns></returns>
+		public bool IsRaycastHit( float screenPositionX, float screenPositionY )
+		{
+			return IsRaycastHit( new Vector2( screenPositionX, screenPositionY ) ) ;
+		}
+
+		/// <summary>
+		/// 指定したスクリーン座標がこのビューにヒットするか判定する
+		/// </summary>
+		/// <returns></returns>
+		public bool IsRaycastHit( Vector2 screenPosition )
+		{
+			if( EventSystem.current == null )
+			{
+				// まだ準備が整っていない
+				return false ;
+			}
+
+			//----------------------------------------------------------
+
+			Vector2 position = screenPosition ;
 
 			// スクリーン座標からRayを飛ばす
 
@@ -11752,7 +11830,6 @@ namespace uGUIHelper
 
 			return false ;
 		}
-
 
 		//-------------------------------------------------------------------------------------------
 

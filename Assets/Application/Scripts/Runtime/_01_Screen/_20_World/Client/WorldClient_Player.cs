@@ -112,9 +112,7 @@ namespace DBS.World
 
 				m_PlayerActor.Eye.localPosition = new Vector3( 0, 2f, 0 ) ;
 
-				float d = GetAvailableDistance( -6f ) ;
-				Debug.Log( "Distance:" + d ) ;
-				m_PlayerActor.GetCamera().transform.localPosition = new Vector3( 0, 0, d ) ;
+				m_PlayerActor.GetCamera().transform.position = GetCameraPosition( 6 ) ;
 				m_PlayerActor.GetCamera().transform.localRotation = Quaternion.identity ;
 
 				// 自身の見た目は表示する
@@ -127,8 +125,7 @@ namespace DBS.World
 
 				m_PlayerActor.Eye.localPosition = new Vector3( 0, 1.2f, 0 ) ;
 
-				float d = GetAvailableDistance(  4f ) ;
-				m_PlayerActor.GetCamera().transform.localPosition = new Vector3( 0, 0, d ) ;
+				m_PlayerActor.GetCamera().transform.position = GetCameraPosition( 4 ) ;
 				m_PlayerActor.GetCamera().transform.localRotation = Quaternion.Euler( 0, 180f, 0 ) ;
 
 				// 自身の見た目は表示する
@@ -137,170 +134,36 @@ namespace DBS.World
 		}
 
 		// 目からカメラまでの可能な最大距離を取得する
-		private float GetAvailableDistance( float max )
+		private Vector3 GetCameraPosition( float max )
 		{
-			Transform ct = m_PlayerActor.GetCamera().transform ;
-			Transform et = m_PlayerActor.Eye ;
-			Vector3 p ;
-			int bx, bz, by ;
-			Vector3 d ;
-
-			int fa ;
-			float fm, fv ;
-
-			float fx, fz, fy ;
-
-			float sign ;
+			Vector3 eyePosition		= m_PlayerActor.Eye.position ;
+			Vector3 eyeDirection	= m_PlayerActor.Eye.forward ;
 
 
-			if( max != 0 )
+			Vector3 position = eyePosition ;
+
+			float d = 0.25f ;
+			float r = 0.4f ;
+
+			bool isHit ;
+
+
+			while( d <= max )
 			{
-				if( max >  0 )
+				position = eyePosition - ( eyeDirection * d ) ;
+
+				( isHit, position ) = IsHotSphereAdnCube( position, r ) ;
+				if( isHit == true )
 				{
-					sign =  1 ;
-				}
-				else
-				{
-					sign = -1 ;
-					max = -max ;
-				}
-
-				//---------------------------------
-
-				// +0.5 ずつ増減させる
-				float now = 0 ;
-
-				while( now <  max )
-				{
-					now += 0.5f ;
-					if( now >  max )
-					{
-						now  = max ;
-					}
-
-					ct.localPosition = new Vector3( 0, 0, now * sign ) ;
-					p = ct.position ;
-
-					bx = ( int )p.x ;
-					bz = ( int )p.z ;
-					by = ( int )p.y ;
-
-					if( GetBlock( bx, bz, by ) != 0 )
-					{
-						// ブロックにヒットする
-
-						// 目からカメラへの方向ベクトル
-						d = ( ct.position - et.position ).normalized ;
-
-						// X Z Y の絶対値で最も小さい面に接触する
-						fa = 0 ;
-						fm = Mathf.Infinity ;
-
-						fv = Mathf.Abs( d.x ) ;
-						if( fv <  fm )
-						{
-							// X の差分
-							fa = 0 ;
-							fm  = fv ;
-						}
-						fv = Mathf.Abs( d.z ) ;
-						if( fv <  fm )
-						{
-							// Z の差分
-							fa = 1 ;
-							fm  = fv ;
-						}
-						fv = Mathf.Abs( d.y ) ;
-						if( fv <  fm )
-						{
-							// Y の差分
-							fa = 2 ;
-							fm  = fv ;
-						}
-
-						if( fa == 0 )
-						{
-							// X の差分が最も小さく　X 面と接触する
-							if( d.x >  0 )
-							{
-								// -X 方向の面と接触
-								fx = ( float )( bx + 0 ) ;
-								d *= ( Mathf.Abs( fx - et.position.x ) / fm ) ;
-								return + d.magnitude ;
-							}
-							else
-							if( d.x <  0 )
-							{
-								// +X 方向の面と接触
-								fx = ( float )( bx + 1 ) ;
-								d *= ( Mathf.Abs( fx - et.position.x ) / fm ) ;
-								return + d.magnitude ;
-							}
-							else
-							{
-								// 接触
-								return 0 ;
-							}
-						}
-						if( fa == 1 )
-						{
-							// Z の差分が最も小さく　Z 面と接触する
-							if( d.z >  0 )
-							{
-								// -Z 方向の面と接触
-								fz = ( float )( bz + 0 ) ;
-								d *= ( Mathf.Abs( fz - et.position.z ) / fm ) ;
-								return + d.magnitude ;
-							}
-							else
-							if( d.z <  0 )
-							{
-								// +Z 方向の面と接触
-								fz = ( float )( bz + 1 ) ;
-								d *= ( Mathf.Abs( fz - et.position.z ) / fm ) ;
-								return + d.magnitude ;
-							}
-							else
-							{
-								// 接触
-								return 0 ;
-							}
-						}
-						if( fa == 1 )
-						{
-							// Y の差分が最も小さく　Y 面と接触する
-							if( d.y >  0 )
-							{
-								// -Y 方向の面と接触
-								fy = ( float )( by + 0 ) ;
-								d *= ( Mathf.Abs( fy - et.position.y ) / fm ) ;
-								return + d.magnitude ;
-							}
-							else
-							if( d.y <  0 )
-							{
-								// +Y 方向の面と接触
-								fy = ( float )( by + 1 ) ;
-								d *= ( Mathf.Abs( fy - et.position.y ) / fm ) ;
-								return + d.magnitude ;
-							}
-							else
-							{
-								// 接触
-								return 0 ;
-							}
-						}
-						break ;
-					}
+					// ここで終了
+					break ;
 				}
 
-				// どのブロックともヒットしなければここに来る
-				return now * sign ;
+				// 次の判定位置へ
+				d += 0.25f ;
 			}
-			else
-			{
-				return max ;
-			}
+
+			return position ;
 		}
 
 

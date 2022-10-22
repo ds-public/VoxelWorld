@@ -12,7 +12,7 @@ using EaseHelper ;
 namespace DBS
 {
 	/// <summary>
-	/// キャンセル可能なタスク Version 2022/07/13
+	/// キャンセル可能なタスク Version 2022/10/21
 	/// </summary>
 	public class CancelableTask 
 	{
@@ -1092,6 +1092,7 @@ namespace DBS
 			// 重要
 			// 判定対象のタスクは実行中以外(失敗・中断・終了)は全て終了扱いとする
 			// よって判定対象のタスクが中断された場合のオーナータスクを含めた一括中断は行われない
+			int count ;
 
 			while( true )
 			{
@@ -1141,7 +1142,128 @@ namespace DBS
 					}
 				}
 				else
+				//---------------------------------------------------------
+				// 以下、誤って配列系を入力してしまった場合の保険
+				if( task is List<Task> )
 				{
+					// List<Task>
+					count = 0 ;
+					List<Task> s_tasks = task as List<Task> ;
+					foreach( var s_task in s_tasks )
+					{
+						if( s_task != null && s_task.Status == TaskStatus.Running )
+						{
+							count ++ ;	// 実行中
+						}
+					}
+
+					if( count == 0 )
+					{
+						return ;
+					}
+				}
+				else
+				if( task is List<UniTask> )
+				{
+					// List<UniTask>
+					count = 0 ;
+					List<UniTask> s_tasks = task as List<UniTask> ;
+					foreach( var s_task in s_tasks )
+					{
+						if( s_task.Status == UniTaskStatus.Pending )
+						{
+							count ++ ;	// 実行中(未実行は Succeeded)
+						}
+					}
+
+					if( count == 0 )
+					{
+						return ;
+					}
+				}
+				else
+				if( task is List<CustomYieldInstruction> )
+				{
+					// List<CustomYieldInstruction>
+					count = 0 ;
+					List<CustomYieldInstruction> s_tasks = task as List<CustomYieldInstruction> ;
+					foreach( var s_task in s_tasks )
+					{
+						if( s_task != null && s_task.keepWaiting == true )
+						{
+							count ++ ;	// 実行中
+						}
+					}
+
+					if( count == 0 )
+					{
+						return ;
+					}
+				}
+				else
+				if( task is Task[] )
+				{
+					// Task[]
+					count = 0 ;
+					Task[] s_tasks = task as Task[] ;
+					foreach( var s_task in s_tasks )
+					{
+						if( s_task != null && s_task.Status == TaskStatus.Running )
+						{
+							count ++ ;	// 実行中
+						}
+					}
+
+					if( count == 0 )
+					{
+						return ;
+					}
+				}
+				else
+				if( task is UniTask[] )
+				{
+					// UniTask[]
+					count = 0 ;
+					UniTask[] s_tasks = task as UniTask[] ;
+					foreach( var s_task in s_tasks )
+					{
+						if( s_task.Status == UniTaskStatus.Pending )
+						{
+							count ++ ;	// 実行中(未実行は Succeeded)
+						}
+					}
+
+					if( count == 0 )
+					{
+						return ;
+					}
+				}
+				else
+				if( task is CustomYieldInstruction[] )
+				{
+					// CustomYieldInstruction[]
+					count = 0 ;
+					CustomYieldInstruction[] s_tasks = task as CustomYieldInstruction[] ;
+					foreach( var s_task in s_tasks )
+					{
+						if( s_task != null && s_task.keepWaiting == true )
+						{
+							count ++ ;	// 実行中
+						}
+					}
+
+					if( count == 0 )
+					{
+						return ;
+					}
+				}
+				else
+				{
+					if( task != null )
+					{
+						Debug.LogWarning( "[CancelableTask]:When() Can not wait for task finish. because input object type is bad = " + task.GetType() ) ;
+					}
+					// task が null の場合は無視する
 					return ;
 				}
 

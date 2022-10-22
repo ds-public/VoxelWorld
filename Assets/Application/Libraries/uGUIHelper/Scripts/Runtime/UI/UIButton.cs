@@ -65,7 +65,10 @@ namespace uGUIHelper
 
 				button.interactable = state ;
 
-				ProcessApplyColorToChildren( true, true ) ;
+				if( CButton != null && CButton.transition == Selectable.Transition.ColorTint )
+				{
+					ProcessApplyColorToChildren( true, true ) ;
+				}
 			}
 		}
 
@@ -543,7 +546,10 @@ namespace uGUIHelper
 			m_PreviousInteractable = state ;
 
 			// 子に色を反映させる処理の事前準備を行う(全ての子よりも先に処理しなければならないため Awake のタイミングで実行する)
-			ProcessApplyColorToChildren( false, false ) ;
+			if( CButton != null && CButton.transition == Selectable.Transition.ColorTint )
+			{
+				ProcessApplyColorToChildren( false, false ) ;
+			}
 		}
 
 		/// <summary>
@@ -675,7 +681,11 @@ namespace uGUIHelper
 
 			//----------------------------------------------------------
 
-			ProcessApplyColorToChildren( false, false ) ;
+			if( CButton != null && CButton.transition == Selectable.Transition.ColorTint )
+			{
+				// 色切り替えが有効な場合のみ処理する
+				ProcessApplyColorToChildren( false, false ) ;
+			}
 		}
 
 		//-------------------------------------------------------------------------------------------

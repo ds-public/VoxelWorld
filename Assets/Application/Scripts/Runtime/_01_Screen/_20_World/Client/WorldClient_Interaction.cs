@@ -165,20 +165,8 @@ namespace DBS.World
 				{
 					if( Input.GetMouseButtonDown( 0 ) == true || Input.GetKeyDown( KeyCode.Return ) == true )
 					{
-						// フォーカス取得
-						m_Focus = true ;
-	
-						Cursor.visible = false ;
-						Cursor.lockState = CursorLockMode.Locked ;
-
-						// プレイングレイヤー表示
-						m_PlayingLayer.SetActive( true ) ;
-
-						// ポージングレイヤー隠蔽
-						m_PausingLayer.SetActive( false ) ;
-						m_GuideMessage.StopAndResetAllTweens() ;
-
-						m_IgnoreTouch = true ;	// 一度だけ入力を無効化する
+						// プレイ中のＵＩを表示する
+						ShowPlayingUI() ;
 
 						// フォーカスを得たフレームではプレイヤーインタラクションを処理しない
 						return ;
@@ -244,21 +232,8 @@ namespace DBS.World
 
 				if( Input.GetKeyDown( KeyCode.Escape ) == true )
 				{
-					// フォーカス解除
-					Cursor.visible = true ;
-					Cursor.lockState = CursorLockMode.None ;
-
-					m_Focus = false ;
-
-					// プレイングレイヤー隠蔽
-					m_PlayingLayer.SetActive( false ) ;
-
-					// ポージングレイヤー表示
-					m_PausingLayer.SetActive( true ) ;
-					_ = m_GuideMessage.PlayTween( "Move" ) ;
-
-					// タッチエフェクト無効化
-					Ripple.Off() ;
+					// ポーズ中のＵＩを表示する
+					ShowPausingUI() ;
 				}
 			}
 
@@ -453,6 +428,45 @@ namespace DBS.World
 					Vector3.up * deltaTime * TranslationSpeed ;
 			}*/
 
+		}
+
+		// プレイ中のＵＩの状態にする
+		private void ShowPlayingUI()
+		{
+			// フォーカス取得
+			m_Focus = true ;
+	
+			Cursor.visible = false ;
+			Cursor.lockState = CursorLockMode.Locked ;
+
+			// プレイングレイヤー表示
+			m_PlayingLayer.SetActive( true ) ;
+
+			// ポージングレイヤー隠蔽
+			m_PausingLayer.SetActive( false ) ;
+			m_GuideMessage.StopAndResetAllTweens() ;
+
+			m_IgnoreTouch = true ;	// 一度だけ入力を無効化する
+		}
+
+		// ポーズ中のＵＩの状態にする
+		private void ShowPausingUI()
+		{
+			// フォーカス解除
+			Cursor.visible = true ;
+			Cursor.lockState = CursorLockMode.None ;
+
+			m_Focus = false ;
+
+			// プレイングレイヤー隠蔽
+			m_PlayingLayer.SetActive( false ) ;
+
+			// ポージングレイヤー表示
+			m_PausingLayer.SetActive( true ) ;
+			_ = m_GuideMessage.PlayTween( "Move" ) ;
+
+			// タッチエフェクト無効化
+			Ripple.Off() ;
 		}
 
 	}

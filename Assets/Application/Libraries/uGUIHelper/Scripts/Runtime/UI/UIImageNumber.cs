@@ -182,8 +182,37 @@ namespace uGUIHelper
 		[SerializeField]
 		protected bool m_AutoSizeFitting = true ;
 		public bool AutoSizeFitting{ get{ return m_AutoSizeFitting ; } set{ m_AutoSizeFitting = true ; } }
+		
+		/// <summary>
+		/// スプライトセットを設定する
+		/// </summary>
+		public SpriteSet SpriteSet
+		{
+			get
+			{
+				ImageNumber imageNumber = CImageNumber ;
+				if( imageNumber == null )
+				{
+					return null ;
+				}
+				return imageNumber.SpriteSet ;
+			}
+			set
+			{
+				ImageNumber imageNumber = CImageNumber ;
+				if( imageNumber == null )
+				{
+					return ;
+				}
+				imageNumber.SpriteSet = value ;
 
-
+				if( m_AutoSizeFitting == true )
+				{
+					SetSize( imageNumber.PreferredWidth, imageNumber.PreferredHeight ) ;
+				}
+			}
+		}
+		
 		/// <summary>
 		/// 各派生クラスでの初期化処理を行う（メニューまたは AddView から生成される場合のみ実行れる）
 		/// </summary>
