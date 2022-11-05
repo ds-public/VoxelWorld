@@ -4,7 +4,7 @@ using System.Collections.Generic ;
 
 using UnityEngine ;
 
-namespace DBS.Screens
+namespace DSW.Screens
 {
 	/// <summary>
 	/// ワールドの制御処理

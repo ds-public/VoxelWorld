@@ -7,7 +7,7 @@ using UnityEngine ;
 // 要 uGUIHelper パッケージ
 using uGUIHelper ;
 
-namespace DBS
+namespace DSW
 {
 	/// <summary>
 	/// フェードクラス(画面全体のフェード演出に使用する) Version 2022/09/19 0

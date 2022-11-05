@@ -5,7 +5,7 @@ using UnityEngine ;
 
 using Cysharp.Threading.Tasks ;
 
-namespace DBS.Screens
+namespace DSW.Screens
 {
 	/// <summary>
 	/// スクリーン制御の基底クラス Version 2022/09/19

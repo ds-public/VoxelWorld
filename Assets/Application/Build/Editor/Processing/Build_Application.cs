@@ -7,7 +7,7 @@ using UnityEditor.Build.Reporting ;
 
 using UnityEngine ;
 
-using DBS ;
+using DSW ;
 
 /// <summary>
 /// アプリケーションのバッチビルド用クラス Version 2022/09/19

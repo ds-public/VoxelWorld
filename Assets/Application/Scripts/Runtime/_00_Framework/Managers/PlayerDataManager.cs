@@ -7,9 +7,9 @@ using Cysharp.Threading.Tasks ;
 
 using UnityEngine ;
 
-//using __p = DBS.PlayerData ;
+//using __p = DSW.PlayerData ;
 
-namespace DBS
+namespace DSW
 {
 	/// <summary>
 	/// ユーザー系の情報を保持したり処理したりするクラス Version 2021/03/21 0

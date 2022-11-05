@@ -9,7 +9,7 @@ using UnityEngine ;
 
 using EaseHelper ;
 
-namespace DBS
+namespace DSW
 {
 	/// <summary>
 	/// キャンセル可能なタスク Version 2022/10/21

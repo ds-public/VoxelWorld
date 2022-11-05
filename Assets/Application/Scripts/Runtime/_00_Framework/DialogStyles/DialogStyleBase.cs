@@ -7,7 +7,7 @@ using UnityEngine ;
 
 using uGUIHelper ;
 
-namespace DBS.DialogStyle
+namespace DSW.DialogStyle
 {
 	/// <summary>
 	/// ダイアログスタイルの基底クラス

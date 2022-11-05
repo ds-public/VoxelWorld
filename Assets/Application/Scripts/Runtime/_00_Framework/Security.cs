@@ -3,7 +3,7 @@ using System.IO ;
 using System.Text ;
 using System.Security.Cryptography ;
 
-namespace DBS
+namespace DSW
 {
 	/// <summary>
 	/// セキュリティ関連 Version 2022/01/30

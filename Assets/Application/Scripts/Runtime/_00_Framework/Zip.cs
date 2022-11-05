@@ -9,7 +9,7 @@ using UnityEngine ;
 
 using ICSharpCode.SharpZipLib.Zip ;
 
-namespace DBS
+namespace DSW
 {
 	/// <summary>
 	/// Ｚｉｐクラス Version 2022/09/19 0

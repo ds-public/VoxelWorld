@@ -8,9 +8,9 @@ using MathHelper ;
 using uGUIHelper ;
 using TransformHelper ;
 
-using DBS.WorldServerClasses ;
+using DSW.WorldServerClasses ;
 
-namespace DBS.World
+namespace DSW.World
 {
 	public partial class WorldServer
 	{

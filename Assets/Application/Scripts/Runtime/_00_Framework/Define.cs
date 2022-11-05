@@ -2,7 +2,7 @@ using System.Collections ;
 using System.Collections.Generic ;
 using UnityEngine ;
 
-namespace DBS
+namespace DSW
 {
 	/// <summary>
 	/// 共通定義クラス Version 2022/09/22 0

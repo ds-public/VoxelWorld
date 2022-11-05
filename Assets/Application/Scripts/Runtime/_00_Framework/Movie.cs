@@ -9,7 +9,7 @@ using UnityEngine.Video ;
 
 using uGUIHelper ;
 
-namespace DBS
+namespace DSW
 {
 	/// <summary>
 	/// ムービー表示クラス Version 2022/09/21 0

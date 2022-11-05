@@ -8,7 +8,7 @@ using uGUIHelper ;
 
 using Cysharp.Threading.Tasks ;
 
-namespace DBS
+namespace DSW
 {
 	/// <summary>
 	/// プログレスクラス(待ち演出などに使用する) Version 2022/09/27 0

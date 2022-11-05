@@ -5,7 +5,7 @@ using System.Collections.Generic ;
 
 using StorageHelper ;
 
-namespace DBS
+namespace DSW
 {
 	/// <summary>
 	/// 多目的パラメータ保存用データクラス Version 2022/10/08

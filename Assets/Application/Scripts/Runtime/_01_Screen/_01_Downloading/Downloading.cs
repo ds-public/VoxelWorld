@@ -10,11 +10,11 @@ using UnityEngine ;
 using uGUIHelper ;
 using AssetBundleHelper ;
 
-using DBS.Screens.DownloadingClasses.UI ;
+using DSW.Screens.DownloadingClasses.UI ;
 
-using DBS.World ;
+using DSW.World ;
 
-namespace DBS.Screens
+namespace DSW.Screens
 {
 	/// <summary>
 	/// 起動直後のダウンロード処理(マスターデータ・アセットバンドルの更新) Version 2022/10/01

@@ -9,7 +9,7 @@ using InputHelper ;
 
 using MathHelper ;
 
-namespace DBS.World
+namespace DSW.World
 {
 	/// <summary>
 	/// クライアント(ムーブ)

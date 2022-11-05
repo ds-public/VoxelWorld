@@ -3,10 +3,10 @@ using System.Collections ;
 using System.Collections.Generic ;
 using UnityEngine ;
 
-namespace DBS
+namespace DSW
 {
 	/// <summary>
-	/// Array 型のメソッド拡張 Version 2022/10/22
+	/// Array 型のメソッド拡張 Version 2022/10/25
 	/// </summary>
 	public static class ExArray
 	{
@@ -69,7 +69,7 @@ namespace DBS
 		/// <param name="array"></param>
 		/// <param name="pattern"></param>
 		/// <returns></returns>
-		public static bool Contains<T>( this T[] array, T pattern )// where T : class
+		public static bool Contains<T>( this T[] array, T pattern )
 		{
 			if( array == null || array.Length == 0 )
 			{
@@ -78,6 +78,18 @@ namespace DBS
 
 			int i, l = array.Length ;
 
+			if( typeof( T ).IsEnum == true )
+			{
+				// 列挙子は特殊な処理が必要(→数値化して判定する)
+				for( i  = 0 ; i <  l ; i ++ )
+				{
+					if( ( int )( ( object )array[ i ] ) == ( int )( ( object )pattern ) )
+					{
+						return true ;
+					}
+				}
+			}
+			else
 			if( typeof( T ) == typeof( bool ) )
 			{
 				// bool

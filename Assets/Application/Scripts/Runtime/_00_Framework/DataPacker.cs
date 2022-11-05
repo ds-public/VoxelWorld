@@ -11,7 +11,7 @@ using MessagePack ;	// 1.7.3.5 は Api Compatibility Lavel を .Net 4.x にし�
 
 using JsonHelper ;
 
-namespace DBS
+namespace DSW
 {
 	// 参考
 	// https://github.com/neuecc/MessagePack-CSharp

@@ -8,7 +8,7 @@ using Cysharp.Threading.Tasks ;
 
 using TransformHelper ;
 
-namespace DBS.World
+namespace DSW.World
 {
 	public class PlayerActor : ExMonoBehaviour
 	{

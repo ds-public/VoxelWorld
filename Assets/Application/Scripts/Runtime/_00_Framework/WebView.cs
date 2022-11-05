@@ -8,7 +8,7 @@ using Cysharp.Threading.Tasks ;
 
 using uGUIHelper ;
 
-namespace DBS
+namespace DSW
 {
 	/// <summary>
 	/// ウェブビュー表示クラス Version 2021/04/16 0

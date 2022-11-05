@@ -12,7 +12,7 @@ using UnityEngine ;
 // 要 AudioHelper パッケージ
 using AudioHelper ;
 
-namespace DBS
+namespace DSW
 {
 	/// <summary>
 	///ＳＥクラス Version 2022/09/23 0

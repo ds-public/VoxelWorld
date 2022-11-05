@@ -5,7 +5,7 @@ using System.IO ;
 using UnityEditor ;
 using UnityEngine ;
 
-using DBS ;
+using DSW ;
 
 /// <summary>
 /// マスターデータを生成する Version 2022/09/19

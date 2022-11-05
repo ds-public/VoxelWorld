@@ -7,7 +7,7 @@ using UnityEngine ;
 
 using Cysharp.Threading.Tasks ;
 
-namespace DBS.World
+namespace DSW.World
 {
 	/// <summary>
 	/// サーバー(ウェブソケット)

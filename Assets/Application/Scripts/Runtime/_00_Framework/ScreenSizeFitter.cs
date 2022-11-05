@@ -9,7 +9,7 @@ using UnityEngine ;
 
 using uGUIHelper ;
 
-namespace DBS
+namespace DSW
 {
 	/// <summary>
 	/// スクリーンのサイズ調整クラス Version 2022/09/19 0

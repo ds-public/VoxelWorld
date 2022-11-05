@@ -7,7 +7,7 @@ using UnityEngine ;
 
 using Cysharp.Threading.Tasks ;
 
-namespace DBS.Screens
+namespace DSW.Screens
 {
 	/// <summary>
 	/// ロビーの制御処理

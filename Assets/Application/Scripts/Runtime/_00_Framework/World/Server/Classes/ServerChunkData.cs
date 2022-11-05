@@ -10,9 +10,9 @@ using TransformHelper ;
 // https://minecraft-ja.gamepedia.com/%E3%83%81%E3%83%A3%E3%83%B3%E3%82%AF
 // https://minecraft-ja.gamepedia.com/Chunk%E3%83%95%E3%82%A9%E3%83%BC%E3%83%9E%E3%83%83%E3%83%88
 
-using DBS.World ;
+using DSW.World ;
 
-namespace DBS.WorldServerClasses
+namespace DSW.WorldServerClasses
 {
 	/// <summary>
 	/// ストレージ・サーバーメモリ上でのチャンクデータ

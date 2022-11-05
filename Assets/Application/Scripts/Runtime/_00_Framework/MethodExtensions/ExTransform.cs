@@ -1,7 +1,7 @@
 using System ;
 using UnityEngine ;
 
-namespace DBS
+namespace DSW
 {
 	/// <summary>
 	/// <see cref="Transform" />の拡張メソッド Version 2020/12/26

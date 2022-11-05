@@ -9,7 +9,7 @@ using UnityEngine ;
 
 using EaseHelper ;
 
-namespace DBS
+namespace DSW
 {
 	/// <summary>
 	/// MonoBehaviour のメソッド拡張 Version 2022/10/21

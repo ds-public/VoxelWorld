@@ -10,8 +10,8 @@ using SceneManagementHelper ;
 
 using uGUIHelper ;
 
-using _Dialog = DBS.Dialog ;
-namespace DBS
+using _Dialog = DSW.Dialog ;
+namespace DSW
 {
 	/// <summary>
 	/// シーンクラス(シーンの展開や追加に使用する)  Version 2022/10/01 0

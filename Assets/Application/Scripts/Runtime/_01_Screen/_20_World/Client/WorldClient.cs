@@ -13,9 +13,9 @@ using TransformHelper ;
 using MathHelper ;
 using StorageHelper ;
 
-using DBS.World ;
+using DSW.World ;
 
-namespace DBS.World
+namespace DSW.World
 {
 	/// <summary>
 	/// クライアント(メイン)

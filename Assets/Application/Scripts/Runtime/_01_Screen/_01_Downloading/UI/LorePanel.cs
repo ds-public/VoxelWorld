@@ -8,7 +8,7 @@ using UnityEngine ;
 using uGUIHelper ;
 using Cysharp.Threading.Tasks ;
 
-namespace DBS.Screens.DownloadingClasses.UI
+namespace DSW.Screens.DownloadingClasses.UI
 {
 	/// <summary>
 	/// ロア表示パネル

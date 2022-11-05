@@ -3,7 +3,7 @@ using System.Collections ;
 using System.Collections.Generic ;
 using UnityEngine ;
 
-namespace DBS
+namespace DSW
 {
 	public struct Int32Rect
 	{

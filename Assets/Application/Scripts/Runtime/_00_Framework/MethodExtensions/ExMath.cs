@@ -1,6 +1,6 @@
 using UnityEngine ;
 
-namespace DBS
+namespace DSW
 {
 	/// <summary>
 	/// Math 型のメソッド拡張

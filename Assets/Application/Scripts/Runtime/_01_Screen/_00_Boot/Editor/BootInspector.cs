@@ -5,7 +5,7 @@ using UnityEditor ;
 using System.Collections ;
 using System.Collections.Generic ;
 
-namespace DBS.Screens.nBoot
+namespace DSW.Screens.nBoot
 {
 	/// <summary>
 	/// Boot のインスペクタークラス

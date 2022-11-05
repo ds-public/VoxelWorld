@@ -6,7 +6,7 @@ using UnityEngine.XR ;
 
 using uGUIHelper ;
 
-namespace DBS
+namespace DSW
 {
 	/// <summary>
 	/// 入力に対する反応演出のクラス Version 2022/09/19 0

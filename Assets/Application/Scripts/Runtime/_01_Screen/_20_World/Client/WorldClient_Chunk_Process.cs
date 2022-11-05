@@ -10,7 +10,7 @@ using TransformHelper ;
 
 using MathHelper ;
 
-namespace DBS.World
+namespace DSW.World
 {
 	/// <summary>
 	/// クライアント:チャンク処理関係

@@ -11,7 +11,7 @@ using CSVHelper ;
 using JsonHelper ;
 using StorageHelper ;
 
-namespace DBS
+namespace DSW
 {
 	/// <summary>
 	/// ゲーム全体から参照されるプレイヤー系データを保持するクラス Version 2022/10/01

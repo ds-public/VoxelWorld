@@ -12,9 +12,9 @@ using TransformHelper ;
 
 using MathHelper ;
 
-using DBS.World ;
+using DSW.World ;
 
-namespace DBS.World
+namespace DSW.World
 {
 	/// <summary>
 	/// クライアント(メイン)

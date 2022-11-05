@@ -15,7 +15,7 @@ using TransformHelper ;
 using MathHelper ;
 using StorageHelper ;
 
-namespace DBS.World
+namespace DSW.World
 {
 	/// <summary>
 	/// クライアント(プレイヤー[ローカル]情報管理)
@@ -142,7 +142,7 @@ namespace DBS.World
 
 			Vector3 position = eyePosition ;
 
-			float d = 0.25f ;
+			float d = 0.00f ;
 			float r = 0.4f ;
 
 			bool isHit ;
@@ -156,11 +156,18 @@ namespace DBS.World
 				if( isHit == true )
 				{
 					// ここで終了
+					if( d >  0.05f )
+					{
+						d -= 0.05f ;
+					}
+
+					position = eyePosition - ( eyeDirection * d ) ;
+
 					break ;
 				}
 
 				// 次の判定位置へ
-				d += 0.25f ;
+				d += 0.05f ;
 			}
 
 			return position ;

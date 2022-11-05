@@ -10,9 +10,9 @@ using MessagePack ;	// 1.7.3.5 は Api Compatibility Lavel を .Net 4.x にし�
 
 using StorageHelper ;
 
-using DBS.World.Packet ;
+using DSW.World.Packet ;
 
-namespace DBS.World.Packet.ClientRequestTypes
+namespace DSW.World.Packet.ClientRequestTypes
 {
 	/// <summary>
 	/// クライアントリクエストの基底クラス

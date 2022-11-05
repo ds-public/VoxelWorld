@@ -36,9 +36,9 @@ using StorageHelper ;
 
 using uGUIHelper ;
 
-using DBS.World ;
+using DSW.World ;
 
-namespace DBS
+namespace DSW
 {
 	/// <summary>
 	/// アプリケーションマネージャクラス Version 2022/10/03 0

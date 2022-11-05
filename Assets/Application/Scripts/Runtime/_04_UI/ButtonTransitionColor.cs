@@ -8,7 +8,7 @@ using UnityEngine ;
 using UnityEditor ;
 #endif
 
-namespace DBS.UI
+namespace DSW.UI
 {
 	/// <summary>
 	/// ButtonTransition 用の共通 ColorTint クラス

@@ -7,7 +7,7 @@ using TransformHelper ;
 
 using MathHelper ;
 
-namespace DBS.World
+namespace DSW.World
 {
 	/// <summary>
 	/// クライアント(ビュー)

@@ -5,7 +5,7 @@ using UnityEditor ;
 
 #endif
 
-namespace DBS
+namespace DSW
 {
 	/// <summary>
 	/// マネージャの基底クラス	Version 2022/09/19 0

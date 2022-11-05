@@ -13,12 +13,12 @@ using WebSocketSharp.Server ;
 
 using MathHelper ;
 
-using DBS.WorldServerClasses ;
+using DSW.WorldServerClasses ;
 
 /// <summary>
 /// パッケージ
 /// </summary>
-namespace DBS.World
+namespace DSW.World
 {
 	/// <summary>
 	/// ワールドを管理するクラス Version 2022/10/03 0

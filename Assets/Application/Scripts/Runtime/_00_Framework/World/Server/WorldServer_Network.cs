@@ -17,11 +17,11 @@ using MathHelper ;
 using uGUIHelper ;
 using TransformHelper ;
 
-using DBS.WorldServerClasses ;
+using DSW.WorldServerClasses ;
 
-using DBS.World.Packet ;
+using DSW.World.Packet ;
 
-namespace DBS.World
+namespace DSW.World
 {
 	/// <summary>
 	/// サーバー(ウェブソケット)

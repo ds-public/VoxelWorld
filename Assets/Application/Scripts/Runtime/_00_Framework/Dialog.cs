@@ -11,7 +11,7 @@ using UnityEngine ;
 using uGUIHelper ;
 using SceneManagementHelper ;
 
-namespace DBS
+namespace DSW
 {
 	/// <summary>
 	/// タイアログクラス(汎用ダイアログの表示に使用する) Version 2022/09/23 0
@@ -372,7 +372,7 @@ namespace DBS
 		// デフォルト(スタンダード)ダイアログを開く
 		private async UniTask<int> Open_Private( string title, string message, string[] buttonLabels, Action<int> onClosed, bool isSilent, bool outsideEnabled, int outsideIndex, bool outsideWithBackKey )
 		{
-			DBS.DialogStyle.Standard dialog = Create<DialogStyle.Standard>( null ) ;
+			DialogStyle.Standard dialog = Create<DialogStyle.Standard>( null ) ;
 
 			m_Dialogs.Add( dialog ) ;		// 登録
 
@@ -419,7 +419,7 @@ namespace DBS
 		// エクセプションダイアログを開く
 		private async UniTask<int> OpenException_Private( string title, string message, string[] buttonLabels, Action<int> onClosed )
 		{
-			DBS.DialogStyle.Exception dialog =Create<DialogStyle.Exception>( null ) ;
+			DialogStyle.Exception dialog =Create<DialogStyle.Exception>( null ) ;
 
 			m_Dialogs.Add( dialog ) ;		// 登録
 
@@ -462,7 +462,7 @@ namespace DBS
 		// テキストエントリーダイアログを開く
 		private async UniTask<( int, string )> OpenTextEntry_Private( string title, string message, string defaultText, string placeholderText, string annotation, string[] buttonLabels, Action<int,string> onClosed, bool isSilent, bool outsideEnabled, int outsideIndex, bool outsideWithBackKey )
 		{
-			DBS.DialogStyle.TextEntry dialog = Create<DialogStyle.TextEntry>( null ) ;
+			DialogStyle.TextEntry dialog = Create<DialogStyle.TextEntry>( null ) ;
 
 			m_Dialogs.Add( dialog ) ;		// 登録
 

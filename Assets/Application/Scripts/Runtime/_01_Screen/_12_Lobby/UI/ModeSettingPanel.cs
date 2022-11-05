@@ -9,7 +9,7 @@ using uGUIHelper ;
 
 using MathHelper ;
 
-namespace DBS.Screens.LobbyClasses.UI
+namespace DSW.Screens.LobbyClasses.UI
 {
 	public class ModeSettingPanel : ExMonoBehaviour
 	{

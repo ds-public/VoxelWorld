@@ -9,7 +9,7 @@ using Cysharp.Threading.Tasks ;
 
 using uGUIHelper ;
 
-namespace DBS.Screens
+namespace DSW.Screens
 {
 	/// <summary>
 	/// 起動直後のダウンロード処理(マスターデータ・アセットバンドルの更新)

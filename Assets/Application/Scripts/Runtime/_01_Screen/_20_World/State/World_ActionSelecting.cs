@@ -7,9 +7,9 @@ using UnityEngine ;
 
 using Cysharp.Threading.Tasks ;
 
-using DBS.World ;
+using DSW.World ;
 
-namespace DBS.Screens
+namespace DSW.Screens
 {
 	/// <summary>
 	/// ワールドの制御処理

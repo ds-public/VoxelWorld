@@ -11,7 +11,7 @@ using Cysharp.Threading.Tasks ;
 
 using AssetBundleHelper ;
 
-namespace DBS.Screens.DownloadingClasses.UI
+namespace DSW.Screens.DownloadingClasses.UI
 {
 	/// <summary>
 	/// ムービー表示パネル

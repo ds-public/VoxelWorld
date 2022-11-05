@@ -7,7 +7,7 @@ using Cysharp.Threading.Tasks ;
 using uGUIHelper ;
 using MathHelper ;
 
-namespace DBS.Screens
+namespace DSW.Screens
 {
 	public partial class Title : ScreenBase
 	{

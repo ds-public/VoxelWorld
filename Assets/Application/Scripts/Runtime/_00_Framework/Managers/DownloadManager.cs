@@ -13,7 +13,7 @@ using UnityEngine.Networking ;
 using uGUIHelper ;
 using System.Threading ;
 
-namespace DBS
+namespace DSW
 {
 	/// <summary>
 	/// ファイルダウンロードを制御するクラス Version 2022/09/28 0

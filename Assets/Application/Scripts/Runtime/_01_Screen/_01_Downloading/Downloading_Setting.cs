@@ -10,7 +10,7 @@ using UnityEngine ;
 using uGUIHelper ;
 using AssetBundleHelper ;
 
-namespace DBS.Screens
+namespace DSW.Screens
 {
 	/// <summary>
 	/// 起動直後のダウンロード処理(マスターデータ・アセットバンドルの更新)

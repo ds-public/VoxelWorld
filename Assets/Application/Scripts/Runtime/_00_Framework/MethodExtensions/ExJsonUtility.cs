@@ -5,7 +5,7 @@ using System.Collections.Generic ;
 using System.Linq;
 using UnityEngine ;
 
-namespace DBS
+namespace DSW
 {
 	/// <summary>
 	/// JsonUtility 型のメソッド拡張

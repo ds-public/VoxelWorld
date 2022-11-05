@@ -11,7 +11,7 @@ using UnityEngine.Networking ;
 
 using uGUIHelper ;
 
-namespace DBS
+namespace DSW
 {
 	/// <summary>
 	/// ネットワーク全般を制御するクラス Version 2022/09/22 0

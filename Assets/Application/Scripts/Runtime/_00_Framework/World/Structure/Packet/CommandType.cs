@@ -7,7 +7,7 @@ using MathHelper ;
 using uGUIHelper ;
 using TransformHelper ;
 
-namespace DBS.World.Packet
+namespace DSW.World.Packet
 {
 	/// <summary>
 	/// パケットのコマンド種別

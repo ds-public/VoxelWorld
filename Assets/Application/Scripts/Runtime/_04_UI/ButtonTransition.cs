@@ -14,7 +14,7 @@ using Cysharp.Threading.Tasks ;
 using UnityEditor ;
 #endif
 
-namespace DBS.UI
+namespace DSW.UI
 {
 	/// <summary>
 	/// ボタンのトランジション Version 2022/07/26

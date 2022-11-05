@@ -12,7 +12,7 @@ using AssetBundleHelper ;
 
 using uGUIHelper ;
 
-namespace DBS
+namespace DSW
 {
 	/// <summary>
 	/// アセットクラス(アセット全般の読み出しに使用する) Version 2022/10/04 0

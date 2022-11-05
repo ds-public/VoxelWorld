@@ -10,7 +10,7 @@ using StorageHelper ;
 /// <summary>
 /// パッケージ
 /// </summary>
-namespace DBS
+namespace DSW
 {
 	/// <summary>
 	/// プリファレンス系情報を保持するクラス Version 2021/01/30 0

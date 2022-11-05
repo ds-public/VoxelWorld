@@ -7,9 +7,9 @@ using Cysharp.Threading.Tasks ;
 using uGUIHelper ;
 using MathHelper ;
 
-using DBS.Screens.LobbyClasses.UI ;
+using DSW.Screens.LobbyClasses.UI ;
 
-namespace DBS.Screens
+namespace DSW.Screens
 {
 	public partial class Lobby : ScreenBase
 	{

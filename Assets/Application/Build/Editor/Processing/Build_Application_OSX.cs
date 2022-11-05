@@ -8,7 +8,7 @@ using UnityEditor.Build.Reporting ;
 using UnityEngine ;
 using UnityEngine.Rendering ;
 
-using DBS ;
+using DSW ;
 
 /// <summary>
 /// アプリケーションのバッチビルド用クラス(OSX用)

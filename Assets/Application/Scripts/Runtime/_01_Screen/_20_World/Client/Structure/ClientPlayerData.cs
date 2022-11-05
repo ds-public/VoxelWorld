@@ -13,7 +13,7 @@ using uGUIHelper ;
 
 using TransformHelper ;
 
-namespace DBS.World
+namespace DSW.World
 {
 	/// <summary>
 	/// クライアント側で保持する全プレイヤー情報

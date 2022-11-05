@@ -4,7 +4,7 @@ using System.Collections.Generic ;
 
 using UnityEngine ;
 
-namespace DBS
+namespace DSW
 {
 	/// <summary>
 	/// 端末時刻の取得クラス Version 2022/09/19

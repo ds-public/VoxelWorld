@@ -15,7 +15,7 @@ using UnityEngine ;
 #if BUILD_IOS
 #endif
 
-using DBS ;
+using DSW ;
 
 /// <summary>
 /// アプリケーションのバッチビルド用クラス(iOS用)

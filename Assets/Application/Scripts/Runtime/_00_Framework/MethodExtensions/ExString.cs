@@ -5,7 +5,7 @@ using System.Linq ;
 using System.Text ;
 using UnityEngine ;
 
-namespace DBS
+namespace DSW
 {
 	/// <summary>
 	/// String 型のメソッド拡張 Version 2022/05/10

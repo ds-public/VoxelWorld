@@ -12,9 +12,9 @@ using UnityEngine ;
 using CSVHelper ;
 using StorageHelper ;
 
-//using DBS.MasterData ;
+//using DSW.MasterData ;
 
-namespace DBS
+namespace DSW
 {
 	/// <summary>
 	/// マスターデータの管理を行うクラス Version 2022/09/19 0

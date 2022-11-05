@@ -4,7 +4,7 @@ using System.Collections.Generic ;
 
 using UnityEngine ;
 
-namespace DBS.World
+namespace DSW.World
 {
 	/// <summary>
 	/// チャンクセットのストリーム

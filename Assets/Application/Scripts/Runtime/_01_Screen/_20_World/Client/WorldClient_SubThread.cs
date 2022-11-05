@@ -18,9 +18,9 @@ using TransformHelper ;
 using MathHelper ;
 using StorageHelper ;
 
-using DBS.World.Packet ;
+using DSW.World.Packet ;
 
-namespace DBS.World
+namespace DSW.World
 {
 	/// <summary>
 	/// クライアント(サブスレッド処理)

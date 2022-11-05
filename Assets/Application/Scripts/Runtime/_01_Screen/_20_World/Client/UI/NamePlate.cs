@@ -7,7 +7,7 @@ using MathHelper ;
 using uGUIHelper ;
 using TransformHelper ;
 
-namespace DBS.World
+namespace DSW.World
 {
 	/// <summary>
 	/// ネームプレートの表示制御

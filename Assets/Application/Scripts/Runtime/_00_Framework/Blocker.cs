@@ -8,7 +8,7 @@ using Cysharp.Threading.Tasks ;
 
 using uGUIHelper ;
 
-namespace DBS
+namespace DSW
 {
 	/// <summary>
 	/// 単色の画面マスク制御クラス Version 2021/06/18 0

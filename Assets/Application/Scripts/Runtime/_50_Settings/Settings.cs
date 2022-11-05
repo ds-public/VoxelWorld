@@ -7,7 +7,7 @@ using UnityEngine ;
 using UnityEditor ;
 #endif
 
-namespace DBS
+namespace DSW
 {
 	/// <summary>
 	/// 起動時の各種設定クラス Version 2022/10/10

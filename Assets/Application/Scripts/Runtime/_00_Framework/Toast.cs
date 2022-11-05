@@ -10,7 +10,7 @@ using UnityEngine ;
 
 using uGUIHelper ;
 
-namespace DBS
+namespace DSW
 {
 	/// <summary>
 	/// トーストクラス Version 2022/09/19 0

@@ -10,9 +10,9 @@ using Cysharp.Threading.Tasks ;
 using uGUIHelper ;
 using SceneManagementHelper ;
 
-using DBS.World ;
+using DSW.World ;
 
-namespace DBS.Screens
+namespace DSW.Screens
 {
 	/// <summary>
 	/// 起動直後のダウンロード処理(マスターデータ・アセットバンドルの更新)

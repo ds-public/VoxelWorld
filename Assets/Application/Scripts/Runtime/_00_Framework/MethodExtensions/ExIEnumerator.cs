@@ -2,7 +2,7 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-namespace DBS
+namespace DSW
 {
 	/// <summary>
 	/// MonoBehaviour のメソッド拡張

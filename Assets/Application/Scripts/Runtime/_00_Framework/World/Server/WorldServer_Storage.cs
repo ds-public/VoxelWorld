@@ -15,9 +15,9 @@ using MathHelper ;
 
 using StorageHelper ;
 
-using DBS.WorldServerClasses ;
+using DSW.WorldServerClasses ;
 
-namespace DBS.World
+namespace DSW.World
 {
 	/// <summary>
 	/// サーバー(ストレージ操作)
