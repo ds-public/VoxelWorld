@@ -75,7 +75,8 @@ namespace DSW
 		/// <param name="b"></param>
 		/// <param name="min">最小値</param>
 		/// <param name="max">最大値</param>
-		public static void GetMinMaxVector3(
+		public static void GetMinMaxVector3
+		(
 			in  Vector3 a,
 			in  Vector3 b,
 			out Vector3 min,
