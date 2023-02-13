@@ -122,12 +122,12 @@ namespace AssetBundleHelper
 			/// <summary>
 			/// ダウンロード済み対象サイズ
 			/// </summary>
-			public int		StoredDataSize = 0 ;
+			public long		StoredDataSize = 0 ;
 
 			/// <summary>
 			/// ダウンロード対象サイズ
 			/// </summary>
-			public int		EntireDataSize = 0 ;
+			public long		EntireDataSize = 0 ;
 
 			/// <summary>
 			/// ダウンロード済み対象数

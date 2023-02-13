@@ -25,7 +25,8 @@ namespace uGUIHelper
 	/// </summary>
 	public class UIView : UIBehaviour
 	{
-		public const string Version = "Version 2022/10/19  0" ;
+		public const string Version = "Version 2023/01/28  0" ;
+
 		// ソースコード
 		// https://bitbucket.org/Unity-Technologies/ui/src/2019.1/
 
@@ -100,6 +101,15 @@ namespace uGUIHelper
 
 		[SerializeField]
 		protected bool			m_IsApplyColorToChildren = false ;
+
+		/// <summary>
+		/// 親オブジェクトからの色の適用の無視
+		/// </summary>
+		public	  bool			  IgnoreParentEffectiveColor{ get{ return m_IgnoreParentEffectiveColor ; } set{ m_IgnoreParentEffectiveColor = value ; } }
+
+		[SerializeField]
+		protected bool			m_IgnoreParentEffectiveColor = false ;
+
 
 		/// <summary>
 		/// 子を含めた乗算色
@@ -490,7 +500,16 @@ namespace uGUIHelper
 			{
 				targets.ForEach( _ =>
 				{
-					_.SetColor( color ) ;
+					var view = _.GetComponent<UIView>() ;
+					if( view == null )
+					{
+						_.SetColor( color ) ;
+					}
+					else
+					if( view.IgnoreParentEffectiveColor == false )
+					{
+						_.SetColor( color ) ;
+					}
 				} ) ;
 			}
 
@@ -3612,7 +3631,7 @@ namespace uGUIHelper
 			UITween tween = GetTween( identity ) ;
 			if( tween == null )
 			{
-				Debug.LogWarning( "Not found identity of tween : " + identity + " / " + name ) ;
+				Debug.LogWarning( "Not found identity of tween : " + identity + " / " + Path ) ;
 				return null ;
 			}
 
@@ -10919,7 +10938,7 @@ namespace uGUIHelper
 			{
 				if( m_BackKeyEnabled != value )
 				{
-					m_BackKeyEnabled = value ;
+					m_BackKeyEnabled  = value ;
 
 					// バックキーの対応処理
 					if( m_BackKeyEnabled == true )
@@ -10932,6 +10951,24 @@ namespace uGUIHelper
 						UIEventSystem.RemoveBackKeyTarget( this ) ;
 					}
 				}
+			}
+		}
+
+
+		/// <summary>
+		/// バックキー連携でレイキャストヒットを無視して反応するようにするかどうか
+		/// </summary>
+		[SerializeField]
+		protected bool			m_IsBackKeyIgnoreRaycastTarget = false ;
+		public    bool			  IsBackKeyIgnoreRaycastTarget
+		{
+			get
+			{
+				return m_IsBackKeyIgnoreRaycastTarget ;
+			}
+			set
+			{
+				m_IsBackKeyIgnoreRaycastTarget  = value ;
 			}
 		}
 

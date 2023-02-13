@@ -16,7 +16,7 @@ using UnityEngine.Networking ;
 namespace StorageHelper
 {
 	/// <summary>
-	/// ストレージアクセサクラス Version 2022/10/04 0
+	/// ストレージアクセサクラス Version 2023/01/22 0
 	/// </summary>
 	public class StorageAccessor
 	{
@@ -271,14 +271,14 @@ namespace StorageHelper
 
 						// Apple 審査のリジェクト回避用コード
 #if !UNITY_EDITOR && ( UNITY_IOS || UNITY_IPHONE )
-							UnityEngine.iOS.Device.SetNoBackupFlag( folderName ) ;
+						UnityEngine.iOS.Device.SetNoBackupFlag( folderName ) ;
 #endif
 					}
 				}
 			}
 
 			//----------------------------------------------------------
-
+#if false
 			// サブスレッドから直接メインスレッドのコールバッグメソッドを呼ぶと例外が発生して UnityEditor ごと落とされるので一旦変数を経由させる。
 			float progress = 0 ;
 
@@ -323,29 +323,97 @@ namespace StorageHelper
 				onResult?.Invoke( false ) ;
 				yield break ;
 			}
+#endif
+			if( data.Length >  0 && string.IsNullOrEmpty( key ) == false && string.IsNullOrEmpty( vector ) == false )
+			{
+				// 暗号化する
+				data = Encrypt( data, key, vector ) ;
+			}
 
-			//----------------------------------
+			//----------------------------------------------------------
 
-//			if( data.Length >  0 && string.IsNullOrEmpty( key ) == false && string.IsNullOrEmpty( vector ) == false )
-//			{
-//				// 暗号化する
-//				data = Encrypt( data, key, vector ) ;
-//			}
+			if( File.Exists( fullPath ) == true )
+			{
+				// 削除する(古いファイルのサイズが大きいとサイズが古いファイルのままになってしまう(末尾にゴミ)
+				File.Delete( fullPath ) ;
+			}
 
-			// 保存する
-//			File.WriteAllBytes( fullPath, data ) ;
+			bool result = false ;
+			long length = data.Length ;
+
+			// 非同期保存を行う
+			var fs = File.OpenWrite( fullPath ) ;
+			if( fs == null )
+			{
+				// セーブ出来ません
+				onResult?.Invoke( false ) ;
+				yield break ;
+			}
+
+			// 非同期で保存を実行する
+//			Debug.Log( "<color=#FF00FF>書き込みを行う</color>" ) ;
+			Task task = fs.WriteAsync( data, 0, data.Length, token ) ;
+
+			long offset = fs.Position ;
+
+			// 書き込み状況をモニタリングする
+			while( true )
+			{
+				if( onProgress != null && offset != fs.Position )
+				{
+					offset = fs.Position ;
+					onProgress( ( float )( ( double )offset / ( double )length ) ) ;
+//					Debug.Log( "現在位置:" + offset  + "/" + length ) ;
+				}
+
+				if
+				(
+					task.Status == TaskStatus.RanToCompletion	||
+					task.Status == TaskStatus.Faulted			||
+					task.Status == TaskStatus.Canceled
+				)
+				{
+					break ;	// 成功・失敗・キャンセルのいずれかで終了
+				}
+
+				// １フレーム待機
+				yield return null ;
+			}
+
+			// 書き込み後のサイズ確認
+			result = ( fs.Position == length ) ;
+
+			// ファイルハンドルをクローズする
+			fs.Close() ;
+			fs.Dispose() ;
+
+			// タスクが成功したか確認する
+			if( result == false || task.Status != TaskStatus.RanToCompletion )
+			{
+//				Debug.Log( "<color=#FF0000>キャンセルされた2:" + fullPath + "</color>" ) ;
+				// セーブ出来ません
+
+				if( File.Exists( fullPath ) == true )
+				{
+					// 削除する(内容が不確定であるため)
+					File.Delete( fullPath ) ;
+				}
+
+				onResult?.Invoke( false ) ;
+				yield break ;
+			}
 
 			//----------------------------------------------------------
 
 			// Apple 審査のリジェクト回避用コード
 #if !UNITY_EDITOR && ( UNITY_IOS || UNITY_IPHONE )
-				UnityEngine.iOS.Device.SetNoBackupFlag( fullPath ) ;
+			UnityEngine.iOS.Device.SetNoBackupFlag( fullPath ) ;
 #endif
-
 			// 成功
 			onResult?.Invoke( true ) ;
 		}
 
+#if false
 		// サブスレッドでのファイル保存用タスク
 		private static bool SaveAsync_Task( string fullPath, byte[] data, string key, string vector, Action<float> onProgress, CancellationToken cancellationToken )
 		{
@@ -400,7 +468,7 @@ namespace StorageHelper
 						if( offset != fs.Position )
 						{
 							offset = fs.Position ;
-							onProgress( ( float )offset / ( float )length ) ;
+							onProgress( ( float )( ( double )offset / ( double )length ) ) ;
 //							Debug.Log( "現在位置:" + offset  + "/" + length ) ;
 						}
 
@@ -427,14 +495,11 @@ namespace StorageHelper
 
 			//----------------------------------
 
-			// 保存する
-//			File.WriteAllBytes( fullPath, data ) ;
-
 //			Debug.Log( "<color=#FFFF00>サブスレッドでのファイル書き込み終了:" + fullPath + " " + data.Length + "</color>" ) ;
 
 			return result ;
 		}
-
+#endif
 		//-------------------------------------------------------------------------------------------
 
 		/// <summary>
@@ -524,7 +589,7 @@ namespace StorageHelper
 		/// <param name="tKey">暗号化キー(null で複合化は行わない)</param>
 		/// <param name="tVector">暗号化ベクター(null で複合化は行わない)</param>
 		/// <returns>バイト配列(null で失敗)</returns>
-		public static byte[] Load( string path, int offset, int length )
+		public static byte[] Load( string path, long offset, long length )
 		{
 			if( string.IsNullOrEmpty( path ) == true )
 			{
@@ -543,7 +608,7 @@ namespace StorageHelper
 				return null ;
 			}
 
-			int size = GetSize( path ) ;
+			long size = GetSize( path ) ;
 			if( size <= 0 || offset <  0 || offset >= size )
 			{
 #if UNITY_EDITOR
@@ -569,7 +634,7 @@ namespace StorageHelper
 			stream.Seek( offset, SeekOrigin.Begin ) ;
 
 			byte[] data = new byte[ length ] ;
-			size = stream.Read( data, 0, length ) ;
+			size = stream.Read( data, 0, ( int )length ) ;
 
 			if( size != length )
 			{
@@ -804,7 +869,7 @@ namespace StorageHelper
 		/// <param name="offset"></param>
 		/// <param name="length"></param>
 		/// <returns></returns>
-		public static bool Write( FileStream file, byte[] data, int offset = 0, int length = 0 )
+		public static bool Write( FileStream file, byte[] data, long offset = 0, long length = 0 )
 		{
 			if( file == null || data == null || data.Length == 0 )
 			{
@@ -820,9 +885,95 @@ namespace StorageHelper
 				length  = data.Length ;
 			}
 
-			file.Write( data, offset, length ) ;
+			file.Write( data, ( int )offset, ( int )length ) ;
 
 			return true ;
+		}
+
+		/// <summary>
+		/// データを書き込む
+		/// </summary>
+		/// <param name="file"></param>
+		/// <param name="data"></param>
+		/// <param name="offset"></param>
+		/// <param name="length"></param>
+		/// <returns></returns>
+		public static IEnumerator WriteAsync( FileStream file, byte[] data, long offset = 0, long length = 0, long seekPosition = -1, Action<bool> onResult = null, CancellationToken token = default )
+		{
+			if( file == null || data == null || data.Length == 0 )
+			{
+				onResult?.Invoke( false ) ;
+				yield break ;
+			}
+
+			if( offset <  0 || offset >= data.Length )
+			{
+				offset  = 0 ;
+			}
+			if( length <= 0 || length >  data.Length )
+			{
+				length  = data.Length ;
+			}
+
+			//----------------------------------------------------------
+
+			// 必要に応じてシークする
+			if( file.CanSeek == true )
+			{
+				if( seekPosition >= 0 )
+				{
+					file.Seek( seekPosition, SeekOrigin.Begin ) ;
+				}
+				else
+				{
+					file.Seek( 0, SeekOrigin.End ) ;
+				}
+			}
+
+			// サブスレッドで書き込みを実行する
+			Task task = file.WriteAsync( data, ( int )offset, ( int )length, token ) ; 
+			if( task == null )
+			{
+				// 基本的にはここに来る事はないが念の為
+				onResult?.Invoke( false ) ;
+				yield break ;
+			}
+
+//			Debug.Log( "<color=#00FFFF>待機開始</color>" ) ;
+			// サブスレッドで実行中の書き込みタスクの終了を待つ
+			while( true )
+			{
+				if
+				(
+					task.Status == TaskStatus.RanToCompletion	||
+					task.Status == TaskStatus.Faulted			||
+					task.Status == TaskStatus.Canceled
+				)
+				{
+					break ;
+				}
+
+//				if( progress >  0 )
+//				{
+//					Debug.Log( "<color=#00FF00>現在位置:" + progress + "</color>" ) ;
+//				}
+
+				yield return null ;
+			}
+//			Debug.Log( "<color=#00FFFF>待機終了 " + task.Result + "</color>" ) ;
+
+			// 書き込みの結果を判定する
+			if( task.Status != TaskStatus.RanToCompletion )
+			{
+				// 失敗
+				onResult?.Invoke( false ) ;
+				yield break ;
+			}
+
+			//----------------------------------------------------------
+
+			// 成功
+			onResult?.Invoke( true ) ;
 		}
 
 		/// <summary>
@@ -833,7 +984,7 @@ namespace StorageHelper
 		/// <param name="offset"></param>
 		/// <param name="length"></param>
 		/// <returns></returns>
-		public static int Read( FileStream file, byte[] data, int offset = 0, int length = 0 )
+		public static int Read( FileStream file, byte[] data, long offset = 0, long length = 0 )
 		{
 			if( file == null || data == null || data.Length == 0 )
 			{
@@ -849,7 +1000,7 @@ namespace StorageHelper
 				length  = data.Length ;
 			}
 
-			return file.Read( data, offset, length ) ;
+			return file.Read( data, ( int )offset, ( int )length ) ;
 		}
 
 		/// <summary>
@@ -858,7 +1009,7 @@ namespace StorageHelper
 		/// <param name="file"></param>
 		/// <param name="offset"></param>
 		/// <returns></returns>
-		public static bool Seek( FileStream file, int offset, SeekOrigin seekOrigin )
+		public static bool Seek( FileStream file, long offset, SeekOrigin seekOrigin )
 		{
 			if( file == null || offset <  0 || file.CanSeek == false )
 			{
@@ -1155,7 +1306,7 @@ namespace StorageHelper
 		/// </summary>
 		/// <param name="path">ファイル名(相対パス)</param>
 		/// <returns>ファイルのサイズ(-1 でファイルが存在しない)</returns>
-		public static int GetSize( string path )
+		public static long GetSize( string path )
 		{
 			if( string.IsNullOrEmpty( path ) == true )
 			{
@@ -1174,7 +1325,7 @@ namespace StorageHelper
 		
 			FileInfo info = new FileInfo( fullPath ) ;
 		
-			return ( int )info.Length ;
+			return info.Length ;
 		}
 	
 		/// <summary>

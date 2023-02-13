@@ -921,7 +921,7 @@ namespace DSW
 		/// <param name="isNoDialog"></param>
 		/// <param name="onProgress"></param>
 		/// <returns></returns>
-		public static async UniTask<bool> DownloadAssetBundleAsync( string path, bool keep = false, Action<int,float,float> onProgress = null, bool isNoDialog = false )
+		public static async UniTask<bool> DownloadAssetBundleAsync( string path, bool keep = false, Action<long,float,float> onProgress = null, bool isNoDialog = false )
 		{
 			// リトライループ
 			while( true )
@@ -979,7 +979,7 @@ namespace DSW
 		(
 			AssetBundleManager.DownloadEntity[] entities,
 			int parallel = 0,
-			Action<long,int,int,int> onProgress = null,
+			Action<long,long,int,int> onProgress = null,
 			bool isAllManifestsSaving = true,
 			bool isNoDialog = false
 		)
@@ -1143,7 +1143,7 @@ namespace DSW
 		/// </summary>
 		/// <param name="path">パス</param>
 		/// <returns></returns>
-		public static int GetSize( string path )
+		public static long GetSize( string path )
 		{
 			return AssetBundleManager.GetSize( path ) ;
 		}

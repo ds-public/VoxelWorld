@@ -55,7 +55,7 @@ namespace AssetBundleHelper
 				/// <summary>
 				/// アセットバンドルファイルのサイズ
 				/// </summary>
-				public int		Size = 0 ;			// サイズ(処理の高速化のためにここに保持しておく)※キャッシュオーバーなどの際の処理に使用する
+				public long		Size = 0 ;			// サイズ(処理の高速化のためにここに保持しておく)※キャッシュオーバーなどの際の処理に使用する
 
 				/// <summary>
 				/// ＣＲＣ値(０で使用しない)
@@ -110,7 +110,7 @@ namespace AssetBundleHelper
 				/// <param name="path">マニフェスト内での相対パス</param>
 				/// <param name="hash">ハッシュ値</param>
 				/// <param name="time">最終更新日時</param>
-				public AssetBundleInfo( string path, string hash, int size, uint crc, string[] tags, long lastUpdateTime )
+				public AssetBundleInfo( string path, string hash, long size, uint crc, string[] tags, long lastUpdateTime )
 				{
 					Path			= path ;
 					Hash			= hash ;

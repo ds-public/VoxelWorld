@@ -12,7 +12,7 @@ using EaseHelper ;
 namespace DSW
 {
 	/// <summary>
-	/// キャンセル可能なタスク Version 2022/10/21
+	/// キャンセル可能なタスク Version 2023/02/03
 	/// </summary>
 	public class CancelableTask 
 	{
@@ -24,26 +24,75 @@ namespace DSW
 		// オーナー
 		protected	ExMonoBehaviour				m_OwnerForCancellationToken ;
 
-		// 明示的キャンセル時のタスクキャンセル用トークン
-		protected	CancellationToken			m_OwnerCancellationTokenDeactive	= default ;
+		//-----------------------------------
+
+		// CancelableTask のタスク群を明示的に中断するためのトークンソース
+		private CancellationTokenSource			m_CancellationTokenSourceDecative ;
+
+		/// <summary>
+		/// CancelableTask のタスク群を明示的に中断するためのトークンを取得する
+		/// </summary>
+		/// <returns></returns>
+		protected CancellationToken				GetCancellationTokenDeactive()
+		{
+			if( m_CancellationTokenSourceDecative == null )
+			{
+				m_CancellationTokenSourceDecative  = new CancellationTokenSource() ;
+				m_CancellationTokenSourceDecative.Token.Register( () =>
+				{
+					// 明示的な中断が行われた際にコールバックを呼び出す
+					OnTasksCanceled() ;
+				} ) ;
+			}
+
+			return m_CancellationTokenSourceDecative.Token ;
+		}
+
+		// オーナーの ExMonoBehaviour で明示的なタスクキャンセルが行われた際に使用されるキャンセレーショントークン
+		private CancellationToken				m_OwnerCancellationTokenDeactive ;
 
 		/// <summary>
 		/// オーナーの ExMonoBehaviour で明示的なタスクキャンセルが行われた際に使用されるキャンセレーショントークンを取得する
 		/// </summary>
 		/// <returns></returns>
-		public		CancellationToken			GetCancellationTokenDeactive()
+		protected	CancellationToken			GetOwnerCancellationTokenDeactive()
 		{
 			if( m_OwnerForCancellationToken == null )
 			{
+				Debug.LogWarning( "[CancelableTask] Owner(ExMonoBehaviour) is not set : name = " + name ) ;
 				return default ;
 			}
 
-			return m_OwnerForCancellationToken.GetCancellationTokenDeactive() ;
+			var ownerCancellationTokenDeactive = m_OwnerForCancellationToken.GetCancellationTokenDeactive() ;
+			if( ownerCancellationTokenDeactive != m_OwnerCancellationTokenDeactive )
+			{
+				// 異なるインスタンスの場合は上書きする
+				m_OwnerCancellationTokenDeactive = ownerCancellationTokenDeactive ;
+
+				m_OwnerCancellationTokenDeactive.Register( () =>
+				{
+					// オーナでの明示的な中断が行われた
+
+					// 自身のタスク群中断用のトークンソースを破棄する
+					if( m_CancellationTokenSourceDecative != null )
+					{
+						m_CancellationTokenSourceDecative.Dispose() ;
+						m_CancellationTokenSourceDecative = null ;
+					}
+
+					// タスク中断コールバックを呼び出す
+					OnTasksCanceled() ;
+				} ) ;
+			}
+
+			return m_OwnerCancellationTokenDeactive ;
 		}
 
-
-		// 破棄時のタスクキャンセル用トークン
+		// オーナーの ExMonoBehaviour 破棄時のタスクキャンセル用トークン
 		protected	CancellationToken			m_OwnerCancellationTokenOnDestroy	= default ;
+
+		//-----------------------------------
+		// 外部アクセス用
 
 		/// <summary>
 		/// オーナーの ExMonoBehaviour の破棄によるタスクキャンセルが行われた際に使用されるキャンセレーショントークンを取得する
@@ -54,97 +103,10 @@ namespace DSW
 			return m_OwnerCancellationTokenOnDestroy ;
 		}
 
-		/// <summary>
-		/// 実行中のタスク
-		/// </summary>
-		public		UniTask						  Task{ get{ return m_Task ; } protected set{ m_Task = value ; } }
-
-		// 実行中のタスク
-		private		UniTask						m_Task ;
-
-		/// <summary>
-		/// クラス内部タスク用の中断用コールバックのプロパティ
-		/// </summary>
-		protected	Action OnCancel{ get{ return m_OnCancel ; } set{ m_OnCancel = value ; } }
-
-		// 中断用のコールバック
-		private		Action						m_OnCancel = null ;
-
 		//-----------------------------------------------------------
-
-		private CancellationTokenSource			m_ActiveCancellationTokenSource = null ;
 
 		// 既に GameObject が削除されてしまったか
 		private	bool							m_GameObjectWasDestroyed = false ;
-
-		// キャンセルトークンを取得する
-		private CancellationToken GetActiveCancellationToken( CancellationToken cancellationToken )
-		{
-			CancellationToken ownerCancellationTokenDeactive = GetCancellationTokenDeactive() ;
-
-			if( cancellationToken == default || cancellationToken.CanBeCanceled == false )
-			{
-				// 基本のキャンセルトークン生成
-
-				if( m_ActiveCancellationTokenSource != null && m_ActiveCancellationTokenSource.IsCancellationRequested == true )
-				{
-					// 既にキャンセル済みのトークンが使われていたら作り直す
-					m_ActiveCancellationTokenSource.Dispose() ;
-					m_ActiveCancellationTokenSource = null ;
-				}
-
-				if( m_ActiveCancellationTokenSource == null )
-				{
-					m_ActiveCancellationTokenSource = CancellationTokenSource.CreateLinkedTokenSource( ownerCancellationTokenDeactive, m_OwnerCancellationTokenOnDestroy ) ;
-				}
-			}
-			else
-			{
-				// 独自のキャンセルトークン生成
-
-				if( m_ActiveCancellationTokenSource != null )
-				{
-					// 使用の有無に関わらずトークンは作り直す
-					m_ActiveCancellationTokenSource.Dispose() ;
-					m_ActiveCancellationTokenSource = null ;
-				}
-
-				m_ActiveCancellationTokenSource = CancellationTokenSource.CreateLinkedTokenSource( cancellationToken, ownerCancellationTokenDeactive, m_OwnerCancellationTokenOnDestroy ) ;
-			}
-
-			return m_ActiveCancellationTokenSource.Token ;
-		}
-
-		/// <summary>
-		/// 実行中のタスクを中断する
-		/// </summary>
-		/// <returns></returns>
-		public bool Cancel()
-		{
-			if( m_OnCancel != null )
-			{
-				// 中断用コールバックを実行する
-				m_OnCancel() ;
-				m_OnCancel = null ;
-			}
-
-			//----------------------------------
-
-			if( m_ActiveCancellationTokenSource == null )
-			{
-				return false ;	// タスクは実行していない
-			}
-
-			if( m_ActiveCancellationTokenSource.Token.CanBeCanceled == true )
-			{
-				m_ActiveCancellationTokenSource.Cancel() ;
-			}
-
-			m_ActiveCancellationTokenSource.Dispose() ;
-			m_ActiveCancellationTokenSource = null ;
-
-			return true ;		// 実行中のタスクは中断されたはず
-		}
 
 		//-----------------------------------------------------------
 
@@ -185,19 +147,19 @@ namespace DSW
 		// オーナーが破棄された
 		private void OnOwnerDestroyed()
 		{
-			if( m_ActiveCancellationTokenSource != null )
+			m_GameObjectWasDestroyed = true ;	// GameObject が削除された状態になっている
+
+			//----------------------------------
+
+			// 自身のタスク群中断用のトークンソースを破棄する
+			if( m_CancellationTokenSourceDecative != null )
 			{
-				// 自身用のトークンソースを破棄する
-				if( m_ActiveCancellationTokenSource.Token.CanBeCanceled == true )
-				{
-					m_ActiveCancellationTokenSource.Cancel() ;
-				}
-
-				m_ActiveCancellationTokenSource.Dispose() ;
-				m_ActiveCancellationTokenSource = null ;
-
-				m_GameObjectWasDestroyed = true ;	// GameObject が削除された状態になっている
+				m_CancellationTokenSourceDecative.Dispose() ;
+				m_CancellationTokenSourceDecative = null ;
 			}
+
+			// CancelableTask 用の OnTasksCanceled() を呼び出す
+			OnTasksCanceled() ;
 
 			// CancelableTask 用の OnDestroy() を呼び出す
 			OnDestroy() ;
@@ -206,34 +168,72 @@ namespace DSW
 		/// <summary>
 		/// CancelableTack が破棄される際に呼び出される
 		/// </summary>
-		virtual protected void OnDestroy(){}
-
-		//-------------------------------------------------------------------------------------------
-
-		/// <summary>
-		/// クラス外タスクを実行する
-		/// </summary>
-		/// <param name="owner"></param>
-		/// <param name="onAction"></param>
-		/// <param name="onCancel"></param>
-		/// <returns></returns>
-		public static CancelableTask Run( ExMonoBehaviour owner, Func<CancelableTask,UniTask> onAction, Action onCancel = null )
+		virtual protected void OnDestroy()
 		{
-			if( onAction == null )
+//			Debug.Log( "オーナー破棄によりタスク群が中断されました:" + name ) ;
+		}
+
+		//-----------------------------------------------------------
+
+		// キャンセルトークンを取得する
+		private ( CancellationTokenSource, CancellationToken ) GetActiveCancellation( CancellationToken cancellationToken )
+		{
+			// CacelableTask 自身のタスク群中断用のトークンを取得する。
+			CancellationToken cancellationTokenDeactive			= GetCancellationTokenDeactive() ;
+
+			// MonoBehaviour が破棄される、もしくは任意のタイミングでキャンセルが実行されるトークンを取得する。
+			CancellationToken ownerCancellationTokenDeactive	= GetOwnerCancellationTokenDeactive() ;
+
+			//----------------------------------------------------------
+
+			CancellationTokenSource		resultCancellationTokenSource ;
+			CancellationToken			resultCancellationToken ;
+
+			if( cancellationToken == default || cancellationToken.CanBeCanceled == false )
 			{
-				return null ;
+				// 基本のキャンセルトークン生成
+
+				resultCancellationTokenSource	= CancellationTokenSource.CreateLinkedTokenSource( cancellationTokenDeactive, ownerCancellationTokenDeactive, m_OwnerCancellationTokenOnDestroy ) ;
+				resultCancellationToken			= resultCancellationTokenSource.Token ;
+			}
+			else
+			{
+				// 独自のキャンセルトークン生成
+
+				resultCancellationTokenSource	= CancellationTokenSource.CreateLinkedTokenSource( cancellationToken, cancellationTokenDeactive, ownerCancellationTokenDeactive, m_OwnerCancellationTokenOnDestroy ) ;
+				resultCancellationToken			= resultCancellationTokenSource.Token ;
 			}
 
-			// 中断可能タスクのインスタンス生成
-			var task = new CancelableTask( owner ) ;	// ※VisualStudio だと軽度ワーニングが付くが UnityEditor がまだこの書式に未対応
+			return ( resultCancellationTokenSource, resultCancellationToken ) ;
+		}
 
-			// クラス外タスクを実行
-			task.m_Task	= onAction( task ) ;
+		/// <summary>
+		/// 実行中のタスク群を中断する
+		/// </summary>
+		/// <returns></returns>
+		public bool CancelTasks()
+		{
+			if( m_CancellationTokenSourceDecative != null )
+			{
+				// 明示的なタスク群の中断を実行する
+				if( m_CancellationTokenSourceDecative.IsCancellationRequested == false )
+				{
+					m_CancellationTokenSourceDecative.Cancel() ;
+				}
 
-			// 中断時のコールバックを登録
-			task.m_OnCancel		= onCancel ;
+				m_CancellationTokenSourceDecative.Dispose() ;
+				m_CancellationTokenSourceDecative = null ;
+			}
 
-			return task ;
+			return true ;		// 実行中のタスクは中断されたはず
+		}
+
+		/// <summary>
+		/// タスクがキャンセルされた際に呼び出されるコールバック
+		/// </summary>
+		virtual protected void OnTasksCanceled()
+		{
+//			Debug.Log( "タスク群が中断されました:" + name ) ;
 		}
 
 		//-------------------------------------------------------------------------------------------
@@ -245,7 +245,7 @@ namespace DSW
 		/// <param name="timing"></param>
 		/// <param name="cancellationToken"></param>
 		/// <returns></returns>
-		public UniTask Yield( PlayerLoopTiming timing = PlayerLoopTiming.Update, CancellationToken cancellationToken = default )
+		public async UniTask Yield( PlayerLoopTiming timing = PlayerLoopTiming.Update, CancellationToken cancellationToken = default )
 		{
 			if( m_GameObjectWasDestroyed == true )
 			{
@@ -257,7 +257,36 @@ namespace DSW
 
 			//----------------------------------------------------------
 
-			return UniTask.Yield( timing, GetActiveCancellationToken( cancellationToken ) ) ;
+			( var tokenSource, var token ) = GetActiveCancellation( cancellationToken ) ;
+
+			bool isCanceled = false ;
+			try
+			{
+				await UniTask.Yield( timing, token ) ;
+			}
+			catch( Exception e )
+			{
+				if( e is OperationCanceledException )
+				{
+					isCanceled = true ;
+				}
+				else
+				{
+					Debug.LogError( e.Message ) ;
+				}
+			}
+			finally
+			{
+				if( tokenSource != null )
+				{
+					tokenSource.Dispose() ;
+				}
+			}
+
+			if( isCanceled == true )
+			{
+				throw new OperationCanceledException() ;
+			}
 		}
 
 		/// <summary>
@@ -268,7 +297,7 @@ namespace DSW
 		/// <param name="delayTiming"></param>
 		/// <param name="cancellationToken"></param>
 		/// <returns></returns>
-		public UniTask Delay( int millisecondsDelay, bool ignoreTimeScale = false, PlayerLoopTiming delayTiming = PlayerLoopTiming.Update, CancellationToken cancellationToken = default )
+		public async UniTask Delay( int millisecondsDelay, bool ignoreTimeScale = false, PlayerLoopTiming delayTiming = PlayerLoopTiming.Update, CancellationToken cancellationToken = default )
 		{
 			if( m_GameObjectWasDestroyed == true )
 			{
@@ -280,8 +309,37 @@ namespace DSW
 
 			//----------------------------------------------------------
 
-			var delayTimeSpan = TimeSpan.FromMilliseconds( millisecondsDelay ) ;
-			return UniTask.Delay( delayTimeSpan, ignoreTimeScale, delayTiming, GetActiveCancellationToken( cancellationToken ) ) ;
+			( var tokenSource, var token ) = GetActiveCancellation( cancellationToken ) ;
+
+			bool isCanceled = false ;
+			try
+			{
+				var delayTimeSpan = TimeSpan.FromMilliseconds( millisecondsDelay ) ;
+				await UniTask.Delay( delayTimeSpan, ignoreTimeScale, delayTiming, token ) ;
+			}
+			catch( Exception e )
+			{
+				if( e is OperationCanceledException )
+				{
+					isCanceled = true ;
+				}
+				else
+				{
+					Debug.LogError( e.Message ) ;
+				}
+			}
+			finally
+			{
+				if( tokenSource != null )
+				{
+					tokenSource.Dispose() ;
+				}
+			}
+
+			if( isCanceled == true )
+			{
+				throw new OperationCanceledException() ;
+			}
 		}
 
 		/// <summary>
@@ -292,7 +350,7 @@ namespace DSW
 		/// <param name="delayTiming"></param>
 		/// <param name="cancellationToken"></param>
 		/// <returns></returns>
-		public UniTask DelayFrame( int delayFrameCount, PlayerLoopTiming delayTiming = PlayerLoopTiming.Update, CancellationToken cancellationToken = default )
+		public async UniTask DelayFrame( int delayFrameCount, PlayerLoopTiming delayTiming = PlayerLoopTiming.Update, CancellationToken cancellationToken = default )
 		{
 			if( m_GameObjectWasDestroyed == true )
 			{
@@ -304,7 +362,36 @@ namespace DSW
 
 			//----------------------------------------------------------
 
-			return UniTask.DelayFrame( delayFrameCount, delayTiming, GetActiveCancellationToken( cancellationToken ) ) ;
+			( var tokenSource, var token ) = GetActiveCancellation( cancellationToken ) ;
+
+			bool isCanceled = false ;
+			try
+			{
+				await UniTask.DelayFrame( delayFrameCount, delayTiming, token ) ;
+			}
+			catch( Exception e )
+			{
+				if( e is OperationCanceledException )
+				{
+					isCanceled = true ;
+				}
+				else
+				{
+					Debug.LogError( e.Message ) ;
+				}
+			}
+			finally
+			{
+				if( tokenSource != null )
+				{
+					tokenSource.Dispose() ;
+				}
+			}
+
+			if( isCanceled == true )
+			{
+				throw new OperationCanceledException() ;
+			}
 		}
 
 		/// <summary>
@@ -312,7 +399,7 @@ namespace DSW
 		/// </summary>
 		/// <param name="cancellationToken"></param>
 		/// <returns></returns>
-		public UniTask WaitForFixedUpdate( CancellationToken cancellationToken = default )
+		public async UniTask WaitForFixedUpdate( CancellationToken cancellationToken = default )
 		{
 			if( m_GameObjectWasDestroyed == true )
 			{
@@ -324,7 +411,36 @@ namespace DSW
 
 			//----------------------------------------------------------
 
-			return UniTask.WaitForFixedUpdate( GetActiveCancellationToken( cancellationToken ) ) ;
+			( var tokenSource, var token ) = GetActiveCancellation( cancellationToken ) ;
+
+			bool isCanceled = false ;
+			try
+			{
+				await UniTask.WaitForFixedUpdate( token ) ;
+			}
+			catch( Exception e )
+			{
+				if( e is OperationCanceledException )
+				{
+					isCanceled = true ;
+				}
+				else
+				{
+					Debug.LogError( e.Message ) ;
+				}
+			}
+			finally
+			{
+				if( tokenSource != null )
+				{
+					tokenSource.Dispose() ;
+				}
+			}
+
+			if( isCanceled == true )
+			{
+				throw new OperationCanceledException() ;
+			}
 		}
 
 		/// <summary>
@@ -335,7 +451,7 @@ namespace DSW
 		/// <param name="delayTiming"></param>
 		/// <param name="cancellationToken"></param>
 		/// <returns></returns>
-		public UniTask WaitForSeconds( float time, bool ignoreTimeScale = false, PlayerLoopTiming delayTiming = PlayerLoopTiming.Update, CancellationToken cancellationToken = default )
+		public async UniTask WaitForSeconds( float time, bool ignoreTimeScale = false, PlayerLoopTiming delayTiming = PlayerLoopTiming.Update, CancellationToken cancellationToken = default )
 		{
 			if( m_GameObjectWasDestroyed == true )
 			{
@@ -347,8 +463,40 @@ namespace DSW
 
 			//----------------------------------------------------------
 
-			var delayTimeSpan = TimeSpan.FromMilliseconds( time * 1000 ) ;
-			return UniTask.Delay( delayTimeSpan, ignoreTimeScale, delayTiming, GetActiveCancellationToken( cancellationToken ) ) ;
+			( var tokenSource, var token ) = GetActiveCancellation( cancellationToken ) ;
+
+			bool isCanceled = false ;
+			try
+			{
+				var delayTimeSpan = TimeSpan.FromMilliseconds( time * 1000 ) ;
+				await UniTask.Delay( delayTimeSpan, ignoreTimeScale, delayTiming, token ) ;
+			}
+			catch( Exception e )
+			{
+				if( e is OperationCanceledException )
+				{
+//					Debug.Log( "タスクはキャンセルされました" ) ;
+					isCanceled = true ;
+				}
+				else
+				{
+					Debug.LogError( e.Message ) ;
+				}
+			}
+			finally
+			{
+				if( tokenSource != null )
+				{
+//					Debug.Log( "独自のトークンソースを破棄します" ) ;
+					tokenSource.Dispose() ;
+				}
+			}
+
+			if( isCanceled == true )
+			{
+//				Debug.Log( "タスクキャンセル例外を返します" ) ;
+				throw new OperationCanceledException() ;
+			}
 		}
 
 		/// <summary>
@@ -356,7 +504,7 @@ namespace DSW
 		/// </summary>
 		/// <param name="cancellationToken"></param>
 		/// <returns></returns>
-		public UniTask WaitWhile( Func<bool> predicate, PlayerLoopTiming timing = PlayerLoopTiming.Update, CancellationToken cancellationToken = default )
+		public async UniTask WaitWhile( Func<bool> predicate, PlayerLoopTiming timing = PlayerLoopTiming.Update, CancellationToken cancellationToken = default )
 		{
 			if( m_GameObjectWasDestroyed == true )
 			{
@@ -368,7 +516,36 @@ namespace DSW
 
 			//----------------------------------------------------------
 
-			return UniTask.WaitWhile( predicate, timing, GetActiveCancellationToken( cancellationToken ) ) ;
+			( var tokenSource, var token ) = GetActiveCancellation( cancellationToken ) ;
+
+			bool isCanceled = false ;
+			try
+			{
+				await UniTask.WaitWhile( predicate, timing, token ) ;
+			}
+			catch( Exception e )
+			{
+				if( e is OperationCanceledException )
+				{
+					isCanceled = true ;
+				}
+				else
+				{
+					Debug.LogError( e.Message ) ;
+				}
+			}
+			finally
+			{
+				if( tokenSource != null )
+				{
+					tokenSource.Dispose() ;
+				}
+			}
+
+			if( isCanceled == true )
+			{
+				throw new OperationCanceledException() ;
+			}
 		}
 
 		/// <summary>
@@ -376,7 +553,7 @@ namespace DSW
 		/// </summary>
 		/// <param name="cancellationToken"></param>
 		/// <returns></returns>
-		public UniTask WaitUntil( Func<bool> predicate, PlayerLoopTiming timing = PlayerLoopTiming.Update, CancellationToken cancellationToken = default )
+		public async UniTask WaitUntil( Func<bool> predicate, PlayerLoopTiming timing = PlayerLoopTiming.Update, CancellationToken cancellationToken = default )
 		{
 			if( m_GameObjectWasDestroyed == true )
 			{
@@ -388,7 +565,36 @@ namespace DSW
 
 			//----------------------------------------------------------
 
-			return UniTask.WaitUntil( predicate, timing, GetActiveCancellationToken( cancellationToken ) ) ;
+			( var tokenSource, var token ) = GetActiveCancellation( cancellationToken ) ;
+
+			bool isCanceled = false ;
+			try
+			{
+				await UniTask.WaitUntil( predicate, timing, token ) ;
+			}
+			catch( Exception e )
+			{
+				if( e is OperationCanceledException )
+				{
+					isCanceled = true ;
+				}
+				else
+				{
+					Debug.LogError( e.Message ) ;
+				}
+			}
+			finally
+			{
+				if( tokenSource != null )
+				{
+					tokenSource.Dispose() ;
+				}
+			}
+
+			if( isCanceled == true )
+			{
+				throw new OperationCanceledException() ;
+			}
 		}
 
 		//-------------------------------------------------------------------------------------------
@@ -465,9 +671,16 @@ namespace DSW
 				throw new OperationCanceledException() ;
 			}
 
+			if( tasks == null || tasks.Length == 0 )
+			{
+				// 待機する意味が無い
+				return ;
+			}
+
 			//----------------------------------------------------------
 
-			cancellationToken  = GetActiveCancellationToken( cancellationToken ) ;
+			// OnDestroy() 実行後の場合はリーク対策として強制的にキャンセルをかける
+			( var tokenSource, var token ) = GetActiveCancellation( cancellationToken ) ;
 
 			//----------------------------------
 
@@ -477,6 +690,8 @@ namespace DSW
 
 			int countMax ;
 			int countNow ;
+
+			bool isCanceled	= false ;
 
 			while( true )
 			{
@@ -638,13 +853,44 @@ namespace DSW
 					}
 				}
 
-				await UniTask.Yield( PlayerLoopTiming.Update, cancellationToken ) ;
-
 				if( countMax == 0 || countNow >  0 )
 				{
 					// 実行されているタスクは無いか１つ以上終了した
 					break ;
 				}
+
+				//---------------------------------
+
+				try
+				{
+					await UniTask.Yield( PlayerLoopTiming.Update, token ) ;
+				}
+				catch( Exception e )
+				{
+					if( e is OperationCanceledException )
+					{
+						isCanceled = true ;
+					}
+					else
+					{
+						Debug.LogError( e.Message ) ;
+					}
+					break ;
+				}
+			}
+
+			//----------------------------------------------------------
+			// ループ終了後
+
+			if( tokenSource != null )
+			{
+				tokenSource.Dispose() ;
+			}
+
+			if( isCanceled == true )
+			{
+				// 中断された場合は例外を投げる
+				throw new OperationCanceledException() ;
 			}
 		}
 
@@ -683,9 +929,16 @@ namespace DSW
 				throw new OperationCanceledException() ;
 			}
 
+			if( funcs == null || funcs.Length == 0 )
+			{
+				// 待機する意味が無い
+				return ;
+			}
+
 			//----------------------------------------------------------
 
-			cancellationToken  = GetActiveCancellationToken( cancellationToken ) ;
+			// OnDestroy() 実行後の場合はリーク対策として強制的にキャンセルをかける
+			( var tokenSource, var token ) = GetActiveCancellation( cancellationToken ) ;
 
 			//----------------------------------
 
@@ -695,6 +948,8 @@ namespace DSW
 
 			int countMax ;
 			int countNow ;
+
+			bool isCanceled	= false ;
 
 			while( true )
 			{
@@ -717,13 +972,44 @@ namespace DSW
 					}
 				}
 
-				await UniTask.Yield( PlayerLoopTiming.Update, cancellationToken ) ;
-
 				if( countMax == 0 || countNow >  0 )
 				{
 					// 実行されているタスクは無いか１つ以上終了した
 					break ;
 				}
+
+				//---------------------------------
+
+				try
+				{
+					await UniTask.Yield( PlayerLoopTiming.Update, token ) ;
+				}
+				catch( Exception e )
+				{
+					if( e is OperationCanceledException )
+					{
+						isCanceled = true ;
+					}
+					else
+					{
+						Debug.LogError( e.Message ) ;
+					}
+					break ;
+				}
+			}
+
+			//----------------------------------------------------------
+			// ループ終了後
+
+			if( tokenSource != null )
+			{
+				tokenSource.Dispose() ;
+			}
+
+			if( isCanceled == true )
+			{
+				// 中断された場合は例外を投げる
+				throw new OperationCanceledException() ;
 			}
 		}
 
@@ -782,9 +1068,16 @@ namespace DSW
 				throw new OperationCanceledException() ;
 			}
 
+			if( tasks == null || tasks.Length == 0 )
+			{
+				// 待機する意味が無い
+				return ;
+			}
+
 			//----------------------------------------------------------
 
-			cancellationToken  = GetActiveCancellationToken( cancellationToken ) ;
+			// OnDestroy() 実行後の場合はリーク対策として強制的にキャンセルをかける
+			( var tokenSource, var token ) = GetActiveCancellation( cancellationToken ) ;
 
 			//----------------------------------
 
@@ -793,6 +1086,8 @@ namespace DSW
 			// よって判定対象のタスクが中断された場合のオーナータスクを含めた一括中断は行われない
 
 			int count ;
+
+			bool isCanceled	= false ;
 
 			while( true )
 			{
@@ -931,12 +1226,43 @@ namespace DSW
 					}
 				}
 
-				await UniTask.Yield( PlayerLoopTiming.Update, cancellationToken ) ;
-
 				if( count == 0 )
 				{
 					break ;
 				}
+
+				//---------------------------------------------------------
+
+				try
+				{
+					await UniTask.Yield( PlayerLoopTiming.Update, token ) ;
+				}
+				catch( Exception e )
+				{
+					if( e is OperationCanceledException )
+					{
+						isCanceled = true ;
+					}
+					else
+					{
+						Debug.LogError( e.Message ) ;
+					}
+					break ;
+				}
+			}
+
+			//----------------------------------------------------------
+			// ループ終了後
+
+			if( tokenSource != null )
+			{
+				tokenSource.Dispose() ;
+			}
+
+			if( isCanceled == true )
+			{
+				// 中断された場合は例外を投げる
+				throw new OperationCanceledException() ;
 			}
 		}
 
@@ -975,9 +1301,16 @@ namespace DSW
 				throw new OperationCanceledException() ;
 			}
 
+			if( funcs == null || funcs.Length == 0 )
+			{
+				// 待機する意味が無い
+				return ;
+			}
+
 			//----------------------------------------------------------
 
-			cancellationToken  = GetActiveCancellationToken( cancellationToken ) ;
+			// OnDestroy() 実行後の場合はリーク対策として強制的にキャンセルをかける
+			( var tokenSource, var token ) = GetActiveCancellation( cancellationToken ) ;
 
 			//----------------------------------
 
@@ -986,6 +1319,8 @@ namespace DSW
 			// よって判定対象のタスクが中断された場合のオーナータスクを含めた一括中断は行われない
 
 			int count ;
+
+			bool isCanceled	= false ;
 
 			while( true )
 			{
@@ -1006,12 +1341,43 @@ namespace DSW
 					}
 				}
 
-				await UniTask.Yield( PlayerLoopTiming.Update, cancellationToken ) ;
-
 				if( count == 0 )
 				{
 					break ;
 				}
+
+				//---------------------------------------------------------
+
+				try
+				{
+					await UniTask.Yield( PlayerLoopTiming.Update, token ) ;
+				}
+				catch( Exception e )
+				{
+					if( e is OperationCanceledException )
+					{
+						isCanceled = true ;
+					}
+					else
+					{
+						Debug.LogError( e.Message ) ;
+					}
+					break ;
+				}
+			}
+
+			//----------------------------------------------------------
+			// ループ終了後
+
+			if( tokenSource != null )
+			{
+				tokenSource.Dispose() ;
+			}
+
+			if( isCanceled == true )
+			{
+				// 中断された場合は例外を投げる
+				throw new OperationCanceledException() ;
 			}
 		}
 
@@ -1032,13 +1398,16 @@ namespace DSW
 
 			//----------------------------------------------------------
 
-			cancellationToken  = GetActiveCancellationToken( cancellationToken ) ;
+			// OnDestroy() 実行後の場合はリーク対策として強制的にキャンセルをかける
+			( var tokenSource, var token ) = GetActiveCancellation( cancellationToken ) ;
 
 			//----------------------------------
 
 			// 重要
 			// 判定対象のタスクは実行中以外(失敗・中断・終了)は全て終了扱いとする
 			// よって判定対象のタスクが中断された場合のオーナータスクを含めた一括中断は行われない
+
+			bool isCanceled	= false ;
 
 			while( true )
 			{
@@ -1047,8 +1416,42 @@ namespace DSW
 					break ;	// 終了
 				}
 
-				await UniTask.Yield( PlayerLoopTiming.Update, cancellationToken ) ;
+				//---------------------------------
+				// 直接呼び出し元タスクのキャンセル対応
+
+				try
+				{
+					await UniTask.Yield( PlayerLoopTiming.Update, token ) ;
+				}
+				catch( Exception e )
+				{
+					if( e is OperationCanceledException )
+					{
+						isCanceled = true ;
+					}
+					else
+					{
+						Debug.LogError( e.Message ) ;
+					}
+					break ;
+				}
 			}
+
+			//----------------------------------------------------------
+			// ループ終了後
+
+			if( tokenSource != null )
+			{
+				tokenSource.Dispose() ;
+			}
+
+			if( isCanceled == true )
+			{
+				// 中断された場合は例外を投げる
+				throw new OperationCanceledException() ;
+			}
+
+			//------------------------------------------------------------------------------------------
 
 			if( task.Status == UniTaskStatus.Faulted )
 			{
@@ -1064,6 +1467,7 @@ namespace DSW
 				return default ;
 			}
 
+			// 待機対象のタスクは主に常駐インスタンスにあるものであるためキャンセルがあっても直接の呼び出しタスクはキャンセルさせない
 			// 結果値を返す
 			return task.GetAwaiter().GetResult() ;
 		}
@@ -1083,9 +1487,16 @@ namespace DSW
 				throw new OperationCanceledException() ;
 			}
 
+			if( task == null )
+			{
+				// 待機する意味が無い
+				return ;
+			}
+
 			//----------------------------------------------------------
 
-			cancellationToken  = GetActiveCancellationToken( cancellationToken ) ;
+			// OnDestroy() 実行後の場合はリーク対策として強制的にキャンセルをかける
+			( var tokenSource, var token ) = GetActiveCancellation( cancellationToken ) ;
 
 			//----------------------------------
 
@@ -1093,6 +1504,8 @@ namespace DSW
 			// 判定対象のタスクは実行中以外(失敗・中断・終了)は全て終了扱いとする
 			// よって判定対象のタスクが中断された場合のオーナータスクを含めた一括中断は行われない
 			int count ;
+
+			bool isCanceled	= false ;
 
 			while( true )
 			{
@@ -1267,7 +1680,38 @@ namespace DSW
 					return ;
 				}
 
-				await UniTask.Yield( PlayerLoopTiming.Update, cancellationToken ) ;
+				//---------------------------------
+
+				try
+				{
+					await UniTask.Yield( PlayerLoopTiming.Update, token ) ;
+				}
+				catch( Exception e )
+				{
+					if( e is OperationCanceledException )
+					{
+						isCanceled = true ;
+					}
+					else
+					{
+						Debug.LogError( e.Message ) ;
+					}
+					break ;
+				}
+			}
+
+			//----------------------------------------------------------
+			// ループ終了後
+
+			if( tokenSource != null )
+			{
+				tokenSource.Dispose() ;
+			}
+
+			if( isCanceled == true )
+			{
+				// 中断された場合は例外を投げる
+				throw new OperationCanceledException() ;
 			}
 		}
 
@@ -1280,7 +1724,7 @@ namespace DSW
 		/// <param name="duration"></param>
 		/// <param name="easeType"></param>
 		/// <returns></returns>
-		protected async UniTask Tween( Action<float> onFrameUpdate, float duration, EaseTypes easeType = EaseTypes.Linear, float timeScale = 1 )
+		protected async UniTask Tween( Action<float> onFrameUpdate, float duration, EaseTypes easeType = EaseTypes.Linear, float timeScale = 1, Func<bool> onCancel = null )
 		{
 			if( m_GameObjectWasDestroyed == true )
 			{
@@ -1306,6 +1750,15 @@ namespace DSW
 			float timer = 0 ;
 			while( timer <  duration )
 			{
+				if( onCancel != null )
+				{
+					if( onCancel() == true )
+					{
+						// 中断
+						break ;
+					}
+				}
+
 				timer += ( Time.deltaTime * timeScale ) ;
 				if( timer >  duration )
 				{
@@ -1324,7 +1777,7 @@ namespace DSW
 		/// <param name="duration"></param>
 		/// <param name="easeType"></param>
 		/// <returns></returns>
-		protected async UniTask Tween( Func<float,float> onFrameUpdate, float duration, EaseTypes easeType = EaseTypes.Linear, float timeScale = 1 )
+		protected async UniTask Tween( Func<float,float> onFrameUpdate, float duration, EaseTypes easeType = EaseTypes.Linear, float timeScale = 1, Func<bool> onCancel = null )
 		{
 			if( m_GameObjectWasDestroyed == true )
 			{
@@ -1350,6 +1803,15 @@ namespace DSW
 			float timer = 0 ;
 			while( timer <  duration )
 			{
+				if( onCancel != null )
+				{
+					if( onCancel() == true )
+					{
+						// 中断
+						break ;
+					}
+				}
+
 				timer += ( Time.deltaTime * timeScale ) ;
 				if( timer >  duration )
 				{
@@ -1369,7 +1831,7 @@ namespace DSW
 		/// <param name="duration"></param>
 		/// <param name="easeType"></param>
 		/// <returns></returns>
-		protected async UniTask Tween( Func<float,bool> onFrameUpdate, float duration, EaseTypes easeType = EaseTypes.Linear, float timeScale = 1 )
+		protected async UniTask Tween( Func<float,bool> onFrameUpdate, float duration, EaseTypes easeType = EaseTypes.Linear, float timeScale = 1, Func<bool> onCancel = null )
 		{
 			if( m_GameObjectWasDestroyed == true )
 			{
@@ -1394,6 +1856,15 @@ namespace DSW
 			float timer = 0 ;
 			while( timer <  duration )
 			{
+				if( onCancel != null )
+				{
+					if( onCancel() == true )
+					{
+						// 中断
+						break ;
+					}
+				}
+
 				timer += ( Time.deltaTime * timeScale ) ;
 				if( timer >  duration )
 				{
@@ -1415,7 +1886,7 @@ namespace DSW
 		/// <param name="duration"></param>
 		/// <param name="easeType"></param>
 		/// <returns></returns>
-		protected async UniTask Tween( Func<float,( float, bool )> onFrameUpdate, float duration, EaseTypes easeType = EaseTypes.Linear, float timeScale = 1 )
+		protected async UniTask Tween( Func<float,( float, bool )> onFrameUpdate, float duration, EaseTypes easeType = EaseTypes.Linear, float timeScale = 1, Func<bool> onCancel = null )
 		{
 			if( m_GameObjectWasDestroyed == true )
 			{
@@ -1442,6 +1913,15 @@ namespace DSW
 			bool stop ;
 			while( timer <  duration )
 			{
+				if( onCancel != null )
+				{
+					if( onCancel() == true )
+					{
+						// 中断
+						break ;
+					}
+				}
+
 				timer += ( Time.deltaTime * timeScale ) ;
 				if( timer >  duration )
 				{

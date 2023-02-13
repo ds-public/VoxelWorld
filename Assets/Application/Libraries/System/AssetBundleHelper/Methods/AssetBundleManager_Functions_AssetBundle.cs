@@ -2662,7 +2662,7 @@ namespace AssetBundleHelper
 		/// </summary>
 		/// <param name="path">アセットバンドルのパス</param>
 		/// <returns></returns>
-		public static int GetSize( string path )
+		public static long GetSize( string path )
 		{
 			// 簡略化すると Unity でエラーが出る(C#のバージョン的に未対応)
 			if( m_Instance == null )
@@ -2674,7 +2674,7 @@ namespace AssetBundleHelper
 		}
 		
 		// アセットバンドルのサイズを取得する
-		private int GetSize_Private( string path )
+		private long GetSize_Private( string path )
 		{
 			if( GetManifestNameAndAssetBundleName( path, out string manifestName, out string assetBundlePath, out _ ) == true )
 			{

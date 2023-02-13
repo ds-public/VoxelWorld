@@ -90,7 +90,7 @@ namespace uGUIHelper
 				{
 					return ;
 				}
-			
+
 				toggle.isOn = value ;
 			}
 		}
@@ -118,6 +118,33 @@ namespace uGUIHelper
 				}
 				toggle.interactable = value ;
 			}
+		}
+
+		//---------------------------------------------
+
+		// プログラムからの値のセットかどうか
+		private bool m_CallbackEnabled = true ;
+
+		/// <summary>
+		/// 値を設定する際にコールバックを発生させるかどうか設定できる
+		/// </summary>
+		/// <param name="isOn"></param>
+		/// <param name="callBackEnabled"></param>
+		public void SetValue( bool isOn, bool callBackEnabled = true )
+		{
+			Toggle toggle = CToggle ;
+			if( toggle == null )
+			{
+				return ;
+			}
+
+			//----------------------------------
+
+			m_CallbackEnabled = callBackEnabled ;
+
+			toggle.isOn = isOn ;
+
+			m_CallbackEnabled = true ;
 		}
 
 		//---------------------------------------------
@@ -240,9 +267,9 @@ namespace uGUIHelper
 		/// <summary>
 		/// 状態が変化した際に呼び出されるデリゲートの定義
 		/// </summary>
-		/// <param name="tIdentity">ビューの識別名(未設定の場合はゲームオブジェクト名)</param>
-		/// <param name="tView">ビューのインスタンス</param>
-		/// <param name="tValue">変化後の値</param>
+		/// <param name="identity">ビューの識別名(未設定の場合はゲームオブジェクト名)</param>
+		/// <param name="view">ビューのインスタンス</param>
+		/// <param name="value">変化後の値</param>
 		public delegate void OnValueChanged( string identity, UIToggle view, bool value ) ;
 
 		/// <summary>
@@ -253,7 +280,7 @@ namespace uGUIHelper
 		/// <summary>
 		/// 状態が変化した際に呼び出されるアクションを設定する
 		/// </summary>
-		/// <param name="tOnValueChangedAction">アクションメソッド</param>
+		/// <param name="onValueChangedAction">アクションメソッド</param>
 		public void SetOnValueChanged( Action<string, UIToggle, bool> onValueChangedAction )
 		{
 			OnValueChangedAction = onValueChangedAction ;
@@ -262,7 +289,7 @@ namespace uGUIHelper
 		/// <summary>
 		/// 状態が変化した際に呼び出されるデリゲートを追加する
 		/// </summary>
-		/// <param name="tOnValueChangedDelegate">デリゲートメソッド</param>
+		/// <param name="onValueChangedDelegate">デリゲートメソッド</param>
 		public void AddOnValueChanged( OnValueChanged onValueChangedDelegate )
 		{
 			OnValueChangedDelegate += onValueChangedDelegate ;
@@ -271,7 +298,7 @@ namespace uGUIHelper
 		/// <summary>
 		/// 状態が変化した際に呼び出されるデリゲートを削除する
 		/// </summary>
-		/// <param name="tOnValueChangedDelegate">デリゲートメソッド</param>
+		/// <param name="onValueChangedDelegate">デリゲートメソッド</param>
 		public void RemoveOnValueChanged( OnValueChanged onValueChangedDelegate )
 		{
 			OnValueChangedDelegate -= onValueChangedDelegate ;
@@ -282,6 +309,12 @@ namespace uGUIHelper
 		{
 			if( OnValueChangedAction != null || OnValueChangedDelegate != null )
 			{
+				if( m_CallbackEnabled == false )
+				{
+					// コールバックを発生させない
+					return ;
+				}
+
 				string identity = Identity ;
 				if( string.IsNullOrEmpty( identity ) == true )
 				{
@@ -298,7 +331,7 @@ namespace uGUIHelper
 		/// <summary>
 		/// 状態が変化した際に呼び出されるリスナーを追加する
 		/// </summary>
-		/// <param name="tOnValueChanged">リスナーメソッド</param>
+		/// <param name="onValueChanged">リスナーメソッド</param>
 		public void AddOnValueChangedListener( UnityEngine.Events.UnityAction<bool> onValueChanged )
 		{
 			Toggle toggle = CToggle ;
@@ -311,7 +344,7 @@ namespace uGUIHelper
 		/// <summary>
 		/// 状態が変化した際に呼び出されるリスナーを削除する
 		/// </summary>
-		/// <param name="tOnValueChanged">リスナーメソッド</param>
+		/// <param name="onValueChanged">リスナーメソッド</param>
 		public void RemoveOnValueChangedListener( UnityEngine.Events.UnityAction<bool> onValueChanged )
 		{
 			Toggle toggle = CToggle ;

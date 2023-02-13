@@ -8,7 +8,7 @@ using UnityEngine ;
 namespace DSW
 {
 	/// <summary>
-	/// Array 型のメソッド拡張 Version 2022/11/03
+	/// Array 型のメソッド拡張 Version 2023/01/12
 	/// </summary>
 	public static class ExArray
 	{
@@ -469,6 +469,18 @@ namespace DSW
 
 			int i, l = array.Length ;
 
+			if( typeof( T ).IsEnum == true )
+			{
+				// 列挙子は特殊な処理が必要(→数値化して判定する)
+				for( i  = 0 ; i <  l ; i ++ )
+				{
+					if( ( int )( ( object )array[ i ] ) == ( int )( ( object )pattern ) )
+					{
+						return i ;
+					}
+				}
+			}
+			else
 			if( typeof( T ) == typeof( bool ) )
 			{
 				// bool

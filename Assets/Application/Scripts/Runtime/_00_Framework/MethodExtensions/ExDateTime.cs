@@ -6,7 +6,7 @@ using UnityEngine ;
 namespace DSW
 {
 	/// <summary>
-	/// DateTime 型のメソッド拡張 Version 2022/02/08
+	/// DateTime 型のメソッド拡張 Version 2023/01/25
 	/// </summary>
 	public static class ExDateTime
 	{
@@ -49,7 +49,7 @@ namespace DSW
 		/// <returns></returns>
 		public static string HHMM( this DateTime dt )
 		{
-			return $"{dt:hh:mm}" ;
+			return $"{dt:HH:mm}" ;
 		}
 
 		/// <summary>
@@ -59,7 +59,7 @@ namespace DSW
 		/// <returns></returns>
 		public static string HHMMSS( this DateTime dt )
 		{
-			return $"{dt:hh:mm:ss}" ;
+			return $"{dt:HH:mm:ss}" ;
 		}
 
 
@@ -82,6 +82,5 @@ namespace DSW
 		{
 			return $"{dt:yyyy/MM/dd HH:mm:ss}" ;
 		}
-
 	}
 }

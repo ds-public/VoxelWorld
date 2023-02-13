@@ -56,10 +56,10 @@ namespace AssetBundleHelper
 		/// <param name="crc"></param>
 		/// <param name="data"></param>
 		/// <returns></returns>
-		internal protected static uint GetCRC32( uint crc, byte[] data, int length )
+		internal protected static uint GetCRC32( uint crc, byte[] data, long length )
 		{
 			byte code ;
-			int offset ;
+			long offset ;
 
 			for( offset  = 0 ; offset <  length ; offset ++ )
 			{

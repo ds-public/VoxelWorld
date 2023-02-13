@@ -12,7 +12,7 @@ using ICSharpCode.SharpZipLib.Zip ;
 namespace DSW
 {
 	/// <summary>
-	/// Ｚｉｐクラス Version 2022/09/19 0
+	/// Ｚｉｐクラス Version 2022/12/12 0
 	/// </summary>
 	public class Zip : ExMonoBehaviour
 	{
@@ -29,9 +29,9 @@ namespace DSW
 		//-------------------------------------------------------------------------------------------
 
 		/// <summary>
-		/// 伸長・圧縮のバッファサイズ
+		/// 圧縮用のバッファサイズ(デフォルトで１ＭＢ) ※
 		/// </summary>
-		public static int BufferSize = 4096 ;
+		public static int BufferSize = 1024 * 1024 ;
 
 		//-------------------------------------------------------------------------------------------
 
@@ -139,11 +139,7 @@ namespace DSW
 
 		private static byte[] Decompress_Private( Stream cis, string name, string password = null )
 		{
-			byte[] result = null ;
-
 			ZipInputStream zis = new ZipInputStream( cis ) ;
-
-			MemoryStream mos ;
 
 			if( string.IsNullOrEmpty( password ) == false )
 			{
@@ -153,9 +149,10 @@ namespace DSW
 			//----------------------------------
 
 			ZipEntry entry ;
-			
-			byte[] buffer = new byte[ BufferSize ] ;
-			int length ;
+
+			// 伸長されたデータ
+			byte[] buffer = null ;
+			int offset, length ;
 
 			do
 			{
@@ -164,21 +161,42 @@ namespace DSW
 				if( entry != null && entry.IsFile == true && entry.Name == name )
 				{
 					// 発見
-					mos = new MemoryStream() ;
 
-					do
+					if( entry.Size >  0 )
 					{
-						length = zis.Read( buffer, 0, buffer.Length ) ;
-						if( length >  0 )
+						// サイズが 1 以上
+
+						buffer = new byte[ entry.Size ] ;
+
+						offset = 0 ;
+						while( true )
 						{
-							mos.Write( buffer, 0, length ) ;
+							length = zis.Read( buffer, offset, buffer.Length ) ;
+							if( length >  0 )
+							{
+								offset += length ;
+							}
+
+							if( length == 0 || offset >= buffer.Length )
+							{
+								break ;
+							}
+						}
+
+						if( offset != buffer.Length )
+						{
+							// サイズ異常
+							Debug.Log( "[ZIP]Decompress Size Faild : File = " + entry.Name + " Size = " + offset + " / " + entry.Size ) ;
+							buffer = null ;
 						}
 					}
-					while( length >  0 ) ;
+					else
+					{
+						// サイズ 0 の配列を返す
+						buffer = new byte[ 0 ] ;
+					}
 
-					result = mos.ToArray() ;
-
-					mos.Close() ;
+					// 終了
 					break ;
 				}
 			}
@@ -188,7 +206,7 @@ namespace DSW
 
 			cis.Close() ;
 
-			return result ;
+			return buffer ;
 		}
 
 		//-------------------------------------------------------------------------------------------
@@ -227,11 +245,7 @@ namespace DSW
 
 		private static async UniTask<byte[]> DecompressAsync_Private( Stream cis, string name, Action<byte[]> onAction, string password )
 		{
-			byte[] result = null ;
-
 			ZipInputStream zis = new ZipInputStream( cis ) ;
-
-			MemoryStream mos ;
 
 			if( string.IsNullOrEmpty( password ) == false )
 			{
@@ -242,8 +256,8 @@ namespace DSW
 
 			ZipEntry entry ;
 			
-			byte[] buffer = new byte[ BufferSize ] ;
-			int length ;
+			byte[] buffer = null ;
+			int offset, length ;
 
 			do
 			{
@@ -252,22 +266,44 @@ namespace DSW
 				if( entry != null && entry.IsFile == true && entry.Name == name )
 				{
 					// 発見
-					mos = new MemoryStream() ;
 
-					do
+					if( entry.Size >  0 )
 					{
-						length = zis.Read( buffer, 0, buffer.Length ) ;
-						if( length >  0 )
+						// サイズが 1 以上
+
+						buffer = new byte[ entry.Size ] ;
+
+						offset = 0 ;
+						while( true )
 						{
-							mos.Write( buffer, 0, length ) ;
+							length = zis.Read( buffer, offset, buffer.Length ) ;
+							if( length >  0 )
+							{
+								offset += length ;
+							}
+
+							if( length == 0 || offset >= buffer.Length )
+							{
+								break ;
+							}
+
 							await m_Instance.Yield() ;
 						}
+
+						if( offset != buffer.Length )
+						{
+							// サイズ異常
+							Debug.Log( "[ZIP]DecompressAsync Size Faild : File = " + entry.Name + " Size = " + offset + " / " + entry.Size ) ;
+							buffer = null ;
+						}
 					}
-					while( length >  0 ) ;
+					else
+					{
+						// サイズが 0 の配列を返す
+						buffer = new byte[ 0 ] ;
+					}
 
-					result = mos.ToArray() ;
-
-					mos.Close() ;
+					// 終了
 					break ;
 				}
 			}
@@ -277,10 +313,10 @@ namespace DSW
 
 			cis.Close() ;
 
-			if( result != null )
+			if( buffer != null )
 			{
-				onAction?.Invoke( result ) ;
-				return result ;
+				onAction?.Invoke( buffer ) ;
+				return buffer ;
 			}
 			else
 			{
@@ -326,12 +362,9 @@ namespace DSW
 
 		private static ( string, byte[] )[] DecompressAll_Private( Stream cis, string password = null )
 		{
-			List<( string, byte[] )> resultAll = new List<( string, byte[] )>() ;
-			byte[] result ;
+			List<( string, byte[] )> buffers = new List<( string, byte[] )>() ;
 
 			ZipInputStream zis = new ZipInputStream( cis ) ;
-
-			MemoryStream mos ;
 
 			if( string.IsNullOrEmpty( password ) == false )
 			{
@@ -342,8 +375,8 @@ namespace DSW
 
 			ZipEntry entry ;
 			
-			byte[] buffer = new byte[ BufferSize ] ;
-			int length ;
+			byte[] buffer ;
+			int offset, length ;
 
 			do
 			{
@@ -352,23 +385,42 @@ namespace DSW
 				if( entry != null && entry.IsFile == true )
 				{
 					// 発見
-					mos = new MemoryStream() ;
 
-					do
+					if( entry.Size >  0 )
 					{
-						length = zis.Read( buffer, 0, buffer.Length ) ;
-						if( length >  0 )
+						// サイズが 1 以上
+
+						buffer = new byte[ entry.Size ] ;
+
+						offset = 0 ;
+						while( true )
 						{
-							mos.Write( buffer, 0, length ) ;
+							length = zis.Read( buffer, offset, buffer.Length ) ;
+							if( length >  0 )
+							{
+								offset += length ;
+							}
+
+							if( length == 0 || offset >= buffer.Length )
+							{
+								break ;
+							}
+						}
+
+						if( offset != buffer.Length )
+						{
+							// サイズ異常
+							Debug.Log( "[ZIP]DecompressAll Size Faild : File = " + entry.Name + " Size = " + offset + " / " + entry.Size ) ;
+							buffer = null ;
 						}
 					}
-					while( length >  0 ) ;
+					else
+					{
+						// サイズが 0 の配列を返す
+						buffer = new byte[ 0 ] ;
+					}
 
-					result = mos.ToArray() ;
-					resultAll.Add( ( entry.Name, result ) ) ;
-
-					mos.Close() ;
-					break ;
+					buffers.Add( ( entry.Name, buffer ) ) ;
 				}
 			}
 			while( entry != null ) ;
@@ -377,12 +429,13 @@ namespace DSW
 
 			cis.Close() ;
 
-			if( resultAll.Count != 0 )
+			if( buffers.Count != 0 )
 			{
-				return resultAll.ToArray() ;
+				return buffers.ToArray() ;
 			}
 			else
 			{
+				Debug.LogWarning( "DecompressAll Failed" ) ;
 				return null ;
 			}
 		}
@@ -424,12 +477,9 @@ namespace DSW
 
 		private static async UniTask<( string, byte[] )[]> DecompressAllAsync_Private( Stream cis, Action<( string, byte[] )[]> onAction, string password )
 		{
-			List<( string, byte[] )> resultAll = new List<( string, byte[] )>() ;
-			byte[] result ;
+			List<( string, byte[] )> buffers = new List<( string, byte[] )>() ;
 
 			ZipInputStream zis = new ZipInputStream( cis ) ;
-
-			MemoryStream mos ;
 
 			if( string.IsNullOrEmpty( password ) == false )
 			{
@@ -440,8 +490,8 @@ namespace DSW
 
 			ZipEntry entry ;
 			
-			byte[] buffer = new byte[ BufferSize ] ;
-			int length ;
+			byte[] buffer ;
+			int offset, length ;
 
 			do
 			{
@@ -450,24 +500,44 @@ namespace DSW
 				if( entry != null && entry.IsFile == true )
 				{
 					// 発見
-					mos = new MemoryStream() ;
 
-					do
+					if( entry.Size >  0 )
 					{
-						length = zis.Read( buffer, 0, buffer.Length ) ;
-						if( length >  0 )
+						// サイズが 1 以上
+
+						buffer = new byte[ entry.Size ] ;
+
+						offset = 0 ;
+						while( true )
 						{
-							mos.Write( buffer, 0, length ) ;
+							length = zis.Read( buffer, offset, buffer.Length ) ;
+							if( length >  0 )
+							{
+								offset += length ;
+							}
+
+							if( length == 0 || offset >= buffer.Length )
+							{
+								break ;
+							}
+
 							await m_Instance.Yield() ;
 						}
+
+						if( offset != buffer.Length )
+						{
+							// サイズ異常
+							Debug.Log( "[ZIP]DecompressAllAsync Size Faild : File = " + entry.Name + " Size = " + offset + " / " + entry.Size ) ;
+							buffer = null ;
+						}
 					}
-					while( length >  0 ) ;
+					else
+					{
+						// サイズが 0 の配列を返す
+						buffer = new byte[ 0 ] ;
+					}
 
-					result = mos.ToArray() ;
-					resultAll.Add( ( entry.Name, result ) ) ;
-
-					mos.Close() ;
-					break ;
+					buffers.Add( ( entry.Name, buffer ) ) ;
 				}
 			}
 			while( entry != null ) ;
@@ -476,14 +546,16 @@ namespace DSW
 
 			cis.Close() ;
 
-			if( resultAll.Count >  0 )
+			if( buffers.Count >  0 )
 			{
-				onAction?.Invoke( resultAll.ToArray() ) ;
-				return resultAll.ToArray() ;
+				var buffersArray = buffers.ToArray() ;
+
+				onAction?.Invoke( buffersArray ) ;
+				return buffersArray ;
 			}
 			else
 			{
-				Debug.LogWarning( "DecompressAll Failed" ) ;
+				Debug.LogWarning( "DecompressAllAsync Failed" ) ;
 				return null ;
 			}
 		}

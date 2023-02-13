@@ -58,54 +58,26 @@ namespace uGUIHelper
 			{
 				if( m_SpriteAtlas != value )
 				{
+					// アトラス内スプライトのキャッシュをクリアする
+					CleanupAtlasSprites() ;
+
 					m_SpriteAtlas  = value ;
-
-					//--------------------------------
-					// 非実行中だと色々と問題が起こるので自動設定はしない(Cloneが設定されてしまう)
-#if false
-					if( m_SpriteAtlas != null && m_SpriteAtlas.spriteCount >  0 )
-					{
-						Sprite[] sprites = new Sprite[ m_SpriteAtlas.spriteCount ] ;
-						m_SpriteAtlas.GetSprites( sprites ) ;
-
-						if( Sprite != null )
-						{
-							int i, l = sprites.Length ;
-							for( i  = 0 ; i <  l ; i ++ )
-							{
-								if( sprites[ i ] == Sprite )
-								{
-									break ;
-								}
-							}
-
-							if( i >= l )
-							{
-								Sprite = sprites[ 0 ] ;
-							}
-						}
-						else
-						{
-							Sprite = sprites[ 0 ] ;
-						}
-					}
-#endif
 				}
 			}
 		}
 
+		// SpriteAtlas から取得した Sprite は Destroy() が必要であるためキャッシュする
+		private Dictionary<string,Sprite> m_SpritesInAtlas ;
+
 		//-------------------------------------------------------------------------------------------
 		// SpriteSet 限定
-
-//		[SerializeField][HideInInspector]
-//		private SpriteSet m_AtlasSprite = null ;
 
 //		[FormerlySerializedAs("m_AtlasSprite")]
 		[SerializeField]
 		private SpriteSet m_SpriteSet = null ;
 
 		/// <summary>
-		/// アトラススプライトのインスタンス
+		/// スプライトセットのインスタンス
 		/// </summary>
 		public  SpriteSet  SpriteSet
 		{
@@ -118,33 +90,6 @@ namespace uGUIHelper
 				if( m_SpriteSet != value )
 				{
 					m_SpriteSet  = value ;
-#if false
-					if( m_SpriteSet != null && m_SpriteSet.SpriteCount >  0 )
-					{
-						Sprite[] sprites = m_SpriteSet.GetSprites() ;
-
-						if( Sprite != null )
-						{
-							int i, l = sprites.Length ;
-							for( i  = 0 ; i <  l ; i ++ )
-							{
-								if( sprites[ i ] == Sprite )
-								{
-									break ;
-								}
-							}
-
-							if( i >= l )
-							{
-								Sprite = sprites[ 0 ] ;
-							}
-						}
-						else
-						{
-							Sprite = sprites[ 0 ] ;
-						}
-					}
-#endif
 				}
 			}
 		}
@@ -182,77 +127,46 @@ namespace uGUIHelper
 
 		//-------------------------------------------------------------------------------------------
 
-		/// <summary>
-		/// アトラステクスチャ内のスプライトの一覧を取得する
-		/// </summary>
-		/// <returns></returns>
-		public Sprite[] GetSprites()
+		// アトラス内のスプライトをキャッシュにためつつ取得する
+		private Sprite GetSpriteInAtlasFromCache( string spriteName )
 		{
-			//----------------------------------------------------------
-			// SpriteAtlas
+			Sprite sprite ;
 
-			if( m_SpriteAtlas != null && m_SpriteAtlas.spriteCount >  0 )
+			if( m_SpritesInAtlas != null )
 			{
-				Sprite[] sprites = new Sprite[ m_SpriteAtlas.spriteCount ] ;
-				m_SpriteAtlas.GetSprites( sprites ) ;
-				return sprites ;
-			}
-
-			//----------------------------------------------------------
-			// SpriteAtlas
-
-			if( m_SpriteSet != null && m_SpriteSet.SpriteCount >  0 )
-			{
-				Sprite[] sprites = m_SpriteSet.GetSprites() ;
-				return sprites ;
-			}
-
-			//----------------------------------------------------------
-			return null ;
-		}
-
-		/// <summary>
-		/// アトラステクスチャ内のスプライトの名前一覧を取得する
-		/// </summary>
-		/// <returns></returns>
-		public string[] GetSpriteNames()
-		{
-			//----------------------------------------------------------
-			// SpriteAtlas
-
-			if( m_SpriteAtlas != null )
-			{
-				Sprite[] sprites = GetSprites() ;
-				if( sprites != null && sprites.Length >  0 )
+				if( m_SpritesInAtlas.Count >  0 )
 				{
-					string[] names = new string[ sprites.Length ] ;
-					int i, l = sprites.Length ;
-					for( i  = 0 ; i <  l ; i ++ )
+					if( m_SpritesInAtlas.ContainsKey( spriteName ) == true )
 					{
-						names[ i ] = sprites[ i ].name ;
+						// 既にキャッシュに存在する
+						return m_SpritesInAtlas[ spriteName ] ;
 					}
-
-					return names ;
 				}
 			}
 
-			//----------------------------------------------------------
-			// SpriteSet
+			//----------------------------------
 
-			if( m_SpriteSet != null )
+			// 実際のアトラスに存在するか確認する
+			sprite = m_SpriteAtlas.GetSprite( spriteName ) ;
+			if( sprite != null )
 			{
-				string[] names = m_SpriteSet.GetSpriteNames() ;
-				if( names != null && names.Length >  0 )
+				// GetSprite()で取得したSpriteオブジェクトの名前は「"～(Clone)"」のように
+				// なっているため、「"(Clone)"」が付かない名前に上書き
+				sprite.name = spriteName ;
+
+				if( m_SpritesInAtlas == null )
 				{
-					return names ;
+					// キャッシュを生成する
+					m_SpritesInAtlas = new Dictionary<string, Sprite>() ;
 				}
+
+				// 存在するのでキャッシュに貯める
+				m_SpritesInAtlas.Add( spriteName, sprite ) ;
 			}
 
-			//----------------------------------------------------------
-
-			return null ;
+			return sprite ;
 		}
-
+		
 		/// <summary>
 		/// アトラススプライト内のスプライトを表示する
 		/// </summary>
@@ -266,7 +180,7 @@ namespace uGUIHelper
 
 			if( m_SpriteAtlas != null )
 			{
-				Sprite sprite = m_SpriteAtlas.GetSprite( spriteName ) ;
+				Sprite sprite = GetSpriteInAtlasFromCache( spriteName ) ;
 				if( sprite != null )
 				{
 					Sprite = sprite ;
@@ -316,7 +230,7 @@ namespace uGUIHelper
 
 			if( m_SpriteAtlas != null )
 			{
-				Sprite sprite = m_SpriteAtlas.GetSprite( spriteName ) ;
+				Sprite sprite = GetSpriteInAtlasFromCache( spriteName ) ;
 				if( sprite != null )
 				{
 					return sprite ;
@@ -352,7 +266,7 @@ namespace uGUIHelper
 
 			if( m_SpriteAtlas != null )
 			{
-				Sprite sprite = m_SpriteAtlas.GetSprite( spriteName ) ;
+				Sprite sprite = GetSpriteInAtlasFromCache( spriteName ) ;
 				if( sprite != null )
 				{
 					return ( int )sprite.rect.width ;
@@ -388,7 +302,7 @@ namespace uGUIHelper
 
 			if( m_SpriteAtlas != null )
 			{
-				Sprite sprite = m_SpriteAtlas.GetSprite( spriteName ) ;
+				Sprite sprite = GetSpriteInAtlasFromCache( spriteName ) ;
 				if( sprite != null )
 				{
 					return ( int )sprite.rect.height ;
@@ -869,6 +783,49 @@ namespace uGUIHelper
 			if( m_BackKeyEnabled == true )
 			{
 				UIEventSystem.RemoveBackKeyTarget( this ) ;
+			}
+		}
+
+		protected override void OnDestroy()
+		{
+			base.OnDestroy() ;
+
+			// アトラス内スプライトのキャッシュをクリアする
+			CleanupAtlasSprites() ;
+		}
+
+		// キャッシュされたアトラス内スプライト群を破棄する
+		private void CleanupAtlasSprites()
+		{
+			if( m_SpritesInAtlas != null )
+			{
+				if( m_SpritesInAtlas.Count >  0 )
+				{
+					if( Application.isPlaying == true )
+					{
+						foreach( var sprite in m_SpritesInAtlas )
+						{
+							if( sprite.Value != null )
+							{
+								Destroy( sprite.Value ) ;
+							}
+						}
+					}
+					else
+					{
+						foreach( var sprite in m_SpritesInAtlas )
+						{
+							if( sprite.Value != null )
+							{
+								DestroyImmediate( sprite.Value ) ;
+							}
+						}
+					}
+
+					m_SpritesInAtlas.Clear() ;
+				}
+
+				m_SpritesInAtlas = null ;
 			}
 		}
 	}

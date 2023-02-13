@@ -112,7 +112,7 @@ namespace uGUIHelper
 			DrawChildrenColor( view ) ;
 
 			var g = view.GetComponent<Graphic>() ;
-			if( g != null && g.raycastTarget == true )
+			if( g != null )
 			{
 				EditorGUILayout.Separator() ;	// 少し区切りスペース
 
@@ -1000,6 +1000,20 @@ namespace uGUIHelper
 					}
 				}
 			}
+
+			GUILayout.BeginHorizontal() ;	// 横並び
+			{
+				bool ignoreParentEffectiveColor = EditorGUILayout.Toggle( view.IgnoreParentEffectiveColor, GUILayout.Width( 16f ) ) ;
+				if( ignoreParentEffectiveColor != view.IgnoreParentEffectiveColor )
+				{
+					Undo.RecordObject( view, "UIView : Ignore Parent Effective Color Change" ) ;	// アンドウバッファに登録
+					view.IgnoreParentEffectiveColor = ignoreParentEffectiveColor ;
+					EditorUtility.SetDirty( view ) ;
+				}
+				GUILayout.Label( "Ignore Parent Effective Color" ) ;
+			}
+			GUILayout.EndHorizontal() ;     // 横並び終了
+
 		}
 
 		// バックキー
@@ -1015,6 +1029,18 @@ namespace uGUIHelper
 					EditorUtility.SetDirty( view ) ;
 				}
 				GUILayout.Label( "Back Key Enabled" ) ;
+
+				if( view.BackKeyEnabled == true )
+				{
+					bool isBackKeyIgnoreRaycastTarget = EditorGUILayout.Toggle( view.IsBackKeyIgnoreRaycastTarget, GUILayout.Width( 16f ) ) ;
+					if( isBackKeyIgnoreRaycastTarget != view.IsBackKeyIgnoreRaycastTarget )
+					{
+						Undo.RecordObject( view, "UIImage : Is Back Key Ignore RaycastTarget Change" ) ;	// アンドウバッファに登録
+						view.IsBackKeyIgnoreRaycastTarget = isBackKeyIgnoreRaycastTarget ;
+						EditorUtility.SetDirty( view ) ;
+					}
+					GUILayout.Label( "Ignore RaycastTarget" ) ;
+				}
 			}
 			GUILayout.EndHorizontal() ;     // 横並び終了
 		}

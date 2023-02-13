@@ -69,8 +69,25 @@ namespace uGUIHelper
 				{
 					ProcessApplyColorToChildren( true, true ) ;
 				}
+
+				// 外部コンポーネント用のコールバック(タイミング同期用)
+				m_OnInteractableChanged?.Invoke( state ) ;
 			}
 		}
+
+		// Interactable の状態が変化したら通知するコールバック
+		private Action<bool> m_OnInteractableChanged ;
+
+		/// <summary>
+		/// Interactable の状態が変化したら通知するコールバックを登録する
+		/// </summary>
+		/// <param name="onInteractableChanged"></param>
+		public void SetOnInteractableChanged( Action<bool> onInteractableChanged )
+		{
+			m_OnInteractableChanged = onInteractableChanged ;
+		}
+
+
 
 		// 有効無効の希望設定値
 		protected bool m_InteractableOfFake ;

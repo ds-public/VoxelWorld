@@ -379,7 +379,7 @@ namespace AssetBundleHelper
 			{
 				public	string		Path ;
 				public	string		Hash ;
-				public	int			Size ;
+				public	long		Size ;
 				public	uint		Crc ;
 				public	bool		IsCompleted ;
 				public	string[]	Tags ;
@@ -992,25 +992,35 @@ namespace AssetBundleHelper
 						if( assetBundleInfo.UpdateRequired == true )
 						{
 							// 更新が必要なもののみ StreamingAssets と比較する
+
+							// 基本はストレージ参照になる
+							assetBundleInfo.LocationPriority = LocationPriorities.Storage ;
+
 							if( m_AssetBundleHash_Constant.ContainsKey( assetBundleInfo.Path ) == true )
 							{
 								// StreamingAssets にも存在する
 								var assetBundleInfo_Constant = m_AssetBundleHash_Constant[ assetBundleInfo.Path ] ;
 
-								if
-								(
-									assetBundleInfo.Size	== assetBundleInfo_Constant.Size	&&
-									assetBundleInfo.Crc		== assetBundleInfo_Constant.Crc
-								)
+								if( StreamingAssetsDirectAccessEnabled == true )
 								{
-									// 完全に同一なので StreamingAssets の方を優先する
-									assetBundleInfo.LocationPriority = LocationPriorities.StreamingAssets ;
+									// StreamingAssets へダイレクトアクセス可能な環境のみ StreamingAssets に残存するアセットバンドルが使用できる
 
-									if( StreamingAssetsDirectAccessEnabled == true )
+									if( StorageAccesor_ExistsInStreamingAssets( StreamingAssetsRootPath + "/" + assetBundleInfo.Path ) == true )
 									{
-										// StreamingAssest へのダイレクトアクセスが有効なのでダウンロード済み扱いとする
-										assetBundleInfo.UpdateRequired = false ;	// ダウンロード済み扱いとする
-										Modified = true ;
+										// StreamingAssets にファイルが存在している
+										if
+										(
+											assetBundleInfo.Size	== assetBundleInfo_Constant.Size	&&
+											assetBundleInfo.Crc		== assetBundleInfo_Constant.Crc
+										)
+										{
+											// 完全に同一ファイルが StreamingAssets に存在しているので StreamingAssets の方を優先する
+											assetBundleInfo.LocationPriority = LocationPriorities.StreamingAssets ;
+
+											// StreamingAssest へのダイレクトアクセスが有効なのでダウンロード済み扱いとする
+											assetBundleInfo.UpdateRequired = false ;	// ダウンロード済み扱いとする
+											Modified = true ;
+										}
 									}
 								}
 							}
@@ -1086,7 +1096,8 @@ namespace AssetBundleHelper
 						DownloadFromRemote
 						(
 							path,
-							null,
+							0,		// 予めサイズがわかっているとメモリ確保が若干最適化される
+							null,	// ダイレクトにストレージに保存する場合のストレージのパスを指定する
 							0,
 							( DownloadStates state, byte[] downloadedData, float progress, long downloadedSize, string errorMessage, int version ) =>
 							{
@@ -1154,7 +1165,8 @@ namespace AssetBundleHelper
 						DownloadFromRemote
 						(
 							path,
-							null,
+							0,		// 予めサイズがわかっているとメモリ確保が若干最適化される
+							null,	// ダイレクトにストレージに保存する場合のストレージのパスを指定する
 							0,
 							( DownloadStates state, byte[] downloadedData, float progress, long downloadedSize, string errorMessage, int version ) =>
 							{
@@ -1261,7 +1273,7 @@ namespace AssetBundleHelper
 					
 				// リモートマニフェストをベースに更新が必要なアセットバンドルをチェックする
 				string assetBundlePath ;
-				int size ;
+				long size ;
 
 				bool updateRequired ;
 				int modifiedCount = 0 ;

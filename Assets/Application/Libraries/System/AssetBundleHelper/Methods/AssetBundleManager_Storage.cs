@@ -162,10 +162,16 @@ namespace AssetBundleHelper
 			return StorageAccessor.Open( GetFullPath( fileName ), fileOperationType, makeFolder ) ;
 		}
 
-		// ローカルストレージのストリームへの書き込み
-		private static bool StorageAccessor_Write( FileStream file, byte[] data, int offset = 0, int length = 0 )
+		// ローカルストレージのストリームへの書き込み(同期)
+		private static bool StorageAccessor_Write( FileStream file, byte[] data, long offset = 0, long length = 0 )
 		{
 			return StorageAccessor.Write( file, data, offset, length ) ;
+		}
+
+		// ローカルストレージのストリームへの書き込み(非同期)
+		private static IEnumerator StorageAccessor_WriteAsync( FileStream file, byte[] data, long offset = 0, long length = 0, long seekPosition = -1, Action<bool> onResult = null, CancellationToken token = default )
+		{
+			return StorageAccessor.WriteAsync( file, data, offset, length, seekPosition, onResult, token ) ;
 		}
 
 		// ローカルストレージのストリーム操作終了
@@ -180,7 +186,7 @@ namespace AssetBundleHelper
 			return StorageAccessor.GetPath( GetFullPath( fileName ) ) ;
 		}
 
-		// ストリーミングアセッツでのパスの取得
+		// StreamingAssestsでのパスの取得
 		private static string StorageAccessor_GetPathFromStreamingAssets( string path )
 		{
 			return StorageAccessor.GetPathInStreamingAssets( path ) ;
@@ -193,8 +199,14 @@ namespace AssetBundleHelper
 			return StorageAccessor.Exists( GetFullPath( fileName ) ) ;
 		}
 
+		// StreamingAssetsのファイルの存在確認(ダイレクトアクセスが可能な環境のみ有効)
+		private static bool StorageAccesor_ExistsInStreamingAssets( string path )
+		{
+			return StorageAccessor.ExistsInStreamingAssets( path ) ;
+		}
+
 		// ローカルストレージからのファイルサイズの取得
-		private static int StorageAccessor_GetSize( string fileName )
+		private static long StorageAccessor_GetSize( string fileName )
 		{
 			return StorageAccessor.GetSize( GetFullPath( fileName ) ) ;
 		}

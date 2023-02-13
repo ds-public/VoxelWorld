@@ -8,10 +8,58 @@ using UnityEngine ;
 namespace DSW
 {
 	/// <summary>
-	/// String 型のメソッド拡張 Version 2022/05/10
+	/// String 型のメソッド拡張 Version 2023/01/12
 	/// </summary>
 	public static class ExString
 	{
+		/// <summary>
+		/// マッチする場合のインデックス位置を取得する(韓国語環境で IndexOf が正常に動作しないため)
+		/// </summary>
+		/// <param name="s"></param>
+		/// <param name="m"></param>
+		/// <returns></returns>
+		public static int GetIndex( this String s, string m )
+		{
+			if( string.IsNullOrEmpty( m ) == true )
+			{
+				return -1 ;
+			}
+
+			//----------------------------------
+
+			int l0 = s.Length ;
+			int l1 = m.Length ;
+
+			if( l0 <  l1 )
+			{
+				return -1 ;
+			}
+
+			int i, l = l0 - l1 ;
+			int c ;
+			int index = -1 ;
+
+			for( i  = 0 ; i <= l ; i ++ )
+			{
+				for( c  = 0 ; c <  l1 ; c ++ )
+				{
+					if( s[ i + c ] != m[ c ] )
+					{
+						break ;
+					}
+				}
+
+				if( c >= l1 )
+				{
+					// マッチした
+					index = i ;
+					break ;
+				}
+			}
+
+			return index ;
+		}
+
 		/// <summary>
 		/// 配列が null もしくは要素数が 0 の時に true を返す
 		/// </summary>
@@ -814,10 +862,6 @@ namespace DSW
 
 			return false ;
 		}
-
-
-
-
 
 		// 文字が半角かどうかの判定
 		private static bool IsHankaku( char code )

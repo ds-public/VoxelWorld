@@ -1,7 +1,6 @@
 using System ;
 using System.Collections ;
 using System.Collections.Generic ;
-
 using UnityEngine ;
 
 using Cysharp.Threading.Tasks ;
@@ -10,8 +9,17 @@ using uGUIHelper ;
 
 namespace DSW
 {
+	//-------------------------------------------------------------------
+	// 重要:
+	// HTML 側では、以下のように記述する
+	//
+	// <a href="" onclick="Unity.call( 'anyString' )">Send Callback</a>
+	//
+	// Unity には、anyString という文字列が送られる
+	//-------------------------------------------------------------------
+
 	/// <summary>
-	/// ウェブビュー表示クラス Version 2021/04/16 0
+	/// ウェブビュー表示クラス Version 2023/02/02 0
 	/// </summary>
 	public class WebView : ExMonoBehaviour
 	{
@@ -20,47 +28,76 @@ namespace DSW
 		/// </summary>
 		/// <param name="url">表示するサイトのＵＲＬ</param>
 		/// <param name="callback">サイトで入力あった場合に呼び出されるコールバックメソッド(ウェブビューのゲームオブジェクト・サイトからの入力文字列)</param>
+		/// <param name="area"></param>
+		/// <param name="onLoaded"></param>
+		/// <param name="onError"></param>
+		/// <param name="customHeaders"></param>
 		/// <returns>ウェブビューのゲームオブジェクト</returns>
-		public static WebViewObject Open( string url, Action<GameObject,string> callback, UIView area = null )
+		public static WebViewObject Open( string url, Action<GameObject,string> callback, UIView area = null, Action<WebViewObject,string> onLoaded = null, Action<WebViewObject,string> onError = null, IReadOnlyDictionary<string, string> customHeaders = null )
 		{
+			m_CustomCallback = callback ;
+
 			WebViewObject webViewObject = GameObject.FindObjectOfType<WebViewObject>() ;
 			if( webViewObject != null )
 			{
 				// 既にウェブビューは開かれている
-				webViewObject.Callback = callback ;
+
+				// メッセージ用のコールバック設定
+//				webViewObject.Callback = callback ;
+
+				// メッセージ用のコールバック(カスタム)
+				webViewObject.Callback = OnCustomCallback ;
+
+				// ページロード完了時のコールバック設定(拡張)
+				webViewObject.OnLoaded	= onLoaded ;
+				webViewObject.OnError	= onError ;
+
+				if ( customHeaders != null )
+				{
+					foreach ( var header in customHeaders )
+					{
+						webViewObject.AddCustomHeader( header.Key, header.Value ) ;
+					}
+				}
 
 				webViewObject.LoadURL( url ) ;
 				
 				return webViewObject ;
 			}
 
-			string userAgent = "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/28.0.1500.52 Safari/537.36" ;
+			// UserAgent(なりすまし)
+			string userAgent = "Mozilla/5.0 (Linux; Android 11; Pixel 4) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/90.0.4430.210 Mobile Safari/537.36" ;
 
 			// Unity にメッセージを送るには HTML で以下のように記述する
 			// <a href="javascript:void(0)" onclick="Unity.call('any message');">Send Message</a></p>
 			// <input type="submit" value="Send Message" onclick="Unity.call('any message'); return false;"/>
 
+			// 最後に開いたＵＲＬ
+			string lastLoadedUrl = string.Empty ;
+
 			// 新規にウェブビューを生成する
 			webViewObject = ( new GameObject( "WebViewObject" ) ).AddComponent<WebViewObject>() ;
 			webViewObject.Init
 			(
-				callback,		// Callback
-				false,			// Transparency
-				true,			// Zoom
-				userAgent,		// UserAgent
+				OnCustomCallback,		// Callback
+				false,					// Transparency
+				true,					// Zoom
+				userAgent,				// UserAgent
 				( GameObject webView, string errorMessage ) =>
 				{
 					// Error
-					_ = OnError( webView, "Error", errorMessage ) ;
+					OnError( webView, "Error", errorMessage, lastLoadedUrl ).Forget() ;
 				},
 				( GameObject webView, string errorMessage ) =>
 				{
-					// HttpError
-					_ = OnError( webView, "HttpError", errorMessage ) ;
+					// HttpError(一時的に無効化)
+//					OnError( webView, "HttpError", errorMessage ).Forget() ;
 				},
 				( GameObject webView, string targetUrl ) =>
 				{
 					// Loaded
+//					DebugScreen.Out( "onLoaded:" + targetUrl ) ;
+
 #if !UNITY_EDITOR && ( UNITY_IOS || UNITY_IPHONE )
 
 					webViewObject.EvaluateJS
@@ -87,15 +124,32 @@ namespace DSW
 						}
 					" ) ;
 #endif
+					// ロード完了時にコールバックを呼び出す(拡張)
+					WebViewObject instance = webView.GetComponent<WebViewObject>() ;
+					if( instance != null )
+					{
+						instance.OnLoaded?.Invoke( instance, targetUrl ) ;
+					}
+
+					// 最後に開いたＵＲＬを保存しておく
+					lastLoadedUrl = targetUrl ;
 				},
 				true,	// enableWKWebView
 				0,		// wkContentMode
 				( GameObject webView, string targetUrl ) =>
 				{
 					// Started
+//					DebugScreen.Out( "onStart:" + targetUrl ) ;
 				}
 			) ;
-			
+
+			// ページロード完了時のコールバック設定(拡張)
+			webViewObject.OnLoaded	= onLoaded ;
+			webViewObject.OnError	= onError ;
+
+			//--------------------------------------------------------------------------
+			// 表示位置設定
+
 			int xMin = 0, xMax = 0, yMin = 0, yMax = 0 ;
 
 			if( area != null )
@@ -119,15 +173,25 @@ namespace DSW
 			webViewObject.SetMargins( xMin, yMax, xMax, yMin ) ;
 			webViewObject.SetVisibility( true ) ;
 
+			// カスタムヘッダー情報があれば設定します
+			if ( customHeaders != null )
+			{
+				webViewObject.ClearCustomHeader() ;
+				foreach ( var header in customHeaders )
+				{
+					webViewObject.AddCustomHeader( header.Key, header.Value ) ;
+				}
+			}
+
 			webViewObject.LoadURL( url ) ;
 
 			//------------------------------------------------------------------
-			// オマケ
+			// UnityEditor でのデバッグ用
 			
 #if UNITY_EDITOR
 
-			float width  =  960 ;
-			float height =  540 ;
+			float width  = 960 ;
+			float height = 540 ;
 
 			Settings settings =	ApplicationManager.LoadSettings() ;
 			if( settings != null )
@@ -190,12 +254,48 @@ namespace DSW
 			return webViewObject ;
 		}
 
+
+		//-------------------------------------------------------------------------------------------
+
+		private static Action<GameObject,string> m_CustomCallback ;
+
+		private static void OnCustomCallback( GameObject webViewObject, string text )
+		{
+			if( string.IsNullOrEmpty( text ) == true )
+			{
+				return ;
+			}
+
+			//----------------------------------
+
+			string key_OpenBrowser = "OpenBrowser " ;
+
+			if( text.IndexOf( key_OpenBrowser ) == 0 )
+			{
+				// 外部ブラウザを開く
+				string url = text.Replace( key_OpenBrowser, "" ) ;
+				url = url.TrimStart( ' ' ).TrimEnd( ' ' ) ;
+
+				ApplicationManager.OpenURL( url ) ;
+			}
+			else
+			{
+				if( m_CustomCallback != null )
+				{
+					m_CustomCallback( webViewObject, text ) ;
+				}
+			}
+		}
+
+
+		//-------------------------------------------------------------------------------------------
+
 		/// <summary>
 		/// エラーが発生した際の処理
 		/// </summary>
 		/// <param name="message"></param>
 		/// <returns></returns>
-		private static async UniTask OnError( GameObject webView, string title, string message )
+		private static async UniTask OnError( GameObject webView, string title, string message, string url )
 		{
 			WebViewObject webViewObject = webView.GetComponent<WebViewObject>() ;
 			if( webViewObject == null )
@@ -204,8 +304,10 @@ namespace DSW
 			}
 
 			webViewObject.SetVisibility( false ) ;
-			await Dialog.Open( title, message, new string[]{ "CLOSE" } ) ;
+			await Dialog.Open( title, message + "\n\n" + url, new string[]{ "CLOSE" } ) ;
 			webViewObject.SetVisibility( true ) ;
+
+			webViewObject.OnError?.Invoke( webViewObject, message ) ;
 		}
 
 #if UNITY_EDITOR
@@ -271,6 +373,23 @@ namespace DSW
 				screen.gameObject.SetActive( false ) ;
 			}
 #endif
+			return true ;
+		}
+
+		/// <summary>
+		/// 破棄する
+		/// </summary>
+		/// <param name="webViewObject"></param>
+		/// <returns></returns>
+		public static bool Destroy( WebViewObject webViewObject )
+		{
+			if( webViewObject == null )
+			{
+				return false ;
+			}
+
+			Destroy( webViewObject.gameObject ) ;
+
 			return true ;
 		}
 	}

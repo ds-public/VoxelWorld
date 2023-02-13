@@ -6,7 +6,7 @@ using UnityEngine ;
 namespace DSW
 {
 	/// <summary>
-	/// List 型のメソッド拡張 Version 2022/06/09
+	/// List 型のメソッド拡張 Version 2023/02/13
 	/// </summary>
 	public static class ExList
 	{
@@ -495,7 +495,6 @@ namespace DSW
 				list.Add( collection[ offset + i ] ) ;
 			}
 		}
-
 	}
 }
 

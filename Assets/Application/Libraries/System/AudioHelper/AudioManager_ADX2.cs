@@ -1,6 +1,6 @@
 #if false
 
-//#define USE_MICROPHONE
+// #define USE_MICROPHONE
 //#define UseCPK
 //#define UseEncrypt
 
@@ -31,7 +31,7 @@ using UnityEditor ;
 namespace AudioHelper
 {
 	/// <summary>
-	/// オーディオ全般の管理クラス Version 2022/08/08 0
+	/// オーディオ全般の管理クラス Version 2023/01/19 0
 	/// </summary>
 	public class AudioManager_ADX2 : MonoBehaviour
 	{
@@ -111,22 +111,22 @@ namespace AudioHelper
 		//---------------------------------------------------------
 
 		// リスナー（Awake 時にクリアされるのでシリアライズ化して保持する意味が無い）
-		private CriAtomListener m_Listener = null ;
+		private	CriAtomListener m_Listener = null ;
 
 		/// <summary>
 		/// オーディオリスナーのインスタンス
 		/// </summary>
-		public  CriAtomListener   Listener{ get{ return m_Listener ; } }
+		public	CriAtomListener   Listener{ get{ return m_Listener ; } }
 
 		/// <summary>
 		/// チャンネル情報
 		/// </summary>
-		public List<AudioChannel_ADX2> Channels = new List<AudioChannel_ADX2>() ;
+		public	List<AudioChannel_ADX2> Channels = new List<AudioChannel_ADX2>() ;
 
 		/// <summary>
 		/// 最大チャンネル数
 		/// </summary>
-		public int Max = 32 ;
+		public	int Max = 32 ;
 
 		//-----------------------------------------------------------
 
@@ -149,7 +149,7 @@ namespace AudioHelper
 		}
 
 		// タグごとのベースボリューム
-		private Dictionary<string,float> m_BaseVolumes = new Dictionary<string, float>() ;
+		private readonly Dictionary<string,float> m_BaseVolumes = new Dictionary<string, float>() ;
 
 		// ベースボリュームを追加する
 		private void AddBaseVolume( string tag, float baseVolume )
@@ -366,7 +366,7 @@ namespace AudioHelper
 		private Dictionary<string,CueSheetCache>	m_CueSheetCache_Hash ;
 
 		// 登録処理中のキューシート名
-		private List<string>	m_ProcerssingCueSheedNames = new List<string>() ;
+		private readonly List<string>	m_ProcessingCueSheedNames = new List<string>() ;
 
 		// 初期化済みかの判定用
 		private bool m_IsInitialized ;
@@ -875,6 +875,26 @@ namespace AudioHelper
 		}
 
 		/// <summary>
+		/// キューシートの登録処理中かどうか確認する
+		/// </summary>
+		/// <param name="cueSheetName"></param>
+		/// <returns></returns>
+		public static bool IsCueSheetProcessing( string cueSheetName )
+		{
+			if( m_Instance == null )
+			{
+				return false ;
+			}
+
+			return m_Instance.IsCueSheetProcessing_Private( cueSheetName ) ;
+		}
+
+		private bool IsCueSheetProcessing_Private( string cueSheetName )
+		{
+			return m_ProcessingCueSheedNames.Contains( cueSheetName ) ;
+		}
+
+		/// <summary>
 		/// キューシートを追加する(非同期)
 		/// </summary>
 		/// <param name="path"></param>
@@ -903,7 +923,7 @@ namespace AudioHelper
 
 			//----------------------------------
 
-			if( m_ProcerssingCueSheedNames.Contains( cueSheetName ) == true )
+			if( m_ProcessingCueSheedNames.Contains( cueSheetName ) == true )
 			{
 				// まだ登録は完了していないが既に登録処理中のキューシートである
 				request.IsDone = true ;
@@ -911,7 +931,7 @@ namespace AudioHelper
 			}
 
 			// 処理中のキューシート名を登録する
-			m_ProcerssingCueSheedNames.Add( cueSheetName ) ;
+			m_ProcessingCueSheedNames.Add( cueSheetName ) ;
 
 			//----------------------------------
 
@@ -922,7 +942,7 @@ namespace AudioHelper
 
 				if( cueSheet == null )
 				{
-					m_ProcerssingCueSheedNames.Remove( cueSheetName ) ;
+					m_ProcessingCueSheedNames.Remove( cueSheetName ) ;
 					request.Error = "Cound not load " + acbPath ;
 					yield break ;
 				}
@@ -934,7 +954,7 @@ namespace AudioHelper
 
 				if( cueSheet.IsError == true )
 				{
-					m_ProcerssingCueSheedNames.Remove( cueSheetName ) ;
+					m_ProcessingCueSheedNames.Remove( cueSheetName ) ;
 					request.Error = "Cound not load " + acbPath ;
 					yield break ;
 				}
@@ -953,12 +973,17 @@ namespace AudioHelper
 			{
 				// cpk
 #if UseCPK
-#if UNITY_EDITOR
 				if( m_NumberOfBinders >= m_MaxNumberOfBinders )
 				{
-					Debug.LogError( "[Error] The binder is already used to the maximum. ( " + m_NumberOfBinders + "/" + m_MaxNumberOfBinders + " ) : add " + cpkPath ) ;
-				}
+					// バインド限界数を超える場合使用していないキューシートを破棄
+					RemoveAllCueSheets(false);
+#if UNITY_EDITOR
+					if (m_NumberOfBinders >= m_MaxNumberOfBinders)
+					{
+						Debug.LogError("[Error] The binder is already used to the maximum. ( " + m_NumberOfBinders + "/" + m_MaxNumberOfBinders + " ) : add " + cpkPath);
+					}
 #endif
+				}
 				CriFsBinder binder = new CriFsBinder() ;
 				CriFsBindRequest bindRequest = CriFsUtility.BindCpk( binder, cpkPath ) ;
 
@@ -969,7 +994,7 @@ namespace AudioHelper
 					// エラー発生
 					binder.Dispose() ;
 
-					m_ProcerssingCueSheedNames.Remove( cueSheetName ) ;
+					m_ProcessingCueSheedNames.Remove( cueSheetName ) ;
 					request.Error = "Cound not load " + cpkPath + "\n" + bindRequest.error ;
 					yield break ;
 				}
@@ -1012,7 +1037,7 @@ namespace AudioHelper
 					CriFsBinder.Unbind( bindId ) ;
 					binder.Dispose() ;
 
-					m_ProcerssingCueSheedNames.Remove( cueSheetName ) ;
+					m_ProcessingCueSheedNames.Remove( cueSheetName ) ;
 					request.Error = "Cound not load " + cpkPath ;
 					yield break ;
 				}
@@ -1028,7 +1053,7 @@ namespace AudioHelper
 					CriFsBinder.Unbind( bindId ) ;
 					binder.Dispose() ;
 
-					m_ProcerssingCueSheedNames.Remove( cueSheetName ) ;
+					m_ProcessingCueSheedNames.Remove( cueSheetName ) ;
 					request.Error = "Cound not load " + cpkPath ;
 					yield break ;
 				}
@@ -1053,9 +1078,11 @@ namespace AudioHelper
 			}
 
 			// 成功
-			m_ProcerssingCueSheedNames.Remove( cueSheetName ) ;
+			m_ProcessingCueSheedNames.Remove( cueSheetName ) ;
 			request.IsDone = true ;
 		}
+
+		//-----------------------------------------------------------
 
 		/// <summary>
 		/// キューシートを確認する
@@ -1076,10 +1103,42 @@ namespace AudioHelper
 			if( m_CueSheetCache_Hash.ContainsKey( cueSheetName ) == true )
 			{
 				// 既にロード済みである
-				m_CueSheetCache_Hash[ cueSheetName ].IsGarbage = false ;	// このシーンでは残す
+				m_CueSheetCache_Hash[ cueSheetName ].IsGarbage = false ; // このシーンでは残す
 				return true ;
 			}
 
+			return false ;
+		}
+
+		//-----------------------------------------------------------
+
+		/// <summary>
+		/// キューシートの使用数を取得します
+		/// </summary>
+		/// <param name="cueSheetName">キューシート名</param>
+		/// <param name="useCount">現時点の使用数</param>
+		/// <returns></returns>
+		public static bool TryGetHasCueSheetCount( string cueSheetName, out int useCount )
+		{
+			if( m_Instance == null )
+			{
+				useCount = 0 ;
+				return false ;
+			}
+			return m_Instance.TryGetHasCueSheetCount_Private( cueSheetName, out useCount ) ;
+		}
+
+		private bool TryGetHasCueSheetCount_Private( string cueSheetName, out int useCount )
+		{
+			if ( m_CueSheetCache_Hash.TryGetValue( cueSheetName, out var cache ) )
+			{
+				// 既にロード済みである
+				cache.IsGarbage = false ; // このシーンでは残す
+				useCount        = cache.Count ;
+				return true ;
+			}
+
+			useCount = 0 ;
 			return false ;
 		}
 
@@ -1203,12 +1262,15 @@ namespace AudioHelper
 		{
 			m_RemoveTargets.Clear() ;
 
-			foreach( var cueSheetCache in m_CueSheetCache )
+			if( m_CueSheetCache != null && m_CueSheetCache.Count >  0 )
 			{
-				if( cueSheetCache.Keep == false && cueSheetCache.Count == 0 && cueSheetCache.IsGarbage == true )
+				foreach( var cueSheetCache in m_CueSheetCache )
 				{
-					// 破棄可能なので破棄対象に追加
-					m_RemoveTargets.Add( cueSheetCache.Name ) ;
+					if( cueSheetCache.Keep == false && cueSheetCache.Count == 0 && cueSheetCache.IsGarbage == true )
+					{
+						// 破棄可能なので破棄対象に追加
+						m_RemoveTargets.Add( cueSheetCache.Name ) ;
+					}
 				}
 			}
 
@@ -4093,4 +4155,3 @@ namespace AudioHelper
 }
 
 #endif
-

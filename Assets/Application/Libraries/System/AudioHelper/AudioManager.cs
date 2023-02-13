@@ -25,7 +25,7 @@ using UnityEditor ;
 namespace AudioHelper
 {
 	/// <summary>
-	/// オーディオ全般の管理クラス Version 2022/10/04 0
+	/// オーディオ全般の管理クラス Version 2023/02/02 0
 	/// </summary>
 	public class AudioManager : MonoBehaviour
 	{
@@ -135,7 +135,7 @@ namespace AudioHelper
 		}
 
 		// タグごとのベースボリューム
-		private Dictionary<string,float> m_BaseVolumes = new Dictionary<string, float>() ;
+		private readonly Dictionary<string,float> m_BaseVolumes = new Dictionary<string, float>() ;
 
 		// ベースボリュームを追加する
 		private void AddBaseVolume( string tag, float baseVolume )

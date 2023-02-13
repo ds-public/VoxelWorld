@@ -288,7 +288,19 @@ namespace uGUIHelper
 				m_ItemComponent = value ;
 			}
 		}
+		
+		/// <summary>
+		/// リストビューアイテムの処理コンポーネントを取得する
+		/// </summary>
+		public T GetItemComponent<T>() where T : MonoBehaviour
+		{
+			if( m_Item == null )
+			{
+				return null ;
+			}
 
+			return m_Item.GetComponent<T>() ;
+		}
 
 		[SerializeField][HideInInspector]
 		protected MonoBehaviour m_ItemComponent ;
@@ -816,6 +828,7 @@ namespace uGUIHelper
 					m_Snapping = -1 ;
 				}
 			}
+
 			return ContentSize ;
 		}
 
@@ -1487,18 +1500,11 @@ namespace uGUIHelper
 				if( Infinity == false )
 				{
 					// 有限
-					if( ( ContentSize - itemOffset ) <  ViewSize )
-					{
-						// 下に空白が出来てしまうので余力が出来るまでインデックスを引き下げる
-						for( i  = index - 1 ; i >= 0 ; i -- )
-						{
-							itemOffset -= OnItemUpdatedInner( i, null, null ) ;
 
-							if( ( ContentSize - itemOffset ) >= ViewSize )
-							{
-								break ;	// 余力が出来た
-							}
-						}
+					// 下方向にオーバーする場合の補正をかける
+					if( ( itemOffset + ViewSize ) >  ContentSize )
+					{
+						itemOffset = ContentSize - ViewSize ;
 					}
 				}
 			}
@@ -1511,7 +1517,7 @@ namespace uGUIHelper
 
 		private readonly List<ItemData> m_ItemChecker = new List<ItemData>() ;
 
-		// 更新する(Contentから呼び出してもらう)
+		// 更新する(LateUpdate から呼ばれてる)
 		private void ProcessItem()
 		{
 			if( m_WorkingItemCount <= 0 || m_ItemCount <= 0 )
@@ -1539,7 +1545,7 @@ namespace uGUIHelper
 			float tailPosition = base.ContentPosition + ViewSize ;
 
 			// インデックスは↓正に進む＝コンテントは↑負に進む(上のを下に持っていく)
-			while( ( m_ItemTailPosition - tailPosition ) <  m_WorkingMargin )
+			while( m_ItemTailPosition <  tailPosition )
 			{
 				// 左か上に現在の位置よりも 128 以上移動している
 				// 最初のアイテムを最後のアイテムに移動させる
@@ -1628,7 +1634,7 @@ namespace uGUIHelper
 			float headPosition = base.ContentPosition ;
 
 			// インデックスは↑負に進む＝コンテントは↓正に進む((下のを上に持っていく)
-			while( ( headPosition - m_ItemHeadPosition ) <  m_WorkingMargin )
+			while( m_ItemHeadPosition >  headPosition )
 			{
 				// 最後のアイテムを最初に付け直す
 				int lastIndex = WorkingItemCount - 1 ; 
@@ -1709,6 +1715,8 @@ namespace uGUIHelper
 					SetItemSize( itemView, itemSize ) ;
 				}
 			}
+
+			//----------------------------------------------------------
 
 			m_ItemChecker.Clear() ;
 
@@ -2371,6 +2379,37 @@ namespace uGUIHelper
 			}
 
 			float contentPosition = ConvertIndexToPosition( contentIndex ) ;
+
+			AsyncState state = new AsyncState( this ) ;
+			StartCoroutine( MoveToPosition_Private( contentPosition, duration, easeType, state ) ) ;
+			return state ;
+		}
+
+		/// <summary>
+		/// 指定のインデックスまで移動させます
+		/// </summary>
+		/// <param name="contentIndex">移動したいインデックス + 追加する割合</param>
+		/// <param name="duration"></param>
+		/// <returns></returns>
+		/// <remarks>
+		/// <para><paramref name="contentIndex"/>に小数点以下がある場合、小数点以下を幅に対する割合とみなして計算します</para>
+		/// </remarks>
+		public AsyncState MoveToIndex( float contentIndex, float duration, UITween.EaseTypes easeType = UITween.EaseTypes.EaseOutQuad )
+		{
+			if( duration <= 0 )
+			{
+				return null ;
+			}
+
+			// 最低限移動させるインデックス
+			var index = ( int )contentIndex ;
+
+			// 小数点以下の取得
+			var afPoint = contentIndex - index ;
+
+			// どの地点まで移動させるのか？
+			var contentPosition = ConvertIndexToPosition( index )
+								+ ( DefaultItemSize * afPoint ) ;
 
 			AsyncState state = new AsyncState( this ) ;
 			StartCoroutine( MoveToPosition_Private( contentPosition, duration, easeType, state ) ) ;

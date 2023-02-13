@@ -891,7 +891,7 @@ namespace AssetBundleHelper
 			/// <param name="keep">キャッシュオーバー時の動作(true=キャッシュオーバー時に保持する・false=キャッシュオーバー時に破棄する)</param>
 			/// <param name="instance">アセットバンドルマネージャのインスタンス</param>
 			/// <returns>列挙子</returns>
-			internal protected IEnumerator DownloadAssetBundle_Coroutine( string assetBundlePath, bool keep, Action<int,float,float> onProgress, Action<int,string> onResult, bool isManifestSaving, Request request, AssetBundleManager instance )
+			internal protected IEnumerator DownloadAssetBundle_Coroutine( string assetBundlePath, bool keep, Action<long,float,float> onProgress, Action<long,string> onResult, bool isManifestSaving, Request request, AssetBundleManager instance )
 			{
 				// そのファイルが更新対象か確認する
 				if( m_AssetBundleHash.ContainsKey( assetBundlePath ) == false )
@@ -1192,7 +1192,7 @@ namespace AssetBundleHelper
 			/// </summary>
 			/// <param name="assetBundlePath">アセットバンドルのパス</param>
 			/// <returns>結果(true=存在する・false=存在しない</returns>
-			internal protected int GetSize( string assetBundlePath )
+			internal protected long GetSize( string assetBundlePath )
 			{
 				// そのファイルが更新対象か確認する
 				if( m_AssetBundleHash.ContainsKey( assetBundlePath ) == false )
@@ -1429,7 +1429,7 @@ namespace AssetBundleHelper
 			/// </summary>
 			/// <param name="size">必要なキャッシュサイズ</param>
 			/// <returns>結果(true=成功・false=失敗)</returns>
-			private bool Cleanup( int requireSize )
+			private bool Cleanup( long requireSize )
 			{
 				// キープ対象全てとキープ非対象でタイムスタンプの新しい順にサイズを足していきキャッシュの容量をオーバーするまで検査する
 				List<AssetBundleInfo> freeAssetBundleInfo = new List<AssetBundleInfo>() ;

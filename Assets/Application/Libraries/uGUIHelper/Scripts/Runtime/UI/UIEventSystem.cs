@@ -384,7 +384,7 @@ namespace uGUIHelper
 			UIView firstHitView = null ;
 			foreach( var view in m_BackKeyTargets )
 			{
-				if( view.ActiveInHierarchy == true && view.Alpha >  0 && view.IsAnyTweenPlayingInParents == false && CheckBackBeyTarget( view ) == true )
+				if( view.ActiveInHierarchy == true && view.IsAnyTweenPlayingInParents == false && ( ( view.IsBackKeyIgnoreRaycastTarget == false && view.Alpha >  0 ) || view.IsBackKeyIgnoreRaycastTarget == true ) && CheckBackKeyTarget( view ) == true )
 				{
 					// ヒットした
 					if( view is UIButton )
@@ -470,7 +470,7 @@ namespace uGUIHelper
 		private readonly PointerEventData		m_BK_EventDataCurrentPosition = new PointerEventData( EventSystem.current ) ;
 		private readonly List<RaycastResult>	m_BK_Results = new List<RaycastResult>() ;
 
-		private bool CheckBackBeyTarget( UIView view )
+		private bool CheckBackKeyTarget( UIView view )
 		{
 			// 親キャンバスを取得
 			Transform canvasTransform = view.transform ;
@@ -504,7 +504,8 @@ namespace uGUIHelper
 			w *= 0.4f ;
 			h *= 0.4f ;
 
-			// 四隅と中心の計５点のいずれかがレイキャストヒットすれば有効と判定する
+			// 四隅と中心の計５点の一箇所以上がレイキャストヒットすれば有効と判定する
+			// ※ボタンの一部が隠れていてレイキャストにヒットしない事がありえるため１箇所以上とする
 			m_BK_Positions[ 0 ] = centerPosition ;
 			m_BK_Positions[ 1 ] = centerPosition + new Vector3( - w, - h, 0 ) ;
 			m_BK_Positions[ 2 ] = centerPosition + new Vector3( + w, - h, 0 ) ;
@@ -520,6 +521,18 @@ namespace uGUIHelper
 			float sw = Screen.width ;
 			float sh = Screen.height ;
 
+			int hitCount = 0 ;
+
+			//----------------------------------
+
+			// 一時的にレイキャストターゲットを有効化する(よって Graphic コンポーネント必須)
+			bool raycastTarget = true ;
+			if( view.IsBackKeyIgnoreRaycastTarget == true && view.RaycastTarget == false )
+			{
+				raycastTarget = view.RaycastTarget ;
+				view.RaycastTarget = true ;
+			}
+
 			Vector2 screenPosition ;
 			foreach( var currentPosition in m_BK_Positions )
 			{
@@ -533,17 +546,26 @@ namespace uGUIHelper
 					m_BK_Results.Clear() ;
 					EventSystem.current.RaycastAll( m_BK_EventDataCurrentPosition, m_BK_Results ) ;
 
+					// 自身のレイキャストが有効でヒットしなければならない
+
 					// 自分自身でない場合は他のUIの下なのでタップできない
 					if( m_BK_Results.Count >= 1 && m_BK_Results[ 0 ].gameObject == view.gameObject )
 					{
-						// ヒットした
-						return true ;
+						hitCount ++ ;
 					}
 				}
 			}
 
-			// ヒットしなかった
-			return false ;
+			// レイキャスト無効でもヒット判定を有効にしていた場合は設定を元に戻す
+			if( view.IsBackKeyIgnoreRaycastTarget == true && raycastTarget == false )
+			{
+				view.RaycastTarget = raycastTarget ;
+			}
+
+			//----------------------------------
+
+			// １点以上該当でヒットとみなす
+			return ( hitCount >  0 ) ;
 		}
 	}
 }

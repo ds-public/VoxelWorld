@@ -17,7 +17,7 @@ using UnityEditor ;
 namespace AssetBundleHelper
 {
 	/// <summary>
-	/// アセットバンドルマネージャクラス(シングルトン) Version 2022/10/04
+	/// アセットバンドルマネージャクラス(シングルトン) Version 2023/01/22
 	/// </summary>
 	public partial class AssetBundleManager : MonoBehaviour
 	{
@@ -177,7 +177,8 @@ namespace AssetBundleHelper
 			//----------------------------------
 
 			// 受信バッファキャッシュを生成する
-			CreateReceiveBufferCache() ;
+			CreateLargeReceiveBufferCache() ;
+			CreateSmallReceiveBufferCache() ;
 
 			//----------------------------------
 
@@ -284,6 +285,10 @@ namespace AssetBundleHelper
 
 				// 終了時に呼び出して欲しいコールバックを呼ぶ
 				CallOnQuitCallbacks() ;
+
+				// 受信バッファキャッシュを破棄する
+				DeleteSmallReceiveBufferCache() ;
+				DeleteLargeReceiveBufferCache() ;
 
 				if( m_UseLocalAssets == false )
 				{

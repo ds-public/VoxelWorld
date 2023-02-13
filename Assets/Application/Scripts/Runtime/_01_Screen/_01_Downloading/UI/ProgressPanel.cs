@@ -100,7 +100,7 @@ namespace DSW.Screens.DownloadingClasses.UI
 		private float	m_DownloadingRate_Total ;
 		private int		m_DownloadingRate_Count ;
 
-		private int		m_WritingRate_Size ;
+		private long	m_WritingRate_Size ;
 		private float	m_WritingRate_Total ;
 		private int		m_WritingRate_Count ;
 
@@ -177,7 +177,7 @@ namespace DSW.Screens.DownloadingClasses.UI
 		/// <param name="nowParallel"></param>
 		/// <param name="maxParallel"></param>
 		/// <param name="httpVersion"></param>
-		public void Set( long downloadedSize, int writtenSize, long totalSize, int storedFile, int totalFile, AssetBundleManager.DownloadEntity[] targets, int nowParallel, int maxParallel, int httpVersion )
+		public void Set( long downloadedSize, long writtenSize, long totalSize, int storedFile, int totalFile, AssetBundleManager.DownloadEntity[] targets, int nowParallel, int maxParallel, int httpVersion )
 		{
 			if( totalSize <= 0 )
 			{

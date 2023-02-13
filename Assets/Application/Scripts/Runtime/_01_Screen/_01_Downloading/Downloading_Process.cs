@@ -238,7 +238,7 @@ namespace DSW.Screens
 			DownloadAssetBundleAsync
 			(
 				this, targetAssetBundlePaths,
-				( long downloadedSize, int writtenSize, long totalSize, int storedFile, int totalFile, AssetBundleManager.DownloadEntity[] targets, int nowParallel, int maxParallel, int httpVersion ) =>
+				( long downloadedSize, long writtenSize, long totalSize, int storedFile, int totalFile, AssetBundleManager.DownloadEntity[] targets, int nowParallel, int maxParallel, int httpVersion ) =>
 				{
 					m_ProgressPanel.Set( downloadedSize, writtenSize, totalSize, storedFile, totalFile, targets, nowParallel, maxParallel, httpVersion ) ;
 				},

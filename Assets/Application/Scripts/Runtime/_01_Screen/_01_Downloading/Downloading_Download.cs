@@ -51,7 +51,7 @@ namespace DSW.Screens
 		/// 指定したアセットバンドルのダウンロードを行う
 		/// </summary>
 		/// <returns></returns>
-		public static async UniTask DownloadAssetBundleAsync( ExMonoBehaviour instance, Dictionary<string,AssetBundleManager.DownloadEntity> targetAssetBundlePaths = null, Action<long,int,long,int,int,AssetBundleManager.DownloadEntity[],int,int,int> onProgress = null, Action onCompleted = null, bool isAllManifestsSaving = true )
+		public static async UniTask DownloadAssetBundleAsync( ExMonoBehaviour instance, Dictionary<string,AssetBundleManager.DownloadEntity> targetAssetBundlePaths = null, Action<long,long,long,int,int,AssetBundleManager.DownloadEntity[],int,int,int> onProgress = null, Action onCompleted = null, bool isAllManifestsSaving = true )
 		{
 			bool	useParallelDownload			= true ;	// 並列ダウンロード有効
 			int		maxParallelDownloadCount	= 6 ;		// 並列ダウンロード最大
@@ -103,7 +103,7 @@ namespace DSW.Screens
 				targets,
 				parallel,	// 並列ダウンロード数
 				// １ファイルダウンロード最中のプログレス表示更新
-				onProgress:( long downloadedSize, int writtenSize, int storedFile, int nowParallel ) =>
+				onProgress:( long downloadedSize, long writtenSize, int storedFile, int nowParallel ) =>
 				{
 					onProgress?.Invoke
 					(
