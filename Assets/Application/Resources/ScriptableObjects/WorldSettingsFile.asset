@@ -10,7 +10,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 03ec56082f18bd044b68b5f71447b535, type: 3}
-  m_Name: 
+  m_Name: WorldSettingsFile
   m_EditorClassIdentifier: 
   DISPLAY_CHUNK_RANGE: 12
   WORLD_X_MIN: 0
