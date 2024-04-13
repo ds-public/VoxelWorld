@@ -26,7 +26,7 @@ MonoBehaviour:
   FrameRate_FixedTime: 60
   VsyncType: 0
   AssetBundlePlatformType: 0
-  UseLocalAssets: 0
+  UseLocalAssets: 1
   UseLocalAssetBundle: 1
   UseStreamingAssets: 1
   UseRemoteAssetBundle: 0

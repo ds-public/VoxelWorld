@@ -574,7 +574,19 @@ namespace uGUIHelper
 							}
 							else
 							{
-								color = CButton.colors.normalColor ;
+								if( IsPress == true )
+								{
+									color = CButton.colors.pressedColor ;
+								}
+								else
+								if( IsHover == true )
+								{
+									color = CButton.colors.highlightedColor ;
+								}
+								else
+								{
+									color = CButton.colors.normalColor ;
+								}
 							}
 
 							ApplyColorToChidren( color, withMyself ) ;
@@ -596,7 +608,19 @@ namespace uGUIHelper
 								}
 								else
 								{
-									color = CButton.colors.normalColor ;
+									if( IsPress == true )
+									{
+										color = CButton.colors.pressedColor ;
+									}
+									else
+									if( IsHover == true )
+									{
+										color = CButton.colors.highlightedColor ;
+									}
+									else
+									{
+										color = CButton.colors.normalColor ;
+									}
 								}
 							}
 

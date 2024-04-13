@@ -7,6 +7,7 @@ using UnityEngine ;
 
 using Cysharp.Threading.Tasks ;
 
+
 namespace DSW.Screens
 {
 	/// <summary>
@@ -23,7 +24,7 @@ namespace DSW.Screens
 		private async UniTask<State> State_ActionSelecting( State previous )
 		{
 			// 準備
-			m_ModeSettingPanel.Prepare() ;
+			m_ModeSettingPanel.Prepare( this ) ;
 
 			// フェードイン
 			await m_ModeSettingPanel.FadeIn() ;
@@ -44,6 +45,13 @@ namespace DSW.Screens
 			// フェードアウト
 			await m_ModeSettingPanel.FadeOut() ;
 
+			//----------------------------------------------------------
+
+
+
+
+			//----------------------------------------------------------
+			
 			// ワールドへ遷移する
 			ToWorld() ;
 

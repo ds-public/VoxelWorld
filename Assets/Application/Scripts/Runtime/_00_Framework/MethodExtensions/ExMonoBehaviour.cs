@@ -12,7 +12,7 @@ using EaseHelper ;
 namespace DSW
 {
 	/// <summary>
-	/// MonoBehaviour のメソッド拡張 Version 2023/02/03
+	/// MonoBehaviour のメソッド拡張 Version 2023/07/03
 	/// </summary>
 	public class ExMonoBehaviour : MonoBehaviour
 	{
@@ -192,10 +192,7 @@ namespace DSW
 			}
 			finally
 			{
-				if( tokenSource != null )
-				{
-					tokenSource.Dispose() ;
-				}
+				tokenSource?.Dispose() ;
 			}
 
 			if( isCanceled == true )
@@ -245,10 +242,7 @@ namespace DSW
 			}
 			finally
 			{
-				if( tokenSource != null )
-				{
-					tokenSource.Dispose() ;
-				}
+				tokenSource?.Dispose() ;
 			}
 
 			if( isCanceled == true )
@@ -297,10 +291,7 @@ namespace DSW
 			}
 			finally
 			{
-				if( tokenSource != null )
-				{
-					tokenSource.Dispose() ;
-				}
+				tokenSource?.Dispose() ;
 			}
 
 			if( isCanceled == true )
@@ -346,10 +337,7 @@ namespace DSW
 			}
 			finally
 			{
-				if( tokenSource != null )
-				{
-					tokenSource.Dispose() ;
-				}
+				tokenSource?.Dispose() ;
 			}
 
 			if( isCanceled == true )
@@ -390,7 +378,6 @@ namespace DSW
 			{
 				if( e is OperationCanceledException )
 				{
-//					Debug.Log( "タスクはキャンセルされました" ) ;
 					isCanceled = true ;
 				}
 				else
@@ -400,16 +387,11 @@ namespace DSW
 			}
 			finally
 			{
-				if( tokenSource != null )
-				{
-//					Debug.Log( "独自のトークンソースを破棄します" ) ;
-					tokenSource.Dispose() ;
-				}
+				tokenSource?.Dispose() ;
 			}
 
 			if( isCanceled == true )
 			{
-//				Debug.Log( "タスクキャンセル例外を返します" ) ;
 				throw new OperationCanceledException() ;
 			}
 		}
@@ -451,10 +433,7 @@ namespace DSW
 			}
 			finally
 			{
-				if( tokenSource != null )
-				{
-					tokenSource.Dispose() ;
-				}
+				tokenSource?.Dispose() ;
 			}
 
 			if( isCanceled == true )
@@ -500,10 +479,7 @@ namespace DSW
 			}
 			finally
 			{
-				if( tokenSource != null )
-				{
-					tokenSource.Dispose() ;
-				}
+				tokenSource?.Dispose() ;
 			}
 
 			if( isCanceled == true )
@@ -799,10 +775,7 @@ namespace DSW
 			//----------------------------------------------------------
 			// ループ終了後
 
-			if( tokenSource != null )
-			{
-				tokenSource.Dispose() ;
-			}
+			tokenSource?.Dispose() ;
 
 			if( isCanceled == true )
 			{
@@ -918,10 +891,7 @@ namespace DSW
 			//----------------------------------------------------------
 			// ループ終了後
 
-			if( tokenSource != null )
-			{
-				tokenSource.Dispose() ;
-			}
+			tokenSource?.Dispose() ;
 
 			if( isCanceled == true )
 			{
@@ -1172,10 +1142,7 @@ namespace DSW
 			//----------------------------------------------------------
 			// ループ終了後
 
-			if( tokenSource != null )
-			{
-				tokenSource.Dispose() ;
-			}
+			tokenSource?.Dispose() ;
 
 			if( isCanceled == true )
 			{
@@ -1287,10 +1254,7 @@ namespace DSW
 			//----------------------------------------------------------
 			// ループ終了後
 
-			if( tokenSource != null )
-			{
-				tokenSource.Dispose() ;
-			}
+			tokenSource?.Dispose() ;
 
 			if( isCanceled == true )
 			{
@@ -1358,10 +1322,7 @@ namespace DSW
 			//----------------------------------------------------------
 			// ループ終了後
 
-			if( tokenSource != null )
-			{
-				tokenSource.Dispose() ;
-			}
+			tokenSource?.Dispose() ;
 
 			if( isCanceled == true )
 			{
@@ -1623,10 +1584,7 @@ namespace DSW
 			//----------------------------------------------------------
 			// ループ終了後
 
-			if( tokenSource != null )
-			{
-				tokenSource.Dispose() ;
-			}
+			tokenSource?.Dispose() ;
 
 			if( isCanceled == true )
 			{
@@ -1639,168 +1597,40 @@ namespace DSW
 		// ユーティリティ
 
 		/// <summary>
-		/// トゥイーンのヘルパー
+		/// Updateで動作するトゥイーンのヘルパー
 		/// </summary>
 		/// <param name="duration"></param>
 		/// <param name="easeType"></param>
 		/// <returns></returns>
 		protected async UniTask Tween( Action<float> onFrameUpdate, float duration, EaseTypes easeType = EaseTypes.Linear, float timeScale = 1, Func<bool> onCancel = null )
 		{
-			if( m_GameObjectWasDestroyed == true )
-			{
-				// 既に GameObject が破棄されている
-
-				// タスクをまとめてキャンセルする
-				throw new OperationCanceledException() ;
-			}
-
-			//----------------------------------------------------------
-
-			if( onFrameUpdate == null )
-			{
-				return ;
-			}
-
-			if( duration <= 0 )
-			{
-				onFrameUpdate( 1 ) ;
-				return ;
-			}
-
-			float timer = 0 ;
-			while( timer <  duration )
-			{
-				if( onCancel != null )
-				{
-					if( onCancel() == true )
-					{
-						// 中断
-						break ;
-					}
-				}
-
-				timer += ( Time.deltaTime * timeScale ) ;
-				if( timer >  duration )
-				{
-					timer  = duration ;
-				}
-
-				onFrameUpdate( Ease.GetValue( timer / duration, easeType ) ) ;
-
-				await Yield() ;
-			}
+			await Tween( progress => { onFrameUpdate( progress ) ; return ( timeScale, false ) ; }, duration, easeType, timeScale, onCancel ) ;
 		}
 
 		/// <summary>
-		/// トゥイーンのヘルパー(動的なタイムスケール変更に対応)
+		/// Updateで動作するトゥイーンのヘルパー(動的なタイムスケール変更に対応)
 		/// </summary>
 		/// <param name="duration"></param>
 		/// <param name="easeType"></param>
 		/// <returns></returns>
-		protected async UniTask Tween( Func<float,float> onFrameUpdate, float duration, EaseTypes easeType = EaseTypes.Linear, float timeScale = 1, Func<bool> onCancel = null )
+		protected async UniTask Tween( Func<float, float> onFrameUpdate, float duration, EaseTypes easeType = EaseTypes.Linear, float timeScale = 1, Func<bool> onCancel = null )
 		{
-			if( m_GameObjectWasDestroyed == true )
-			{
-				// 既に GameObject が破棄されている
-
-				// タスクをまとめてキャンセルする
-				throw new OperationCanceledException() ;
-			}
-
-			//----------------------------------------------------------
-
-			if( onFrameUpdate == null )
-			{
-				return ;
-			}
-
-			if( duration <= 0 )
-			{
-				onFrameUpdate( 1 ) ;
-				return ;
-			}
-
-			float timer = 0 ;
-			while( timer <  duration )
-			{
-				if( onCancel != null )
-				{
-					if( onCancel() == true )
-					{
-						// 中断
-						break ;
-					}
-				}
-
-				timer += ( Time.deltaTime * timeScale ) ;
-				if( timer >  duration )
-				{
-					timer  = duration ;
-				}
-
-				timeScale = onFrameUpdate( Ease.GetValue( timer / duration, easeType ) ) ;
-
-				await Yield() ;
-			}
+			await Tween( progress => { return ( onFrameUpdate( progress ), false ) ; }, duration, easeType, timeScale, onCancel ) ;
 		}
 
 		/// <summary>
-		/// トゥイーンのヘルパー(途中中断に対応)
+		/// Updateで動作するトゥイーンのヘルパー(途中中断に対応)
 		/// </summary>
 		/// <param name="duration"></param>
 		/// <param name="easeType"></param>
 		/// <returns></returns>
-		protected async UniTask Tween( Func<float,bool> onFrameUpdate, float duration, EaseTypes easeType = EaseTypes.Linear, float timeScale = 1, Func<bool> onCancel = null )
+		protected async UniTask Tween( Func<float, bool> onFrameUpdate, float duration, EaseTypes easeType = EaseTypes.Linear, float timeScale = 1, Func<bool> onCancel = null )
 		{
-			if( m_GameObjectWasDestroyed == true )
-			{
-				// 既に GameObject が破棄されている
-
-				// タスクをまとめてキャンセルする
-				throw new OperationCanceledException() ;
-			}
-
-			//----------------------------------------------------------
-
-			if( onFrameUpdate == null )
-			{
-				return ;
-			}
-
-			if( duration <= 0 )
-			{
-				return ;
-			}
-
-			float timer = 0 ;
-			while( timer <  duration )
-			{
-				if( onCancel != null )
-				{
-					if( onCancel() == true )
-					{
-						// 中断
-						break ;
-					}
-				}
-
-				timer += ( Time.deltaTime * timeScale ) ;
-				if( timer >  duration )
-				{
-					timer  = duration ;
-				}
-
-				if( onFrameUpdate( Ease.GetValue( timer / duration, easeType ) ) == true )
-				{
-					break ;
-				}
-
-				await Yield() ;
-			}
+			await Tween( progress => { return ( timeScale, onFrameUpdate( progress ) ) ; }, duration, easeType, timeScale, onCancel ) ;
 		}
 
 		/// <summary>
-		/// トゥイーンのヘルパー(動的なタイムスケール変更と中断に対応)
+		/// Updateで動作するトゥイーンのヘルパー(動的なタイムスケール変更と中断に対応)
 		/// </summary>
 		/// <param name="duration"></param>
 		/// <param name="easeType"></param>
@@ -1855,6 +1685,100 @@ namespace DSW
 				}
 
 				await Yield() ;
+			}
+		}
+
+		//-----------------------------------
+
+		/// <summary>
+		/// FixedUpdateで動作するトゥイーンのヘルパー
+		/// </summary>
+		/// <param name="duration"></param>
+		/// <param name="easeType"></param>
+		/// <returns></returns>
+		protected async UniTask FixedTween( Action<float> onFrameUpdate, float duration, EaseTypes easeType = EaseTypes.Linear, float timeScale = 1, Func<bool> onCancel = null )
+		{
+			await FixedTween( progress => { onFrameUpdate( progress ) ; return ( timeScale, false ) ; }, duration, easeType, timeScale, onCancel ) ;
+		}
+
+		/// <summary>
+		/// FixedUpdateで動作するトゥイーンのヘルパー(動的なタイムスケール変更に対応)
+		/// </summary>
+		/// <param name="duration"></param>
+		/// <param name="easeType"></param>
+		/// <returns></returns>
+		protected async UniTask FixedTween( Func<float, float> onFrameUpdate, float duration, EaseTypes easeType = EaseTypes.Linear, float timeScale = 1, Func<bool> onCancel = null )
+		{
+			await FixedTween( progress => { return ( onFrameUpdate( progress ), false ) ; }, duration, easeType, timeScale, onCancel ) ;
+		}
+
+		/// <summary>
+		///  FixedUpdateで動作するトゥイーンのヘルパー(途中中断に対応)
+		/// </summary>
+		/// <param name="duration"></param>
+		/// <param name="easeType"></param>
+		/// <returns></returns>
+		protected async UniTask FixedTween( Func<float, bool> onFrameUpdate, float duration, EaseTypes easeType = EaseTypes.Linear, float timeScale = 1, Func<bool> onCancel = null )
+		{
+			await FixedTween( progress => { return ( timeScale, onFrameUpdate( progress ) ) ; }, duration, easeType, timeScale, onCancel ) ;
+		}
+
+		/// <summary>
+		/// FixedUpdateで動作するトゥイーンのヘルパー(動的なタイムスケール変更と中断に対応)
+		/// </summary>
+		/// <param name="duration"></param>
+		/// <param name="easeType"></param>
+		/// <returns></returns>
+		protected async UniTask FixedTween( Func<float, ( float, bool )> onFrameUpdate, float duration, EaseTypes easeType = EaseTypes.Linear, float timeScale = 1, Func<bool> onCancel = null )
+		{
+			if( m_GameObjectWasDestroyed == true )
+			{
+				// 既に GameObject が破棄されている
+
+				// タスクをまとめてキャンセルする
+				throw new OperationCanceledException() ;
+			}
+
+			//----------------------------------------------------------
+
+			if( onFrameUpdate == null )
+			{
+				return;
+			}
+
+			if( duration <= 0 )
+			{
+				onFrameUpdate( 1 ) ;
+				return ;
+			}
+
+			float timer = 0 ;
+			bool stop ;
+			while( timer <  duration )
+			{
+				if( onCancel != null )
+				{
+					if( onCancel() == true )
+					{
+						// 中断
+						break ;
+					}
+				}
+
+				timer += ( Time.fixedDeltaTime * timeScale ) ;
+				if( timer >  duration )
+				{
+					timer  = duration ;
+				}
+
+				( timeScale, stop ) = onFrameUpdate( Ease.GetValue( timer / duration, easeType ) ) ;
+
+				if( stop == true )
+				{
+					break ;
+				}
+
+				await Yield( PlayerLoopTiming.FixedUpdate ) ;
 			}
 		}
 

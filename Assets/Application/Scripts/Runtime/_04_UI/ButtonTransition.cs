@@ -14,10 +14,11 @@ using Cysharp.Threading.Tasks ;
 using UnityEditor ;
 #endif
 
+
 namespace DSW.UI
 {
 	/// <summary>
-	/// ボタンのトランジション Version 2022/07/26
+	/// ボタンのトランジション Version 2024/04/13
 	/// </summary>
 	/// <summary>
 	/// Transition コンポーネントクラス
@@ -83,7 +84,7 @@ namespace DSW.UI
 
 		// ノーマル状態の色
 		[SerializeField]
-		protected	Color32	m_Normal		= new Color32( 255, 255, 255, 255 ) ;
+		protected	Color32	m_Normal		= new ( 255, 255, 255, 255 ) ;
 
 		/// <summary>
 		/// ノーマル状態の色
@@ -107,7 +108,7 @@ namespace DSW.UI
 
 		// ハイライト状態の色
 		[SerializeField]
-		protected	Color32	m_Highlighted	= new Color32( 247, 247, 247, 255 ) ;
+		protected	Color32	m_Highlighted	= new ( 247, 247, 247, 255 ) ;
 
 		/// <summary>
 		/// ハイライト状態の色
@@ -131,7 +132,7 @@ namespace DSW.UI
 
 		// プレス状態の色
 		[SerializeField]
-		protected	Color32	m_Pressed		= new Color32( 199, 199, 199, 255 ) ;
+		protected	Color32	m_Pressed		= new ( 199, 199, 199, 255 ) ;
 
 		/// <summary>
 		/// プレス状態の色
@@ -155,7 +156,7 @@ namespace DSW.UI
 
 		// セレクト状態の色
 		[SerializeField]
-		protected	Color32	m_Selected		= new Color32( 247, 247, 247, 255 ) ;
+		protected	Color32	m_Selected		= new ( 247, 247, 247, 255 ) ;
 
 		/// <summary>
 		/// セレクト状態の色
@@ -179,7 +180,7 @@ namespace DSW.UI
 
 		// ディスエーブル状態の色
 		[SerializeField]
-		protected	Color32	m_Disabled		= new Color32( 143, 143, 143, 255 ) ;
+		protected	Color32	m_Disabled		= new ( 143, 143, 143, 255 ) ;
 
 		/// <summary>
 		/// ディスエーブル状態の色
@@ -345,11 +346,11 @@ namespace DSW.UI
 
 		private bool	m_ColorDisabled ;
 
-		private Color32	m_ColorBefore	= new Color32( 255, 255, 255, 255 ) ;
-		private Color32	m_ColorAfter	= new Color32( 255, 255, 255, 255 ) ;
+		private Color32	m_ColorBefore	= new ( 255, 255, 255, 255 ) ;
+		private Color32	m_ColorAfter	= new ( 255, 255, 255, 255 ) ;
 
 
-		private Color32 m_ColorProcess	= new Color32( 255, 255, 255, 255 ) ;
+		private Color32 m_ColorProcess	= new ( 255, 255, 255, 255 ) ;
 		private float	m_ColorProcess_BaseTime ;
 		private float	m_ColorProcess_FadeDuration ;
 
@@ -1010,17 +1011,16 @@ namespace DSW.UI
 
 		//-----------------------------------
 
-		[ MenuItem( "ButtonTransition/AddComponent" ) ]
+		[MenuItem( "ButtonTransition/AddComponent" )]
 		private static void ButtonTansition_AddComponent()
 		{
-			GameObject go = Selection.activeGameObject ;
+			var go = Selection.activeGameObject ;
 			if( go == null )
 			{
 				return ;
 			}
 
-			var uiTransition = go.GetComponent<uGUIHelper.UITransition>() ;
-			if( uiTransition != null )
+			if( go.TryGetComponent<uGUIHelper.UITransition>( out var _ ) == true )
 			{
 				EditorUtility.DisplayDialog( "警告", "ButtonTransition を追加するには\nUITransition を削除する必要があります", "閉じる" ) ;
 				return ;
@@ -1030,8 +1030,7 @@ namespace DSW.UI
 
 			Undo.RecordObject( go, "Add a ButtonTransition" ) ;	// アンドウバッファに登録
 
-			var buttonTransition = go.GetComponent<ButtonTransition>() ;
-			if( buttonTransition == null )
+			if( go.TryGetComponent<ButtonTransition>( out var buttonTransition ) == false )
 			{
 				buttonTransition = go.AddComponent<ButtonTransition>() ;
 				if( buttonTransition == null )
@@ -1043,8 +1042,7 @@ namespace DSW.UI
 			//----------------------------------
 			// Animator
 
-			var animator = buttonTransition.GetComponent<Animator>() ;
-			if( animator == null )
+			if( buttonTransition.TryGetComponent<Animator>( out var animator ) == false )
 			{
 				animator = go.AddComponent<Animator>() ;
 			}
@@ -1066,17 +1064,16 @@ namespace DSW.UI
 			UnityEditor.SceneManagement.EditorSceneManager.MarkSceneDirty( UnityEditor.SceneManagement.EditorSceneManager.GetActiveScene() ) ;
 		}
 
-		[ MenuItem( "ButtonTransition/AddComponent And PositiveEffect" ) ]
+		[MenuItem( "ButtonTransition/AddComponent And PositiveEffect" )]
 		private static void ButtonTansition_AddComponentAndPositiveEffect()
 		{
-			GameObject go = Selection.activeGameObject ;
+			var go = Selection.activeGameObject ;
 			if( go == null )
 			{
 				return ;
 			}
 
-			var uiTransition = go.GetComponent<uGUIHelper.UITransition>() ;
-			if( uiTransition != null )
+			if( go.TryGetComponent<uGUIHelper.UITransition>( out var _ ) == true )
 			{
 				EditorUtility.DisplayDialog( "警告", "ButtonTransition を追加するには\nUITransition を削除する必要があります", "閉じる" ) ;
 				return ;
@@ -1086,8 +1083,7 @@ namespace DSW.UI
 
 			Undo.RecordObject( go, "Add a ButtonTransition" ) ;	// アンドウバッファに登録
 
-			var buttonTransition = go.GetComponent<ButtonTransition>() ;
-			if( buttonTransition == null )
+			if( go.TryGetComponent<ButtonTransition>( out var buttonTransition ) == false )
 			{
 				buttonTransition = go.AddComponent<ButtonTransition>() ;
 				if( buttonTransition == null )
@@ -1099,8 +1095,7 @@ namespace DSW.UI
 			//----------------------------------
 			// Animator
 
-			var animator = buttonTransition.GetComponent<Animator>() ;
-			if( animator == null )
+			if( buttonTransition.TryGetComponent<Animator>( out var animator ) == false )
 			{
 				animator = go.AddComponent<Animator>() ;
 			}
@@ -1125,14 +1120,13 @@ namespace DSW.UI
 		[ MenuItem( "ButtonTransition/AddComponent And NegativeEffect" ) ]
 		private static void ButtonTansition_AddComponentAndNegativeEffect()
 		{
-			GameObject go = Selection.activeGameObject ;
+			var go = Selection.activeGameObject ;
 			if( go == null )
 			{
 				return ;
 			}
 
-			var uiTransition = go.GetComponent<uGUIHelper.UITransition>() ;
-			if( uiTransition != null )
+			if( go.TryGetComponent<uGUIHelper.UITransition>( out var _ ) == true )
 			{
 				EditorUtility.DisplayDialog( "警告", "ButtonTransition を追加するには\nUITransition を削除する必要があります", "閉じる" ) ;
 				return ;
@@ -1142,8 +1136,7 @@ namespace DSW.UI
 
 			Undo.RecordObject( go, "Add a ButtonTransition" ) ;	// アンドウバッファに登録
 
-			var buttonTransition = go.GetComponent<ButtonTransition>() ;
-			if( buttonTransition == null )
+			if( go.TryGetComponent<ButtonTransition>( out var buttonTransition ) == false )
 			{
 				buttonTransition = go.AddComponent<ButtonTransition>() ;
 				if( buttonTransition == null )
@@ -1155,8 +1148,7 @@ namespace DSW.UI
 			//----------------------------------
 			// Animator
 
-			var animator = buttonTransition.GetComponent<Animator>() ;
-			if( animator == null )
+			if( buttonTransition.TryGetComponent<Animator>( out var animator ) == false )
 			{
 				animator = go.AddComponent<Animator>() ;
 			}

@@ -56,11 +56,12 @@ Shader "Custom/VertexColor"
 					OUT.uv = IN.uv;
 
 					float4 invLightDir = mul(UNITY_MATRIX_M, WorldSpaceLightDir(IN.vertex));
-					float luminance = dot(IN.normal, normalize(invLightDir));
-					luminance = luminance * 0.25f + 0.75f;
-					OUT.color = IN.color * luminance;
+//					float luminance = dot(IN.normal, normalize(invLightDir));
+//					luminance = luminance * 0.25f + 0.75f;
+//					OUT.color = IN.color * luminance;
+					
 
-//					OUT.color = IN.color ;
+					OUT.color = IN.color ;
 
 
 				#if USING_FOG

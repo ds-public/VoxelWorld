@@ -689,6 +689,11 @@ namespace DSW
 
 			//----------------------------------------------------------
 
+			// サーバー検知パケットを一定時間ごとに送信する
+			ServerDetactor.Create( -1, parent:transform, isSuspending:true ) ;
+
+			//----------------------------------------------------------
+
 			// 初期化が完了した
 			m_Initialized = true ;
 
@@ -760,17 +765,32 @@ namespace DSW
 #endif
 		//-------------------------------------------------------------------------------------------
 
-#if USE_EXCEPTION_DIALOG
 		internal void Update()
 		{
+#if USE_EXCEPTION_DIALOG
 			// サブスレッドで発生した例外もキャッチして表示したいため例外情報はリストにためてメインスレッドで表示する
 			if( m_Exceptions.Count >  0 && m_IsExceptionDialogOpening == false )
 			{
 				// 例外発生情報ダイアログを開く
 				OpenExceptionDialog().Forget() ;
 			}
-		}
 #endif
+			//----------------------------------
+			// タイマー関係
+
+			float delta = Time.unscaledDeltaTime ;
+
+			if( m_IsMasterTimePausing == false )
+			{
+				// タイマー増加
+				m_MasterTimeDelta = delta ;
+				m_MasterTime += delta ;
+			}
+			else
+			{
+				m_MasterTimeDelta = 0 ;
+			}
+		}
 
 		//-----------------------------------------------------------------
 	
@@ -1195,6 +1215,128 @@ namespace DSW
 
 			// 空き容量は足りている
 			return true ;
+		}
+
+		//-------------------------------------------------------------------------------------------
+		// タイマー系
+
+		// ゲーム全体の時間経過
+		private double	m_MasterTime ;
+
+		// ゲーム全体の時間経過(差分)
+		private double	m_MasterTimeDelta ;
+
+		// マスタータイムがボーズ中かどうか
+		private bool	m_IsMasterTimePausing ;
+
+		//-----------------------------------
+
+		/// <summary>
+		/// マスタータイム
+		/// </summary>
+		public static double MasterTime
+		{
+			get
+			{
+				if( m_Instance == null )
+				{
+					// まだ準備が出来ていない
+					return 0 ;
+				}
+				return m_Instance.m_MasterTime ;
+			}
+		}
+
+		/// <summary>
+		/// マスタータイム
+		/// </summary>
+		public static double MasterTimeDelta
+		{
+			get
+			{
+				if( m_Instance == null )
+				{
+					// まだ準備が出来ていない
+					return 0 ;
+				}
+				return m_Instance.m_MasterTimeDelta ;
+			}
+		}
+
+		/// <summary>
+		/// マスタータイムを一時停止させる
+		/// </summary>
+		public static void PauseTime()
+		{
+			if( m_Instance == null )
+			{
+				return ;
+			}
+			
+			m_Instance.m_IsMasterTimePausing = true ;
+		}
+
+		/// <summary>
+		/// マスタータイムの一時停止を解除する
+		/// </summary>
+		public static void UnpauseTime()
+		{
+			if( m_Instance == null )
+			{
+				return ;
+			}
+			
+			m_Instance.m_IsMasterTimePausing = false ;
+		}
+
+		//-------------------------------------------------------------------------------------------
+
+		/// <summary>
+		/// セーフエリアを取得する
+		/// </summary>
+		/// <returns></returns>
+		public static Rect GetSafeArea()
+		{
+			Rect safeArea = Screen.safeArea ;
+
+#if SAFE_AREA_EXSAMPLE
+			if( Application.isPlaying == true )
+			{
+				// SafeAreaCorrector の生成・削除が行われシーンファイルが更新扱いにならないようにするため
+				// ランタイム実行時のみ試験的セーフエリアは有効とする
+
+				// UnityEditor - GameView では解像度(Screen .width .height)が可変であるためセーフエリアは解像度に対する比率で考える事
+				float safeArea_L = Screen.width  *   0 / 540 ;	// セーフエリア(左)[仮] / 画面解像度(横)[仮]
+				float safeArea_R = Screen.width  *   0 / 540 ;	// セーフエリア(右)[仮] / 画面解像度(横)[仮]
+				float safeArea_B = Screen.height *  80 / 960 ;	// セーフエリア(下)[仮] / 画面解像度(縦)[仮]
+				float safeArea_T = Screen.height *  40 / 960 ;	// セーフエリア(上)[仮] / 画面解像度(縦)[仮]
+
+				// セーフエリアの大きさ単位は画面(Screen)解像度単位
+				safeArea = new Rect
+				(
+					safeArea_L,
+					safeArea_B,
+					Screen.width  - safeArea_L - safeArea_R,
+					Screen.height - safeArea_B - safeArea_T
+				) ;
+			}
+#endif
+			return safeArea ;
+		}
+
+
+		//-------------------------------------------------------------------------------------------
+
+		/// <summary>
+		/// アプリケーションを終了する
+		/// </summary>
+		public static void Quit()
+		{
+#if !UNITY_EDITOR
+			Application.Quit() ;
+#else
+			EditorApplication.isPlaying = false ;
+#endif
 		}
 	}
 }

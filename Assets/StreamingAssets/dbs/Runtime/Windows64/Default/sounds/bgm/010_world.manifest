@@ -1,0 +1,20 @@
+ManifestFileVersion: 0
+CRC: 3151680562
+Hashes:
+  AssetFileHash:
+    serializedVersion: 2
+    Hash: e3e610944247a99ac9987e2884fdb6ca
+  TypeTreeHash:
+    serializedVersion: 2
+    Hash: 9a2ca7bdbd1871f7131daf57de908e0c
+  IncrementalBuildHash:
+    serializedVersion: 2
+    Hash: a61fb10189a3ad8fd617da2e25eb470b
+HashAppended: 0
+ClassTypes:
+- Class: 83
+  Script: {instanceID: 0}
+SerializeReferenceClassIdentifiers: []
+Assets:
+- Assets/Application/AssetBundle/Sounds/BGM/010_World.wav
+Dependencies: []

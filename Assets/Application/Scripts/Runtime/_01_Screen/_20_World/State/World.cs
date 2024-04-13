@@ -117,6 +117,5 @@ namespace DSW.Screens
 				}
 			}
 		}
-
 	}
 }
