@@ -35,7 +35,7 @@ namespace uGUIHelper
 		/// <summary>
 		/// マテリアルの設定が必要な際に呼び出される
 		/// </summary>
-		/// <param name="tBaseMaterial"></param>
+		/// <param name="baseMaterial"></param>
 		/// <returns></returns>
 		public virtual Material GetModifiedMaterial( Material baseMaterial )
 		{
@@ -46,7 +46,7 @@ namespace uGUIHelper
 			if( m_ShouldRecalculateStencil == true )
 			{
 				Transform rootCanvas = MaskUtilities.FindRootSortOverrideCanvas( transform ) ;
-				stencilValue =  MaskUtilities.GetStencilDepth( transform, rootCanvas ) ;
+				stencilValue = MaskUtilities.GetStencilDepth( transform, rootCanvas ) ;
 				m_ShouldRecalculateStencil = false ;
 			}
 
@@ -78,6 +78,10 @@ namespace uGUIHelper
 			}
 
 			m_ShouldRecalculateStencil = true ;
+
+			//----------------------------------
+
+			RefreshAlphaMask() ;
 		}
 
 		protected override void OnDisable()
@@ -136,13 +140,13 @@ namespace uGUIHelper
 
 			if( m_Graphic == null )
 			{
-				m_Graphic = GetComponent<Graphic>() ;
+				if( TryGetComponent<Graphic>( out m_Graphic ) == false )
+				{
+					return ;
+				}
 			}
 
-			if( m_Graphic != null )
-			{
-				m_Graphic.SetMaterialDirty() ;
-			}
+			m_Graphic.SetMaterialDirty() ;
 		}
 
 		// 使用するマテリアルを選別する
@@ -193,29 +197,7 @@ namespace uGUIHelper
 		{
 			if( m_Window == null )
 			{
-				Transform t = transform ;
-
-				int i, l = 64 ;
-				for( i  = 0 ; i <  l ; i ++ )
-				{
-					if( t.GetComponent<Canvas>() != null )
-					{
-						break ;
-					}
-				
-					m_Window = t.GetComponent<UIAlphaMaskWindow>() ;
-					if( m_Window != null )
-					{
-						break ;
-					}
-
-					if( t.parent == null )
-					{
-						break ;
-					}
-
-					t = t.parent ;
-				}
+				m_Window = GetComponentInParent<UIAlphaMaskWindow>() ;
 			}
 
 			if( m_Window == null )

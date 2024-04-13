@@ -744,7 +744,7 @@ namespace AssetBundleHelper
 		//-------------------------------------------------------------------------------------------
 
 		// 緊急停止の読んで欲しいコールバックの登録
-		private readonly List<Action> m_OnQuitCallbacks = new List<Action>() ;
+		private readonly List<Action> m_OnQuitCallbacks = new () ;
 
 		/// <summary>
 		///  AssetBundleManager 停止時に呼んで欲しいコールバックを登録する
@@ -781,7 +781,7 @@ namespace AssetBundleHelper
 		//-------------------------------------------------------------------------------------------
 		// ダウンロード時に追加したい HTTP ヘッダ情報
 
-		private readonly Dictionary<string,string>	m_ConstantHeaders = new Dictionary<string, string>() ;
+		private readonly Dictionary<string,string>	m_ConstantHeaders = new () ;
 
 #if UNITY_EDITOR
 		/// <summary>
@@ -794,7 +794,7 @@ namespace AssetBundleHelper
 			public string Value ;
 		}
 
-		private readonly List<ConstantHeader>	m_ConstantHeaers_Monitor = new List<ConstantHeader>() ;
+		private readonly List<ConstantHeader>	m_ConstantHeaers_Monitor = new () ;
 #endif
 
 		/// <summary>
@@ -1009,8 +1009,8 @@ namespace AssetBundleHelper
 		}
 
 		[SerializeField][Header( "使用対象のアセットバンドル記録" )]
-		private List<UsingAssetBundleInfo>								m_UsingAssetBundles		= new List<UsingAssetBundleInfo>() ;
-		private Dictionary<( string, string ), UsingAssetBundleInfo>	m_UsingAssetBundles_Hash = new Dictionary<(string, string), UsingAssetBundleInfo>() ;
+		private List<UsingAssetBundleInfo>								m_UsingAssetBundles		= new () ;
+		private Dictionary<( string, string ), UsingAssetBundleInfo>	m_UsingAssetBundles_Hash = new () ;
 
 		/// <summary>
 		/// 現在使用するアセットバンドル情報を記録中かどうか
@@ -1143,7 +1143,7 @@ namespace AssetBundleHelper
 				//--------------------------------------------------------------------------
 				// プラットフォーム関係無しのパス情報のみを返す
 
-				List<string> assetBundlePaths = new List<string>() ;
+				var assetBundlePaths = new List<string>() ;
 
 				foreach( var record in m_UsingAssetBundles )
 				{

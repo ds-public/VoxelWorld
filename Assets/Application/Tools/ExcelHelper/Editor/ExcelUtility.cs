@@ -2,6 +2,8 @@
 //#define CRLF
 #define LF
 
+#pragma warning disable IDE0038
+
 using System ;
 using System.IO ;
 using System.Text ;
@@ -38,7 +40,7 @@ namespace Tools.ForExcel
 		/// <param name="tSeetName">シート名</param>
 		/// <param name="tSplitCode">区切り記号</param>
 		/// <returns>ＣＳＶテキスト</returns>
-		public static string LoadText( string path, string sheetName, string splitCode = "" )
+		public static string LoadText( string path, string sheetName, char separatorCode = ',' )
 		{
 			FileStream fs = null ;
 			IWorkbook book = null ;
@@ -114,32 +116,27 @@ namespace Tools.ForExcel
 				return null ;	// 指定の名前のシートが見つからない
 			}
 
-			return GetText( sheet, splitCode ) ;
+			return GetText( sheet, separatorCode ) ;
 		}
 
 		// テキストを取得する
-		private static string GetText( ISheet sheet, string splitCode )
+		private static string GetText( ISheet sheet, char separatorCode )
 		{
-			string text = "" ;
-
 			int lastRowNumber = sheet.LastRowNum ;
 			if( lastRowNumber <  0 )
 			{
-				return text ;
+				return string.Empty ;
 			}
 
-			if( string.IsNullOrEmpty( splitCode ) == true )
-			{
-				splitCode = "\t" ;
-			}
+			//-----------------------------------------------------------
 
 			IRow row ;
 			int lastCellNumber ;
 			ICell cell ;
 
 			string word ;
-			List<List<string>> table = new List<List<string>>() ;
-			List<string> rows ;
+			var rows = new List<List<string>>() ;
+			List<string> columns ;
 
 			int rowIndex, columnIndex, maxColumn = 0 ;
 			bool isAdded ;
@@ -154,7 +151,7 @@ namespace Tools.ForExcel
 					lastCellNumber = row.LastCellNum ;
 					if( lastCellNumber >= 0 )
 					{
-						rows = new List<string>() ;
+						columns = new List<string>() ;
 
 						for( columnIndex  = 0 ; columnIndex <= lastCellNumber ; columnIndex ++ )
 						{
@@ -165,28 +162,48 @@ namespace Tools.ForExcel
 //								Debug.Log( "Type:" + cell.CellType.ToString() + " " + cell.ToString() ) ;
 								if( cell.CellType == CellType.Formula )
 								{
-									word = cell.NumericCellValue.ToString() ;
+									if( cell.CachedFormulaResultType == CellType.Boolean )
+									{
+										word = cell.BooleanCellValue.ToString() ;
+									}
+									else
+									if( cell.CachedFormulaResultType == CellType.Numeric )
+									{
+										word = cell.NumericCellValue.ToString() ;
+									}
+									else
+									{
+										word = cell.StringCellValue ;
+									}
 								}
 								else
 								{
 									word = cell.ToString() ;
 								}
-								word = word.Replace( "\x0A", "\\n" ) ;				// Environment.NewLine Windows 環境は 0x0D 0x0A Machintosh 環境は 0x0A だが、Machintosh 環境でも Excel は 0x0D 0x0A を出力する
-								word = word.Replace( "\x0D", "" ) ;					// Machintosh 環境の対策
-								rows.Add( word ) ;
+								if( word == null )
+								{
+									word = string.Empty ;
+								}
+								else
+								{
+									// Environment.NewLine は Windows 環境は 0x0D 0x0A Machintosh 環境は 0x0A だが、Machintosh 環境でも Excel は 0x0D 0x0A を出力する
+									word = word.Replace( "\x0D\x0A", m_ReturnCode ) ;
+								}
+								columns.Add( word ) ;
 							}
 							else
 							{
-								rows.Add( string.Empty ) ;
+								columns.Add( string.Empty ) ;
 							}
 						}
 
 						// 後ろの空白を全て削る
-						while( rows.Count >  0 )
+						while( columns.Count >  0 )
 						{
-							if( string.IsNullOrEmpty( rows[ rows.Count - 1 ] ) == true )
+							int lastIndex = columns.Count - 1 ;
+							if( string.IsNullOrEmpty( columns[ lastIndex ] ) == true )
 							{
-								rows.RemoveAt( rows.Count - 1 ) ;
+								columns.RemoveAt( lastIndex ) ;
 							}
 							else
 							{
@@ -194,14 +211,14 @@ namespace Tools.ForExcel
 							}
 						}
 
-						if( rows.Count >  0 )
+						if( columns.Count >  0 )
 						{
-							table.Add( rows ) ;
+							rows.Add( columns ) ;
 							isAdded = true ;
 
-							if( rows.Count >  maxColumn )
+							if( columns.Count >  maxColumn )
 							{
-								maxColumn  = rows.Count ;	// 最も列数が多い行に全体の列数を合わせる
+								maxColumn  = columns.Count ;	// 最も列数が多い行に全体の列数を合わせる
 							}
 						}
 					}
@@ -209,17 +226,17 @@ namespace Tools.ForExcel
 
 				if( isAdded == false )
 				{
-					table.Add( null ) ;
+					rows.Add( null ) ;
 				}
 			}
 
 			// 末尾から空行を削る
-			while( table.Count >  0 )
+			while( rows.Count >  0 )
 			{
-				int lastIndex = table.Count - 1 ;
-				if( table[ lastIndex ] == null )
+				int lastIndex = rows.Count - 1 ;
+				if( rows[ lastIndex ] == null )
 				{
-					table.RemoveAt( lastIndex ) ;
+					rows.RemoveAt( lastIndex ) ;
 				}
 				else
 				{
@@ -227,39 +244,196 @@ namespace Tools.ForExcel
 				}
 			}
 
+			//-----------------------------------------------------------
+
+			var sb = new ExStringBuilder() ;
+
+			string returnCode = m_ReturnCode.ToString() ;
+
 			// 実際のデータ化
-			for( rowIndex  = 0 ; rowIndex <  table.Count ; rowIndex ++ )
+			for( rowIndex  = 0 ; rowIndex <  rows.Count ; rowIndex ++ )
 			{
-				rows = table[ rowIndex ] ;
+				columns = rows[ rowIndex ] ;
 
-				for( columnIndex  = 0 ; columnIndex <  maxColumn ; columnIndex ++ )
+				if( columns != null )
 				{
-					if( columnIndex <  rows.Count )
+					for( columnIndex  = 0 ; columnIndex <  maxColumn ; columnIndex ++ )
 					{
-						text += rows[ columnIndex ] ;
-					}
-					else
-					{
-						text += string.Empty ;
-					}
+						if( columnIndex <  columns.Count )
+						{
+							sb += Escape( columns[ columnIndex ], separatorCode ) ;
+						}
+						else
+						{
+							sb += string.Empty ;
+						}
 
-					if( columnIndex <  ( maxColumn - 1 ) )
+						if( columnIndex <  ( maxColumn - 1 ) )
+						{
+							sb += separatorCode ;
+						}
+					}
+				}
+				else
+				{
+					// 一切の要素が存在しない行も出力する(Excel の Csv 保存と同じ形式に合わせる)
+					for( columnIndex  = 0 ; columnIndex <  maxColumn ; columnIndex ++ )
 					{
-						text += splitCode ;
+						if( columnIndex <  ( maxColumn - 1 ) )
+						{
+							sb += separatorCode ;
+						}
 					}
 				}
 
-				text += m_ReturnCode ;	// 改行を環境ごとのものにする(C#での\nはLF=x0A)
+				sb += returnCode ;	// 改行を環境ごとのものにする(C#での\nはLF=x0A)
+			}
+
+			return sb.ToString() ;
+		}
+
+		// 値を必要に応じてエスケープする
+		// 区切り記号が入ると "..." 囲いが追加される
+		// 改行が入ると "..." 囲いが追加される
+		// " が入ると "..." 囲いが追加され " は "" にエスケープされる
+		private static string Escape( string text, char sepataterCode )
+		{
+			if( string.IsNullOrEmpty( text ) == true )
+			{
+				return string.Empty ;
+			}
+
+			// 改行コード
+			var returnCode = m_ReturnCode.ToCharArray() ;
+			int ri, rl = returnCode.Length ;
+
+			int i, l = text.Length ;
+			for( i  = 0 ; i <  l ; i ++ )
+			{
+				if( text[ i ] == '"' )
+				{
+					// "
+					break ;
+				}
+				else
+				if( text[ i ] == sepataterCode )
+				{
+					// 区切記号判定
+					break ;	// エスケープが必要
+				}
+				else
+				if( i <= ( l - rl ) )
+				{
+					// 改行記号判定
+					for( ri  = 0 ; ri <  rl ; ri ++ )
+					{
+						if( text[ i + ri ] != returnCode[ ri ] )
+						{
+							break ;
+						}
+					}
+
+					if( ri == rl )
+					{
+						// 改行にヒットした
+						break ;
+					}
+				}
+			}
+
+			if( i <  l )
+			{
+				// エスケープが必要
+
+				var sb = new ExStringBuilder() ;
+				sb += "\"" ;
+				for( i  = 0 ; i <  l ; i ++ )
+				{
+					if( text[ i ] == '"' )
+					{
+						// ２つになる
+						sb += "\"\"" ;
+					}
+					else
+					{
+						sb += text[ i ] ;
+					}
+				}
+				sb += "\"" ;
+
+				text = sb.ToString() ;
 			}
 
 			return text ;
 		}
 
+		//--------------------------------------------------------------------------------------------
+
+		/// <summary>
+		/// StringBuilder 機能拡張ラッパークラス(メソッド拡張ではない)
+		/// </summary>
+		public class ExStringBuilder
+		{
+			private readonly StringBuilder m_StringBuilder ;
+
+			public ExStringBuilder()
+			{
+				m_StringBuilder			= new StringBuilder() ;
+			}
+
+			public int Length
+			{
+				get
+				{
+					return m_StringBuilder.Length ;
+				}
+			}
+
+			public int Count
+			{
+				get
+				{
+					return m_StringBuilder.Length ;
+				}
+			}
+
+			public void Clear()
+			{
+				m_StringBuilder.Clear() ;
+			}
+
+			public override string ToString()
+			{
+				return m_StringBuilder.ToString() ;
+			}
+		
+			public void Append( string s )
+			{
+				m_StringBuilder.Append( s ) ;
+			}
+
+			// これを使いたいがためにラッパークラス化
+			public static ExStringBuilder operator + ( ExStringBuilder sb, string s )
+			{
+				sb.Append( s ) ;
+				return sb ;
+			}
+
+			// これを使いたいがためにラッパークラス化
+			public static ExStringBuilder operator + ( ExStringBuilder sb, char c )
+			{
+				sb.Append( c.ToString() ) ;
+				return sb ;
+			}
+		}
+
+		//--------------------------------------------------------------------------------------------
+
 		/// <summary>
 		/// 指定のパスのＥｘｃｅｌファイル内の指定のシートを行列の配列として読み出す
 		/// </summary>
-		/// <param name="tPath">Ｅｘｃｅｌファイルのパス</param>
-		/// <param name="tSeetName">シート名</param>
+		/// <param name="path">Ｅｘｃｅｌファイルのパス</param>
+		/// <param name="sheetName">シート名</param>
 		/// <returns>ＣＳＶテキスト</returns>
 		public static System.Object[,] LoadMatrix( string path, string sheetName )
 		{
@@ -601,20 +775,16 @@ namespace Tools.ForExcel
 			for( y  = 0 ; y <  dimension.Length ; y ++ )
 			{
 				row = sheet.GetRow( y ) ;
-				if( row == null )
-				{
-					// 行を新たに生成する
-					row = sheet.CreateRow( y ) ;
-				}
+
+				// 行を新たに生成する
+				row ??= sheet.CreateRow( y ) ;
 
 				for( x  = 0 ; x <  dimension[ y ].Length ; x ++ )
 				{
 					cell = row.GetCell( x ) ;
-					if( cell == null )
-					{
-						// 列を新たに生成する
-						cell = row.CreateCell( x ) ;
-					}
+
+					// 列を新たに生成する
+					cell ??= row.CreateCell( x ) ;
 
 					if( string.IsNullOrEmpty( dimension[ y ][ x ] ) == false )
 					{
@@ -832,72 +1002,70 @@ namespace Tools.ForExcel
 			int x, y ;
 			IRow row ;
 			ICell cell ;
+			object value ;
 
 			for( y  = 0 ; y <  matrix.GetLength( 0 ) ; y ++ )
 			{
 				row = sheet.GetRow( y ) ;
-				if( row == null )
-				{
-					// 行を新たに生成する
-					row = sheet.CreateRow( y ) ;
-				}
+
+				// 行を新たに生成する
+				row ??= sheet.CreateRow( y ) ;
 
 				for( x  = 0 ; x <  matrix.GetLength( 1 ) ; x ++ )
 				{
 					cell = row.GetCell( x ) ;
-					if( cell == null )
-					{
-						// 列を新たに生成する
-						cell = row.CreateCell( x ) ;
-					}
 
-					if( matrix[ y, x ] != null )
+					// 列を新たに生成する
+					cell ??= row.CreateCell( x ) ;
+
+					value = matrix[ y, x ] ;
+					if( value != null )
 					{
-						if( matrix[ y, x ] is Boolean )
+						if( value is bool )
 						{
 //							cell.SetCellType( CellType.Boolean ) ;
-							cell.SetCellValue( ( bool )matrix[ y, x ] ) ;
+							cell.SetCellValue( ( bool )value ) ;
 						}
 						else
-						if( matrix[ y, x ] is int )
+						if( value is int )
 						{
 //							cell.SetCellType( CellType.Formula ) ;
-							cell.SetCellValue( ( int )matrix[ y, x ] ) ;
+							cell.SetCellValue( ( int )value ) ;
 						}
 						else
-						if( matrix[ y, x ] is uint )
+						if( value is uint )
 						{
 //							cell.SetCellType( CellType.Formula ) ;
-							cell.SetCellValue( ( uint )matrix[ y, x ] ) ;
+							cell.SetCellValue( ( uint )value ) ;
 						}
 						else
-						if( matrix[ y, x ] is long )
+						if( value is long )
 						{
 //							cell.SetCellType( CellType.Numeric ) ;
-							cell.SetCellValue( ( long )matrix[ y, x ] ) ;
+							cell.SetCellValue( ( long )value ) ;
 						}
 						else
-						if( matrix[ y, x ] is ulong )
+						if( value is ulong )
 						{
 //							cell.SetCellType( CellType.Numeric ) ;
-							cell.SetCellValue( ( ulong )matrix[ y, x ] ) ;
+							cell.SetCellValue( ( ulong )value ) ;
 						}
 						else
-						if( matrix[ y, x ] is float )
+						if( value is float )
 						{
 //							cell.SetCellType( CellType.Numeric ) ;
-							cell.SetCellValue( ( float )matrix[ y, x ] ) ;
+							cell.SetCellValue( ( float )value ) ;
 						}
 						else
-						if( matrix[ y, x ] is double )
+						if( value is double )
 						{
 //							cell.SetCellType( CellType.Numeric ) ;
-							cell.SetCellValue( ( double )matrix[ y, x ] ) ;
+							cell.SetCellValue( ( double )value ) ;
 						}
 						else
 						{
 //							cell.SetCellType( CellType.String ) ;
-							cell.SetCellValue( ( string )matrix[ y, x ] ) ;
+							cell.SetCellValue( ( string )value ) ;
 						}
 					}
 					else
@@ -1139,7 +1307,7 @@ namespace Tools.ForExcel
 			//-----------------------------------------------------
 		
 			// 実際に値を取得する
-			List<string> wordList = new List<string>() ;
+			var wordList = new List<string>() ;
 		
 			lc = 0 ;
 		
@@ -1218,7 +1386,7 @@ namespace Tools.ForExcel
 									// 終了
 									if( i >  o )
 									{
-										wordList.Add( text.Substring( o, i - o ) ) ;
+										wordList.Add( text[ o..i ] ) ;
 									}
 									else
 									{

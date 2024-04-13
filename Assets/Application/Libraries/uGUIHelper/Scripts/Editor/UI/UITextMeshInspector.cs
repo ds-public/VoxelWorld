@@ -22,7 +22,7 @@ namespace uGUIHelper
 		
 			EditorGUILayout.Separator() ;	// 少し区切りスペース
 			
-			bool autoSizeFitting = EditorGUILayout.Toggle( "Auto Size Fitting", view.AutoSizeFitting ) ;
+			bool autoSizeFitting = EditorGUILayout.Toggle( new GUIContent( "Auto Size Fitting", "RectTransformのサイズを強制的にテキストのサイズに合わせます\n<color=#FFFF00>Wrapping(テキスト自動折返し)を使用する際は無効にして下さい</color>" ), view.AutoSizeFitting ) ;
 			if( autoSizeFitting != view.AutoSizeFitting )
 			{
 				Undo.RecordObject( view, "UITextMesh : Auto Size Fitting Change" ) ;	// アンドウバッファに登録
@@ -60,7 +60,7 @@ namespace uGUIHelper
 					view.Zenkaku = zenkaku ;
 					EditorUtility.SetDirty(view ) ;
 				}
-				GUILayout.Label( "Zenkaku", GUILayout.Width( 80f ) ) ;
+				GUILayout.Label( new GUIContent( "Zenkaku", "文字列を強制的に全角にします" ), GUILayout.Width( 80f ) ) ;
 			}
 			GUILayout.EndHorizontal() ;		// 横並び終了
 

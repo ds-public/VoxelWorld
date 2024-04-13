@@ -240,8 +240,8 @@ namespace uGUIHelper
 
 			// 実際に頂点バッファを生成する
 
-			List<UIVertex>	aV = new List<UIVertex>() ;
-			List<int>		aI = new List<int>() ;
+			var	aV = new List<UIVertex>() ;
+			var	aI = new List<int>() ;
 
 
 			Vector2 size = Size ;
@@ -280,7 +280,7 @@ namespace uGUIHelper
 				tcy = m_Sprite.rect.y + trh ;
 			}
 
-			Vector3 normalVector = new Vector3(  0,  0, -1 ) ;
+			var normalVector = new Vector3(  0,  0, -1 ) ;
 
 			//-----------------------------------------
 

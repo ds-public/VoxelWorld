@@ -305,7 +305,7 @@ namespace AssetBundleHelper
 				if( isAbsolute == false )
 				{
 					// 非キャッシグ・非保持・異なるフレームカウントのものを破棄する
-					List<string> paths = new List<string>() ;
+					var paths = new List<string>() ;
 
 					foreach( var element in m_AssetBundleCache )
 					{
@@ -332,7 +332,7 @@ namespace AssetBundleHelper
 				else
 				{
 					// 強制的に全てのアセットバンドルを破棄する
-					List<string> paths = new List<string>() ;
+					var paths = new List<string>() ;
 
 					foreach( var element in m_AssetBundleCache )
 					{
@@ -389,7 +389,7 @@ namespace AssetBundleHelper
 			[Serializable]
 			public class StoredManifest
 			{
-				public List<AssetBundleFileInfo>	Files = new List<AssetBundleFileInfo>() ;
+				public List<AssetBundleFileInfo>	Files = new () ;
 			}
 
 			//------------------------------------------------------------------------------------------
@@ -631,7 +631,7 @@ namespace AssetBundleHelper
 						// アセットバンドルファイルの保存パス
 						storagePath = StorageCacheRootPath + ManifestName + "/" + assetBundleInfo.Path ;
 
-						if( StorageAccessor_Exists( storagePath ) == StorageAccessor.Target.File )
+						if( StorageAccessor_Exists( storagePath ) == StorageAccessor.TargetTypes.File )
 						{
 							StorageAccessor_Remove( storagePath ) ;
 						}
@@ -890,6 +890,9 @@ namespace AssetBundleHelper
 				{
 					// CRC[JSON版]ファイルを展開する
 
+					// Jenkins でビルドした際に妙な改行が入っている事があるため検査して不備があれば修正する
+					crcJsonText = CorrectCrcJsonText( crcJsonText ) ;
+
 					//--------------------------------------------------------
 #if UNITY_EDITOR
 					// 確認用にＣＲＣ[CSV版]ファイルを保存する
@@ -1072,6 +1075,67 @@ namespace AssetBundleHelper
 				onCompleted?.Invoke() ;
 			}
 
+			// Jsonテキストを検査しておかしな箇所があれば修正した状態のものを返す
+			private string CorrectCrcJsonText( string crcJsonText )
+			{
+				if( string.IsNullOrEmpty( crcJsonText ) == true )
+				{
+					// 処理出来ない
+					return crcJsonText ;
+				}
+
+				//---------------------------------------------------------
+
+				var newLines = new List<string>() ;
+
+				var oldLines = crcJsonText.Split( '\n' ) ;
+				int i, l = oldLines.Length ;
+				for( i  = 0 ; i <  l ; i ++ )
+				{
+					// 念のため改行的なものとカンマを完全に削除しておく
+					oldLines[ i ] = oldLines[ i ].Trim( '\x0A' ) ;
+					oldLines[ i ] = oldLines[ i ].Trim( '\x0D' ) ;
+					oldLines[ i ] = oldLines[ i ].Trim( ',' ) ;
+
+					if( string.IsNullOrEmpty( oldLines[ i ] ) == false )
+					{
+						// 文字列が存在する
+						newLines.Add( oldLines[ i ] ) ;
+					}
+				}
+
+				if( newLines.Count >= 3 )
+				{
+					// 最低でも３行は存在するはず
+
+					var sb = new StringBuilder() ;
+
+					// 最初の行
+					sb.Append( newLines[ 0 ] ) ;
+					sb.Append( "\n" ) ;
+
+					l = newLines.Count - 1 ;
+
+					for( i  = 1 ; i <  ( l - 1 ) ; i ++ )
+					{
+						sb.Append( newLines[ i ] ) ;
+						sb.Append( ",\n" ) ;
+					}
+
+					sb.Append( newLines[ l - 1 ] ) ;
+					sb.Append( "\n" ) ;				// 最後の項目はカンマ無し
+
+					// 最後の行
+					sb.Append( newLines[ l ] ) ;
+
+					crcJsonText = sb.ToString() ;
+				}
+
+//				Debug.Log( "<color=#FF00FF>-------- CrcJsonText 結果</color>\n" + crcJsonText ) ;
+
+				return crcJsonText ;
+			}
+
 			// マニフェストフェイルをダウンロードする(ＣＲＣファイルと並列ダウンロード用)
 			private IEnumerator LoadManifestAsync( Action<bool,byte[]> onLoaded, AssetBundleManager instance )
 			{
@@ -1227,7 +1291,7 @@ namespace AssetBundleHelper
 
 				string fullPath = path + ManifestName + ".manifest" ;
 
-				if( StorageAccessor_Exists( fullPath ) != StorageAccessor.Target.File )
+				if( StorageAccessor_Exists( fullPath ) != StorageAccessor.TargetTypes.File )
 				{
 					// ファイルが保存されていない(保存する必要がある)
 					Modified = true ;
@@ -1262,7 +1326,7 @@ namespace AssetBundleHelper
 				// メモリに展開されたローカルマニフェストの各アセットバンドル情報を参照高速化のためハッシュ参照化する
 				AssetBundleFileInfo node ;
 				List<AssetBundleFileInfo> files = storedManifest.Files ;
-				Dictionary<string,AssetBundleFileInfo> hash = new Dictionary<string, AssetBundleFileInfo>() ;
+				var hash = new Dictionary<string, AssetBundleFileInfo>() ;
 
 				foreach( var file in files )
 				{
@@ -1434,7 +1498,7 @@ namespace AssetBundleHelper
 
 				string path = StorageCacheRootPath + ManifestName + "/" + ManifestName + ".manifest" ;
 
-				StoredManifest storedManifest = new StoredManifest() ;
+				var storedManifest = new StoredManifest() ;
 
 				foreach( var assetBundleInfo in m_AssetBundleInfo )
 				{

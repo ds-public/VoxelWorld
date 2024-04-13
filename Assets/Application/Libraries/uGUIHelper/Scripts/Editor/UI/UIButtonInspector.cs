@@ -12,9 +12,9 @@ namespace uGUIHelper
 	[ CustomEditor( typeof( UIButton ) ) ]
 	public class UIButtonInspector : UIViewInspector
 	{
-		override protected void DrawInspectorGUI()
+		protected override void DrawInspectorGUI()
 		{
-			UIButton view = target as UIButton ;
+			var view = target as UIButton ;
 
 			EditorGUILayout.Separator() ;	// 少し区切りスペース
 		
@@ -88,7 +88,7 @@ namespace uGUIHelper
 
 			EditorGUILayout.Separator() ;	// 少し区切りスペース
 
-			bool setPivotToCenter = EditorGUILayout.Toggle( "Set Pivot To Center", view.AutoPivotToCenter ) ;
+			bool setPivotToCenter = EditorGUILayout.Toggle( new GUIContent( "Set Pivot To Center", "<color=#00FFFF>ランタイム実行時</color>に\nピボットを強制的に中心(0.5,0.5)に変更します" ), view.AutoPivotToCenter ) ;
 			if( setPivotToCenter != view.AutoPivotToCenter )
 			{
 				Undo.RecordObject( view, "UIButton : Set Pivot To Center Change" ) ;	// アンドウバッファに登録

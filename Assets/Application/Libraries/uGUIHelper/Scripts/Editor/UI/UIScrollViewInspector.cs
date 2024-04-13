@@ -14,123 +14,122 @@ namespace uGUIHelper
 	{
 		override protected void DrawInspectorGUI()
 		{
-			UIScrollView tTarget = target as UIScrollView ;
+			UIScrollView view = target as UIScrollView ;
 
 			EditorGUILayout.Separator() ;	// 少し区切りスペース
 		
 			//-------------------------------------------------------------------
 
 			// スクロール方向
-			UIScrollView.DirectionTypes directionType = ( UIScrollView.DirectionTypes )EditorGUILayout.EnumPopup( "DirectionType",  tTarget.DirectionType ) ;
-			if( directionType != tTarget.DirectionType )
+			UIScrollView.DirectionTypes directionType = ( UIScrollView.DirectionTypes )EditorGUILayout.EnumPopup( "DirectionType",  view.DirectionType ) ;
+			if( directionType != view.DirectionType )
 			{
-				Undo.RecordObject( tTarget, "UIScrollView : DirectionType Change" ) ;	// アンドウバッファに登録
-				tTarget.DirectionType = directionType ;
-				EditorUtility.SetDirty( tTarget ) ;
+				Undo.RecordObject( view, "UIScrollView : DirectionType Change" ) ;	// アンドウバッファに登録
+				view.DirectionType = directionType ;
+				EditorUtility.SetDirty( view ) ;
 			}
 
 			// スクロールバーの有無
-			DrawScrollbar( tTarget ) ;
+			DrawScrollbar( view ) ;
 		}
 
 		// スクロールバーの有無を表示
-		protected void DrawScrollbar( UIScrollView tTarget )
+		protected void DrawScrollbar( UIScrollView view )
 		{
 			EditorGUILayout.Separator() ;	// 少し区切りスペース
 		
 			// 横スクロールバー
 			GUILayout.BeginHorizontal() ;	// 横並び
 			{
-				bool tIsHorizontalScrollbar = EditorGUILayout.Toggle( tTarget.IsHorizontalScrollber, GUILayout.Width( 16f ) ) ;
-				if( tIsHorizontalScrollbar != tTarget.IsHorizontalScrollber )
+				var isHorizontalScrollbar = EditorGUILayout.Toggle( view.IsHorizontalScrollber, GUILayout.Width( 16f ) ) ;
+				if( isHorizontalScrollbar != view.IsHorizontalScrollber )
 				{
-					Undo.RecordObject( tTarget, "UIScrollView : Is Horizontal Scrollbar Change" ) ;	// アンドウバッファに登録
-					tTarget.IsHorizontalScrollber = tIsHorizontalScrollbar ;
-					EditorUtility.SetDirty( tTarget ) ;
+					Undo.RecordObject( view, "UIScrollView : Is Horizontal Scrollbar Change" ) ;	// アンドウバッファに登録
+					view.IsHorizontalScrollber = isHorizontalScrollbar ;
+					EditorUtility.SetDirty( view ) ;
 				}
 				GUILayout.Label( "Horizontal Scrollbar", GUILayout.Width( 120f ) ) ;
 
 				// 横位置
-				UIScrollView.HorizontalScrollbarPositionTypes tHorizontalScrollbarPosition = ( UIScrollView.HorizontalScrollbarPositionTypes )EditorGUILayout.EnumPopup( "",  tTarget.HorizontalScrollbarPositionType, GUILayout.Width( 80f ) ) ;
-				if( tHorizontalScrollbarPosition != tTarget.HorizontalScrollbarPositionType )
+				var horizontalScrollbarPosition = ( UIScrollView.HorizontalScrollbarPositionTypes )EditorGUILayout.EnumPopup( "",  view.HorizontalScrollbarPositionType, GUILayout.Width( 80f ) ) ;
+				if( horizontalScrollbarPosition != view.HorizontalScrollbarPositionType )
 				{
-					Undo.RecordObject( tTarget, "UIScrollView : Horizontal Scrollbar Position Change" ) ;	// アンドウバッファに登録
-					tTarget.HorizontalScrollbarPositionType = tHorizontalScrollbarPosition ;
-					EditorUtility.SetDirty( tTarget ) ;
+					Undo.RecordObject( view, "UIScrollView : Horizontal Scrollbar Position Change" ) ;	// アンドウバッファに登録
+					view.HorizontalScrollbarPositionType = horizontalScrollbarPosition ;
+					EditorUtility.SetDirty( view ) ;
 				}
 			}
 			GUILayout.EndHorizontal() ;		// 横並び終了
 
-			UIScrollbar tHorizontalScrollbarElastic = EditorGUILayout.ObjectField( "Elastic", tTarget.HorizontalScrollbarElastic, typeof( UIScrollbar ), true ) as UIScrollbar ;
-			if( tHorizontalScrollbarElastic != tTarget.HorizontalScrollbarElastic )
+			var horizontalScrollbarElastic = EditorGUILayout.ObjectField( "Elastic", view.HorizontalScrollbarElastic, typeof( UIScrollbar ), true ) as UIScrollbar ;
+			if( horizontalScrollbarElastic != view.HorizontalScrollbarElastic )
 			{
-				Undo.RecordObject( tTarget, "UIScrollView : Horizontal Scrollbar Elastic Change" ) ;	// アンドウバッファに登録
-				tTarget.HorizontalScrollbarElastic = tHorizontalScrollbarElastic ;
-				EditorUtility.SetDirty( tTarget ) ;
+				Undo.RecordObject( view, "UIScrollView : Horizontal Scrollbar Elastic Change" ) ;	// アンドウバッファに登録
+				view.HorizontalScrollbarElastic = horizontalScrollbarElastic ;
+				EditorUtility.SetDirty( view ) ;
 			}
 
 			// 縦スクロールバー
 			GUILayout.BeginHorizontal() ;	// 横並び
 			{
-				bool tIsVerticalScrollbar = EditorGUILayout.Toggle( tTarget.IsVerticalScrollber, GUILayout.Width( 16f ) ) ;
-				if( tIsVerticalScrollbar != tTarget.IsVerticalScrollber )
+				var isVerticalScrollbar = EditorGUILayout.Toggle( view.IsVerticalScrollber, GUILayout.Width( 16f ) ) ;
+				if( isVerticalScrollbar != view.IsVerticalScrollber )
 				{
-					Undo.RecordObject( tTarget, "UIScrollView : Is Horizontal Scrollbar Change" ) ;	// アンドウバッファに登録
-					tTarget.IsVerticalScrollber = tIsVerticalScrollbar ;
-					EditorUtility.SetDirty( tTarget ) ;
+					Undo.RecordObject( view, "UIScrollView : Is Horizontal Scrollbar Change" ) ;	// アンドウバッファに登録
+					view.IsVerticalScrollber = isVerticalScrollbar ;
+					EditorUtility.SetDirty( view ) ;
 				}
 				GUILayout.Label( "Vertical Scrollbar", GUILayout.Width( 120f ) ) ;
 
 				// 縦位置
-				UIScrollView.VerticalScrollbarPositionTypes tVerticalScrollbarPosition = ( UIScrollView.VerticalScrollbarPositionTypes )EditorGUILayout.EnumPopup( "",  tTarget.VerticalScrollbarPositionType, GUILayout.Width( 80f ) ) ;
-				if( tVerticalScrollbarPosition != tTarget.VerticalScrollbarPositionType )
+				var verticalScrollbarPosition = ( UIScrollView.VerticalScrollbarPositionTypes )EditorGUILayout.EnumPopup( "",  view.VerticalScrollbarPositionType, GUILayout.Width( 80f ) ) ;
+				if( verticalScrollbarPosition != view.VerticalScrollbarPositionType )
 				{
-					Undo.RecordObject( tTarget, "UIScrollView : Vertical Scrollbar Position Change" ) ;	// アンドウバッファに登録
-					tTarget.VerticalScrollbarPositionType = tVerticalScrollbarPosition ;
-					EditorUtility.SetDirty( tTarget ) ;
+					Undo.RecordObject( view, "UIScrollView : Vertical Scrollbar Position Change" ) ;	// アンドウバッファに登録
+					view.VerticalScrollbarPositionType = verticalScrollbarPosition ;
+					EditorUtility.SetDirty( view ) ;
 				}
 			}
 			GUILayout.EndHorizontal() ;		// 横並び終了
 
-			UIScrollbar tVerticalScrollbarElastic = EditorGUILayout.ObjectField( "Elastic", tTarget.VerticalScrollbarElastic, typeof( UIScrollbar ), true ) as UIScrollbar ;
-			if( tVerticalScrollbarElastic != tTarget.VerticalScrollbarElastic )
+			var verticalScrollbarElastic = EditorGUILayout.ObjectField( "Elastic", view.VerticalScrollbarElastic, typeof( UIScrollbar ), true ) as UIScrollbar ;
+			if( verticalScrollbarElastic != view.VerticalScrollbarElastic )
 			{
-				Undo.RecordObject( tTarget, "UIScrollView : Vertical Scrollbar Elastic Change" ) ;	// アンドウバッファに登録
-				tTarget.VerticalScrollbarElastic = tVerticalScrollbarElastic ;
-				EditorUtility.SetDirty( tTarget ) ;
+				Undo.RecordObject( view, "UIScrollView : Vertical Scrollbar Elastic Change" ) ;	// アンドウバッファに登録
+				view.VerticalScrollbarElastic = verticalScrollbarElastic ;
+				EditorUtility.SetDirty( view ) ;
 			}
 
 			//----------------------------------------------------------
 
-			bool tWarning ;
+			bool isWarning ;
 
-			tWarning = false ;
-			if( tTarget.HorizontalScrollbarElastic != null && tTarget.HorizontalScrollbarElastic.ScrollViewElastic == null )
+			isWarning = false ;
+			if( view.HorizontalScrollbarElastic != null && view.HorizontalScrollbarElastic.ScrollViewElastic == null )
 			{
-				tWarning = true ;
+				isWarning = true ;
 			}
-			if( tTarget.VerticalScrollbarElastic != null && tTarget.VerticalScrollbarElastic.ScrollViewElastic == null )
+			if( view.VerticalScrollbarElastic != null && view.VerticalScrollbarElastic.ScrollViewElastic == null )
 			{
-				tWarning = true ;
+				isWarning = true ;
 			}
-			if( tWarning == true )
+			if( isWarning == true )
 			{
 				EditorGUILayout.HelpBox( GetMessage( "SetScrollView" ), MessageType.Warning, true ) ;
 			}
 
-			ScrollRectWrapper tScroll = tTarget.GetComponent<ScrollRectWrapper>() ;
-			if( tScroll != null )
+			if( view.TryGetComponent<ScrollRectWrapper>( out var scroll) == true )
 			{
-				tWarning = false ;
-				if( tTarget.HorizontalScrollbarElastic != null && tScroll.horizontalScrollbar!= null )
+				isWarning = false ;
+				if( view.HorizontalScrollbarElastic != null && scroll.horizontalScrollbar!= null )
 				{
-					tWarning = true ;
+					isWarning = true ;
 				}
-				if( tTarget.VerticalScrollbarElastic != null && tScroll.verticalScrollbar != null )
+				if( view.VerticalScrollbarElastic != null && scroll.verticalScrollbar != null )
 				{
-					tWarning = true ;
+					isWarning = true ;
 				}
-				if( tWarning == true )
+				if( isWarning == true )
 				{
 					EditorGUILayout.HelpBox( GetMessage( "ClearScrollBar" ), MessageType.Warning, true ) ;
 				}
@@ -138,17 +137,17 @@ namespace uGUIHelper
 
 			//----------------------------------------------------------
 
-			if( tTarget.IsHorizontalScrollber == true || tTarget.HorizontalScrollbarElastic != null || tTarget.IsVerticalScrollber == true || tTarget.VerticalScrollbarElastic != null )
+			if( view.IsHorizontalScrollber == true || view.HorizontalScrollbarElastic != null || view.IsVerticalScrollber == true || view.VerticalScrollbarElastic != null )
 			{
 				// スクロールバーのフェード処理
 				GUILayout.BeginHorizontal() ;	// 横並び
 				{
-					bool tScrollbarFadeEnebled = EditorGUILayout.Toggle( tTarget.ScrollbarFadeEnabled, GUILayout.Width( 16f ) ) ;
-					if( tScrollbarFadeEnebled != tTarget.ScrollbarFadeEnabled )
+					var scrollbarFadeEnebled = EditorGUILayout.Toggle( view.ScrollbarFadeEnabled, GUILayout.Width( 16f ) ) ;
+					if( scrollbarFadeEnebled != view.ScrollbarFadeEnabled )
 					{
-						Undo.RecordObject( tTarget, "UIScrollView : Scrollbar Fade Enabled Change" ) ;	// アンドウバッファに登録
-						tTarget.ScrollbarFadeEnabled = tScrollbarFadeEnebled ;
-						EditorUtility.SetDirty( tTarget ) ;
+						Undo.RecordObject( view, "UIScrollView : Scrollbar Fade Enabled Change" ) ;	// アンドウバッファに登録
+						view.ScrollbarFadeEnabled = scrollbarFadeEnebled ;
+						EditorUtility.SetDirty( view ) ;
 //						UnityEditor.SceneManagement.EditorSceneManager.MarkSceneDirty( UnityEditor.SceneManagement.EditorSceneManager.GetActiveScene() ) ;
 					}
 					GUILayout.Label( "Scrollbar Fade Enabled" ) ;
@@ -156,42 +155,42 @@ namespace uGUIHelper
 				GUILayout.EndHorizontal() ;		// 横並び終了
 
 
-				if( tTarget.ScrollbarFadeEnabled == true )
+				if( view.ScrollbarFadeEnabled == true )
 				{
-					if( tTarget.IsInteraction == false && tTarget.IsInteractionForScrollView == false )
-					{
-						EditorGUILayout.HelpBox( GetMessage( "InteractionNone" ), MessageType.Warning, true ) ;
-					}
+//					if( view.IsInteraction == false && view.IsInteractionForScrollView == false )
+//					{
+//						EditorGUILayout.HelpBox( GetMessage( "InteractionNone" ), MessageType.Warning, true ) ;
+//					}
 
-//					if( tTarget._scrollRect.verticalScrollbarVisibility != UnityEngine.UI.ScrollRect.ScrollbarVisibility.AutoHide )
+//					if( view._scrollRect.verticalScrollbarVisibility != UnityEngine.UI.ScrollRect.ScrollbarVisibility.AutoHide )
 //					{
 //						EditorGUILayout.HelpBox( GetMessage( "SetAutoHide" ), MessageType.Warning, true ) ;
 //					}
 
 	//				EditorGUIUtility.LookLikeControls( 120f, 40f ) ;	// デフォルトの見た目で横幅８０
 
-					float tScrollbarFadeInDuration = EditorGUILayout.FloatField( " Duration In", tTarget.ScrollbarFadeInDuration /*, GUILayout.Width( 120f ) */ ) ;
-					if( tScrollbarFadeInDuration != tTarget.ScrollbarFadeInDuration )
+					var scrollbarFadeInDuration = EditorGUILayout.FloatField( " Duration In", view.ScrollbarFadeInDuration /*, GUILayout.Width( 120f ) */ ) ;
+					if( scrollbarFadeInDuration != view.ScrollbarFadeInDuration )
 					{
-						Undo.RecordObject( tTarget, "UIScrollView : Scrollbar Fade In Duration" ) ;	// アンドウバッファに登録
-						tTarget.ScrollbarFadeInDuration = tScrollbarFadeInDuration ;
-						EditorUtility.SetDirty( tTarget ) ;
+						Undo.RecordObject( view, "UIScrollView : Scrollbar Fade In Duration" ) ;	// アンドウバッファに登録
+						view.ScrollbarFadeInDuration = scrollbarFadeInDuration ;
+						EditorUtility.SetDirty( view ) ;
 					}
 
-					float tScrollbarFadeHoldDuration = EditorGUILayout.FloatField( " Duration Hold", tTarget.ScrollbarFadeHoldDuration /*, GUILayout.Width( 120f ) */ ) ;
-					if( tScrollbarFadeHoldDuration != tTarget.ScrollbarFadeHoldDuration )
+					var scrollbarFadeHoldDuration = EditorGUILayout.FloatField( " Duration Hold", view.ScrollbarFadeHoldDuration /*, GUILayout.Width( 120f ) */ ) ;
+					if( scrollbarFadeHoldDuration != view.ScrollbarFadeHoldDuration )
 					{
-						Undo.RecordObject( tTarget, "UIScrollView : Scrollbar Fade Hold Duration" ) ;	// アンドウバッファに登録
-						tTarget.ScrollbarFadeHoldDuration = tScrollbarFadeHoldDuration ;
-						EditorUtility.SetDirty( tTarget ) ;
+						Undo.RecordObject( view, "UIScrollView : Scrollbar Fade Hold Duration" ) ;	// アンドウバッファに登録
+						view.ScrollbarFadeHoldDuration = scrollbarFadeHoldDuration ;
+						EditorUtility.SetDirty( view ) ;
 					}
 
-					float tScrollbarFadeOutDuration = EditorGUILayout.FloatField( " Duration Out", tTarget.ScrollbarFadeOutDuration /*, GUILayout.Width( 120f ) */ ) ;
-					if( tScrollbarFadeOutDuration != tTarget.ScrollbarFadeOutDuration )
+					var scrollbarFadeOutDuration = EditorGUILayout.FloatField( " Duration Out", view.ScrollbarFadeOutDuration /*, GUILayout.Width( 120f ) */ ) ;
+					if( scrollbarFadeOutDuration != view.ScrollbarFadeOutDuration )
 					{
-						Undo.RecordObject( tTarget, "UIScrollView : Scrollbar Fade Out Duration" ) ;	// アンドウバッファに登録
-						tTarget.ScrollbarFadeOutDuration = tScrollbarFadeOutDuration ;
-						EditorUtility.SetDirty( tTarget ) ;
+						Undo.RecordObject( view, "UIScrollView : Scrollbar Fade Out Duration" ) ;	// アンドウバッファに登録
+						view.ScrollbarFadeOutDuration = scrollbarFadeOutDuration ;
+						EditorUtility.SetDirty( view ) ;
 					}
 
 
@@ -199,53 +198,53 @@ namespace uGUIHelper
 	//				EditorGUIUtility.LookLikeControls( 120f, 40f ) ;	// デフォルトの見た目で横幅８０
 
 
-					if( tTarget.HorizontalScrollbar != null )
+					if( view.HorizontalScrollbar != null )
 					{
-						if( tTarget.HorizontalScrollbar.GetComponent<CanvasGroup>() == null )
+						if( view.HorizontalScrollbar.GetComponent<CanvasGroup>() == null )
 						{
 							EditorGUILayout.HelpBox( GetMessage( "HSB_CanvasGroupNone" ), MessageType.Warning, true ) ;
 						}
 					}
-					if( tTarget.VerticalScrollbar != null )
+					if( view.VerticalScrollbar != null )
 					{
-						if( tTarget.VerticalScrollbar.GetComponent<CanvasGroup>() == null )
+						if( view.VerticalScrollbar.GetComponent<CanvasGroup>() == null )
 						{
 							EditorGUILayout.HelpBox( GetMessage( "VSB_CanvasGroupNone" ), MessageType.Warning, true ) ;
 						}
 					}
 				}
 
-					GUILayout.BeginHorizontal() ;	// 横並び
+				GUILayout.BeginHorizontal() ;	// 横並び
+				{
+					var hidingScrollbarIfContentFew = EditorGUILayout.Toggle( view.HidingScrollbarIfContentFew, GUILayout.Width( 16f ) ) ;
+					if( hidingScrollbarIfContentFew != view.HidingScrollbarIfContentFew )
 					{
-						bool tHidingScrollbarIfContentFew = EditorGUILayout.Toggle( tTarget.HidingScrollbarIfContentFew, GUILayout.Width( 16f ) ) ;
-						if( tHidingScrollbarIfContentFew != tTarget.HidingScrollbarIfContentFew )
-						{
-							Undo.RecordObject( tTarget, "UIScrollView : Hiding Scrollbar If Content Few" ) ;	// アンドウバッファに登録
-							tTarget.HidingScrollbarIfContentFew = tHidingScrollbarIfContentFew ;
-							EditorUtility.SetDirty( tTarget ) ;
-						}
-						GUILayout.Label( " Hiding Scrollbar If Content Few" ) ;
+						Undo.RecordObject( view, "UIScrollView : Hiding Scrollbar If Content Few" ) ;	// アンドウバッファに登録
+						view.HidingScrollbarIfContentFew = hidingScrollbarIfContentFew ;
+						EditorUtility.SetDirty( view ) ;
 					}
-					GUILayout.EndHorizontal() ;		// 横並び終了
+					GUILayout.Label( " Hiding Scrollbar If Content Few" ) ;
+				}
+				GUILayout.EndHorizontal() ;		// 横並び終了
 
-					GUILayout.BeginHorizontal() ;	// 横並び
+				GUILayout.BeginHorizontal() ;	// 横並び
+				{
+					var invalidateScrollIfContentFew = EditorGUILayout.Toggle( view.InvalidateScrollIfContentFew, GUILayout.Width( 16f ) ) ;
+					if( invalidateScrollIfContentFew != view.InvalidateScrollIfContentFew )
 					{
-						bool tInvalidateScrollIfContentFew = EditorGUILayout.Toggle( tTarget.InvalidateScrollIfContentFew, GUILayout.Width( 16f ) ) ;
-						if( tInvalidateScrollIfContentFew != tTarget.InvalidateScrollIfContentFew )
-						{
-							Undo.RecordObject( tTarget, "UIScrollView : Invalidate Scroll If Content Few" ) ;	// アンドウバッファに登録
-							tTarget.InvalidateScrollIfContentFew = tInvalidateScrollIfContentFew ;
-							EditorUtility.SetDirty( tTarget ) ;
-						}
-						GUILayout.Label( " Invalidate Scroll If Content Few" ) ;
+						Undo.RecordObject( view, "UIScrollView : Invalidate Scroll If Content Few" ) ;	// アンドウバッファに登録
+						view.InvalidateScrollIfContentFew = invalidateScrollIfContentFew ;
+						EditorUtility.SetDirty( view ) ;
 					}
-					GUILayout.EndHorizontal() ;		// 横並び終了
+					GUILayout.Label( " Invalidate Scroll If Content Few" ) ;
+				}
+				GUILayout.EndHorizontal() ;		// 横並び終了
 			}
 		}
 
 		//--------------------------------------------------------------------------
 
-		private Dictionary<string,string> mJapanese_Message = new Dictionary<string, string>()
+		private readonly  Dictionary<string,string> m_Japanese_Message = new ()
 		{
 			{ "SetScrollView",			"Elastic を 完全に有効にするには Scrollbar に ScrollView を設定する必要があります" },
 			{ "ClearScrollBar",			"Elastic を 完全に有効にするには ScrollRect の Scrollbar を消去する必要があります" },
@@ -254,7 +253,7 @@ namespace uGUIHelper
 			{ "HSB_CanvasGroupNone",	"Horizontal Scrollbar に CanvasGroup クラスが必要です" },
 			{ "VSB_CanvasGroupNone",	"Vertical Scrollbar に CanvasGroup クラスが必要です" },
 		} ;
-		private Dictionary<string,string> mEnglish_Message = new Dictionary<string, string>()
+		private readonly Dictionary<string,string> m_English_Message = new ()
 		{
 			{ "SetScrollView",			"In order to fully enable Elastic you need to set ScrollView on Scrollbar" },
 			{ "ClearScrollBar",			"In order to fully enable Elastic, you need to clear the Scrollbar of ScrollRect" },
@@ -264,23 +263,23 @@ namespace uGUIHelper
 			{ "VSB_CanvasGroupNone",	"'CanvasGroup' is necessary to vertical scrollbar" },
 		} ;
 
-		private string GetMessage( string tLabel )
+		private string GetMessage( string label )
 		{
 			if( Application.systemLanguage == SystemLanguage.Japanese )
 			{
-				if( mJapanese_Message.ContainsKey( tLabel ) == false )
+				if( m_Japanese_Message.ContainsKey( label ) == false )
 				{
 					return "指定のラベル名が見つかりません" ;
 				}
-				return mJapanese_Message[ tLabel ] ;
+				return m_Japanese_Message[ label ] ;
 			}
 			else
 			{
-				if( mEnglish_Message.ContainsKey( tLabel ) == false )
+				if( m_English_Message.ContainsKey( label ) == false )
 				{
 					return "Specifying the label name can not be found" ;
 				}
-				return mEnglish_Message[ tLabel ] ;
+				return m_English_Message[ label ] ;
 			}
 		}
 	}

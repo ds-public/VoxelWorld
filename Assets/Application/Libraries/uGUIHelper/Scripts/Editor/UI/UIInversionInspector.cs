@@ -2,7 +2,6 @@
 
 using UnityEngine ;
 using UnityEditor ;
-using System.Collections.Generic ;
 
 namespace uGUIHelper
 {
@@ -25,15 +24,24 @@ namespace uGUIHelper
 		
 			EditorGUILayout.Separator() ;   // 少し区切りスペース
 
-			// バリュータイプ
+			// 反転方向タイプ
 			UIInversion.DirectionTypes direction = ( UIInversion.DirectionTypes )EditorGUILayout.EnumPopup( "Direction",  view.DirectionType ) ;
 			if( direction != view.DirectionType )
 			{
-				Undo.RecordObject( view, "UIInversion : Direction Change" ) ;	// アンドウバッファに登録
+				Undo.RecordObject( view, "UIInversion : Direction Type Change" ) ;	// アンドウバッファに登録
 				view.DirectionType = direction ;
-				view.Refresh() ;
 				EditorUtility.SetDirty( view ) ;
 			}
+
+			// 回転方向タイプ
+			UIInversion.RotationTypes rotation = ( UIInversion.RotationTypes )EditorGUILayout.EnumPopup( "Rotation",  view.RotationType ) ;
+			if( rotation != view.RotationType )
+			{
+				Undo.RecordObject( view, "UIInversion : Rptation Type Change" ) ;	// アンドウバッファに登録
+				view.RotationType = rotation ;
+				EditorUtility.SetDirty( view ) ;
+			}
+
 		}
 	}
 }

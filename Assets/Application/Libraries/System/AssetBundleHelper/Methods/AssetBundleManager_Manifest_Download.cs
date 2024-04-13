@@ -341,7 +341,7 @@ namespace AssetBundleHelper
 							// 失敗
 
 							// 中途半端にファイルが保存されていたら削除する(おそらく不要だが保険)
-							if( StorageAccessor_Exists( storagePath ) == StorageAccessor.Target.File )
+							if( StorageAccessor_Exists( storagePath ) == StorageAccessor.TargetTypes.File )
 							{
 								StorageAccessor_Remove( storagePath ) ;
 							}

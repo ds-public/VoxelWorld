@@ -8,7 +8,7 @@ using UnityEditor ;
 namespace DSW
 {
 	/// <summary>
-	/// マネージャの基底クラス	Version 2022/09/19 0
+	/// マネージャの基底クラス	Version 2024/04/13 0
 	/// </summary>
 	public class SingletonManagerBase<T> : ExMonoBehaviour where T : ExMonoBehaviour
 	{
@@ -31,13 +31,15 @@ namespace DSW
 					int    i         = className.LastIndexOf( '.' ) ;
 					if( i >= 0 )
 					{
-						className = className.Substring( i + 1, className.Length - ( i + 1 ) ) ;
+						i ++ ;
+						className = className[ i.. ] ;
 					}
 
-					GameObject go = EditorUtility.CreateGameObjectWithHideFlags(
+					var go = EditorUtility.CreateGameObjectWithHideFlags
+					(
 						className,
 						HideFlags.DontSave,
-						typeof(T)
+						typeof( T )
 					) ;
 					go.tag     = "EditorOnly" ;
 					m_Instance = go.GetComponent<T>() ;
@@ -58,16 +60,17 @@ namespace DSW
 				return m_Instance ;
 			}
 
-			m_Instance = FindObjectOfType( typeof( T ) ) as T;
+			m_Instance = FindAnyObjectByType( typeof( T ) ) as T;
 			if( m_Instance == null )
 			{
 				string className = typeof( T ).ToString() ;
 				int i = className.LastIndexOf( '.' ) ;
 				if( i >= 0 )
 				{
-					className = className.Substring( i + 1, className.Length - ( i + 1 ) ) ;
+					i ++ ;
+					className = className[ i .. ] ;
 				}
-				GameObject go = new GameObject( className ) ;
+				var go = new GameObject( className ) ;
 				if( parent != null )
 				{
 					go.transform.SetParent( parent, false ) ;
@@ -102,7 +105,7 @@ namespace DSW
 		//-----------------------------------------------------------
 
 		// 生成
-		protected void Awake()
+		internal void Awake()
 		{
 			// 既に存在し重複になる場合は自身を削除する
 			if( m_Instance != null )
@@ -111,7 +114,7 @@ namespace DSW
 				return ;
 			}
 		
-			T instanceOther = FindObjectOfType( typeof( T ) ) as T ;
+			T instanceOther = FindAnyObjectByType( typeof( T ) ) as T ;
 			if( instanceOther != null )
 			{
 				if( instanceOther != this )
@@ -137,8 +140,7 @@ namespace DSW
 			//-----------------------------
 		
 			// 原点じゃないと気持ち悪い
-			gameObject.transform.localPosition	= Vector3.zero ;
-			gameObject.transform.localRotation	= Quaternion.identity ;
+			gameObject.transform.SetLocalPositionAndRotation( Vector3.zero, Quaternion.identity ) ;
 			gameObject.transform.localScale		= Vector3.one ;
 
 			//----------------------------
@@ -150,7 +152,7 @@ namespace DSW
 		/// <summary>
 		/// 派生クラスの Awake
 		/// </summary>
-//		virtual protected void OnAwake(){}
+//		protected virtual void OnAwake(){}
 
 
 		// 破棄された際に呼び出される
@@ -170,6 +172,6 @@ namespace DSW
 		/// <summary>
 		/// 派生クラスの破棄
 		/// </summary>
-		virtual protected void OnTerminate(){}
+		protected virtual void OnTerminate(){}
 	}
 }

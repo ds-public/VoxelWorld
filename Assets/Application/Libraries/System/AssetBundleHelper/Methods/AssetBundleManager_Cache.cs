@@ -213,7 +213,7 @@ namespace AssetBundleHelper
 				else
 				{
 					// マークが付いていないもののみ消去する
-					List<string> paths = new List<string>() ;
+					var paths = new List<string>() ;
 					foreach( var element in m_ResourceCache )
 					{
 						if( element.Value.Mark == false )

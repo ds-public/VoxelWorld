@@ -37,7 +37,7 @@ namespace uGUIHelper
 		
 			// オブジェクトが非アクティブだと検出されないのでオブジェクトを非アクティブにしてはならない
 			// この判定は必須で mInstance は static であるためシーンの最初はオブジェクトが存在しても null になっている
-			m_Instance = GameObject.FindObjectOfType( typeof( VirtualKeyboard ) ) as VirtualKeyboard ;
+			m_Instance = GameObject.FindAnyObjectByType( typeof( VirtualKeyboard ) ) as VirtualKeyboard ;
 			if( m_Instance == null )
 			{
 				GameObject go = new GameObject( "VirtualKeyboard" ) ;
@@ -87,7 +87,7 @@ namespace uGUIHelper
 				return ;
 			}
 		
-			VirtualKeyboard instanceOther = GameObject.FindObjectOfType( typeof( VirtualKeyboard ) ) as VirtualKeyboard ;
+			VirtualKeyboard instanceOther = GameObject.FindAnyObjectByType( typeof( VirtualKeyboard ) ) as VirtualKeyboard ;
 			if( instanceOther != null )
 			{
 				if( instanceOther != this )

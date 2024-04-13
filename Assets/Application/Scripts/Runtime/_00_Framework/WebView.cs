@@ -19,7 +19,7 @@ namespace DSW
 	//-------------------------------------------------------------------
 
 	/// <summary>
-	/// ウェブビュー表示クラス Version 2023/02/02 0
+	/// ウェブビュー表示クラス Version 2023/04/13 0
 	/// </summary>
 	public class WebView : ExMonoBehaviour
 	{
@@ -37,7 +37,7 @@ namespace DSW
 		{
 			m_CustomCallback = callback ;
 
-			WebViewObject webViewObject = GameObject.FindObjectOfType<WebViewObject>() ;
+			WebViewObject webViewObject = GameObject.FindAnyObjectByType<WebViewObject>() ;
 			if( webViewObject != null )
 			{
 				// 既にウェブビューは開かれている
@@ -125,8 +125,7 @@ namespace DSW
 					" ) ;
 #endif
 					// ロード完了時にコールバックを呼び出す(拡張)
-					WebViewObject instance = webView.GetComponent<WebViewObject>() ;
-					if( instance != null )
+					if( webView.TryGetComponent<WebViewObject>( out var instance ) == true )
 					{
 						instance.OnLoaded?.Invoke( instance, targetUrl ) ;
 					}
@@ -280,10 +279,7 @@ namespace DSW
 			}
 			else
 			{
-				if( m_CustomCallback != null )
-				{
-					m_CustomCallback( webViewObject, text ) ;
-				}
+				m_CustomCallback?.Invoke( webViewObject, text ) ;
 			}
 		}
 
@@ -297,8 +293,7 @@ namespace DSW
 		/// <returns></returns>
 		private static async UniTask OnError( GameObject webView, string title, string message, string url )
 		{
-			WebViewObject webViewObject = webView.GetComponent<WebViewObject>() ;
-			if( webViewObject == null )
+			if( webView.TryGetComponent<WebViewObject>( out var webViewObject ) == false )
 			{
 				return ;
 			}

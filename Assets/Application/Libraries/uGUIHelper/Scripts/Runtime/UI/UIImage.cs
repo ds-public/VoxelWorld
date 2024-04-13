@@ -27,7 +27,7 @@ namespace uGUIHelper
 		{
 			get
 			{
-				return CImage != null ? CImage.enabled : false ;
+				return CImage != null && CImage.enabled ;
 			}
 			set
 			{
@@ -154,11 +154,8 @@ namespace uGUIHelper
 				// なっているため、「"(Clone)"」が付かない名前に上書き
 				sprite.name = spriteName ;
 
-				if( m_SpritesInAtlas == null )
-				{
-					// キャッシュを生成する
-					m_SpritesInAtlas = new Dictionary<string, Sprite>() ;
-				}
+				// キャッシュを生成する
+				m_SpritesInAtlas ??= new Dictionary<string, Sprite>() ;
 
 				// 存在するのでキャッシュに貯める
 				m_SpritesInAtlas.Add( spriteName, sprite ) ;
@@ -427,11 +424,11 @@ namespace uGUIHelper
 		/// <summary>
 		/// レイキャストターゲット(ショートカット)
 		/// </summary>
-		override public bool RaycastTarget
+		public override bool RaycastTarget
 		{
 			get
 			{
-				return CImage != null ? CImage.raycastTarget : false ;
+				return CImage != null && CImage.raycastTarget ;
 			}
 			set
 			{
@@ -467,7 +464,7 @@ namespace uGUIHelper
 		{
 			get
 			{
-				return CImage != null ? CImage.fillCenter : false ;
+				return CImage != null && CImage.fillCenter ;
 			}
 			set
 			{
@@ -547,7 +544,7 @@ namespace uGUIHelper
 		{
 			get
 			{
-				return CImage != null ? CImage.fillClockwise : false ;
+				return CImage != null && CImage.fillClockwise ;
 			}
 			set
 			{
@@ -565,7 +562,7 @@ namespace uGUIHelper
 		{
 			get
 			{
-				return CImage != null ? CImage.preserveAspect : false ;
+				return CImage != null && CImage.preserveAspect ;
 			}
 			set
 			{
@@ -583,7 +580,7 @@ namespace uGUIHelper
 		{
 			get
 			{
-				return CMask != null ? CMask.showMaskGraphic : false ;
+				return CMask != null && CMask.showMaskGraphic ;
 			}
 			set
 			{
@@ -646,14 +643,9 @@ namespace uGUIHelper
 		//-----------------------------------------------------
 	
 		// 各派生クラスでの初期化処理を行う（メニューまたは AddView から生成される場合のみ実行れる）
-		override protected void OnBuild( string option = "" )
+		protected override void OnBuild( string option = "" )
 		{
-			Image image = CImage ;
-
-			if( image == null )
-			{
-				image = gameObject.AddComponent<Image>() ;
-			}
+			Image image = CImage != null ? CImage : gameObject.AddComponent<Image>() ;
 			if( image == null )
 			{
 				// 異常
@@ -754,15 +746,9 @@ namespace uGUIHelper
 
 		//-----------------------------------------------------------
 
-		override protected void OnEnable()
+		protected override void OnEnable()
 		{
 			base.OnEnable() ;
-
-			// バックキーの対応処理
-			if( m_BackKeyEnabled == true )
-			{
-				UIEventSystem.AddBackKeyTarget( this ) ;
-			}
 
 			//----------------------------------
 
@@ -778,12 +764,6 @@ namespace uGUIHelper
 		protected override void OnDisable()
 		{
 			base.OnDisable() ;
-
-			// バックキーの対応処理
-			if( m_BackKeyEnabled == true )
-			{
-				UIEventSystem.RemoveBackKeyTarget( this ) ;
-			}
 		}
 
 		protected override void OnDestroy()

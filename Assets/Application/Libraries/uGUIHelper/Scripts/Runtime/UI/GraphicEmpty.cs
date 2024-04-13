@@ -16,7 +16,18 @@ namespace uGUIHelper
 	{
 		public override void SetMaterialDirty(){ return ; }
 		public override void SetVerticesDirty(){ return ; }
-     
+
+		protected override void Awake()
+		{
+			base.Awake() ;
+
+			if( TryGetComponent<CanvasRenderer>( out var canvasRenderer ) == true )
+			{
+				// 透明の場合は描画をスルーする
+				canvasRenderer.cullTransparentMesh = true ;
+			}
+		}
+
 		protected override void OnPopulateMesh( VertexHelper vh )
 		{
 			vh.Clear() ;

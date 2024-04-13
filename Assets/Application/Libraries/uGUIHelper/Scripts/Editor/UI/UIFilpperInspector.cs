@@ -22,29 +22,29 @@ namespace uGUIHelper
 			//--------------------------------------------
 
 			// ターゲットのインスタンス
-			UIFlipper tTarget = target as UIFlipper ;
+			var component = target as UIFlipper ;
 		
 			EditorGUILayout.Separator() ;	// 少し区切りスペース
 
 			// 識別子
 			GUI.backgroundColor = Color.cyan ;
-			string tIdentity = EditorGUILayout.TextField( "Identity",  tTarget.Identity ) ;
+			var identity = EditorGUILayout.TextField( "Identity",  component.Identity ) ;
 			GUI.backgroundColor = Color.white ;
-			if( tIdentity != tTarget.Identity )
+			if( identity != component.Identity )
 			{
-				Undo.RecordObject( tTarget, "UIFlipper : Identity Change" ) ;	// アンドウバッファに登録
-				tTarget.Identity = tIdentity ;
-				EditorUtility.SetDirty( tTarget ) ;
+				Undo.RecordObject( component, "UIFlipper : Identity Change" ) ;	// アンドウバッファに登録
+				component.Identity = identity ;
+				EditorUtility.SetDirty( component ) ;
 //				UnityEditor.SceneManagement.EditorSceneManager.MarkSceneDirty( UnityEditor.SceneManagement.EditorSceneManager.GetActiveScene() ) ;
 			}
 		
 			// ディレイ
-			float tDelay = EditorGUILayout.FloatField( "Delay",  tTarget.Delay ) ;
-			if( tDelay != tTarget.Delay )
+			float delay = EditorGUILayout.FloatField( "Delay",  component.Delay ) ;
+			if( delay != component.Delay )
 			{
-				Undo.RecordObject( tTarget, "UIFlipper : Delay Change" ) ;	// アンドウバッファに登録
-				tTarget.Delay = tDelay ;
-				EditorUtility.SetDirty( tTarget ) ;
+				Undo.RecordObject( component, "UIFlipper : Delay Change" ) ;	// アンドウバッファに登録
+				component.Delay = delay ;
+				EditorUtility.SetDirty( component ) ;
 //				UnityEditor.SceneManagement.EditorSceneManager.MarkSceneDirty( UnityEditor.SceneManagement.EditorSceneManager.GetActiveScene() ) ;
 			}
 
@@ -52,7 +52,7 @@ namespace uGUIHelper
 
 			EditorGUILayout.Separator() ;	// 少し区切りスペース
 
-			if( tTarget.GetComponent<Image>() == null )
+			if( component.GetComponent<Image>() == null )
 			{
 				EditorGUILayout.HelpBox( GetMessage( "ImageNone" ), MessageType.Warning, true ) ;		
 			}
@@ -65,16 +65,16 @@ namespace uGUIHelper
 			//--------------------------------------------------------------------
 
 			// 一番肝心なスプライトアニメーションファイル
-			UISpriteAnimation tSpriteAnimation = EditorGUILayout.ObjectField( "Sprite Animation", tTarget.SpriteAnimation, typeof( UISpriteAnimation ), false ) as UISpriteAnimation ;
-			if( tSpriteAnimation != tTarget.SpriteAnimation )
+			UISpriteAnimation spriteAnimation = EditorGUILayout.ObjectField( "Sprite Animation", component.SpriteAnimation, typeof( UISpriteAnimation ), false ) as UISpriteAnimation ;
+			if( spriteAnimation != component.SpriteAnimation )
 			{
-				Undo.RecordObject( tTarget, "UIFlipper : Sprite Animation Change " ) ;	// アンドウバッファに登録
-				tTarget.SpriteAnimation = tSpriteAnimation ;
-				EditorUtility.SetDirty( tTarget ) ;
+				Undo.RecordObject( component, "UIFlipper : Sprite Animation Change " ) ;	// アンドウバッファに登録
+				component.SpriteAnimation = spriteAnimation ;
+				EditorUtility.SetDirty( component ) ;
 //				UnityEditor.SceneManagement.EditorSceneManager.MarkSceneDirty( UnityEditor.SceneManagement.EditorSceneManager.GetActiveScene() ) ;
 			}
 
-			if( tTarget.enabled == true && tTarget.SpriteAnimation != null )
+			if( component.enabled == true && component.SpriteAnimation != null )
 			{
 				EditorGUILayout.Separator() ;	// 少し区切りスペース
 
@@ -83,21 +83,21 @@ namespace uGUIHelper
 					// チェック
 					GUILayout.Label( "Checker (Editor Only)", GUILayout.Width( 150f ) ) ;
 
-					bool tIsChecker = EditorGUILayout.Toggle( tTarget.IsChecker ) ;
-					if( tIsChecker != tTarget.IsChecker )
+					bool isChecker = EditorGUILayout.Toggle( component.IsChecker ) ;
+					if( isChecker != component.IsChecker )
 					{
-						if( tIsChecker == true )
+						if( isChecker == true )
 						{
-							UIFlipper[] tFlipperList = tTarget.gameObject.GetComponents<UIFlipper>() ;
-							if( tFlipperList != null && tFlipperList.Length >  0 )
+							var flippers = component.gameObject.GetComponents<UIFlipper>() ;
+							if( flippers != null && flippers.Length >  0 )
 							{
-								for( int i  = 0 ; i <  tFlipperList.Length ; i ++ )
+								for( int i  = 0 ; i <  flippers.Length ; i ++ )
 								{
-									if( tFlipperList[ i ] != tTarget )
+									if( flippers[ i ] != component )
 									{
-										if( tFlipperList[ i ].IsChecker == true )
+										if( flippers[ i ].IsChecker == true )
 										{
-											tFlipperList[ i ].IsChecker  = false ;
+											flippers[ i ].IsChecker  = false ;
 										}
 									}
 								}
@@ -105,27 +105,27 @@ namespace uGUIHelper
 						}
 
 
-						Undo.RecordObject( tTarget, "UIFlipper : Checker Change" ) ;	// アンドウバッファに登録
-						tTarget.IsChecker = tIsChecker ;
-						EditorUtility.SetDirty( tTarget ) ;
+						Undo.RecordObject( component, "UIFlipper : Checker Change" ) ;	// アンドウバッファに登録
+						component.IsChecker = isChecker ;
+						EditorUtility.SetDirty( component ) ;
 //						UnityEditor.SceneManagement.EditorSceneManager.MarkSceneDirty( UnityEditor.SceneManagement.EditorSceneManager.GetActiveScene() ) ;
 					}
 				}
 				GUILayout.EndHorizontal() ;		// 横並び終了
 
-				if( tTarget.IsChecker == true )
+				if( component.IsChecker == true )
 				{
 					GUILayout.BeginHorizontal() ;	// 横並び
 					{
-						int tCheckFactor = EditorGUILayout.IntSlider( tTarget.CheckFactor, 0, tTarget.SpriteAnimation.Length - 1 ) ;
-						if( tCheckFactor != tTarget.CheckFactor )
+						int checkFactor = EditorGUILayout.IntSlider( component.CheckFactor, 0, component.SpriteAnimation.Length - 1 ) ;
+						if( checkFactor != component.CheckFactor )
 						{
-							Undo.RecordObject( tTarget, "UIFlipper : Check Factor Change " ) ;	// アンドウバッファに登録
-							tTarget.CheckFactor = tCheckFactor ;
-							EditorUtility.SetDirty( tTarget ) ;
+							Undo.RecordObject( component, "UIFlipper : Check Factor Change " ) ;	// アンドウバッファに登録
+							component.CheckFactor = checkFactor ;
+							EditorUtility.SetDirty( component ) ;
 //							UnityEditor.SceneManagement.EditorSceneManager.MarkSceneDirty( UnityEditor.SceneManagement.EditorSceneManager.GetActiveScene() ) ;
 
-	/*						Image tImage = tTarget.GetComponent<Image>() ;
+	/*						Image tImage = component.GetComponent<Image>() ;
 							if( tImage != null )
 							{
 								EditorUtility.SetDirty( tImage ) ;
@@ -142,12 +142,12 @@ namespace uGUIHelper
 				GUILayout.BeginHorizontal() ;	// 横並び
 				{
 					GUILayout.Label( "Begin", GUILayout.Width( 60f ) ) ;
-					int tBegin = EditorGUILayout.IntSlider( tTarget.Begin, 0, tTarget.SpriteAnimation.Length - 1 ) ;
-					if( tBegin != tTarget.Begin )
+					int begin = EditorGUILayout.IntSlider( component.Begin, 0, component.SpriteAnimation.Length - 1 ) ;
+					if( begin != component.Begin )
 					{
-						Undo.RecordObject( tTarget, "UIFlipper : Begin Change " ) ;	// アンドウバッファに登録
-						tTarget.Begin = tBegin ;
-						EditorUtility.SetDirty( tTarget ) ;
+						Undo.RecordObject( component, "UIFlipper : Begin Change " ) ;	// アンドウバッファに登録
+						component.Begin = begin ;
+						EditorUtility.SetDirty( component ) ;
 //						UnityEditor.SceneManagement.EditorSceneManager.MarkSceneDirty( UnityEditor.SceneManagement.EditorSceneManager.GetActiveScene() ) ;
 					}
 				}
@@ -157,12 +157,12 @@ namespace uGUIHelper
 				GUILayout.BeginHorizontal() ;	// 横並び
 				{
 					GUILayout.Label( "End", GUILayout.Width( 60f ) ) ;
-					int tEnd = EditorGUILayout.IntSlider( tTarget.End, 0, tTarget.SpriteAnimation.Length - 1 ) ;
-					if( tEnd != tTarget.End )
+					int end = EditorGUILayout.IntSlider( component.End, 0, component.SpriteAnimation.Length - 1 ) ;
+					if( end != component.End )
 					{
-						Undo.RecordObject( tTarget, "UIFlipper : End Change " ) ;	// アンドウバッファに登録
-						tTarget.End = tEnd ;
-						EditorUtility.SetDirty( tTarget ) ;
+						Undo.RecordObject( component, "UIFlipper : End Change " ) ;	// アンドウバッファに登録
+						component.End = end ;
+						EditorUtility.SetDirty( component ) ;
 //						UnityEditor.SceneManagement.EditorSceneManager.MarkSceneDirty( UnityEditor.SceneManagement.EditorSceneManager.GetActiveScene() ) ;
 					}
 				}
@@ -178,12 +178,12 @@ namespace uGUIHelper
 				// バック
 				GUILayout.Label( "Back", GUILayout.Width( 116f ) ) ;
 
-				bool tBack = EditorGUILayout.Toggle( tTarget.Back ) ;
-				if( tBack != tTarget.Back )
+				bool back = EditorGUILayout.Toggle( component.Back ) ;
+				if( back != component.Back )
 				{
-					Undo.RecordObject( tTarget, "UIFlipper : Back Change" ) ;	// アンドウバッファに登録
-					tTarget.Back = tBack ;
-					EditorUtility.SetDirty( tTarget ) ;
+					Undo.RecordObject( component, "UIFlipper : Back Change" ) ;	// アンドウバッファに登録
+					component.Back = back ;
+					EditorUtility.SetDirty( component ) ;
 //					UnityEditor.SceneManagement.EditorSceneManager.MarkSceneDirty( UnityEditor.SceneManagement.EditorSceneManager.GetActiveScene() ) ;
 				}
 			}
@@ -195,30 +195,30 @@ namespace uGUIHelper
 				// ループ
 				GUILayout.Label( "Loop", GUILayout.Width( 116f ) ) ;
 
-				bool tLoop = EditorGUILayout.Toggle( tTarget.Loop ) ;
-				if( tLoop != tTarget.Loop )
+				bool loop = EditorGUILayout.Toggle( component.Loop ) ;
+				if( loop != component.Loop )
 				{
-					Undo.RecordObject( tTarget, "UIFlipper : Loop Change" ) ;	// アンドウバッファに登録
-					tTarget.Loop = tLoop ;
-					EditorUtility.SetDirty( tTarget ) ;
+					Undo.RecordObject( component, "UIFlipper : Loop Change" ) ;	// アンドウバッファに登録
+					component.Loop = loop ;
+					EditorUtility.SetDirty( component ) ;
 //					UnityEditor.SceneManagement.EditorSceneManager.MarkSceneDirty( UnityEditor.SceneManagement.EditorSceneManager.GetActiveScene() ) ;
 				}
 			}
 			GUILayout.EndHorizontal() ;		// 横並び終了
 
-			if( tTarget.Loop == true )
+			if( component.Loop == true )
 			{
 				GUILayout.BeginHorizontal() ;	// 横並び
 				{
 					// リバース
 					GUILayout.Label( "Reverse", GUILayout.Width( 116f ) ) ;
 
-					bool tReverse = EditorGUILayout.Toggle( tTarget.Reverse ) ;
-					if( tReverse != tTarget.Reverse )
+					bool reverse = EditorGUILayout.Toggle( component.Reverse ) ;
+					if( reverse != component.Reverse )
 					{
-						Undo.RecordObject( tTarget, "UIFlipper : Reverse Change" ) ;	// アンドウバッファに登録
-						tTarget.Reverse = tReverse ;
-						EditorUtility.SetDirty( tTarget ) ;
+						Undo.RecordObject( component, "UIFlipper : Reverse Change" ) ;	// アンドウバッファに登録
+						component.Reverse = reverse ;
+						EditorUtility.SetDirty( component ) ;
 //						UnityEditor.SceneManagement.EditorSceneManager.MarkSceneDirty( UnityEditor.SceneManagement.EditorSceneManager.GetActiveScene() ) ;
 					}
 				}
@@ -226,12 +226,12 @@ namespace uGUIHelper
 			}
 
 			// スピード
-			float tSpeed = EditorGUILayout.FloatField( "Speed",  tTarget.Speed ) ;
-			if( tSpeed != tTarget.Speed )
+			float speed = EditorGUILayout.FloatField( "Speed",  component.Speed ) ;
+			if( speed != component.Speed )
 			{
-				Undo.RecordObject( tTarget, "UIFlipper : Speed Change" ) ;	// アンドウバッファに登録
-				tTarget.Speed = tSpeed ;
-				EditorUtility.SetDirty( tTarget ) ;
+				Undo.RecordObject( component, "UIFlipper : Speed Change" ) ;	// アンドウバッファに登録
+				component.Speed = speed ;
+				EditorUtility.SetDirty( component ) ;
 //				UnityEditor.SceneManagement.EditorSceneManager.MarkSceneDirty( UnityEditor.SceneManagement.EditorSceneManager.GetActiveScene() ) ;
 			}
 
@@ -240,12 +240,12 @@ namespace uGUIHelper
 				// イグノアタイムスケール
 				GUILayout.Label( "Ignore Time Scale", GUILayout.Width( 116f ) ) ;
 
-				bool tIgnoreTimeScale = EditorGUILayout.Toggle( tTarget.IgnoreTimeScale ) ;
-				if( tIgnoreTimeScale != tTarget.IgnoreTimeScale )
+				bool ignoreTimeScale = EditorGUILayout.Toggle( component.IgnoreTimeScale ) ;
+				if( ignoreTimeScale != component.IgnoreTimeScale )
 				{
-					Undo.RecordObject( tTarget, "UIFlipper : Ignore Time Scale Change" ) ;	// アンドウバッファに登録
-					tTarget.IgnoreTimeScale = tIgnoreTimeScale ;
-					EditorUtility.SetDirty( tTarget ) ;
+					Undo.RecordObject( component, "UIFlipper : Ignore Time Scale Change" ) ;	// アンドウバッファに登録
+					component.IgnoreTimeScale = ignoreTimeScale ;
+					EditorUtility.SetDirty( component ) ;
 //					UnityEditor.SceneManagement.EditorSceneManager.MarkSceneDirty( UnityEditor.SceneManagement.EditorSceneManager.GetActiveScene() ) ;
 				}
 			}
@@ -256,12 +256,12 @@ namespace uGUIHelper
 				// プレイオンアウェイク
 				GUILayout.Label( "Play On Awake", GUILayout.Width( 116f ) ) ;
 
-				bool tPlayOnAwake = EditorGUILayout.Toggle( tTarget.PlayOnAwake ) ;
-				if( tPlayOnAwake != tTarget.PlayOnAwake )
+				bool playOnAwake = EditorGUILayout.Toggle( component.PlayOnAwake ) ;
+				if( playOnAwake != component.PlayOnAwake )
 				{
-					Undo.RecordObject( tTarget, "UIFlipper : Play On Awake Change" ) ;	// アンドウバッファに登録
-					tTarget.PlayOnAwake = tPlayOnAwake ;
-					EditorUtility.SetDirty( tTarget ) ;
+					Undo.RecordObject( component, "UIFlipper : Play On Awake Change" ) ;	// アンドウバッファに登録
+					component.PlayOnAwake = playOnAwake ;
+					EditorUtility.SetDirty( component ) ;
 //					UnityEditor.SceneManagement.EditorSceneManager.MarkSceneDirty( UnityEditor.SceneManagement.EditorSceneManager.GetActiveScene() ) ;
 				}
 			}
@@ -273,12 +273,12 @@ namespace uGUIHelper
 				// デストロイアットエンド
 				GUILayout.Label( "Destroy At End", GUILayout.Width( 116f ) ) ;
 
-				bool tDestroyAtEnd = EditorGUILayout.Toggle( tTarget.DestroyAtEnd ) ;
-				if( tDestroyAtEnd != tTarget.DestroyAtEnd )
+				bool destroyAtEnd = EditorGUILayout.Toggle( component.DestroyAtEnd ) ;
+				if( destroyAtEnd != component.DestroyAtEnd )
 				{
-					Undo.RecordObject( tTarget, "UIFlipper : Destroy At End Change" ) ;	// アンドウバッファに登録
-					tTarget.DestroyAtEnd = tDestroyAtEnd ;
-					EditorUtility.SetDirty( tTarget ) ;
+					Undo.RecordObject( component, "UIFlipper : Destroy At End Change" ) ;	// アンドウバッファに登録
+					component.DestroyAtEnd = destroyAtEnd ;
+					EditorUtility.SetDirty( component ) ;
 				}
 			}
 			GUILayout.EndHorizontal() ;		// 横並び終了
@@ -289,12 +289,12 @@ namespace uGUIHelper
 				// デストロイアットエンド
 				GUILayout.Label( "Auto Resize", GUILayout.Width( 116f ) ) ;
 
-				bool tAutoResize = EditorGUILayout.Toggle( tTarget.AutoResize ) ;
-				if( tAutoResize != tTarget.AutoResize )
+				bool autoResize = EditorGUILayout.Toggle( component.AutoResize ) ;
+				if( autoResize != component.AutoResize )
 				{
-					Undo.RecordObject( tTarget, "UIFlipper : Auto Resize Change" ) ;	// アンドウバッファに登録
-					tTarget.AutoResize = tAutoResize ;
-					EditorUtility.SetDirty( tTarget ) ;
+					Undo.RecordObject( component, "UIFlipper : Auto Resize Change" ) ;	// アンドウバッファに登録
+					component.AutoResize = autoResize ;
+					EditorUtility.SetDirty( component ) ;
 				}
 			}
 			GUILayout.EndHorizontal() ;		// 横並び終了
@@ -306,7 +306,7 @@ namespace uGUIHelper
 				// イズプレイング
 				GUILayout.Label( "Is Playing", GUILayout.Width( 116f ) ) ;
 
-				EditorGUILayout.Toggle( tTarget.IsPlaying ) ;
+				EditorGUILayout.Toggle( component.IsPlaying ) ;
 			}
 			GUILayout.EndHorizontal() ;		// 横並び終了
 
@@ -314,45 +314,45 @@ namespace uGUIHelper
 
 
 			// デリゲートの設定状況
-			SerializedObject tSO = new SerializedObject( tTarget ) ;
+			var so = new SerializedObject( component ) ;
 
-			SerializedProperty tSP = tSO.FindProperty( "onFinished" ) ;
-			if( tSP != null )
+			var sp = so.FindProperty( "onFinished" ) ;
+			if( sp != null )
 			{
-				EditorGUILayout.PropertyField( tSP ) ;
+				EditorGUILayout.PropertyField( sp ) ;
 			}
-			tSO.ApplyModifiedProperties() ;
+			so.ApplyModifiedProperties() ;
 		}
 
 
 		//--------------------------------------------------------------------------
 
-		private readonly Dictionary<string,string> mJapanese_Message = new Dictionary<string, string>()
+		private static readonly Dictionary<string,string> m_Japanese_Message = new ()
 		{
 			{ "ImageNone", "Image クラスが必要です" },
 		} ;
-		private readonly Dictionary<string,string> mEnglish_Message = new Dictionary<string, string>()
+		private static readonly Dictionary<string,string> m_English_Message = new ()
 		{
 			{ "ImageNone", "'Image' is necessary." },
 		} ;
 
-		private string GetMessage( string tLabel )
+		private static string GetMessage( string label )
 		{
 			if( Application.systemLanguage == SystemLanguage.Japanese )
 			{
-				if( mJapanese_Message.ContainsKey( tLabel ) == false )
+				if( m_Japanese_Message.ContainsKey( label ) == false )
 				{
 					return "指定のラベル名が見つかりません" ;
 				}
-				return mJapanese_Message[ tLabel ] ;
+				return m_Japanese_Message[ label ] ;
 			}
 			else
 			{
-				if( mEnglish_Message.ContainsKey( tLabel ) == false )
+				if( m_English_Message.ContainsKey( label ) == false )
 				{
 					return "Specifying the label name can not be found" ;
 				}
-				return mEnglish_Message[ tLabel ] ;
+				return m_English_Message[ label ] ;
 			}
 		}
 	}

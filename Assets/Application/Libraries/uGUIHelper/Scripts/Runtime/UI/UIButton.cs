@@ -8,10 +8,10 @@ using UnityEngine.UI ;
 using UnityEngine.Events ;
 using UnityEngine.EventSystems ;
 
-
 #if UNITY_EDITOR
 using UnityEditorInternal ;
 #endif
+
 
 namespace uGUIHelper
 {
@@ -67,7 +67,7 @@ namespace uGUIHelper
 
 				if( CButton != null && CButton.transition == Selectable.Transition.ColorTint )
 				{
-					ProcessApplyColorToChildren( true, true ) ;
+					ProcessApplyColorToChildren( true, gameObject.activeInHierarchy == false ) ;
 				}
 
 				// 外部コンポーネント用のコールバック(タイミング同期用)
@@ -145,7 +145,7 @@ namespace uGUIHelper
 		/// <param name="enableTransition"></param>
 		public void EnableFakeInvalidation( Action onClickOfFake, uint disableColorOfFake = 0xFF8F8F8F, bool enableTransitionOfFake = true )
 		{
-			Color32 color = new Color32
+			var color = new Color32
 			(
 				( byte )( ( disableColorOfFake >> 16 ) & 0xFF ),
 				( byte )( ( disableColorOfFake >>  8 ) & 0xFF ),
@@ -407,13 +407,6 @@ namespace uGUIHelper
 		protected bool m_WaitForTransition = false ;
 
 		/// <summary>
-		/// ピボットを自動的に実行時に中心にする
-		/// </summary>
-		public bool AutoPivotToCenter{ get{ return m_AutoPivotToCenter ; } set{ m_AutoPivotToCenter = value ; } }
-		[SerializeField]
-		protected bool m_AutoPivotToCenter = false ;
-
-		/// <summary>
 		/// ボタングルーブ(同じボタングループを設定むしたボタン間で状態を共有する)
 		/// </summary>
 		public    UIButtonGroup   TargetButtonGroup{ get{ return m_TargetButtonGroup ; } set{ m_TargetButtonGroup = value ; } }
@@ -442,31 +435,10 @@ namespace uGUIHelper
 		//-----------------------------------------------------
 	
 		// 各派生クラスでの初期化処理を行う（メニューまたは AddView から生成される場合のみ実行れる）
-		override protected void OnBuild( string option = "" )
+		protected override void OnBuild( string option = "" )
 		{
-			Image image = CImage ;
-
-			if( image == null )
-			{
-				image = gameObject.AddComponent<Image>() ;
-			}
-			if( image == null )
-			{
-				// 異常
-				return ;
-			}
-
-			Button button = CButton ;
-
-			if( button == null )
-			{
-				button = gameObject.AddComponent<Button>() ;
-			}
-			if( button == null )
-			{
-				// 異常
-				return ;
-			}
+			Image	image	= CImage  != null ? CImage  : gameObject.AddComponent<Image>() ;
+			Button	button	= CButton != null ? CButton : gameObject.AddComponent<Button>() ;
 
 #if UNITY_EDITOR
 			// Image コンポーネントを一番上にもってくる
@@ -528,6 +500,11 @@ namespace uGUIHelper
 			{
 				image.material = Resources.Load<Material>( "uGUIHelper/Shaders/UI-Overlay-Default" ) ;
 			}
+
+			//----------------------------------
+
+			// デフォルト設定ではピボットは中央に補正
+			AutoPivotToCenter = true ;
 
 			//----------------------------------
 
@@ -637,7 +614,7 @@ namespace uGUIHelper
 		}
 
 		// 派生クラスの Start
-		override protected void OnStart()
+		protected override void OnStart()
 		{
 			base.OnStart() ;
 		
@@ -654,13 +631,7 @@ namespace uGUIHelper
 
 					CButton.onClick.AddListener( OnButtonClickInner ) ;
 
-					if( AutoPivotToCenter == true )
-					{
-						SetPivot( 0.5f, 0.5f, true ) ;	
-					}
-
-					// 色の強制反映
-//					SetFakeColors() ;
+					// 色の強制反映(Interactable=false だった場合に、即座に子に色を反映する必要があるので、自身を含めて色を強制設定する。逆に GameObject が非アクティブ中に Interactable=false から Interactable=true に変わっている場合に、子に反映させるためでもある。)
 					ProcessApplyColorToChildren( true, true ) ;
 				}
 			}
@@ -1538,7 +1509,7 @@ namespace uGUIHelper
 				return null ;
 			}
 
-			UIView.AsyncState state = new AsyncState( this ) ;
+			var state = new AsyncState( this ) ;
 			StartCoroutine( WaitFor_Private( state ) ) ;
 			return state ;
 		}
@@ -1662,8 +1633,7 @@ namespace uGUIHelper
 				{
 					if( m_EffectiveColorReplacing == true )
 					{
-						var canvasRenderer = GetComponent<CanvasRenderer>() ;
-						if( canvasRenderer != null )
+						if( TryGetComponent<CanvasRenderer>( out var canvasRenderer ) == true )
 						{
 							ApplyColorToChidren( canvasRenderer.GetColor(), false ) ;
 						}

@@ -16,8 +16,8 @@ namespace uGUIHelper
 		/// <summary>
 		/// スプライト
 		/// </summary>
-		[SerializeField][HideInInspector]
-		private Sprite m_Sprite = null ;
+		[SerializeField]
+		protected Sprite m_Sprite = null ;
 
 		private Texture2D m_BlankTexture = null ;
 
@@ -54,7 +54,7 @@ namespace uGUIHelper
 		/// <summary>
 		/// 最初のカラー
 		/// </summary>
-		[HideInInspector][SerializeField]
+		[SerializeField]
 		protected Color m_StartColor = Color.white ;
 
 		public    Color  startColor
@@ -77,7 +77,7 @@ namespace uGUIHelper
 		/// <summary>
 		/// 最後のカラー
 		/// </summary>
-		[HideInInspector][SerializeField]
+		[SerializeField]
 		protected Color m_EndColor = Color.white ;
 
 		public    Color  endColor
@@ -100,7 +100,7 @@ namespace uGUIHelper
 		/// <summary>
 		/// 最初の太さ
 		/// </summary>
-		[HideInInspector][SerializeField]
+		[SerializeField]
 		protected float m_StartWidth = 2 ;
 
 		public    float  startWidth
@@ -123,7 +123,7 @@ namespace uGUIHelper
 		/// <summary>
 		/// 最後の太さ
 		/// </summary>
-		[HideInInspector][SerializeField]
+		[SerializeField]
 		protected float m_EndWidth =  2 ;
 
 		public    float  endWidth
@@ -147,7 +147,7 @@ namespace uGUIHelper
 		/// <summary>
 		/// オフセット
 		/// </summary>
-		[SerializeField][HideInInspector]
+		[SerializeField]
 		protected Vector2 m_Offset = Vector2.zero ;
 
 		public  Vector2 offset
@@ -167,27 +167,10 @@ namespace uGUIHelper
 			}
 		}
 
-
-
-
 		/// <summary>
 		/// 頂点配列
 		/// </summary>
 		public Vector2[] vertices = new Vector2[]{ Vector2.zero, Vector2.one } ;
-//		[HideInInspector][SerializeField]
-//		private Vector2[] mVertices = new Vector2[]{ Vector2.zero, Vector2.one } ;
-//		public  Vector2[]  vertices
-//		{
-//			get
-//			{
-//				return mVertices ;
-//			}
-//			
-//			set
-//			{
-//				mVertices = value ;
-//			}
-//		}
 
 		/// <summary>
 		/// 座標の位置タイプ
@@ -198,8 +181,8 @@ namespace uGUIHelper
 			Absolute = 1,
 		}
 
-		[SerializeField][HideInInspector]
-		private PositionType m_PositionType = PositionType.Relative ;
+		[SerializeField]
+		protected PositionType m_PositionType = PositionType.Relative ;
 
 		public  PositionType  positionType
 		{
@@ -218,8 +201,8 @@ namespace uGUIHelper
 			}
 		}
 
-		[SerializeField][HideInInspector]
-		private float m_PreferredWidth = 0 ;
+		[SerializeField]
+		protected float m_PreferredWidth = 0 ;
 
 		/// <summary>
 		/// 実際の横幅
@@ -232,8 +215,8 @@ namespace uGUIHelper
 			}
 		}
 
-		[SerializeField][HideInInspector]
-		private float m_PreferredHeight = 0 ;
+		[SerializeField]
+		protected float m_PreferredHeight = 0 ;
 		
 		/// <summary>
 		/// 実際の縦幅
@@ -247,16 +230,16 @@ namespace uGUIHelper
 		}
 
 		//----------------------------------------------------------
-		
+
 		// メッシュ更新
-		protected override void OnPopulateMesh( VertexHelper tHelper )
+		protected override void OnPopulateMesh( VertexHelper helper )
 		{
 			if( IsActive() == false )
 			{
 				return ;
 			}
 
-			tHelper.Clear() ;
+			helper.Clear() ;
 
 			m_PreferredWidth  = 0 ;
 			m_PreferredHeight = 0 ;
@@ -271,54 +254,50 @@ namespace uGUIHelper
 			int i, j, l = vertices.Length ;
 
 			// 最初に全体の長さを計算する
-			float tLength = 0 ;
+			float length = 0 ;
 			for( i  = 1 ; i <  l ; i ++ )
 			{
-				tLength = tLength + ( vertices[ i ] - vertices[ i - 1 ] ).magnitude ;
+				length += ( vertices[ i ] - vertices[ i - 1 ] ).magnitude ;
 			}
 		
-			if( tLength == 0 )
+			if( length == 0 )
 			{
 				return ;
 			}
 
 			float bt = 0 ;
 			float bb = 0 ;
-			float bl = 0 ;
-			float br = 0 ;
 
 			if( m_Sprite != null )
 			{
-				bl = m_Sprite.border.x ;
 				bt = m_Sprite.border.y ;
-				br = m_Sprite.border.z ;
 				bb = m_Sprite.border.w ;
 			}
 
-			List<Vector2> tV = new List<Vector2>() ;	// ボーダーも含めた頂点
-			List<float>   tC = new List<float>() ;		// 色比率
-			List<float>   tT = new List<float>() ;		// テクスチャのＹ座標位置
+			var aV = new List<Vector2>() ;		// ボーダーも含めた頂点
+			var aC = new List<float>() ;		// 色比率
+			var aT = new List<float>() ;		// テクスチャのＹ座標位置
 		
-			float tBU = 0 ;
+			float bt_d = 0 ;
 			if( ( vertices[ 1 ] - vertices[ 0 ] ).magnitude >  bt )
 			{
-				tBU = bt ;
+				bt_d = bt ;
 			}
-			float tBB = 0 ;
+			float bb_d = 0 ;
 			if( ( vertices[ l - 1 ] - vertices[ l - 2 ] ).magnitude >  bb )
 			{
-				tBB = bb ;
+				bb_d = bb ;
 			}
 			
-			float tHeight_ = 0 ;
+			float height_d = 0 ;
 			if( m_Sprite != null )
 			{
-				tHeight_ = m_Sprite.rect.height - tBU - tBB ;
+				height_d = m_Sprite.rect.height - bt_d - bb_d ;
 			}
-			float tLength_ = tLength - tBU - tBB ;
+			float length_d = length - bt_d - bb_d ;
 			
-			Vector2 tPosition0 = Vector2.zero ;
-			Vector2 tPosition1 = Vector2.zero ;
+			Vector2 p0 = Vector2.zero ;
+			Vector2 p1 ;
 
 			// メッシュを生成する前の事前頂点情報を生成する
 			float c = 0 ;
@@ -328,92 +307,92 @@ namespace uGUIHelper
 				{
 					if( m_PositionType == PositionType.Relative )
 					{
-						tPosition0 = tPosition0 + vertices[ i ] ;
+						p0 += vertices[ i ] ;
 					}
 					else
 					{
-						tPosition0 = vertices[ i ] ;
+						p0  = vertices[ i ] ;
 					}
 
-					tV.Add( tPosition0 ) ;
-					tC.Add( 0 ) ;
+					aV.Add( p0 ) ;
+					aC.Add( 0 ) ;
 
 					if( m_Sprite != null )
 					{
-						tT.Add( 0 ) ;
+						aT.Add( 0 ) ;
 					}
 				
-					if( tBU >  0 )
+					if( bt_d >  0 )
 					{
 						if( m_PositionType == PositionType.Relative )
 						{
-							tPosition1 = tPosition0 + vertices[ 1 ] ;
+							p1 = p0 + vertices[ 1 ] ;
 						}
 						else
 						{
-							tPosition1 = vertices[ 1 ] ;
+							p1 = vertices[ 1 ] ;
 						}
 
-						if( tPosition0.Equals( tPosition1 ) == false )
+						if( p0.Equals( p1 ) == false )
 						{
-							tV.Add( tPosition0 + tBU * ( tPosition1 - tPosition0 ).normalized ) ;
-							tC.Add( tBU / tLength ) ;
+							aV.Add( p0 + bt_d * ( p1 - p0 ).normalized ) ;
+							aC.Add( bt_d / length ) ;
 
 							if( m_Sprite != null )
 							{
-								tT.Add( tBU ) ;
+								aT.Add( bt_d ) ;
 							}
 						}
 					}
 				}
 				else
 				{
-					tPosition1 = tPosition0 ;
+					p1 = p0 ;
 					
 					if( m_PositionType == PositionType.Relative )
 					{
-						tPosition0 = tPosition0 + vertices[ i ] ;
+						p0 += vertices[ i ] ;
 					}
 					else
 					{
-						tPosition0 = vertices[ i ] ;
+						p0  = vertices[ i ] ;
 					}
 
-					if( tPosition0.Equals( tPosition1 ) == false )
+					if( p0.Equals( p1 ) == false )
 					{
-						if( tBB >  0 && i == ( l - 1 ) )
+						if( bb_d >  0 && i == ( l - 1 ) )
 						{
-							tV.Add( tPosition0 + tBB * ( tPosition1 - tPosition0 ).normalized ) ;
-							tC.Add( ( tLength - tBB ) / tLength ) ;
+							aV.Add( p0 + bb_d * ( p1 - p0 ).normalized ) ;
+							aC.Add( ( length - bb_d ) / length ) ;
 
 							if( m_Sprite != null )
 							{
-								tT.Add( m_Sprite.rect.height - tBB ) ;
+								aT.Add( m_Sprite.rect.height - bb_d ) ;
 							}
 						}
 				
-						tV.Add( tPosition0 ) ;
+						aV.Add( p0 ) ;
 				
-						c = c + ( tPosition0 - tPosition1 ).magnitude ;
+						c += ( p0 - p1 ).magnitude ;
 				
-						tC.Add( ( float )c / ( float )tLength ) ;
+						aC.Add( ( float )c / ( float )length ) ;
 					
 						if( m_Sprite != null )
 						{
 							if( i <= ( l - 2 ) )
 							{
-								tT.Add( tBU + ( tHeight_ * ( c - tBU ) / tLength_ ) ) ;
+								aT.Add( bt_d + ( height_d * ( c - bt_d ) / length_d ) ) ;
 							}
 							else
 							{
-								tT.Add( m_Sprite.rect.height ) ;
+								aT.Add( m_Sprite.rect.height ) ;
 							}
 						}
 					}
 				}
 			}
 
-			if( tV.Count <  2 )
+			if( aV.Count <  2 )
 			{
 				return ;
 			}
@@ -422,265 +401,335 @@ namespace uGUIHelper
 
 			// 実際に頂点バッファを生成する
 
-			List<UIVertex>	aV = new List<UIVertex>() ;
-			List<int>		aI = new List<int>() ;
+			List<UIVertex>	bV = new () ;
+			List<int>		bI = new () ;
 
 
-			float tTw = 0 ;
-			float tTh = 0 ;
+			float th = 0 ;
 			
 			if( m_Sprite != null )
 			{
-				tTw = m_Sprite.texture.width ;
-				tTh = m_Sprite.texture.height ;
+				th = m_Sprite.texture.height ;
 			}
 		
 			float ty ;
-			Vector2 lt = Vector2.zero, rt = Vector2.zero, blt = Vector2.zero, brt = Vector2.zero ;
+			Vector2 lt = Vector2.zero, rt = Vector2.zero ;
 		
-			Vector2 tNormal, tNormal_ = Vector2.one ;
-			Vector2 tWidth ;
+			Vector2 normal, normal_n, normal_c ;
+			Vector2 width ;
 		
 			float r, w, x, y, k ;
 		
-			Vector2 lv, rv, blv, brv ;
+			Vector2 lv, rv ;
 		
 			int vi, vc ;
 
 			UIVertex v ;
 		
-			Color tColor ;
+			Color color ;
 
-			Vector3 tNormalVector = new Vector3(  0,  0, -1 ) ;
-			
-			if( m_Sprite != null )
-			{
-				lt.x = m_Sprite.rect.xMin / tTw ;
-				rt.x = m_Sprite.rect.xMax / tTw ;
-			
-				if( bl  >  0 )
-				{
-					// 左のボーダーあり
-					blt.x = ( m_Sprite.rect.xMin + bl ) / tTw ;
-				}
-			
-				if( br >  0 )
-				{
-					// 右のボーダーあり
-					brt.x = ( m_Sprite.rect.xMax - br ) / tTw ;
-				}
-			}
-			
-			for( i  = 0 ; i <  tV.Count ; i ++ )
-			{
-				r = tC[ i ] ;	// 開始点を０～終了点を１
-				
-				if( r >  1 )
-				{
-					r  = 1 ;
-				}
+			Vector3 normalVector = new (  0,  0, -1 ) ;
 
-				// その位置での半分の太さ
-				w = ( ( m_EndWidth - m_StartWidth ) * r + m_StartWidth ) * 0.5f ;
-			
-				// 点
-				x = tV[ i ].x ;
-				y = tV[ i ].y ;
-			
-				if( i == 0 )
-				{
-					// 最初の点
-					tNormal = ( tV[ i + 1 ] - tV[ i ] ).normalized ;
-				
-					tWidth.x = - tNormal.y * w ;
-					tWidth.y =   tNormal.x * w ;
-				
-					// 左の点
-					lv.x = x + tWidth.x ;
-					lv.y = y + tWidth.y ;
-				
-					// 右の点
-					rv.x = x - tWidth.x ;
-					rv.y = y - tWidth.y ;
-				
-					//---------------------
-				
-					tNormal_ = tNormal ;
-				}
-				else
-				if( i >  0 && i <  ( tV.Count - 1 ) )
-				{
-					// 途中の点
-					tNormal = ( tV[ i + 1 ] - tV[ i ] ).normalized ;
-				
-					k = Vector2.Dot( tNormal, tNormal_ ) ;
-				
-					if( k >= 0 )
-					{
-						tNormal_ = ( tNormal + tNormal_ ).normalized ; 
-						k = Vector2.Dot( tNormal, tNormal_ ) ;
-					}
-					else
-					{
-						tNormal_ = ( tNormal + tNormal_ ).normalized ;
-						k = 1.0f ;
-					}
-				
-					tWidth.x = - tNormal_.y * w / k ;
-					tWidth.y =   tNormal_.x * w / k ;
-				
-					// 左の点
-					lv.x = x + tWidth.x ;
-					lv.y = y + tWidth.y ;
-				
-					// 右の点
-					rv.x = x - tWidth.x ;
-					rv.y = y - tWidth.y ;
-				
-					//---------------------
-				
-					tNormal_ = tNormal ;
-				}
-				else
-				{
-					// 最後の点
-					tNormal = ( tV[ i ] - tV[ i - 1 ] ).normalized ;
-				
-					tWidth.x = - tNormal.y * w ;
-					tWidth.y =   tNormal.x * w ;
-				
-					lv.x = x + tWidth.x ;
-					lv.y = y + tWidth.y ;
-				
-					rv.x = x - tWidth.x ;
-					rv.y = y - tWidth.y ;
-				}
-			
+			int index ;
+
+			for( i  = 0 ; i <  ( aV.Count - 1 ) ; i ++ )
+			{
 				// オフセット
-				vi = aV.Count ;
+				vi = bV.Count ;			
+				vc = 0 ;
+
+				//---------------------------------
+
+				// ベクトル
+				normal = ( aV[ i + 1 ] - aV[ i ] ).normalized ;
+
+				//--------------------------------------------------------
+				// 始点
+
+				index = i ;
+
+				// 全体比率
+				r = aC[ index ] ;	// 開始点を０～終了点を１
+
+				// その位置での太さの半分
+				w = ( ( m_EndWidth - m_StartWidth ) * r + m_StartWidth ) * 0.5f ;
+
+				//-------------
+
+				// 幅
+				width.x = - normal.y * w ;
+				width.y =   normal.x * w ;
+
+				// 点
+				x = aV[ index ].x ;
+				y = aV[ index ].y ;
+			
+				// 左の点
+				lv.x = x + width.x ;
+				lv.y = y + width.y ;
 				
+				// 右の点
+				rv.x = x - width.x ;
+				rv.y = y - width.y ;
+
+				//------------
+
 				// 色
-				tColor = Color.Lerp( m_StartColor, m_EndColor, r ) ;
+				color = Color.Lerp( m_StartColor, m_EndColor, r ) ;
 
 				if( m_Sprite != null )
 				{
-					ty = 1.0f - ( ( m_Sprite.rect.yMin + tT[ i ] ) / tTh ) ;
+					ty = 1.0f - ( ( m_Sprite.rect.yMin + r ) / th ) ;
 				}
 				else
 				{
 					ty = 0 ;
 				}
 
-				vc = 0 ;
-
 				//-------------------------------------------
 
 				// 左の点
-				v = new UIVertex() ;
-
-				v.position	= new Vector3( lv.x + m_Offset.x, lv.y + m_Offset.y, 0 ) ;
-				v.normal	= tNormalVector ;
-				v.color		= tColor ;
+				v = new ()
+				{
+					position	= new Vector3( lv.x + m_Offset.x, lv.y + m_Offset.y, 0 ),
+					normal		= normalVector,
+					color		= color
+				} ;
 
 				if( m_Sprite != null )
 				{
 					v.uv0 = new Vector2( lt.x, ty ) ;
 				}
 
-				aV.Add( v ) ;
+				bV.Add( v ) ;
 				vc ++ ;
-		
-				w = ( rv - lv ).magnitude ;
-				if( bl >  0 )
-				{
-					// 左のボーダーの点
-					v = new UIVertex() ;
 
-					if( ( w - br ) >  bl )
-					{
-						blv = lv + bl * ( rv - lv ).normalized ;
-					}
-					else
-					{
-						blv = lv ;
-					}
-				
-					v.position	= new Vector3( blv.x + m_Offset.x, blv.y + m_Offset.y, 0 ) ;
-					v.normal	= tNormalVector ;
-					v.color		= tColor ;
+				//-------------
 
-					if( m_Sprite != null )
-					{
-						v.uv0 = new Vector2( blt.x, ty ) ;
-					}
-
-					aV.Add( v ) ;
-					vc ++ ;
-				}
-			
-				if( br >  0 )
-				{
-					// 右のボーダーの点
-					v = new UIVertex() ;
-
-					if( ( w - bl ) >  br )
-					{
-						brv = rv + br * ( lv - rv ).normalized ;
-					}
-					else
-					{
-						brv = rv ;
-					}
-				
-					v.position	= new Vector3( brv.x + m_Offset.x, brv.y + m_Offset.y, 0 ) ;
-					v.normal	= tNormalVector ;
-					v.color		= tColor ;
-
-					if( m_Sprite != null )
-					{
-						v.uv0 = new Vector2( brt.x, ty ) ;
-					}
-
-					aV.Add( v ) ;
-					vc ++ ;
-				}
-				
 				// 右の点
-				v = new UIVertex() ;
-
-				v.position	= new Vector3( rv.x + m_Offset.x, rv.y + m_Offset.y, 0 ) ;
-				v.normal	= tNormalVector ;
-				v.color		= tColor ;
-
+				v = new ()
+				{
+					position	= new Vector3( rv.x + m_Offset.x, rv.y + m_Offset.y, 0 ),
+					normal		= normalVector,
+					color		= color
+				} ;
+				
 				if( m_Sprite != null )
 				{
 					v.uv0 = new Vector2( rt.x, ty ) ;
 				}
 
-				aV.Add( v ) ;
+				bV.Add( v ) ;
 				vc ++ ;
 
-				//----------------------------------------
+				//--------------------------------------------------------
+				// 終点
+
+				index = i + 1 ;
+
+				// 全体比率
+				r = aC[ index ] ;	// 開始点を０～終了点を１
+
+				// その位置での太さの半分
+				w = ( ( m_EndWidth - m_StartWidth ) * r + m_StartWidth ) * 0.5f ;
+
+				//-------------
+
+				// 幅
+				width.x = - normal.y * w ;
+				width.y =   normal.x * w ;
+
+				// 点
+				x = aV[ index ].x ;
+				y = aV[ index ].y ;
+			
+				// 左の点
+				lv.x = x + width.x ;
+				lv.y = y + width.y ;
+				
+				// 右の点
+				rv.x = x - width.x ;
+				rv.y = y - width.y ;
+
+				//------------
+
+				// 色
+				color = Color.Lerp( m_StartColor, m_EndColor, r ) ;
+
+				if( m_Sprite != null )
+				{
+					ty = 1.0f - ( ( m_Sprite.rect.yMin + r ) / th ) ;
+				}
+				else
+				{
+					ty = 0 ;
+				}
+
+				//-------------------------------------------
+
+				// 左の点
+				v = new ()
+				{
+					position	= new Vector3( lv.x + m_Offset.x, lv.y + m_Offset.y, 0 ),
+					normal		= normalVector,
+					color		= color
+				} ;
+
+				if( m_Sprite != null )
+				{
+					v.uv0 = new Vector2( lt.x, ty ) ;
+				}
+
+				bV.Add( v ) ;
+				vc ++ ;
+		
+				//-------------
+
+				// 右の点
+				v = new ()
+				{
+					position	= new Vector3( rv.x + m_Offset.x, rv.y + m_Offset.y, 0 ),
+					normal		= normalVector,
+					color		= color
+				} ;
+				
+				if( m_Sprite != null )
+				{
+					v.uv0 = new Vector2( rt.x, ty ) ;
+				}
+
+				bV.Add( v ) ;
+				vc ++ ;
+
+				//---------------------------------
+
+				if( i <  ( aV.Count - 2 ) && w >= 2.0f )
+				{
+					// 連結ポイントのポリゴンが必要かどうか
+
+					// 次の方向ベクトル
+					normal_n = ( aV[ i + 2 ] - aV[ i + 1 ] ).normalized ;
+
+					// 内積計算
+					k = Vector2.Dot( normal, normal_n ) ;
+
+					if( Mathf.Abs( k ) <  0.98f )
+					{
+						// 連結ポイントのポリゴンを追加する
+
+						// 連結ポイントの方向
+						normal_c = ( normal + normal_n ).normalized ; 
+
+						k = Vector2.Dot( normal_n, normal_c ) ;
+						float m = Mathf.Abs( k ) * w * 0.88f ;
+
+						Vector2 lc = new ( x - normal_c.y * m, y + normal_c.x * m ) ;
+						Vector2 rc = new ( x + normal_c.y * m, y - normal_c.x * m ) ;
+
+
+						Vector2 el0 = lc + ( normal_c * m ) ;
+						Vector2 er0 = rc + ( normal_c * m ) ;
+
+						Vector2 el1 = lc - ( normal_c * m ) ;
+						Vector2 er1 = rc - ( normal_c * m ) ;
+
+						//-------------------------------
+						// 各種情報は終点と同じ
+
+						//-----------
+						// 前方
+
+						// 左の点
+						v = new ()
+						{
+							position	= new Vector3( el0.x + m_Offset.x, el0.y + m_Offset.y, 0 ),
+							normal		= normalVector,
+							color		= color
+						} ;
+
+						if( m_Sprite != null )
+						{
+							v.uv0 = new Vector2( lt.x, ty ) ;
+						}
+
+						bV.Add( v ) ;
+						vc ++ ;
+		
+						//-------------
+
+						// 右の点
+						v = new ()
+						{
+							position	= new Vector3( er0.x + m_Offset.x, er0.y + m_Offset.y, 0 ),
+							normal		= normalVector,
+							color		= color
+						} ;
+				
+						if( m_Sprite != null )
+						{
+							v.uv0 = new Vector2( rt.x, ty ) ;
+						}
+
+						bV.Add( v ) ;
+						vc ++ ;
+
+						//-----------
+						// 後方
+
+						// 左の点
+						v = new ()
+						{
+							position	= new Vector3( el1.x + m_Offset.x, el1.y + m_Offset.y, 0 ),
+							normal		= normalVector,
+							color		= color
+						} ;
+
+						if( m_Sprite != null )
+						{
+							v.uv0 = new Vector2( lt.x, ty ) ;
+						}
+
+						bV.Add( v ) ;
+						vc ++ ;
+		
+						//-------------
+
+						// 右の点
+						v = new ()
+						{
+							position	= new Vector3( er1.x + m_Offset.x, er1.y + m_Offset.y, 0 ),
+							normal		= normalVector,
+							color		= color
+						} ;
+				
+						if( m_Sprite != null )
+						{
+							v.uv0 = new Vector2( rt.x, ty ) ;
+						}
+
+						bV.Add( v ) ;
+						vc ++ ;
+					}
+				}
+
+				//---------------------------------------------------------
 
 				// インデックス
-				if( i <  ( tV.Count - 1 ) )
+				for( j  = 0 ; j <   vc ; j = j + 4 )
 				{
-					for( j  = 0 ; j <  ( vc - 1 ) ; j ++ )
-					{
-						aI.Add( vi + j ) ;
-						aI.Add( vi + j + 1 ) ;
-						aI.Add( vi + j + vc ) ;
+					bI.Add( vi + j ) ;
+					bI.Add( vi + j + 1 ) ;
+					bI.Add( vi + j + 2 ) ;
 					
-						aI.Add( vi + j + 1 ) ;
-						aI.Add( vi + j + 1 + vc ) ;
-						aI.Add( vi + j + vc ) ;
-					}
+					bI.Add( vi + j + 1 ) ;
+					bI.Add( vi + j + 3 ) ;
+					bI.Add( vi + j + 2 ) ;
 				}
 			}
 
 			//----------------------------------------
 
-			if( aV.Count >  0 && aI.Count >  0 )
+			if( bV.Count >  0 && bI.Count >  0 )
 			{
 				// 頂点の最大最小からバウンディングボックスのサイズを算出する
 
@@ -689,11 +738,11 @@ namespace uGUIHelper
 				float yMin =   Mathf.Infinity ;
 				float yMax = - Mathf.Infinity ;
 
-				l = aV.Count ;
+				l = bV.Count ;
 				for( i  = 0 ; i <  l ; i ++ )
 				{
-					x = aV[ i ].position.x ;
-					y = aV[ i ].position.y ;
+					x = bV[ i ].position.x ;
+					y = bV[ i ].position.y ;
 					if( x <  xMin )
 					{
 						xMin = x ;
@@ -717,7 +766,7 @@ namespace uGUIHelper
 
 //				Debug.LogWarning( "w:" + mPreferredWidth + " h:" + mPreferredHeight ) ;
 
-				tHelper.AddUIVertexStream( aV, aI ) ;
+				helper.AddUIVertexStream( bV, bI ) ;
 			}
 		}
 

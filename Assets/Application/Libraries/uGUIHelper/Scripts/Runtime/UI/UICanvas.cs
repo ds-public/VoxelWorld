@@ -1,80 +1,26 @@
+using System ;
+using System.Collections ;
+using System.Collections.Generic ;
 using UnityEngine ;
 using UnityEngine.UI ;
-using System.Collections ;
+
 
 namespace uGUIHelper
 {
-	[ RequireComponent(typeof(UnityEngine.Canvas))]
-	[ RequireComponent(typeof(UnityEngine.UI.CanvasScaler))]
-	[ RequireComponent(typeof(UnityEngine.UI.GraphicRaycaster))]
-//	[ RequireComponent(typeof(GraphicRaycasterWrapper))]
+	[RequireComponent( typeof( UnityEngine.Canvas ) )]
+	[RequireComponent( typeof( UnityEngine.UI.CanvasScaler ) )]
+	[RequireComponent( typeof( UnityEngine.UI.GraphicRaycaster ) )]
 
 	/// <summary>
 	/// uGUI:Canvas クラスの機能拡張コンポーネントクラス
 	/// </summary>
+	[DefaultExecutionOrder( -5 )]	// 若干早く(UiEventSystem を生成する関係上)
 	public class UICanvas : UIView
 	{
-#if false
-		public enum AutomaticRenderModes
-		{
-			None				= 0,
-			ScreenSpaceOverlay	= 1,
-			ScreenSpaceCamera	= 2,
-			WorldSpace			= 3,
-		}
-
-		/// <summary>
-		/// 実行時に簡易的にパラメータを設定する
-		/// </summary>
-		public AutomaticRenderModes	AutomaticRenderMode = AutomaticRenderModes.None ;
-
-		/// <summary>
-		/// 仮想解像度の横幅
-		/// </summary>
-		public float	Width  = 960 ;
-
-		/// <summary>
-		/// 仮想解像度の縦幅
-		/// </summary>
-		public float	Height = 540 ;
-
-		/// <summary>
-		/// 表示の優先順位値(大きい方が手前)
-		/// </summary>
-		public int		Depth = 54 ;
-
-		/// <summary>
-		/// ターゲットカメラカメラ
-		/// </summary>
-		public Camera	RenderCamera
-		{
-			get
-			{
-				return m_RenderCamera ;
-			}
-			set
-			{
-				m_RenderCamera = value ;
-			}
-		}
-
-		[SerializeField]
-		private Camera m_RenderCamera = null ;
-
-		/// <summary>
-		/// ＶＲモードで表示した際の基準位置からの前方への距離
-		/// </summary>
-		public float	VRDistance = 1.0f ;
-
-		/// <summary>
-		/// ＶＲモードで表示した際の縦の視野に対する大きさの比率
-		/// </summary>
-		public float	VRScale = 1.0f ;
-#endif
 		//-----------------------------------
 
 		/// <summary>
-		/// オーバーレイ表示を行うか
+		/// オーバーレイ表示を行うかどうか
 		/// </summary>
 		public bool		IsOverlay = false ;
 
@@ -83,143 +29,27 @@ namespace uGUIHelper
 		/// <summary>
 		/// 派生クラスの Awake
 		/// </summary>
-		override protected void OnAwake()
+		protected override void OnAwake()
 		{
 			if( Application.isPlaying == true )
 			{
 				// 実行中のみイベントシステムを生成する
-				UIEventSystem.Create() ;
-
-				//---------------------------------------------------------
-#if false
-				// 実行時に簡易的に状態を設定する
-				if( renderMode != AutomaticRenderMode.None )
-				{
-					SetRenderMode( renderMode ) ;
-				}
-#endif
+				InputAdapter.UIEventSystem.Create() ;
 			}
 		}
 
-#if false
-		/// <summary>
-		/// 表示モードを設定する
-		/// </summary>
-		/// <param name="renderMode"></param>
-		public void SetRenderMode( AutomaticRenderModes renderMode )
-		{
-			if( renderMode == AutomaticRenderModes.ScreenSpaceOverlay || renderMode == AutomaticRenderModes.ScreenSpaceCamera )
-			{
-				// ２Ｄモード
-				if( renderMode == AutomaticRenderModes.ScreenSpaceOverlay )
-				{
-					Canvas canvas = GetCanvas() ;
-					if( canvas != null )
-					{
-						canvas.renderMode = RenderModes.ScreenSpaceOverlay ;
-						canvas.sortingOrder = depth ;
-					}
-				}
-				else
-				if( renderMode == AutomaticRenderModes.ScreenSpaceCamera )
-				{
-					Canvas canvas = GetCanvas() ;
-					if( canvas != null )
-					{
-						canvas.renderMode = RenderModes.ScreenSpaceCamera ;
-						Camera worldCamera = canvas.worldCamera ;
-						if( worldCamera == null )
-						{
-							worldCamera = m_RenderCamera ;
-						}
-						if( worldCamera == null )
-						{
-							worldCamera = GetComponentInChildren<Camera>() ;
-						}
-						if( worldCamera != null )
-						{
-							canvas.worldCamera = worldCamera ;
-						}
-						if( canvas.worldCamera != null )
-						{
-							canvas.worldCamera.gameObject.SetActive( true ) ;
-							canvas.worldCamera.depth = depth ;
-						}
-					}
-				}
-
-				CanvasScaler canvasScaler = GetCanvasScaler() ;
-				if( canvasScaler != null )
-				{
-					canvasScaler.uiScaleMode = UnityEngine.UI.CanvasScaler.ScaleMode.ScaleWithScreenSize ;
-					canvasScaler.referenceResolution = new Vector2( width, height ) ;
-//					tCanvasScaler.screenMatchMode = UnityEngine.UI.CanvasScaler.ScreenMatchMode.Expand ;
-				}
-
-				this.Px = 0 ;
-				this.Py = 0 ;
-				this.Pz = 0 ;
-			}
-			else
-			if( renderMode == AutomaticRenderModes.WorldSpace )
-			{
-				// ３Ｄモード
-				Canvas canvas = GetCanvas() ;
-				if( canvas != null )
-				{
-					canvas.renderMode = RenderMode.WorldSpace ;
-					Camera worldCamera = canvas.worldCamera ;
-					if( worldCamera == null )
-					{
-						worldCamera = GetComponentInChildren<Camera>() ;
-						if( worldCamera != null )
-						{
-							worldCamera.gameObject.SetActive( false ) ;
-						}
-					}
-					else
-					{
-						// カメラが無効でも設定されているとレイキャストに引っかからなくなるので null にする必要がある
-						worldCamera.gameObject.SetActive( false ) ;
-//						worldCamera.depth = depth ;
-						canvas.worldCamera = null ;
-					}
-					canvas.sortingOrder = depth ;
-				}
-
-//				CanvasScaler canvasScaler = _canvasScaler ;
-//				if( canvasScaler != null )
-//				{
-//					canvasScaler.dynamicPixelsPerUnit = 3 ;
-//					canvasScaler.referencePixelsPerUnit = 1 ;
-//				}
-
-				this.Px = 0 ;
-				this.Py = 0 ;
-				this.Pz = 0 ;
-
-				this.Width  = width ;
-				this.Height = height ;
-			}
-		}
-#endif
 		//-----------------------------------------------------
 	
 		/// <summary>
 		/// 各派生クラスでの初期化処理を行う（メニューまたは AddView から生成される場合のみ実行れる）
 		/// </summary>
 		/// <param name="option"></param>
-		override protected void OnBuild( string option = null )
+		protected override void OnBuild( string option = null )
 		{
-			Canvas canvas = GetCanvas() ;
+			var canvas = GetCanvas() ;
 			if( canvas == null )
 			{
 				canvas = gameObject.AddComponent<Canvas>() ;
-			}
-			if( canvas == null )
-			{
-				// 異常
-				return ;
 			}
 				
 			canvas.renderMode = RenderMode.ScreenSpaceOverlay ;
@@ -231,15 +61,10 @@ namespace uGUIHelper
 
 			//------------------------------------------
 
-			CanvasScaler canvasScaler = GetCanvasScaler() ;
+			var canvasScaler = GetCanvasScaler() ;
 			if( canvasScaler == null )
 			{
 				canvasScaler = gameObject.AddComponent<CanvasScaler>() ;
-			}
-			if( canvasScaler == null )
-			{
-				// 異常
-				return ;
 			}
 
 			canvasScaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize ;
@@ -247,20 +72,6 @@ namespace uGUIHelper
 			canvasScaler.screenMatchMode = CanvasScaler.ScreenMatchMode.MatchWidthOrHeight ;
 			canvasScaler.matchWidthOrHeight = 1.0f ;
 			canvasScaler.referencePixelsPerUnit = 100.0f ;
-			
-//			GraphicRaycasterWrapper graphicRaycaster = GetGraphicRaycaster() ;
-//			if( graphicRaycaster == null )
-//			{
-//				graphicRaycaster = gameObject.AddComponent<GraphicRaycasterWrapper>() ;
-//			}
-//			if( graphicRaycaster == null )
-//			{
-//				// 異常
-//				return ;
-//			}
-//				
-//			graphicRaycaster.ignoreReversedGraphics = true ;
-//			graphicRaycaster.blockingObjects = GraphicRaycaster.BlockingObjects.None ;
 		}
 
 		//-----------------------------------------------------
@@ -880,7 +691,7 @@ namespace uGUIHelper
 		/// <returns></returns>
 		public static UICanvas Create( Transform parent = null, float w = 0, float h = 0 )
 		{
-			GameObject canvasGO = new GameObject( "Canvas", typeof( RectTransform ) ) ;
+			var canvasGO = new GameObject( "Canvas", typeof( RectTransform ) ) ;
 			if( parent != null )
 			{
 				canvasGO.transform.SetParent( parent, false ) ;
@@ -928,7 +739,7 @@ namespace uGUIHelper
 				rh = rw ;
 			}
 
-			GameObject canvasGO = new GameObject( "Canvas", typeof( RectTransform ) ) ;
+			var canvasGO = new GameObject( "Canvas", typeof( RectTransform ) ) ;
 			if( parent != null )
 			{
 				canvasGO.transform.SetParent( parent, false ) ;
@@ -944,7 +755,7 @@ namespace uGUIHelper
 		
 			//------------------------
 
-			GameObject cameraGO = new GameObject( "Camera" ) ;
+			var cameraGO = new GameObject( "Camera" ) ;
 			cameraGO.transform.SetParent( canvasGO.transform, false ) ;
 		
 			cameraGO.transform.localPosition = new Vector3( 0, 0, -100 ) ;
@@ -1021,7 +832,7 @@ namespace uGUIHelper
 
 			if( camera == null )
 			{
-				GameObject cameraGO = new GameObject( "Camera" ) ;
+				var cameraGO = new GameObject( "Camera" ) ;
 				if( parent != null )
 				{
 					cameraGO.transform.SetParent( parent, false ) ;
@@ -1050,7 +861,7 @@ namespace uGUIHelper
 
 			//------------------------
 		
-			GameObject canvasGO = new GameObject( "Canvas", typeof( RectTransform ) ) ;
+			var canvasGO = new GameObject( "Canvas", typeof( RectTransform ) ) ;
 			canvasGO.transform.SetParent( camera.transform, false ) ;
 		
 			UICanvas uiCanvas = canvasGO.AddComponent<UICanvas>() ;
@@ -1077,7 +888,6 @@ namespace uGUIHelper
 			canvasGO.transform.localScale = new Vector3( 1, 1, 1 ) ;
 
 			return uiCanvas ;
-		
 		}
 
 		/// <summary>

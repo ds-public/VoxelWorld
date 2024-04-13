@@ -32,18 +32,38 @@ namespace uGUIHelper
 			}
 		}
 
+		/// <summary>
+		/// Interactable(ショートカット)
+		/// </summary>
+		public bool Interactable
+		{
+			get
+			{
+				var dropdown = CTMP_Dropdown ;
+				if( dropdown == null )
+				{
+					return false ;
+				}
+				return dropdown.interactable ;
+			}
+			set
+			{
+				var dropdown = CTMP_Dropdown ;
+				if( dropdown == null )
+				{
+					return ;
+				}
+				dropdown.interactable = value ;
+			}
+		}
 
 		/// <summary>
 		/// 各派生クラスでの初期化処理を行う（メニューまたは AddView から生成される場合のみ実行れる）
 		/// </summary>
-		/// <param name="tOption"></param>
+		/// <param name="option"></param>
 		override protected void OnBuild( string option = "" )
 		{
-			TMP_Dropdown dropdown = CTMP_Dropdown ;
-			if( dropdown == null )
-			{
-				dropdown = gameObject.AddComponent<TMP_Dropdown>() ;
-			}
+			var dropdown = CTMP_Dropdown != null ? CTMP_Dropdown : gameObject.AddComponent<TMP_Dropdown>() ;
 			if( dropdown == null )
 			{
 				// 異常
@@ -54,13 +74,13 @@ namespace uGUIHelper
 
 			//------------------------------------------
 
-			Vector2 size = GetCanvasSize() ;
+			var size = GetCanvasSize() ;
 			if( size.x >  0 && size.y >  0 )
 			{
 				SetSize( size.y * 0.28f, size.y * 0.05f ) ;
 			}
 
-			ColorBlock colorBlock = dropdown.colors ;
+			var colorBlock = dropdown.colors ;
 			colorBlock.fadeDuration = 0.1f ;
 			dropdown.colors = colorBlock ;
 
@@ -69,24 +89,24 @@ namespace uGUIHelper
 			image.type = Image.Type.Sliced ;
 
 			// 初期のオプションを追加する
-			TMP_Dropdown.OptionData dataA = new TMP_Dropdown.OptionData()
+			var dataA = new TMP_Dropdown.OptionData()
 			{
 				text = "Option A"
 			} ;
 			dropdown.options.Add( dataA ) ;
-			TMP_Dropdown.OptionData dataB = new TMP_Dropdown.OptionData()
+			var dataB = new TMP_Dropdown.OptionData()
 			{
 				text = "Option B"
 			} ;
 			dropdown.options.Add( dataB ) ;
-			TMP_Dropdown.OptionData dataC = new TMP_Dropdown.OptionData()
+			var dataC = new TMP_Dropdown.OptionData()
 			{
 				text = "Option C"
 			} ;
 			dropdown.options.Add( dataC ) ;
 
 			// Label
-			UITextMesh label = AddView<UITextMesh>( "Label", "FitOff" ) ;
+			var label = AddView<UITextMesh>( "Label", "FitOff" ) ;
 			label.Text = dropdown.options[ 0 ].text ;
 			label.SetAnchorToStretch() ;
 			label.SetMargin( 24, 24,  6,  6 ) ;
@@ -98,7 +118,7 @@ namespace uGUIHelper
 
 
 			// Arrow
-			UIImage arrow = AddView<UIImage>( "Arrow" ) ;
+			var arrow = AddView<UIImage>( "Arrow" ) ;
 			arrow.Sprite = Resources.Load<Sprite>( "uGUIHelper/Textures/UIDefaultArrowDown" ) ;
 			arrow.Color = Color.white ;
 			arrow.Type = Image.Type.Sliced ;
@@ -110,7 +130,7 @@ namespace uGUIHelper
 
 
 			// ScrollView
-			UIScrollView scrollView = AddView<UIScrollView>( "Template", "Dropdown" ) ;
+			var scrollView = AddView<UIScrollView>( "Template", "Dropdown" ) ;
 			scrollView.SetAnchorToStretchBottom() ;
 			scrollView.SetPosition(  0,  2 ) ;
 			scrollView.SetSize(   0, this.Height * 5 ) ;
@@ -136,7 +156,7 @@ namespace uGUIHelper
 		/// <summary>
 		/// 派生クラスの Start
 		/// </summary>
-		override protected void OnStart()
+		protected override void OnStart()
 		{
 			base.OnStart() ;
 
@@ -161,9 +181,9 @@ namespace uGUIHelper
 		/// <summary>
 		/// 状態が変化した際に呼び出されるデリゲートの定義
 		/// </summary>
-		/// <param name="tIdentity">ビューの識別名(未設定の場合はゲームオブジェクト名)</param>
-		/// <param name="tView">ビューのインスタンス</param>
-		/// <param name="tValue">変化後の値</param>
+		/// <param name="identity">ビューの識別名(未設定の場合はゲームオブジェクト名)</param>
+		/// <param name="view">ビューのインスタンス</param>
+		/// <param name="value">変化後の値</param>
 		public delegate void OnValueChanged( string identity, UIDropdown view, int value ) ;
 
 		/// <summary>
@@ -174,7 +194,7 @@ namespace uGUIHelper
 		/// <summary>
 		/// 状態が変化した際に呼び出されるアクションを設定する
 		/// </summary>
-		/// <param name="tOnValueChangedAction">アクションメソッド</param>
+		/// <param name="onValueChangedAction">アクションメソッド</param>
 		public void SetOnValueChanged( Action<string, UIDropdown, int> onValueChangedAction )
 		{
 			OnValueChangedAction = onValueChangedAction ;
@@ -183,7 +203,7 @@ namespace uGUIHelper
 		/// <summary>
 		/// 状態が変化した際に呼び出されるデリゲートを追加する
 		/// </summary>
-		/// <param name="tOnValueChangedDelegate">デリゲートメソッド</param>
+		/// <param name="onValueChangedDelegate">デリゲートメソッド</param>
 		public void AddOnValueChanged( OnValueChanged onValueChangedDelegate )
 		{
 			OnValueChangedDelegate += onValueChangedDelegate ;
@@ -192,7 +212,7 @@ namespace uGUIHelper
 		/// <summary>
 		/// 状態が変化した際に呼び出されるデリゲートを削除する
 		/// </summary>
-		/// <param name="tOnValueChangedDelegate">デリゲートメソッド</param>
+		/// <param name="onValueChangedDelegate">デリゲートメソッド</param>
 		public void RemoveOnValueChanged( OnValueChanged onValueChangedDelegate )
 		{
 			OnValueChangedDelegate -= onValueChangedDelegate ;
@@ -219,10 +239,10 @@ namespace uGUIHelper
 		/// <summary>
 		/// 状態が変化した際に呼び出されるリスナーを追加する
 		/// </summary>
-		/// <param name="tOnValueChanged">リスナーメソッド</param>
+		/// <param name="onValueChanged">リスナーメソッド</param>
 		public void AddOnValueChangedListener( UnityEngine.Events.UnityAction<int> onValueChanged )
 		{
-			TMP_Dropdown dropdown = CTMP_Dropdown ;
+			var dropdown = CTMP_Dropdown ;
 			if( dropdown != null )
 			{
 				dropdown.onValueChanged.AddListener( onValueChanged ) ;
@@ -232,10 +252,10 @@ namespace uGUIHelper
 		/// <summary>
 		/// 状態が変化した際に呼び出されるリスナーを削除する
 		/// </summary>
-		/// <param name="tOnValueChanged">リスナーメソッド</param>
+		/// <param name="onValueChanged">リスナーメソッド</param>
 		public void RemoveOnValueChangedListener( UnityEngine.Events.UnityAction<int> onValueChanged )
 		{
-			TMP_Dropdown dropdown = CTMP_Dropdown ;
+			var dropdown = CTMP_Dropdown ;
 			if( dropdown != null )
 			{
 				dropdown.onValueChanged.RemoveListener( onValueChanged ) ;
@@ -247,7 +267,7 @@ namespace uGUIHelper
 		/// </summary>
 		public void RemoveOnValueChangedAllListeners()
 		{
-			TMP_Dropdown dropdown = CTMP_Dropdown ;
+			var dropdown = CTMP_Dropdown ;
 			if( dropdown != null )
 			{
 				dropdown.onValueChanged.RemoveAllListeners() ;
@@ -259,7 +279,7 @@ namespace uGUIHelper
 		/// <summary>
 		/// オプションデータをまとめて設定する
 		/// </summary>
-		/// <param name="tName"></param>
+		/// <param name="dataTexts"></param>
 		public bool Set( string[] dataTexts, int initailValue = -1 )
 		{
 			if( dataTexts == null )
@@ -267,7 +287,7 @@ namespace uGUIHelper
 				return false ;
 			}
 
-			TMP_Dropdown dropdown = CTMP_Dropdown ;
+			var dropdown = CTMP_Dropdown ;
 			if( dropdown == null )
 			{
 				return false ;
@@ -306,17 +326,17 @@ namespace uGUIHelper
 		/// <summary>
 		/// オプションデータを追加する
 		/// </summary>
-		/// <param name="tName"></param>
+		/// <param name="dataText"></param>
 		/// <returns></returns>
 		public bool Add( string dataText )
 		{
-			TMP_Dropdown dropdown = CTMP_Dropdown ;
+			var dropdown = CTMP_Dropdown ;
 			if( dropdown == null )
 			{
 				return false ;
 			}
 
-			TMP_Dropdown.OptionData data = new TMP_Dropdown.OptionData()
+			var data = new TMP_Dropdown.OptionData()
 			{
 				text = dataText
 			} ;
@@ -328,18 +348,18 @@ namespace uGUIHelper
 		/// <summary>
 		/// オプションデータを挿入する
 		/// </summary>
-		/// <param name="tIndex"></param>
-		/// <param name="tName"></param>
+		/// <param name="index"></param>
+		/// <param name="dataText"></param>
 		/// <returns></returns>
 		public bool Insert( int index, string dataText )
 		{
-			TMP_Dropdown dropdown = CTMP_Dropdown ;
+			var dropdown = CTMP_Dropdown ;
 			if( dropdown == null )
 			{
 				return false ;
 			}
 
-			TMP_Dropdown.OptionData data = new TMP_Dropdown.OptionData()
+			var data = new TMP_Dropdown.OptionData()
 			{
 				text = dataText
 			} ;
@@ -351,11 +371,11 @@ namespace uGUIHelper
 		/// <summary>
 		/// オプションデータを削除する
 		/// </summary>
-		/// <param name="tIndex"></param>
+		/// <param name="index"></param>
 		/// <returns></returns>
 		public bool RemoveAt( int index )
 		{
-			TMP_Dropdown dropdown = CTMP_Dropdown ;
+			var dropdown = CTMP_Dropdown ;
 			if( dropdown == null )
 			{
 				return false ;
@@ -373,7 +393,7 @@ namespace uGUIHelper
 		{
 			get
 			{
-				TMP_Dropdown dropdown = CTMP_Dropdown ;
+				var dropdown = CTMP_Dropdown ;
 				if( dropdown == null )
 				{
 					return 0 ;
@@ -382,7 +402,7 @@ namespace uGUIHelper
 			}
 			set
 			{
-				TMP_Dropdown dropdown = CTMP_Dropdown ;
+				var dropdown = CTMP_Dropdown ;
 				if( dropdown == null )
 				{
 					return ;
@@ -402,7 +422,7 @@ namespace uGUIHelper
 		{
 			get
 			{
-				TMP_Dropdown dropdown = CTMP_Dropdown ;
+				var dropdown = CTMP_Dropdown ;
 				if( dropdown == null )
 				{
 					return "" ;
@@ -417,7 +437,7 @@ namespace uGUIHelper
 			}
 			set
 			{
-				TMP_Dropdown dropdown = CTMP_Dropdown ;
+				var dropdown = CTMP_Dropdown ;
 				if( dropdown == null )
 				{
 					return ;
@@ -436,7 +456,7 @@ namespace uGUIHelper
 		/// <returns></returns>
 		public string[] GetDataTexts()
 		{
-			TMP_Dropdown dropdown = CTMP_Dropdown ;
+			var dropdown = CTMP_Dropdown ;
 			if( dropdown == null )
 			{
 				return null ;
@@ -449,7 +469,7 @@ namespace uGUIHelper
 
 			int i, l = dropdown.options.Count ;
 
-			string[] dataTexts = new string[ l ] ;
+			var dataTexts = new string[ l ] ;
 
 			for( i  = 0 ; i <  l ; i ++ )
 			{
@@ -466,7 +486,7 @@ namespace uGUIHelper
 		{
 			get
 			{
-				TMP_Dropdown dropdown = CTMP_Dropdown ;
+				var dropdown = CTMP_Dropdown ;
 				if( dropdown == null )
 				{
 					return null ;

@@ -47,13 +47,13 @@ namespace DSW.Screens
 //			Option.Load() ;
 
 			// マスターデータをダウンロードする(CheckVersion で RemoteAssets のパスを取得する必要があるので最初に実行)
-			if( await MasterDataManager.DownloadAsync( false ) == false )
-			{
-				return false ;	// 失敗
-			}
+//			if( await MasterDataManager.DownloadAsync( false ) == false )
+//			{
+//				return false ;	// 失敗
+//			}
 
 			// マスターデータをメモリに展開する
-			await MasterDataManager.LoadAsync() ;
+//			await MasterDataManager.LoadAsync() ;
 
 			//----------------------------------
 
@@ -74,7 +74,7 @@ namespace DSW.Screens
 			// Title想定
 
 			// ログインしてプレイヤーデータを取得する
-			await PlayerDataManager.Login() ;
+//			await PlayerDataManager.Login() ;
 
 			//---------------------------------------------------------
 			// Phase 2

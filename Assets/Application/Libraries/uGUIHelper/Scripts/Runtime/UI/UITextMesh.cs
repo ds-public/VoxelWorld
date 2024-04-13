@@ -1055,7 +1055,7 @@ namespace uGUIHelper
 			{
 				// 単色
 
-				VertexGradient vg =	new VertexGradient()
+				var vg =	new VertexGradient()
 				{
 					topLeft		= colors[ 0 ],
 					topRight	= colors[ 0 ],
@@ -1069,7 +1069,7 @@ namespace uGUIHelper
 			if( l == 2 || l == 3 )
 			{
 				// 上下
-				VertexGradient vg =	new VertexGradient()
+				var vg =	new VertexGradient()
 				{
 					topLeft		= colors[ 0 ],
 					topRight	= colors[ 0 ],
@@ -1083,7 +1083,7 @@ namespace uGUIHelper
 			if( l >= 4 )
 			{
 				// 全体
-				VertexGradient vg =	new VertexGradient()
+				var vg =	new VertexGradient()
 				{
 					topLeft		= colors[ 0 ],
 					topRight	= colors[ 1 ],
@@ -1161,11 +1161,11 @@ namespace uGUIHelper
 			else
 			{
 				textMesh.font = defaultFontAsset ;
-			}
 
-			if( defaultFontMaterial != null )
-			{
-				textMesh.fontMaterial = defaultFontMaterial ; 
+				if( defaultFontMaterial != null )
+				{
+					textMesh.fontMaterial = defaultFontMaterial ; 
+				}
 			}
 
 			if( defaultFontSize <= 0 )
@@ -2137,7 +2137,7 @@ namespace uGUIHelper
 			//----------------------------------------------------------
 
 			// 文字単位にバラす
-			List<List<CodeData>>	lineCodes = new List<List<CodeData>>() ;
+			List<List<CodeData>>	lineCodes = new () ;
 			List<CodeData> codes ;
 
 			bool isControl ;
@@ -2529,7 +2529,7 @@ namespace uGUIHelper
 							if( t >  o )
 							{
 								// ルビなしのワードがある
-								word = s.Substring( o, t - o ) ;
+								word = s[ o..t ] ;
 								units.Add( new UnitData(){ Word = word, Ruby = null } ) ;
 							}
 
@@ -2546,7 +2546,7 @@ namespace uGUIHelper
 							if( t >  o )
 							{
 								// ルビ対象のワードが存在する場合のみ有効
-								word = s.Substring( o, t - o ) ;
+								word = s[ o..t ] ;
 								units.Add( new UnitData(){ Word = word, Ruby = ruby } ) ;
 							}
 
@@ -2563,7 +2563,7 @@ namespace uGUIHelper
 				if( t >  o )
 				{
 					// 最後のワードがある
-					word = s.Substring( o, t - o ) ;
+					word = s[ o..t ] ;
 					units.Add( new UnitData(){ Word = word, Ruby = null } ) ;
 				}
 			}
@@ -2589,8 +2589,7 @@ namespace uGUIHelper
 			//---------------------------------------------------------
 			// 再び文字列を生成する
 
-			StringBuilder sb = new StringBuilder() ;
-
+			var sb = new StringBuilder() ;
 
 			float s0, s1 ;
 			string rubyScale = ( ( int )( m_RubyScale * 100.0f ) ).ToString() + "%" ;
@@ -2685,7 +2684,7 @@ namespace uGUIHelper
 						{
 							// 決定
 							o = i ;
-							value = s.Substring( p, i - p ) ;
+							value = s[ p..i ] ;
 
 							if( string.IsNullOrEmpty( value ) == false )
 							{
@@ -2703,7 +2702,7 @@ namespace uGUIHelper
 							{
 								// 決定
 								o = i + 1 ;
-								value = s.Substring( p, i - p ) ;
+								value = s[ p..i ] ;
 
 								if( string.IsNullOrEmpty( value ) == false )
 								{
@@ -2713,7 +2712,6 @@ namespace uGUIHelper
 								{
 									return string.Empty ;	// 値が空文字
 								}
-
 							}
 						}
 					}

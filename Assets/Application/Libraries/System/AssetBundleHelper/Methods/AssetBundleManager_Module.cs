@@ -534,10 +534,7 @@ namespace AssetBundleHelper
 							//------------------------------
 
 							// バッファスタックが生成されていなければ生成する
-							if( m_WritingBuffers == null )
-							{
-								m_WritingBuffers  = new List<WritingBuffer>() ;
-							}
+							m_WritingBuffers ??= new List<WritingBuffer>() ;
 
 							// バッファスタックに貯める
 							m_WritingBuffers.Add( writingBuffer ) ;
@@ -834,7 +831,7 @@ namespace AssetBundleHelper
 				//---------------------------------------------------------
 				// HTTP ヘッダーの設定
 
-				Dictionary<string,string> header = new Dictionary<string, string>()
+				var header = new Dictionary<string, string>()
 				{
 					// バイト配列通信限定
 					{  "Content-Type", "application/octet-stream" }
@@ -1002,10 +999,10 @@ namespace AssetBundleHelper
 					// 直接ストレージへ保存しないケース(一括)
 
 					// ファイルストリームの操作を終了する
-					if( downloadHandler != null )
-					{
-						downloadHandler.Close() ;
-					}
+//					if( downloadHandler != null )
+//					{
+						downloadHandler?.Close() ;
+//					}
 
 					//--------------------------------
 
@@ -1108,7 +1105,7 @@ namespace AssetBundleHelper
 						// 失敗
 
 						// ゴミファイルがあれば削除する
-						if( StorageAccessor_Exists( storagePath ) == StorageAccessor.Target.File )
+						if( StorageAccessor_Exists( storagePath ) == StorageAccessor.TargetTypes.File )
 						{
 							StorageAccessor_Remove( storagePath ) ;
 						}

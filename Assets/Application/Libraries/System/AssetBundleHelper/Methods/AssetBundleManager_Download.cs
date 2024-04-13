@@ -49,11 +49,11 @@ namespace AssetBundleHelper
 
 		private string GetUri_Private( string path )
 		{
-			if( GetManifestNameAndAssetBundleName( path, out string manifestName, out string assetBundlePath, out _ ) == true )
+			if( GetManifestNameAndAssetBundleName( path, out string manifestName, out string assetBundlePath, out string assetPath ) == true )
 			{
 				if( string.IsNullOrEmpty( manifestName ) == false && m_ManifestHash.ContainsKey( manifestName ) == true )
 				{
-					if( string.IsNullOrEmpty( assetBundlePath ) == false )
+					if( string.IsNullOrEmpty( assetBundlePath ) == false && m_ManifestHash[ manifestName ].CorrectPath( ref assetBundlePath, ref assetPath ) == true )
 					{
 						return m_ManifestHash[ manifestName ].GetUri( assetBundlePath ) ;
 					}
@@ -79,7 +79,7 @@ namespace AssetBundleHelper
 				return null ;
 			}
 
-			Request request = new Request( m_Instance ) ;
+			var request = new Request( m_Instance ) ;
 			m_Instance.StartCoroutine( m_Instance.DownloadAssetBundleAsync_Private( path, keep, onProgress, onResult, isManifestSaving, request ) ) ;
 			return request ;
 		}
@@ -89,11 +89,11 @@ namespace AssetBundleHelper
 		{
 			string message = string.Empty ;
 
-			if( GetManifestNameAndAssetBundleName( path, out string manifestName, out string assetBundlePath, out _ ) == true )
+			if( GetManifestNameAndAssetBundleName( path, out string manifestName, out string assetBundlePath, out string assetPath ) == true )
 			{
 				if( string.IsNullOrEmpty( manifestName ) == false && m_ManifestHash.ContainsKey( manifestName ) == true )
 				{
-					if( string.IsNullOrEmpty( assetBundlePath ) == false )
+					if( string.IsNullOrEmpty( assetBundlePath ) == false && m_ManifestHash[ manifestName ].CorrectPath( ref assetBundlePath, ref assetPath ) == true )
 					{
 						yield return StartCoroutine( m_ManifestHash[ manifestName ].DownloadAssetBundle_Coroutine
 						(
@@ -140,7 +140,7 @@ namespace AssetBundleHelper
 				return null ;
 			}
 
-			Request request = new Request( m_Instance ) ;
+			var request = new Request( m_Instance ) ;
 			m_Instance.StartCoroutine( m_Instance.DownloadAssetBundlesAsync_Private( entities, parallel, onPregress, onResult, isAllManifestsSaving, request ) ) ;
 			return request ;
 		}
@@ -310,10 +310,10 @@ namespace AssetBundleHelper
 				// 注意:エラーが発生したら一旦通信中のものが全て終了するのを待って呼び出し元で最初からリトライするかリブートするか判断してもらう(既に通信に成功しているものはダウンロードはスキップされる)
 
 				// ダウンロード中のアセットバンドル情報
-				Dictionary<string,ProcessingEntity> processingEntities = new Dictionary<string,ProcessingEntity>() ;
+				var processingEntities = new Dictionary<string,ProcessingEntity>() ;
 
 				// 発生中のエラー
-				List<string> errors = new List<string>() ;
+				var errors = new List<string>() ;
 			
 				//----------------------------------------------------------
 				// ダウンロードを行う
@@ -484,11 +484,11 @@ namespace AssetBundleHelper
 		// シンプルにアセットバンドルをダウンロードする
 		private IEnumerator DownloadExecute_Private( string path, bool keep, Action<string,long,float,float> onProgress, Action<string,long,string> onResult )
 		{
-			if( GetManifestNameAndAssetBundleName( path, out string manifestName, out string assetBundlePath, out _ ) == true )
+			if( GetManifestNameAndAssetBundleName( path, out string manifestName, out string assetBundlePath, out string assetPath ) == true )
 			{
 				if( string.IsNullOrEmpty( manifestName ) == false && m_ManifestHash.ContainsKey( manifestName ) == true )
 				{
-					if( string.IsNullOrEmpty( assetBundlePath ) == false )
+					if( string.IsNullOrEmpty( assetBundlePath ) == false && m_ManifestHash[ manifestName ].CorrectPath( ref assetBundlePath, ref assetPath ) == true )
 					{
 						yield return StartCoroutine
 						(

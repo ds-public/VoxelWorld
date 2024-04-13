@@ -75,7 +75,7 @@ namespace DSW.World
 
 			int offset = 0 ;
 
-			if( StorageAccessor.Exists( m_CSAT_Path ) == StorageAccessor.Target.File )
+			if( StorageAccessor.Exists( m_CSAT_Path ) == StorageAccessor.TargetTypes.File )
 			{
 				byte[] data = StorageAccessor.Load( m_CSAT_Path ) ;
 

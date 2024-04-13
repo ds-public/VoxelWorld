@@ -1,17 +1,18 @@
 #if UNITY_EDITOR
 
+using System.Collections.Generic ;
 using UnityEngine ;
 using UnityEngine.UI ;
 using UnityEngine.U2D ;
 using UnityEditor ;
-using System.Collections.Generic ;
 
 using TMPro ;
+
 
 namespace uGUIHelper
 {
 	/// <summary>
-	/// UIView のインスペクタークラス
+	/// UIView のインスペクタークラス(引数の true は継承クラスでも有効にするかどうか)
 	/// </summary>
 	[ CustomEditor( typeof( UIView ), true ) ]
 	public class UIViewInspector : Editor
@@ -41,7 +42,7 @@ namespace uGUIHelper
 			EditorGUIUtility.fieldWidth =  40f ;
 
 			GUI.backgroundColor = Color.cyan ;
-			string identity = EditorGUILayout.TextField( "Identity", view.Identity ) ;
+			string identity = EditorGUILayout.TextField( new GUIContent( "Identity", "任意で指定する、このビューの<color=#00FF00>識別名</color>です\n省略すると<color=#00FFFF>gameObject.name</color>が使用されます" ), view.Identity ) ;
 			GUI.backgroundColor = Color.white ;
 			if( identity != view.Identity )
 			{
@@ -54,7 +55,7 @@ namespace uGUIHelper
 			EditorGUIUtility.fieldWidth =  40f ;
 
 			// タイムスケール
-			float timeScale = EditorGUILayout.FloatField( "TimeScale", view.TimeScale ) ;
+			float timeScale = EditorGUILayout.FloatField( new GUIContent( "TimeScale", "<color=#00FFFF>PlayTween</color>メソッドや<color=#00FFFF>PlayAnimator</color>メソッドの\n<color=#00FF00>再生速度に乗算</color>されます" ), view.TimeScale ) ;
 			if( timeScale != view.TimeScale )
 			{
 				Undo.RecordObject( view, "UIView : TimeScale Change" ) ;	// アンドウバッファに登録
@@ -69,6 +70,23 @@ namespace uGUIHelper
 
 			// イベントトリガーを有効にするかどうか
 //			DrawEventTrigger( view ) ;
+
+			//----------------------------------
+
+			GUILayout.BeginHorizontal() ;	// 横並び
+			{
+				bool setPivotToCenter = EditorGUILayout.Toggle( view.AutoPivotToCenter, GUILayout.Width( 16f ) ) ;
+				if( setPivotToCenter != view.AutoPivotToCenter )
+				{
+					Undo.RecordObject( view, "UIView : Set Pivot To Center Change" ) ;	// アンドウバッファに登録
+					view.AutoPivotToCenter = setPivotToCenter ;
+					EditorUtility.SetDirty( view ) ;
+				}
+				GUILayout.Label( new GUIContent( "Set Pivot To Center", "<color=#00FFFF>ランタイム実行時</color>に\nピボットを強制的に中心(0.5,0.5)に変更します" ) ) ;
+			}
+			GUILayout.EndHorizontal() ;		// 横並び終了
+
+			//----------------------------------
 
 			// インタラクション
 			DrawInteraction( view ) ;
@@ -111,13 +129,15 @@ namespace uGUIHelper
 			// 子の色
 			DrawChildrenColor( view ) ;
 
-			var g = view.GetComponent<Graphic>() ;
-			if( g != null )
+			if( view.TryGetComponent<Graphic>( out _ ) == true )
 			{
 				EditorGUILayout.Separator() ;	// 少し区切りスペース
 
 				// バックキー
 				DrawBackKey( view ) ;
+
+				// パッドアダプター
+				DrawPadAdapter( view ) ;
 			}
 
 			EditorGUILayout.Separator() ;	// 少し区切りスペース
@@ -191,7 +211,7 @@ namespace uGUIHelper
 					EditorUtility.SetDirty( view ) ;
 					UnityEditor.SceneManagement.EditorSceneManager.MarkSceneDirty( UnityEditor.SceneManagement.EditorSceneManager.GetActiveScene() ) ;
 				}
-				GUILayout.Label( "CanvasGroup" ) ;
+				GUILayout.Label( new GUIContent( "CanvasGroup", "<color=#00FFFF>CanvasGroup</color>コンポーネントを\nこの<color=#00FF00>GameObjectに追加</color>します" ) ) ;
 			}
 			GUILayout.EndHorizontal() ;		// 横並び終了
 
@@ -224,18 +244,18 @@ namespace uGUIHelper
 		}
 
 		// イベントトリガーの生成破棄チェックボックスを描画する
-		protected void DrawEventTrigger( UIView tTarget )
+		protected void DrawEventTrigger( UIView view )
 		{
 			EditorGUILayout.Separator() ;	// 少し区切りスペース
 
 			GUILayout.BeginHorizontal() ;	// 横並び
 			{
-				bool tIsEventTrigger = EditorGUILayout.Toggle( tTarget.IsEventTrigger, GUILayout.Width( 16f ) ) ;
-				if( tIsEventTrigger != tTarget.IsEventTrigger )
+				bool isEventTrigger = EditorGUILayout.Toggle( view.IsEventTrigger, GUILayout.Width( 16f ) ) ;
+				if( isEventTrigger != view.IsEventTrigger )
 				{
-					Undo.RecordObject( tTarget, "UIView : EventTrigger Change" ) ;	// アンドウバッファに登録
-					tTarget.IsEventTrigger = tIsEventTrigger ;
-					EditorUtility.SetDirty( tTarget ) ;
+					Undo.RecordObject( view, "UIView : EventTrigger Change" ) ;	// アンドウバッファに登録
+					view.IsEventTrigger = isEventTrigger ;
+					EditorUtility.SetDirty( view ) ;
 					UnityEditor.SceneManagement.EditorSceneManager.MarkSceneDirty( UnityEditor.SceneManagement.EditorSceneManager.GetActiveScene() ) ;
 				}
 				GUILayout.Label( "EventTrigger" ) ;
@@ -244,101 +264,98 @@ namespace uGUIHelper
 		}
 
 		// インタラクションの生成破棄チェックボックスを描画する
-		protected void DrawInteraction( UIView tTarget )
+		protected void DrawInteraction( UIView view )
 		{
 			EditorGUILayout.Separator() ;	// 少し区切りスペース
 
 			GUILayout.BeginHorizontal() ;	// 横並び
 			{
-				bool tIsInteraction = EditorGUILayout.Toggle( tTarget.IsInteraction, GUILayout.Width( 16f ) ) ;
-				if( tIsInteraction != tTarget.IsInteraction )
+				bool isInteraction = EditorGUILayout.Toggle( view.IsInteraction, GUILayout.Width( 16f ) ) ;
+				if( isInteraction != view.IsInteraction )
 				{
-					Undo.RecordObject( tTarget, "UIView : Interaction Change" ) ;	// アンドウバッファに登録
-					tTarget.IsInteraction = tIsInteraction ;
-					EditorUtility.SetDirty( tTarget ) ;
+					Undo.RecordObject( view, "UIView : Interaction Change" ) ;	// アンドウバッファに登録
+					view.IsInteraction = isInteraction ;
+					EditorUtility.SetDirty( view ) ;
 					UnityEditor.SceneManagement.EditorSceneManager.MarkSceneDirty( UnityEditor.SceneManagement.EditorSceneManager.GetActiveScene() ) ;
 				}
-				GUILayout.Label( "Interaction" ) ;
-			}
-			GUILayout.EndHorizontal() ;		// 横並び終了
+				GUILayout.Label( new GUIContent( "Interaction", "<color=#00FFFF>UIInteraction</color>コンポーネントを\nこの<color=#00FF00>GameObjectに追加</color>します\n各種インタラクションの<color=#00FFFF>コールバックを受け取れる</color>ようになります\n<color=#00FF00>OnClick OnSmartClick OnSimpleClick OnPress OnSimplePress OnDrag OnFlick ...</color>\n<color=#FFFF00>※ RaycastTarget が有効になっている必要があります</color>" ) ) ;
 
-			GUILayout.BeginHorizontal() ;	// 横並び
-			{
-				bool tIsInteractionForScrollView = EditorGUILayout.Toggle( tTarget.IsInteractionForScrollView, GUILayout.Width( 16f ) ) ;
-				if( tIsInteractionForScrollView != tTarget.IsInteractionForScrollView )
+				//-------------
+
+				bool isInteractionForScrollView = EditorGUILayout.Toggle( view.IsInteractionForScrollView, GUILayout.Width( 16f ) ) ;
+				if( isInteractionForScrollView != view.IsInteractionForScrollView )
 				{
-					Undo.RecordObject( tTarget, "UIView : Interaction For ScrollView Change" ) ;	// アンドウバッファに登録
-					tTarget.IsInteractionForScrollView = tIsInteractionForScrollView ;
-					EditorUtility.SetDirty( tTarget ) ;
+					Undo.RecordObject( view, "UIView : Interaction For ScrollView Change" ) ;	// アンドウバッファに登録
+					view.IsInteractionForScrollView = isInteractionForScrollView ;
+					EditorUtility.SetDirty( view ) ;
 					UnityEditor.SceneManagement.EditorSceneManager.MarkSceneDirty( UnityEditor.SceneManagement.EditorSceneManager.GetActiveScene() ) ;
 				}
-				GUILayout.Label( "Interaction For ScrollView" ) ;
+				GUILayout.Label( new GUIContent( "Interaction For ScrollView", "<color=#00FFFF>InteractionForScrollView</color>コンポーネントを\nこの<color=#00FF00>GameObjectに追加</color>します\n各種インタラクションの<color=#00FFFF>コールバックを受け取れる</color>ようになります\n<color=#00FF00>OnClick OnSmartClick OnSimpleClick OnPress OnSimplePress OnDrag OnFlick ...</color>\nScrollViewやListViewの項目内で使用する事が推奨されます\nインタラクションの反応を良くします\n<color=#FFFF00>※ RaycastTarget が有効になっている必要があります</color>" ) ) ;
 			}
 			GUILayout.EndHorizontal() ;		// 横並び終了
-
 		}
 
 		// トランジションの生成破棄チェックボックスを描画する
-		protected void DrawTransition( UIView tTarget )
+		protected void DrawTransition( UIView view )
 		{
 			EditorGUILayout.Separator() ;	// 少し区切りスペース
 
 			GUILayout.BeginHorizontal() ;	// 横並び
 			{
-				bool tIsTransition = EditorGUILayout.Toggle( tTarget.IsTransition, GUILayout.Width( 16f ) ) ;
-				if( tIsTransition != tTarget.IsTransition )
+				bool isTransition = EditorGUILayout.Toggle( view.IsTransition, GUILayout.Width( 16f ) ) ;
+				if( isTransition != view.IsTransition )
 				{
-					Undo.RecordObject( tTarget, "UIView : Transition Change" ) ;	// アンドウバッファに登録
-					tTarget.IsTransition = tIsTransition ;
-					EditorUtility.SetDirty( tTarget ) ;
+					Undo.RecordObject( view, "UIView : Transition Change" ) ;	// アンドウバッファに登録
+					view.IsTransition = isTransition ;
+					EditorUtility.SetDirty( view ) ;
 					UnityEditor.SceneManagement.EditorSceneManager.MarkSceneDirty( UnityEditor.SceneManagement.EditorSceneManager.GetActiveScene() ) ;
 				}
-				GUILayout.Label( "Transition" ) ;
+				GUILayout.Label( new GUIContent( "Transition", "<color=#00FFFF>UITransition</color>コンポーネントを\nこの<color=#00FF00>GameObjectに追加</color>します\nこのビューに対してインタラクションを行った際に\n<color=#00FFFF>スケーリングアニメーション</color>を追加します" ) ) ;
 			}
 			GUILayout.EndHorizontal() ;		// 横並び終了
 		}
 
 		// レクトマスク２Ｄの生成破棄チェックボックスを描画する
-		protected void DrawRectMask2D( UIView tTarget )
+		protected void DrawRectMask2D( UIView view )
 		{
 			// オブジェクトの維持フラグ
 			GUILayout.BeginHorizontal() ;	// 横並び
 			{
-				bool tIsRectMask2D = EditorGUILayout.Toggle( tTarget.IsRectMask2D, GUILayout.Width( 16f ) ) ;
-				if( tIsRectMask2D != tTarget.IsRectMask2D )
+				bool isRectMask2D = EditorGUILayout.Toggle( view.IsRectMask2D, GUILayout.Width( 16f ) ) ;
+				if( isRectMask2D != view.IsRectMask2D )
 				{
-					Undo.RecordObject( tTarget, "UIView : RectMask2D Change" ) ;	// アンドウバッファに登録
-					tTarget.IsRectMask2D = tIsRectMask2D ;
-					EditorUtility.SetDirty( tTarget ) ;
+					Undo.RecordObject( view, "UIView : RectMask2D Change" ) ;	// アンドウバッファに登録
+					view.IsRectMask2D = isRectMask2D ;
+					EditorUtility.SetDirty( view ) ;
 					UnityEditor.SceneManagement.EditorSceneManager.MarkSceneDirty( UnityEditor.SceneManagement.EditorSceneManager.GetActiveScene() ) ;
 				}
-				GUILayout.Label( "RectMask2D" ) ;
+				GUILayout.Label( new GUIContent( "RectMask2D", "<color=#00FFFF>RectMask2D</color>コンポーネントを\nこの<color=#00FF00>GameObjectに追加</color>します" ) ) ;
 			}
 			GUILayout.EndHorizontal() ;		// 横並び終了
 		}
 
 		// アルファマスクの生成破棄チェックボックスを描画する
-		protected void DrawAlphaMask( UIView tTarget )
+		protected void DrawAlphaMask( UIView view )
 		{
 			// オブジェクトの維持フラグ
 			GUILayout.BeginHorizontal() ;	// 横並び
 			{
-				bool tIsAlphaMaskWindow = EditorGUILayout.Toggle( tTarget.IsAlphaMaskWindow, GUILayout.Width( 16f ) ) ;
-				if( tIsAlphaMaskWindow != tTarget.IsAlphaMaskWindow )
+				bool isAlphaMaskWindow = EditorGUILayout.Toggle( view.IsAlphaMaskWindow, GUILayout.Width( 16f ) ) ;
+				if( isAlphaMaskWindow != view.IsAlphaMaskWindow )
 				{
-					Undo.RecordObject( tTarget, "UIView : AlphaMaskWindow Change" ) ;	// アンドウバッファに登録
-					tTarget.IsAlphaMaskWindow = tIsAlphaMaskWindow ;
-					EditorUtility.SetDirty( tTarget ) ;
+					Undo.RecordObject( view, "UIView : AlphaMaskWindow Change" ) ;	// アンドウバッファに登録
+					view.IsAlphaMaskWindow = isAlphaMaskWindow ;
+					EditorUtility.SetDirty( view ) ;
 					UnityEditor.SceneManagement.EditorSceneManager.MarkSceneDirty( UnityEditor.SceneManagement.EditorSceneManager.GetActiveScene() ) ;
 				}
 				GUILayout.Label( "AlphaMaskWindow" ) ;
 
-				bool tIsAlphaMaskTarget = EditorGUILayout.Toggle( tTarget.IsAlphaMaskTarget, GUILayout.Width( 16f ) ) ;
-				if( tIsAlphaMaskTarget != tTarget.IsAlphaMaskTarget )
+				bool isAlphaMaskTarget = EditorGUILayout.Toggle( view.IsAlphaMaskTarget, GUILayout.Width( 16f ) ) ;
+				if( isAlphaMaskTarget != view.IsAlphaMaskTarget )
 				{
-					Undo.RecordObject( tTarget, "UIView : AlphaMaskTarget Change" ) ;	// アンドウバッファに登録
-					tTarget.IsAlphaMaskTarget = tIsAlphaMaskTarget ;
-					EditorUtility.SetDirty( tTarget ) ;
+					Undo.RecordObject( view, "UIView : AlphaMaskTarget Change" ) ;	// アンドウバッファに登録
+					view.IsAlphaMaskTarget = isAlphaMaskTarget ;
+					EditorUtility.SetDirty( view ) ;
 					UnityEditor.SceneManagement.EditorSceneManager.MarkSceneDirty( UnityEditor.SceneManagement.EditorSceneManager.GetActiveScene() ) ;
 				}
 				GUILayout.Label( "AlphaMaskTarget" ) ;
@@ -360,7 +377,7 @@ namespace uGUIHelper
 					EditorUtility.SetDirty( view ) ;
 					UnityEditor.SceneManagement.EditorSceneManager.MarkSceneDirty( UnityEditor.SceneManagement.EditorSceneManager.GetActiveScene() ) ;
 				}
-				GUILayout.Label( "HorizontalLayoutGroup" ) ;
+				GUILayout.Label( new GUIContent( "HorizontalLayoutGroup", "<color=#00FFFF>HorizontalLayoutGroup</color>コンポーネントを\nこの<color=#00FF00>GameObjectに追加</color>します" ) ) ;
 
 				bool isVerticalLayoutGroup = EditorGUILayout.Toggle( view.IsVerticalLayoutGroup, GUILayout.Width( 16f ) ) ;
 				if( isVerticalLayoutGroup != view.IsVerticalLayoutGroup )
@@ -370,7 +387,7 @@ namespace uGUIHelper
 					EditorUtility.SetDirty( view ) ;
 					UnityEditor.SceneManagement.EditorSceneManager.MarkSceneDirty( UnityEditor.SceneManagement.EditorSceneManager.GetActiveScene() ) ;
 				}
-				GUILayout.Label( "VerticalLayoutGroup" ) ;
+				GUILayout.Label( new GUIContent( "VerticalLayoutGroup", "<color=#00FFFF>VerticalLayoutGroup</color>コンポーネントを\nこの<color=#00FF00>GameObjectに追加</color>します" ) ) ;
 			}
 			GUILayout.EndHorizontal() ;		// 横並び終了
 
@@ -384,7 +401,7 @@ namespace uGUIHelper
 					EditorUtility.SetDirty( view ) ;
 					UnityEditor.SceneManagement.EditorSceneManager.MarkSceneDirty( UnityEditor.SceneManagement.EditorSceneManager.GetActiveScene() ) ;
 				}
-				GUILayout.Label( "GridLayoutGroup" ) ;
+				GUILayout.Label( new GUIContent( "GridLayoutGroup", "<color=#00FFFF>GridLayoutGroup</color>コンポーネントを\nこの<color=#00FF00>GameObjectに追加</color>します" ) ) ;
 			}
 			GUILayout.EndHorizontal() ;		// 横並び終了
 
@@ -398,7 +415,7 @@ namespace uGUIHelper
 					EditorUtility.SetDirty( view ) ;
 					UnityEditor.SceneManagement.EditorSceneManager.MarkSceneDirty( UnityEditor.SceneManagement.EditorSceneManager.GetActiveScene() ) ;
 				}
-				GUILayout.Label( "ContentSizeFitter" ) ;
+				GUILayout.Label( new GUIContent( "ContentSizeFitter", "<color=#00FFFF>ContentSizeFitter</color>コンポーネントを\nこの<color=#00FF00>GameObjectに追加</color>します" ) ) ;
 
 				bool isLayoutElement = EditorGUILayout.Toggle( view.IsLayoutElement, GUILayout.Width( 16f ) ) ;
 				if( isLayoutElement != view.IsLayoutElement )
@@ -408,7 +425,7 @@ namespace uGUIHelper
 					EditorUtility.SetDirty( view ) ;
 					UnityEditor.SceneManagement.EditorSceneManager.MarkSceneDirty( UnityEditor.SceneManagement.EditorSceneManager.GetActiveScene() ) ;
 				}
-				GUILayout.Label( "LayoutElement" ) ;
+				GUILayout.Label( new GUIContent( "LayoutElement", "<color=#00FFFF>LayoutElement</color>コンポーネントを\nこの<color=#00FF00>GameObjectに追加</color>します" ) ) ;
 			}
 			GUILayout.EndHorizontal() ;		// 横並び終了
 		}
@@ -441,6 +458,46 @@ namespace uGUIHelper
 			GUILayout.EndHorizontal() ;		// 横並び終了
 		}
 
+
+		// パッドアダプターの生成破棄チェックボックスを描画する
+		protected void DrawPadAdapter( UIView view )
+		{
+			GUILayout.BeginHorizontal() ;	// 横並び
+			{
+				bool isPadAdapter = EditorGUILayout.Toggle( view.IsPadAdapter, GUILayout.Width( 16f ) ) ;
+				if( isPadAdapter != view.IsPadAdapter )
+				{
+					Undo.RecordObject( view, "UIView : PadAdapter Change" ) ;	// アンドウバッファに登録
+					view.IsPadAdapter = isPadAdapter ;
+					EditorUtility.SetDirty( view ) ;
+					UnityEditor.SceneManagement.EditorSceneManager.MarkSceneDirty( UnityEditor.SceneManagement.EditorSceneManager.GetActiveScene() ) ;
+				}
+				GUILayout.Label( new GUIContent( "PadAdapter", "<color=#00FFFF>UIPadAdapter</color>コンポーネントを\nこの<color=#00FF00>GameObjectに追加</color>します\nこのビューに対してゲームパッドによるインタラクションを行った際\n<color=#00FFFF>コールバックを受け取れる</color>ようになります\n<color=#00FF00>OnPadValueChanged OnPadDown OnPadUp OnPadButtonChanged OnPadButtonDown OnPadButtonUp OnPadAxisChanged OnPadAxisDown OnPadAxisUp</color>" ) ) ;
+			}
+			GUILayout.EndHorizontal() ;		// 横並び終了
+
+			//----------------------------------------------------------
+
+			if( view.IsPadAdapter == true )
+			{
+				GUILayout.BeginHorizontal() ;	// 横並び
+				{
+					GUILayout.Label( " ", GUILayout.Width( 16f ) ) ;
+
+					bool padAutoFocusEnabled = EditorGUILayout.Toggle( view.PadAutoFocusEnabled, GUILayout.Width( 16f ) ) ;
+					if( padAutoFocusEnabled != view.PadAutoFocusEnabled )
+					{
+						Undo.RecordObject( view, "UIView : Pad Auto Focus Enabled Change" ) ;	// アンドウバッファに登録
+						view.PadAutoFocusEnabled = padAutoFocusEnabled ;
+						EditorUtility.SetDirty( view ) ;
+						UnityEditor.SceneManagement.EditorSceneManager.MarkSceneDirty( UnityEditor.SceneManagement.EditorSceneManager.GetActiveScene() ) ;
+					}
+					GUILayout.Label( "Auto Focus Enabled" ) ;
+				}
+				GUILayout.EndHorizontal() ;		// 横並び終了
+			}
+		}
+
 		// アニメーターの生成破棄チェックボックスを描画する
 		protected void DrawAnimator( UIView view )
 		{
@@ -454,7 +511,7 @@ namespace uGUIHelper
 					EditorUtility.SetDirty( view ) ;
 					UnityEditor.SceneManagement.EditorSceneManager.MarkSceneDirty( UnityEditor.SceneManagement.EditorSceneManager.GetActiveScene() ) ;
 				}
-				GUILayout.Label( "Animator" ) ;
+				GUILayout.Label( new GUIContent( "Animator", "<color=#00FFFF>Animator</color>コンポーネントを\nこの<color=#00FF00>GameObjectに追加</color>します\n<color=#00FFFF>PlayAnimator</color>メソッドを実行する際に必要になります" ) ) ;
 			}
 			GUILayout.EndHorizontal() ;		// 横並び終了
 		}
@@ -462,21 +519,21 @@ namespace uGUIHelper
 		//---------------------------------------------------------------------------
 
 		// Tween の追加と削除
-		private string mAddTweenIdentity = "" ;
-		private int    mRemoveTweenIndex = 0 ;
-		private int    mRemoveTweenIndexAnswer = -1 ;
+		private string m_AddTweenIdentity = "" ;
+		private int    m_RemoveTweenIndex = 0 ;
+		private int    m_RemoveTweenIndexAnswer = -1 ;
 
 		protected void DrawTween( UIView view )
 		{
 			EditorGUILayout.Separator() ;	// 少し区切りスペース
 
 			// 存在している Tween コンポーネントを取得する
-			UITween[] tweens = view.GetComponents<UITween>() ;
+			var tweens = view.GetComponents<UITween>() ;
 
 			// １つ以上存在していればリストとして描画する
 			int i, l = tweens.Length, j, c ;
 			string identity ;
-			string[] tweenIdentities = new string[ l ] ;
+			var tweenIdentities = new string[ l ] ;
 			for( i  = 0 ; i <  l ; i ++ )
 			{
 				tweenIdentities[ i ] = tweens[ i ].Identity ;
@@ -500,33 +557,33 @@ namespace uGUIHelper
 
 			//----------------------------------------------------
 
-			if( mRemoveTweenIndexAnswer <  0 )
+			if( m_RemoveTweenIndexAnswer <  0 )
 			{
 				GUILayout.BeginHorizontal() ;	// 横並び開始
 				{
 					bool isAdd = false ;
 
 					GUI.backgroundColor = Color.cyan ;
-					if( GUILayout.Button( "Add Tween", GUILayout.Width( 140f ) ) == true )
+					if( GUILayout.Button( new GUIContent( "Add Tween", "<color=#00FFFF>UITween</color>コンポーネントを\nこの<color=#00FF00>GameObjectに追加</color>します\n<color=#00FFFF>PlayTween</color>メソッドにより、このビューのトゥイーンアニメーションを行う事が出来ます" ), GUILayout.Width( 140f ) ) == true )
 					{
 						isAdd = true ;
 					}
 					GUI.backgroundColor = Color.white ;
 
 					GUI.backgroundColor = Color.cyan ;
-					mAddTweenIdentity = EditorGUILayout.TextField( "", mAddTweenIdentity, GUILayout.Width( 120f ) ) ;
+					m_AddTweenIdentity = EditorGUILayout.TextField( "", m_AddTweenIdentity, GUILayout.Width( 120f ) ) ;
 					GUI.backgroundColor = Color.white ;
 
 					if( isAdd == true )
 					{
-						if( string.IsNullOrEmpty( mAddTweenIdentity ) == false )
+						if( string.IsNullOrEmpty( m_AddTweenIdentity ) == false )
 						{
 							// Tween を追加する
-							UITween tween = view.AddComponent<UITween>() ;
-							tween.Identity = mAddTweenIdentity ;
+							var tween = view.AddComponent<UITween>() ;
+							tween.Identity = m_AddTweenIdentity ;
 
 							// 追加後の全ての Tween を取得する
-							UITween[] temporaryTweens = view.gameObject.GetComponents<UITween>() ;
+							var temporaryTweens = view.gameObject.GetComponents<UITween>() ;
 							if( temporaryTweens != null && temporaryTweens.Length >  0 )
 							{
 								for( i  = 0 ; i <  temporaryTweens.Length ; i ++ )
@@ -564,16 +621,16 @@ namespace uGUIHelper
 						}
 						GUI.backgroundColor = Color.white ;	// ボタンの下地を緑に
 
-						if( mRemoveTweenIndex >= tweenIdentities.Length )
+						if( m_RemoveTweenIndex >= tweenIdentities.Length )
 						{
-							mRemoveTweenIndex  = tweenIdentities.Length - 1 ;
+							m_RemoveTweenIndex  = tweenIdentities.Length - 1 ;
 						}
-						mRemoveTweenIndex = EditorGUILayout.Popup( "", mRemoveTweenIndex, tweenIdentities, GUILayout.Width( 120f ) ) ;	// フィールド名有りタイプ
+						m_RemoveTweenIndex = EditorGUILayout.Popup( "", m_RemoveTweenIndex, tweenIdentities, GUILayout.Width( 120f ) ) ;	// フィールド名有りタイプ
 
 						if( isRemove == true )
 						{
 							// 削除する
-							mRemoveTweenIndexAnswer = mRemoveTweenIndex ;
+							m_RemoveTweenIndexAnswer = m_RemoveTweenIndex ;
 						}
 					}
 					GUILayout.EndHorizontal() ;		// 横並び終了
@@ -581,7 +638,7 @@ namespace uGUIHelper
 			}
 			else
 			{
-				string message = GetMessage( "RemoveTweenOK?" ).Replace( "%1", tweenIdentities[ mRemoveTweenIndexAnswer ] ) ;
+				var message = GetMessage( "RemoveTweenOK?" ).Replace( "%1", tweenIdentities[ m_RemoveTweenIndexAnswer ] ) ;
 				GUILayout.Label( message ) ;
 	//			GUILayout.Label( "It does really may be to remove tween '" + tTweenIdentityArray[ mRemoveTweenIndexAnswer ] + "' ?" ) ;
 				GUILayout.BeginHorizontal() ;	// 横並び開始
@@ -591,17 +648,17 @@ namespace uGUIHelper
 					{
 						// 本当に削除する
 						Undo.RecordObject( view, "UIView : Tween Remove" ) ;	// アンドウバッファに登録
-						view.RemoveTweenIdentity = tweens[ mRemoveTweenIndexAnswer ].Identity ;
-						view.RemoveTweenInstance = tweens[ mRemoveTweenIndexAnswer ].GetInstanceID() ;
+						view.RemoveTweenIdentity = tweens[ m_RemoveTweenIndexAnswer ].Identity ;
+						view.RemoveTweenInstance = tweens[ m_RemoveTweenIndexAnswer ].GetInstanceID() ;
 						EditorUtility.SetDirty( view ) ;
 						UnityEditor.SceneManagement.EditorSceneManager.MarkSceneDirty( UnityEditor.SceneManagement.EditorSceneManager.GetActiveScene() ) ;
 
-						mRemoveTweenIndexAnswer = -1 ;
+						m_RemoveTweenIndexAnswer = -1 ;
 					}
 					GUI.backgroundColor = Color.white ;
 					if( GUILayout.Button( "Cancel", GUILayout.Width( 100f ) ) == true )
 					{
-						mRemoveTweenIndexAnswer = -1 ;
+						m_RemoveTweenIndexAnswer = -1 ;
 					}
 				}
 				GUILayout.EndHorizontal() ;		// 横並び終了
@@ -611,84 +668,84 @@ namespace uGUIHelper
 		//-----------------------------------------------------------
 
 		// Filipper の追加と削除
-		private string mAddFlipperIdentity = "" ;
-		private int    mRemoveFlipperIndex = 0 ;
-		private int    mRemoveFlipperIndexAnswer = -1 ;
+		private string m_AddFlipperIdentity = "" ;
+		private int    m_RemoveFlipperIndex = 0 ;
+		private int    m_RemoveFlipperIndexAnswer = -1 ;
 
-		protected void DrawFlipper( UIView tTarget )
+		protected void DrawFlipper( UIView view )
 		{
 			EditorGUILayout.Separator() ;	// 少し区切りスペース
 
 			// 存在している Tween コンポーネントを取得する
-			UIFlipper[] tFlipperArray = tTarget.GetComponents<UIFlipper>() ;
+			var flippers = view.GetComponents<UIFlipper>() ;
 
 			// １つ以上存在していればリストとして描画する
-			int i, l = tFlipperArray.Length, j, c ;
-			string tIdentity ;
-			string[] tFlipperIdentityArray = new string[ l ] ;
+			int i, l = flippers.Length, j, c ;
+			string identity ;
+			var flipperIdentities = new string[ l ] ;
 			for( i  = 0 ; i <  l ; i ++ )
 			{
-				tFlipperIdentityArray[ i ] = tFlipperArray[ i ].Identity ;
+				flipperIdentities[ i ] = flippers[ i ].Identity ;
 			}
 			for( i  = 0 ; i <  l ; i ++ )
 			{
 				// 既に同じ名前が存在する場合は番号を振る
-				tIdentity = tFlipperIdentityArray[ i ] ;
+				identity = flipperIdentities[ i ] ;
 
 				c = 0 ;
 				for( j  = i + 1 ; j <  l ; j ++ )
 				{
-					if( tFlipperIdentityArray[ j ] == tIdentity )
+					if( flipperIdentities[ j ] == identity )
 					{
 						// 同じ名前を発見した
 						c ++ ;
-						tFlipperIdentityArray[ j ] = tFlipperIdentityArray[ j ] + "(" + c + ")" ;
+						flipperIdentities[ j ] = flipperIdentities[ j ] + "(" + c + ")" ;
 					}
 				}
 			}
 
 			//----------------------------------------------------
 
-			if( mRemoveFlipperIndexAnswer <  0 )
+			if( m_RemoveFlipperIndexAnswer <  0 )
 			{
 				GUILayout.BeginHorizontal() ;	// 横並び開始
 				{
-					bool tAdd = false ;
+					bool isAdd = false ;
 
 					GUI.backgroundColor = Color.cyan ;
 					if( GUILayout.Button( "Add Flipper", GUILayout.Width( 140f ) ) == true )
 					{
-						tAdd = true ;
+						isAdd = true ;
 					}
 					GUI.backgroundColor = Color.white ;
 
 					GUI.backgroundColor = Color.cyan ;
-					mAddFlipperIdentity = EditorGUILayout.TextField( "", mAddFlipperIdentity, GUILayout.Width( 120f ) ) ;
+					m_AddFlipperIdentity = EditorGUILayout.TextField( "", m_AddFlipperIdentity, GUILayout.Width( 120f ) ) ;
 					GUI.backgroundColor = Color.white ;
 
-					if( tAdd == true )
+					if( isAdd == true )
 					{
-						if( string.IsNullOrEmpty( mAddFlipperIdentity ) == false )
+						if( string.IsNullOrEmpty( m_AddFlipperIdentity ) == false )
 						{
 							// Flipper を追加する
-							UIFlipper tFlipper = tTarget.AddComponent<UIFlipper>() ;
-							tFlipper.Identity = mAddFlipperIdentity ;
+							var flipper = view.AddComponent<UIFlipper>() ;
+							flipper.Identity = m_AddFlipperIdentity ;
 
-							UIFlipper[] tFlipperList = tTarget.gameObject.GetComponents<UIFlipper>() ;
-							if( tFlipperList != null && tFlipperList.Length >  0 )
+							var existingFlippers = view.gameObject.GetComponents<UIFlipper>() ;
+							if( existingFlippers != null && existingFlippers.Length >  0 )
 							{
-								for( i  = 0 ; i <  tFlipperList.Length ; i ++ )
+								for( i  = 0 ; i <  existingFlippers.Length ; i ++ )
 								{
-									if( tFlipperList[ i ] != tFlipper )
+									if( existingFlippers[ i ] != flipper )
 									{
 										break ;
 									}
 								}
-								if( i <  tFlipperList.Length )
+								if( i <  existingFlippers.Length )
 								{
 									// 既にトゥイーンコンポーネントがアタッチされているので enable と PlayOnAwake を false にする
-									tFlipper.enabled = false ;
-									tFlipper.PlayOnAwake = false ;
+									flipper.enabled = false ;
+									flipper.PlayOnAwake = false ;
 								}
 							}
 						}
@@ -700,28 +757,28 @@ namespace uGUIHelper
 				}
 				GUILayout.EndHorizontal() ;		// 横並び終了
 
-				if( tFlipperArray != null && tFlipperArray.Length >  0 )
+				if( flippers != null && flippers.Length >  0 )
 				{
 					GUILayout.BeginHorizontal() ;	// 横並び開始
 					{
-						bool tRemove = false ;
+						bool isRemove = false ;
 						GUI.backgroundColor = Color.red ;	// ボタンの下地を緑に
 						if( GUILayout.Button( "Remove Flipper", GUILayout.Width( 140f ) ) == true )
 						{
-							tRemove = true ;
+							isRemove = true ;
 						}
 						GUI.backgroundColor = Color.white ;	// ボタンの下地を緑に
 
-						if( mRemoveFlipperIndex >= tFlipperIdentityArray.Length )
+						if( m_RemoveFlipperIndex >= flipperIdentities.Length )
 						{
-							mRemoveFlipperIndex  = tFlipperIdentityArray.Length - 1 ;
+							m_RemoveFlipperIndex  = flipperIdentities.Length - 1 ;
 						}
-						mRemoveFlipperIndex = EditorGUILayout.Popup( "", mRemoveFlipperIndex, tFlipperIdentityArray, GUILayout.Width( 120f ) ) ;	// フィールド名有りタイプ
+						m_RemoveFlipperIndex = EditorGUILayout.Popup( "", m_RemoveFlipperIndex, flipperIdentities, GUILayout.Width( 120f ) ) ;	// フィールド名有りタイプ
 
-						if( tRemove == true )
+						if( isRemove == true )
 						{
 							// 削除する
-							mRemoveFlipperIndexAnswer = mRemoveFlipperIndex ;
+							m_RemoveFlipperIndexAnswer = m_RemoveFlipperIndex ;
 						}
 					}
 					GUILayout.EndHorizontal() ;		// 横並び終了
@@ -729,26 +786,26 @@ namespace uGUIHelper
 			}
 			else
 			{
-				string tMessage = GetMessage( "RemoveFlipperOK?" ).Replace( "%1", tFlipperIdentityArray[ mRemoveFlipperIndexAnswer ] ) ;
-				GUILayout.Label( tMessage ) ;
+				var message = GetMessage( "RemoveFlipperOK?" ).Replace( "%1", flipperIdentities[ m_RemoveFlipperIndexAnswer ] ) ;
+				GUILayout.Label( message ) ;
 				GUILayout.BeginHorizontal() ;	// 横並び開始
 				{
 					GUI.backgroundColor = Color.red ;
 					if( GUILayout.Button( "OK", GUILayout.Width( 100f ) ) == true )
 					{
 						// 本当に削除する
-						Undo.RecordObject( tTarget, "UIView : Flipper Remove" ) ;	// アンドウバッファに登録
-						tTarget.RemoveFlipperIdentity = tFlipperArray[ mRemoveFlipperIndexAnswer ].Identity ;
-						tTarget.RemoveFlipperInstance = tFlipperArray[ mRemoveFlipperIndexAnswer ].GetInstanceID() ;
-						EditorUtility.SetDirty( tTarget ) ;
+						Undo.RecordObject( view, "UIView : Flipper Remove" ) ;	// アンドウバッファに登録
+						view.RemoveFlipperIdentity = flippers[ m_RemoveFlipperIndexAnswer ].Identity ;
+						view.RemoveFlipperInstance = flippers[ m_RemoveFlipperIndexAnswer ].GetInstanceID() ;
+						EditorUtility.SetDirty( view ) ;
 						UnityEditor.SceneManagement.EditorSceneManager.MarkSceneDirty( UnityEditor.SceneManagement.EditorSceneManager.GetActiveScene() ) ;
 
-						mRemoveFlipperIndexAnswer = -1 ;
+						m_RemoveFlipperIndexAnswer = -1 ;
 					}
 					GUI.backgroundColor = Color.white ;
 					if( GUILayout.Button( "Cancel", GUILayout.Width( 100f ) ) == true )
 					{
-						mRemoveFlipperIndexAnswer = -1 ;
+						m_RemoveFlipperIndexAnswer = -1 ;
 					}
 				}
 				GUILayout.EndHorizontal() ;		// 横並び終了
@@ -758,9 +815,9 @@ namespace uGUIHelper
 		//--------------------------------------------------------------------------
 
 		// エフェクト系のコンポーネントを追加するかどうか
-		protected void DrawEffect( UIView tTarget )
+		protected void DrawEffect( UIView view )
 		{
-			if( tTarget.GetCanvasRenderer() != null )
+			if( view.GetCanvasRenderer() != null )
 			{
 				EditorGUILayout.Separator() ;	// 少し区切りスペース
 
@@ -769,38 +826,37 @@ namespace uGUIHelper
 
 				GUILayout.BeginHorizontal() ;	// 横並び
 				{
-					bool tIsMask = EditorGUILayout.Toggle( tTarget.IsMask, GUILayout.Width( 16f ) ) ;
-					if( tIsMask != tTarget.IsMask )
+					bool isMask = EditorGUILayout.Toggle( view.IsMask, GUILayout.Width( 16f ) ) ;
+					if( isMask != view.IsMask )
 					{
-						Undo.RecordObject( tTarget, "UIView : Mask Change" ) ;	// アンドウバッファに登録
-						tTarget.IsMask = tIsMask ;
-						EditorUtility.SetDirty( tTarget ) ;
+						Undo.RecordObject( view, "UIView : Mask Change" ) ;	// アンドウバッファに登録
+						view.IsMask = isMask ;
+						EditorUtility.SetDirty( view ) ;
 					}
-					GUILayout.Label( "Mask" ) ;
+					GUILayout.Label( new GUIContent( "Mask", "<color=#00FFFF>Mask</color>コンポーネントを\nこの<color=#00FF00>GameObjectに追加</color>します" ) ) ;
 
-					bool tIsInversion = EditorGUILayout.Toggle( tTarget.IsInversion, GUILayout.Width( 16f ) ) ;
-					if( tIsInversion != tTarget.IsInversion )
+					bool isInversion = EditorGUILayout.Toggle( view.IsInversion, GUILayout.Width( 16f ) ) ;
+					if( isInversion != view.IsInversion )
 					{
-						Undo.RecordObject( tTarget, "UIView : Inversion Change" ) ;	// アンドウバッファに登録
-						tTarget.IsInversion = tIsInversion ;
-						EditorUtility.SetDirty( tTarget ) ;
+						Undo.RecordObject( view, "UIView : Inversion Change" ) ;	// アンドウバッファに登録
+						view.IsInversion = isInversion ;
+						EditorUtility.SetDirty( view ) ;
 					}
-					GUILayout.Label( "Inversion" ) ;
-
+					GUILayout.Label( new GUIContent( "Inversion", "<color=#00FFFF>UIInversion</color>コンポーネントを\nこの<color=#00FF00>GameObjectに追加</color>します\nこのビューで表示される<color=#00FFFF>スプライト・テクスチャ</color>を\n<color=#00FF00>左右上下の反転</color>や<color=#00FF00>90度単位の回転</color>を行って表示します" ) ) ;
 				}
 				GUILayout.EndHorizontal() ;		// 横並び終了
 
 
 				//-----------------------------------------------------------------------------------------
 
-				bool tShow = true ;
+				bool isShow = true ;
 
-				if( tTarget.GetComponent<TextMeshProUGUI>() != null )
+				if( view.GetComponent<TextMeshProUGUI>() != null )
 				{
-					tShow = false ;
+					isShow = false ;
 				}
 
-				if( tShow == true )
+				if( isShow == true )
 				{
 					EditorGUIUtility.labelWidth =  60f ;
 					EditorGUIUtility.fieldWidth =  40f ;
@@ -809,31 +865,30 @@ namespace uGUIHelper
 					{
 		//				GUILayout.Label( "UI Effect" ) ;
 
-						bool tIsShadow = EditorGUILayout.Toggle( tTarget.IsShadow, GUILayout.Width( 16f ) ) ;
-						if( tIsShadow != tTarget.IsShadow )
+						bool isShadow = EditorGUILayout.Toggle( view.IsShadow, GUILayout.Width( 16f ) ) ;
+						if( isShadow != view.IsShadow )
 						{
-							Undo.RecordObject( tTarget, "UIView : Shadow Change" ) ;	// アンドウバッファに登録
-							tTarget.IsShadow = tIsShadow ;
-							EditorUtility.SetDirty( tTarget ) ;
+							Undo.RecordObject( view, "UIView : Shadow Change" ) ;	// アンドウバッファに登録
+							view.IsShadow = isShadow ;
+							EditorUtility.SetDirty( view ) ;
 						}
 						GUILayout.Label( "Shadow" ) ;
 
-						bool tIsOutline = EditorGUILayout.Toggle( tTarget.IsOutline, GUILayout.Width( 16f ) ) ;
-						if( tIsOutline != tTarget.IsOutline )
+						bool isOutline = EditorGUILayout.Toggle( view.IsOutline, GUILayout.Width( 16f ) ) ;
+						if( isOutline != view.IsOutline )
 						{
-							Undo.RecordObject( tTarget, "UIView : Outline Change" ) ;	// アンドウバッファに登録
-							tTarget.IsOutline = tIsOutline ;
-							EditorUtility.SetDirty( tTarget ) ;
+							Undo.RecordObject( view, "UIView : Outline Change" ) ;	// アンドウバッファに登録
+							view.IsOutline = isOutline ;
+							EditorUtility.SetDirty( view ) ;
 						}
 						GUILayout.Label( "Outline" ) ;
 
-
-						bool tIsGradient = EditorGUILayout.Toggle( tTarget.IsGradient, GUILayout.Width( 16f ) ) ;
-						if( tIsGradient != tTarget.IsGradient )
+						bool isGradient = EditorGUILayout.Toggle( view.IsGradient, GUILayout.Width( 16f ) ) ;
+						if( isGradient != view.IsGradient )
 						{
-							Undo.RecordObject( tTarget, "UIView : Gradient Change" ) ;	// アンドウバッファに登録
-							tTarget.IsGradient = tIsGradient ;
-							EditorUtility.SetDirty( tTarget ) ;
+							Undo.RecordObject( view, "UIView : Gradient Change" ) ;	// アンドウバッファに登録
+							view.IsGradient = isGradient ;
+							EditorUtility.SetDirty( view ) ;
 						}
 						GUILayout.Label( "Gradient" ) ;
 					}
@@ -909,7 +964,7 @@ namespace uGUIHelper
 						EditorUtility.SetDirty( view ) ;
 					}
 
-					Color interpolationColor = new Color( view.InterpolationColor.r, view.InterpolationColor.g, view.InterpolationColor.b, view.InterpolationColor.a ) ;
+					var interpolationColor = new Color( view.InterpolationColor.r, view.InterpolationColor.g, view.InterpolationColor.b, view.InterpolationColor.a ) ;
 					interpolationColor = EditorGUILayout.ColorField( "Interpolation Color", interpolationColor ) ;
 					if( interpolationColor.Equals( view.InterpolationColor ) == false )
 					{
@@ -968,7 +1023,7 @@ namespace uGUIHelper
 					view.IsApplyColorToChildren = isApplyColorToChildren ;
 					EditorUtility.SetDirty( view ) ;
 				}
-				GUILayout.Label( "Is Apply Color To Children" ) ;
+				GUILayout.Label( new GUIContent( "Is Apply Color To Children", "このビューでのランタイム実行中の<color=#00FFFF>カラー変化を子ビューにも反映</color>させます\n<color=#FFFF00>例としては、ボタン押下時やインタラクション無効化時のカラー変化です</color>" ) ) ;
 			}
 			GUILayout.EndHorizontal() ;     // 横並び終了
 
@@ -990,7 +1045,7 @@ namespace uGUIHelper
 				if( view.EffectiveColorReplacing == false )
 				{
 					// 影響色
-					Color effectiveColor = new Color( view.EffectiveColor.r, view.EffectiveColor.g, view.EffectiveColor.b, view.EffectiveColor.a ) ;
+					var effectiveColor = new Color( view.EffectiveColor.r, view.EffectiveColor.g, view.EffectiveColor.b, view.EffectiveColor.a ) ;
 					effectiveColor = EditorGUILayout.ColorField( "Effective Color", effectiveColor ) ;
 					if( effectiveColor.Equals( view.EffectiveColor ) == false )
 					{
@@ -1028,7 +1083,7 @@ namespace uGUIHelper
 					view.BackKeyEnabled = backKeyEnabled ;
 					EditorUtility.SetDirty( view ) ;
 				}
-				GUILayout.Label( "Back Key Enabled" ) ;
+				GUILayout.Label( new GUIContent( "Back Key Enabled", "<color=#00FFFF>Androidバックキー(ESCキー)</color>が押された際に\n<color=#00FF00>OnClick OnSimpleClick</color>コールバックを呼び出すようにします\n<color=#FFFF00>※UIInteractionコンポーネント及びRaycastTargetの有効化が必要です</color>" ) ) ;
 
 				if( view.BackKeyEnabled == true )
 				{
@@ -1061,7 +1116,7 @@ namespace uGUIHelper
 			//----------------------------------------------------------
 
 			// スプライトアトラス
-			SpriteAtlas spriteAtlas = EditorGUILayout.ObjectField( "Sprite Atlas", image.SpriteAtlas, typeof( SpriteAtlas ), false ) as SpriteAtlas ;
+			SpriteAtlas spriteAtlas = EditorGUILayout.ObjectField( new GUIContent( "Sprite Atlas", "<color=#00FFFF>SpriteAtlas</color>アセットを設定します\nランタイム実行中、<color=#00FFFF>SetSpriteInAtlas</color>メソッドを使用する事により\n表示する<color=#00FFFF>Spriteを動的に切り替える</color>事が出来ます" ), image.SpriteAtlas, typeof( SpriteAtlas ), false ) as SpriteAtlas ;
 			if( spriteAtlas != image.SpriteAtlas )
 			{
 				Undo.RecordObject( image, "Sprite Atlas : Change" ) ;	// アンドウバッファに登録
@@ -1096,7 +1151,7 @@ namespace uGUIHelper
 				if( sprites != null && sprites.Length >  0 )
 				{
 					int i, l = sprites.Length ;
-					List<string> spriteNames = new List<string>() ;
+					var spriteNames = new List<string>() ;
 					foreach( var sprite in sprites )
 					{
 						spriteNames.Add( sprite.name ) ;
@@ -1206,7 +1261,7 @@ namespace uGUIHelper
 				if( spriteNames != null && spriteNames.Length >  0 )
 				{
 					// ソートする
-					List<string> sortedSpriteNames = new List<string>() ;
+					var sortedSpriteNames = new List<string>() ;
 
 					int i, l = spriteNames.Length ;
 					for( i  = 0 ; i <  l ; i ++ )
@@ -1235,7 +1290,7 @@ namespace uGUIHelper
 
 					if( indexBase <  0 )
 					{
-						List<string> temporarySpriteNames = new List<string>()
+						var temporarySpriteNames = new List<string>()
 						{
 							"Unknown"
 						} ;
@@ -1274,7 +1329,7 @@ namespace uGUIHelper
 		/// <returns></returns>
 		private Sprite[] GetSprites( SpriteAtlas spriteAtlas )
 		{
-			SerializedObject so = new SerializedObject( spriteAtlas ) ;
+			var so = new SerializedObject( spriteAtlas ) ;
 			if( so == null )
 			{
 				return null ;
@@ -1282,10 +1337,10 @@ namespace uGUIHelper
 
 			//----------------------------------
 
-			List<Sprite> sprites = new List<Sprite>() ;
+			var sprites = new List<Sprite>() ;
 
 			// VSの軽度ワーニングが煩わしいので using は使わず Dispose() を使用 
-			SerializedProperty property = so.GetIterator() ;
+			var property = so.GetIterator() ;
 			while( property != null )
 			{
 				// 有効な参照のみピックアップする
@@ -1321,26 +1376,26 @@ namespace uGUIHelper
 			return sprites.ToArray() ;
 		}
 
-		// いずれ削除する
+		// スプライトセット情報を更新する
 		private void RefreshSpriteSet( UIImage image, Texture atlasTexture )
 		{
-			List<Sprite> targetSprites = new List<Sprite>() ;
+			var targetSprites = new List<Sprite>() ;
 
 			if( atlasTexture != null )
 			{
 				string path = AssetDatabase.GetAssetPath( atlasTexture.GetInstanceID() ) ;
 
 				// テクスチャからパスを取得してマルチタイプスプライトとしてロードする
-				UnityEngine.Object[] allSprites = AssetDatabase.LoadAllAssetsAtPath( path ) ;
+				var allSprites = AssetDatabase.LoadAllAssetsAtPath( path ) ;
 
 				if( allSprites != null && allSprites.Length >  0 )
 				{
 					int i, l = allSprites.Length ;
 					for( i  = 0 ; i <  l ; i ++ )
 					{
-						if( allSprites[ i ] is UnityEngine.Sprite )
+						if( allSprites[ i ] is Sprite )
 						{
-							targetSprites.Add( allSprites[ i ] as UnityEngine.Sprite ) ;
+							targetSprites.Add( allSprites[ i ] as Sprite ) ;
 						}
 					}
 				}
@@ -1348,19 +1403,13 @@ namespace uGUIHelper
 				if( targetSprites.Count >  0 )
 				{
 					// 存在するので更新する
-
-//					UIAtlasSprite tAtlasSprite = UIAtlasSprite.Create() ;
 					image.SpriteSet.ClearSprites() ;
 					image.SpriteSet.SetSprites( targetSprites.ToArray() ) ;
-//					tTarget.atlasSprite = tAtlasSprite ;
 				}
 				else
 				{
 					// 存在しないのでクリアする
-					if(	image.SpriteSet != null )
-					{
-						image.SpriteSet.ClearSprites() ;
-					}
+					image.SpriteSet?.ClearSprites() ;
 				}
 
 				// SpriteAtlas 側を消去する
@@ -1368,35 +1417,32 @@ namespace uGUIHelper
 			}
 			else
 			{
-				if(	image.SpriteSet != null )
-				{
-					image.SpriteSet.ClearSprites() ;
-				}
+				image.SpriteSet?.ClearSprites() ;
 			}
 		}
 
 		//--------------------------------------------------------------------------------
 
 		// 整数タイプの４次元値の表示と選択
-		private Vector4 Float4Field( string tPrefix, float tPrefixLength, string l0, string l1, string l2, string l3, float tCaptionLength, Vector4 vi )
+		private Vector4 Float4Field( string prefix, float prefixLength, string l0, string l1, string l2, string l3, float captionLength, Vector4 vi )
 		{
-			Vector4 vo = new Vector4() ;
+			var vo = new Vector4() ;
 
 			GUILayout.BeginHorizontal() ;	// 横並び
 			{
-				if( string.IsNullOrEmpty( tPrefix ) )
+				if( string.IsNullOrEmpty( prefix ) )
 				{
-					if( tPrefixLength >  0 )
+					if( prefixLength >  0 )
 					{
-						GUILayout.Space( tPrefixLength ) ;        // null なら 82
+						GUILayout.Space( prefixLength ) ;        // null なら 82
 					}
 				}
 				else
 				{
-					GUILayout.Label( tPrefix, GUILayout.Width( tPrefixLength ) ) ;	// null でないなら 74
+					GUILayout.Label( prefix, GUILayout.Width( prefixLength ) ) ;	// null でないなら 74
 				}
 
-				EditorGUIUtility.labelWidth = tCaptionLength ;
+				EditorGUIUtility.labelWidth = captionLength ;
 				EditorGUIUtility.fieldWidth =  50f ;
 
 				vo.x = ( float )EditorGUILayout.FloatField( l0, ( int )vi.x, GUILayout.MinWidth( 10f ) ) ;
@@ -1429,14 +1475,14 @@ namespace uGUIHelper
 
 		//--------------------------------------------------------------------------
 
-		private readonly Dictionary<string,string> m_Japanese_Message = new Dictionary<string, string>()
+		private static readonly Dictionary<string,string> m_Japanese_Message = new ()
 		{
 			{ "RemoveTweenOK?",   "Tween [ %1 ] を削除してもよろしいですか？" },
 			{ "RemoveFlipperOK?", "Flipper [ %1 ] を削除してもよろしいですか？" },
 			{ "EventTriggerNone", "EventTrigger クラスが必要です" },
 			{ "InputIdentity",   "識別子を入力してください" },
 		} ;
-		private readonly Dictionary<string,string> m_English_Message = new Dictionary<string, string>()
+		private static readonly Dictionary<string,string> m_English_Message = new ()
 		{
 			{ "RemoveTweenOK?",   "It does really may be to remove tween %1 ?" },
 			{ "RemoveFlipperOK?", "It does really may be to remove flipper %1 ?" },
@@ -1444,23 +1490,23 @@ namespace uGUIHelper
 			{ "InputIdentity",   "Input identity !" },
 		} ;
 
-		private string GetMessage( string tLabel )
+		private static string GetMessage( string label )
 		{
 			if( Application.systemLanguage == SystemLanguage.Japanese )
 			{
-				if( m_Japanese_Message.ContainsKey( tLabel ) == false )
+				if( m_Japanese_Message.ContainsKey( label ) == false )
 				{
 					return "指定のラベル名が見つかりません" ;
 				}
-				return m_Japanese_Message[ tLabel ] ;
+				return m_Japanese_Message[ label ] ;
 			}
 			else
 			{
-				if( m_English_Message.ContainsKey( tLabel ) == false )
+				if( m_English_Message.ContainsKey( label ) == false )
 				{
 					return "Specifying the label name can not be found" ;
 				}
-				return m_English_Message[ tLabel ] ;
+				return m_English_Message[ label ] ;
 			}
 		}
 	}

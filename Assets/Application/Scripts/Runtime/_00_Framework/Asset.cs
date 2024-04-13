@@ -1062,7 +1062,7 @@ namespace DSW
 			float progress = 0 ;
 			while( true )
 			{
-				var assetRequest = AssetBundleManager.LoadAssetBundleAysnc( path, isRetain, keep ) ;
+				var assetRequest = AssetBundleManager.LoadAssetBundleAsync( path, isRetain, keep ) ;
 				while( true )
 				{
 					if( progress != assetRequest.Progress )
@@ -1342,7 +1342,7 @@ namespace DSW
 				return null ;
 			}
 
-			Dictionary<string,Sprite> spriteSet = new Dictionary<string, Sprite>() ;
+			var spriteSet = new Dictionary<string, Sprite>() ;
 			foreach( var sprite in sprites )
 			{
 				if( spriteSet.ContainsKey( sprite.name ) == false )
@@ -1374,7 +1374,7 @@ namespace DSW
 				return null ;
 			}
 
-			Dictionary<string,Sprite> spriteSet = new Dictionary<string, Sprite>() ;
+			var spriteSet = new Dictionary<string, Sprite>() ;
 			foreach( var sprite in sprites )
 			{
 				if( spriteSet.ContainsKey( sprite.name ) == false )
@@ -1411,7 +1411,7 @@ namespace DSW
 			Sprite[] sprites = new Sprite[ count ] ;
 			spriteAtlas.GetSprites( sprites ) ;
 
-			Dictionary<string,Sprite> spriteSet = new Dictionary<string, Sprite>() ;
+			var spriteSet = new Dictionary<string, Sprite>() ;
 			foreach( var sprite in sprites )
 			{
 				string spriteName = sprite.name.Replace( "(Clone)", "" ) ;
@@ -1448,7 +1448,7 @@ namespace DSW
 			Sprite[] sprites = new Sprite[ count ] ;
 			spriteAtlas.GetSprites( sprites ) ;
 
-			Dictionary<string,Sprite> spriteSet = new Dictionary<string, Sprite>() ;
+			var spriteSet = new Dictionary<string, Sprite>() ;
 			foreach( var sprite in sprites )
 			{
 				string spriteName = sprite.name.Replace( "(Clone)", "" ) ; 

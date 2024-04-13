@@ -6,11 +6,15 @@ using System ;
 using System.Collections ;
 using System.Collections.Generic ;
 
+using uGUIHelper.InputAdapter ;
+
+
 namespace uGUIHelper
 {
 	/// <summary>
 	/// ジョイスティッククラス(複合UI)
 	/// </summary>
+	[Obsolete( "Use UIPadAxis")]
 	public class UIJoystick : UIImage
 	{
 		/// <summary>
@@ -145,23 +149,23 @@ namespace uGUIHelper
 		{
 			get
 			{
-				float kx = Input.GetAxis( "Horizontal" ) ;
-				float ky = Input.GetAxis( "Vertical" ) ;
+				float kx = UIEventSystem.GetAxis( "Horizontal" ) ;
+				float ky = UIEventSystem.GetAxis( "Vertical" ) ;
 
-				if( Input.GetKey( KeyCode.LeftArrow ) == true )
+				if( UIEventSystem.GetKey( InputAdapter.KeyCodes.LeftArrow ) == true )
 				{
 					kx = -1 ;
 				}
-				if( Input.GetKey( KeyCode.RightArrow ) == true )
+				if( UIEventSystem.GetKey( InputAdapter.KeyCodes.RightArrow ) == true )
 				{
 					kx =  1 ;
 				}
 
-				if( Input.GetKey( KeyCode.UpArrow ) == true )
+				if( UIEventSystem.GetKey( InputAdapter.KeyCodes.UpArrow ) == true )
 				{
 					ky =  1 ;
 				}
-				if( Input.GetKey( KeyCode.DownArrow ) == true )
+				if( UIEventSystem.GetKey( InputAdapter.KeyCodes.DownArrow ) == true )
 				{
 					ky = -1 ;
 				}
@@ -199,23 +203,23 @@ namespace uGUIHelper
 			{
 				Vector2 axis = Vector2.zero ;
 
-				float kx = Input.GetAxis( "Horizontal" ) ;
-				float ky = Input.GetAxis( "Vertical" ) ;
+				float kx = UIEventSystem.GetAxis( "Horizontal" ) ;
+				float ky = UIEventSystem.GetAxis( "Vertical" ) ;
 
-				if( Input.GetKey( KeyCode.LeftArrow ) == true )
+				if( UIEventSystem.GetKey( InputAdapter.KeyCodes.LeftArrow ) == true )
 				{
 					kx = -1 ;
 				}
-				if( Input.GetKey( KeyCode.RightArrow ) == true )
+				if( UIEventSystem.GetKey( InputAdapter.KeyCodes.RightArrow ) == true )
 				{
 					kx =  1 ;
 				}
 
-				if( Input.GetKey( KeyCode.UpArrow ) == true )
+				if( UIEventSystem.GetKey( InputAdapter.KeyCodes.UpArrow ) == true )
 				{
 					ky =  1 ;
 				}
-				if( Input.GetKey( KeyCode.DownArrow ) == true )
+				if( UIEventSystem.GetKey( InputAdapter.KeyCodes.DownArrow ) == true )
 				{
 					ky = -1 ;
 				}
@@ -326,6 +330,15 @@ namespace uGUIHelper
 				{
 					m_Frame.SetActive( false ) ;
 				}
+
+				// ピボットを強制的に中心にする(ただし位置は変化させない)
+				SetPivot( 0.5f, 0.5f, true ) ;
+
+				// フレームのアンカーを領域全体と同じにする
+				m_Frame.SetAnchorMinAndMax( AnchorMin, AnchorMax, true ) ;
+
+				// ピボットを強制的に中心にする(ただし位置は変化させない)
+				m_Frame.SetPivot( 0.5f, 0.5f, true ) ;
 			}
 		}
 

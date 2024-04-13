@@ -1,0 +1,10 @@
+ManifestFileVersion: 0
+CRC: 540494253
+AssetBundleManifest:
+  AssetBundleInfos:
+    Info_0:
+      Name: sounds/bgm/001_title
+      Dependencies: {}
+    Info_1:
+      Name: sounds/se/system
+      Dependencies: {}

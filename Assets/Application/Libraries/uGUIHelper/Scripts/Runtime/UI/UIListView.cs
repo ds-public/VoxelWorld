@@ -19,6 +19,7 @@ namespace uGUIHelper
 	/// </summary>
 //	[RequireComponent(typeof(UnityEngine.UI.ScrollRect))]
 	[RequireComponent(typeof(ScrollRectWrapper))]
+	[DefaultExecutionOrder( 2 )]	// ScrollRect の表示位置変化後にアイテム展開を行いたいのでわずかに遅らせる
 	public class UIListView : UIScrollView
 	{
 /*
@@ -66,6 +67,29 @@ namespace uGUIHelper
 		[SerializeField][HideInInspector]
 		protected UIView	m_Item ;
 
+
+
+		/// <summary>
+		/// Itemが空の時に表示する表示物のインスタンス
+		/// </summary>
+		public UIView ItemEmptyPresentment
+		{
+			get
+			{
+				return m_ItemEmptyPresentment ;
+			}
+			set
+			{
+				if( m_ItemEmptyPresentment != value )
+				{
+					m_ItemEmptyPresentment  = value ;
+					m_ItemListDirty = true ;
+				}
+			}
+		}
+
+		[SerializeField][HideInInspector]
+		protected UIView	m_ItemEmptyPresentment ;
 
 		/// <summary>
 		/// リストビュー表示に使用するアイテム数
@@ -152,7 +176,6 @@ namespace uGUIHelper
 
 		[SerializeField][HideInInspector]
 		private int		m_ItemCount = 20 ;
-
 
 		/// <summary>
 		/// スナップの有無
@@ -294,12 +317,7 @@ namespace uGUIHelper
 		/// </summary>
 		public T GetItemComponent<T>() where T : MonoBehaviour
 		{
-			if( m_Item == null )
-			{
-				return null ;
-			}
-
-			return m_Item.GetComponent<T>() ;
+			return m_Item == null ? null : m_Item.GetComponent<T>() ;
 		}
 
 		[SerializeField][HideInInspector]
@@ -307,19 +325,20 @@ namespace uGUIHelper
 
 		// アイテムリスト
 		[SerializeField][HideInInspector]
-		private readonly List<ItemData> m_ItemList = new List<ItemData>() ;
+		private List<ItemData> m_ItemList ;
 
 		[SerializeField][HideInInspector]
 		private int		m_CurrentItemIndex = 0 ;
-		
-		[SerializeField][HideInInspector]
-		private float	m_ItemHeadPosition = 0 ;
 
 		[SerializeField][HideInInspector]
-		private float	m_ItemTailPosition = 0 ;
+		private float	m_ItemUpperPosition = 0 ;
+
+		[SerializeField][HideInInspector]
+		private float	m_ItemLowerPosition = 0 ;
 
 		[SerializeField][HideInInspector]
 		private bool	m_ItemListDirty = true ;
+
 		//-----------------------------------------------------------
 
 		[SerializeField][HideInInspector]
@@ -337,18 +356,8 @@ namespace uGUIHelper
 		/// <param name="option"></param>
 		override protected void OnBuild( string option = "" )
 		{
-			ScrollRectWrapper scrollRect = CScrollRect ;
+			ScrollRectWrapper scrollRect = CScrollRect != null ? CScrollRect : gameObject.AddComponent<ScrollRectWrapper>() ;
 
-			if( scrollRect == null )
-			{
-				scrollRect = gameObject.AddComponent<ScrollRectWrapper>() ;
-			}
-			if( scrollRect == null )
-			{
-				// 異常
-				return ;
-			}
-			
 			Image image = CImage ;
 
 			//-------------------------------------
@@ -516,7 +525,7 @@ namespace uGUIHelper
 
 			if( Application.isPlaying == true )
 			{
-//				CScrollRect.enabled = false ;
+				m_ItemList ??= new List<ItemData>() ;
 
 				// テンプレートのアイテムを無効化する(Awakeのタイミングで行わないとまずい)
 				if( m_Item != null )
@@ -525,7 +534,6 @@ namespace uGUIHelper
 				}
 			}
 		}
-
 
 		/// <summary>
 		/// 派生クラスの Start
@@ -590,6 +598,14 @@ namespace uGUIHelper
 			{
 				// リフレッシュだけは例外的に即時更新も可能にする
 				SetContentPosition( base.ContentPosition ) ;
+			}
+
+			//--------------------------------
+
+			// アイテムが空の時の表示物を表示する
+			if( m_ItemEmptyPresentment != null )
+			{
+				m_ItemEmptyPresentment.SetActive( m_ItemCount <= 0 ) ;
 			}
 		}
 
@@ -938,7 +954,10 @@ namespace uGUIHelper
 
 				ContentSize = contentSize ;
 
-				CScrollRect.movementType = ScrollRect.MovementType.Elastic ;		// バウンドする
+				if( CScrollRect.movementType == ScrollRect.MovementType.Unrestricted )
+				{
+					CScrollRect.movementType  = ScrollRect.MovementType.Elastic ;		// バウンドする
+				}
 			}
 			else
 			{
@@ -1056,16 +1075,17 @@ namespace uGUIHelper
 			//----------------------------------------------------------
 
 			m_CurrentItemIndex = index ;
+
 			base.ContentPosition = itemOffset + snapOffset ;
 			m_Snapping = 0 ;	// スナップ処理中であれば一旦キャンセルする
 
 			//---------------------------------------------
 
-			m_ItemHeadPosition = itemOffset ;
+			m_ItemUpperPosition = itemOffset ;
 
-			UIView	itemView ;
-			UnityEngine.Component itemCode ;
-			float	itemSize ;
+			UIView					itemView ;
+			UnityEngine.Component	itemCode ;
+			float					itemSize ;
 
 			// アイテムを展開する
 			l = m_WorkingItemCount ;
@@ -1076,11 +1096,11 @@ namespace uGUIHelper
 
 				if( i >= m_ItemList.Count )
 				{
-					// 複製
-					itemView = GameObject.Instantiate( m_Item ) as UIView ;
+					// 複製(一瞬親無しになってワーニングを引き起こす事があるので注意)
+					itemView = GameObject.Instantiate( m_Item, Content.transform ) as UIView ;
 
 					// 親を設定
-					itemView.SetParent( Content, false ) ;
+//					itemView.SetParent( Content, false ) ;
 				}
 				else
 				{
@@ -1164,7 +1184,7 @@ namespace uGUIHelper
 				}
 			}
 
-			m_ItemTailPosition = itemOffset ;
+			m_ItemLowerPosition = itemOffset ;
 
 //			Debug.LogWarning( "------>計測時間: [ " + ( Time.realtimeSinceStartup - tt ) + " ]" ) ;
 
@@ -1226,7 +1246,7 @@ namespace uGUIHelper
 
 			//----------------------------------------------------------
 
-			List<( int, T )> items = new List<( int, T )>() ;
+			var items = new List<( int, T )>() ;
 
 			int i, l = m_ItemList.Count ;
 
@@ -1250,7 +1270,7 @@ namespace uGUIHelper
 			//----------------------------------------------------------
 			// インデックスでソートする
 
-			List<T> sortedItems = new List<T>() ;
+			var sortedItems = new List<T>() ;
 
 			( int, T ) item_a ;
 			( int, T ) item_b ;
@@ -1328,7 +1348,7 @@ namespace uGUIHelper
 
 			//----------------------------------------------------------
 
-			List<( int, GameObject )> items = new List<( int, GameObject )>() ;
+			var items = new List<( int, GameObject )>() ;
 
 			int i, l = m_ItemList.Count ;
 
@@ -1352,7 +1372,7 @@ namespace uGUIHelper
 			//----------------------------------------------------------
 			// インデックスでソートする
 
-			List<GameObject> sortedItems = new List<GameObject>() ;
+			var sortedItems = new List<GameObject>() ;
 
 			( int, GameObject ) item_a ;
 			( int, GameObject ) item_b ;
@@ -1384,10 +1404,10 @@ namespace uGUIHelper
 			return sortedItems.ToArray() ;
 		}
 
-
+		//-------------------------------------------------------------------------------------------
 
 		// インデックスをポジションに変換する
-		private float ConvertIndexToPosition( int index )
+		private float ConvertIndexToPosition_Private( int index )
 		{
 			//----------------------------------------------------------
 
@@ -1514,8 +1534,208 @@ namespace uGUIHelper
 			return itemOffset + snapOffset ;
 		}
 
+		/// <summary>
+		/// インデックスをポジションに変換する
+		/// </summary>
+		/// <param name="index"></param>
+		/// <returns></returns>
+		public float ConvertIndexToPosition( int index )
+		{
+			int i ;
 
-		private readonly List<ItemData> m_ItemChecker = new List<ItemData>() ;
+			//----------------------------------------------------------
+
+			float itemUpperPosition = 0 ;
+
+			// オフセット値を調整する
+			if( index >  0 )
+			{
+				// 正方向
+				for( i  = 0 ; i <  index ; i ++ )
+				{
+					// 幅だけ取得する
+					itemUpperPosition += OnItemUpdatedInner( i, null, null ) ;
+				}
+			}
+			else
+			if( index <  0 )
+			{
+				// 負方向(無限の場合のみ)
+				for( i  = -1 ; i >  ( index - 1 ) ; i -- )
+				{
+					// 幅だけ取得する
+					itemUpperPosition -= OnItemUpdatedInner( i, null, null ) ;
+				}
+			}
+
+			//----------------------------------------------------------
+
+			return itemUpperPosition ;
+		}
+
+		/// <summary>
+		/// インデックスをポジション範囲に変換する
+		/// </summary>
+		/// <param name="index"></param>
+		/// <returns></returns>
+		public ( float, float ) ConvertIndexToPositionRange( int index )
+		{
+			int i ;
+
+			//----------------------------------------------------------
+
+			float itemUpperPosition = 0 ;
+
+			// オフセット値を調整する
+			if( index >  0 )
+			{
+				// 正方向
+				for( i  = 0 ; i <  index ; i ++ )
+				{
+					// 幅だけ取得する
+					itemUpperPosition += OnItemUpdatedInner( i, null, null ) ;
+				}
+			}
+			else
+			if( index <  0 )
+			{
+				// 負方向(無限の場合のみ)
+				for( i  = -1 ; i >  ( index - 1 ) ; i -- )
+				{
+					// 幅だけ取得する
+					itemUpperPosition -= OnItemUpdatedInner( i, null, null ) ;
+				}
+			}
+
+			//----------------------------------------------------------
+
+			float itemLowerPosition = itemUpperPosition + OnItemUpdatedInner( index, null, null ) ;	// 最後に自身の幅を加算する
+
+			return ( itemUpperPosition, itemLowerPosition ) ;
+		}
+
+		/// <summary>
+		/// ポジションをインデックスに変換する
+		/// </summary>
+		/// <param name="position"></param>
+		/// <returns></returns>
+		public int ConvertPositionToIndex( float position, bool isLower )
+		{
+			int i, l ;
+
+			//----------------------------------------------------------
+
+			if( position >= 0 )
+			{
+				// 正方向
+
+				if( Infinity == false )
+				{
+					// 有限
+					l = ItemCount ;
+				}
+				else
+				{
+					// 無限
+					l = int.MaxValue ;
+				}
+
+				float itemUpperPosition = 0 ;
+				float itemLowerPosition = 0 ;
+
+				if( isLower == false )
+				{
+					// Upper を基準
+					for( i  = 0 ; i <  l ; i ++ )
+					{
+						itemLowerPosition += OnItemUpdatedInner( i, null, null ) ;
+
+						if( itemUpperPosition <= position && position <  itemLowerPosition )
+						{
+							// 確定
+							return i ;
+						}
+
+						itemUpperPosition = itemLowerPosition ;
+					}
+				}
+				else
+				{
+					// Lower を基準
+					for( i  = 0 ; i <  l ; i ++ )
+					{
+						itemLowerPosition += OnItemUpdatedInner( i, null, null ) ;
+
+						if( itemUpperPosition <  position && position <= itemLowerPosition )
+						{
+							// 確定
+							return i ;
+						}
+
+						itemUpperPosition = itemLowerPosition ;
+					}
+				}
+			}
+			else
+			{
+				// 負方向(無限の場合のみ)
+
+				if( Infinity == false )
+				{
+					// 負は不可
+					return -1 ;
+				}
+				else
+				{
+					l = - int.MaxValue ;
+				}
+
+				float itemUpperPosition = 0 ;
+				float itemLowerPosition = 0 ;
+
+				if( isLower == false )
+				{
+					// Upper を基準
+					for( i  = -1 ; i >  l ; i -- )
+					{
+						// 幅だけ取得する
+						itemUpperPosition -= OnItemUpdatedInner( i, null, null ) ;
+
+						if( itemUpperPosition <= position && position <  itemLowerPosition )
+						{
+							// 確定
+							return i ;
+						}
+
+						itemLowerPosition = itemUpperPosition ;
+					}
+				}
+				else
+				{
+					// Lower を基準
+					for( i  = -1 ; i >  l ; i -- )
+					{
+						// 幅だけ取得する
+						itemUpperPosition -= OnItemUpdatedInner( i, null, null ) ;
+
+						if( itemUpperPosition <  position && position <= itemLowerPosition )
+						{
+							// 確定
+							return i ;
+						}
+
+						itemLowerPosition = itemUpperPosition ;
+					}
+				}
+			}
+
+			// 該当を発見出来ず
+			return -1 ;
+		}
+
+		//-----------------------------------------------------------
+
+		private readonly List<ItemData> m_ItemChecker = new () ;
 
 		// 更新する(LateUpdate から呼ばれてる)
 		private void ProcessItem()
@@ -1542,10 +1762,10 @@ namespace uGUIHelper
 			m_ItemChecker.Clear() ;
 			bool workingItemFew = false ;
 
-			float tailPosition = base.ContentPosition + ViewSize ;
+			float lowerPosition = base.ContentPosition + ViewSize ;
 
 			// インデックスは↓正に進む＝コンテントは↑負に進む(上のを下に持っていく)
-			while( m_ItemTailPosition <  tailPosition )
+			while( m_ItemLowerPosition <  lowerPosition )
 			{
 				// 左か上に現在の位置よりも 128 以上移動している
 				// 最初のアイテムを最後のアイテムに移動させる
@@ -1566,7 +1786,7 @@ namespace uGUIHelper
 				}
 				itemSize = item.Size ;
 
-				m_ItemHeadPosition += itemSize ;
+				m_ItemUpperPosition += itemSize ;
 
 				int index = m_CurrentItemIndex + m_WorkingItemCount ;
 				if( m_Infinity == false )
@@ -1611,30 +1831,30 @@ namespace uGUIHelper
 				item.Index = index ;
 
 //				Debug.LogWarning( "↓位置:" + index + " " + m_ItemTailPosition ) ;
-				SetItemPosition( itemView, m_ItemTailPosition ) ;
+				SetItemPosition( itemView, m_ItemLowerPosition ) ;
 				if( itemSize >  0 )
 				{
 					SetItemSize( itemView, itemSize ) ;
 				}
-				m_ItemTailPosition += itemSize ;	// 後に座標を更新する
+				m_ItemLowerPosition += itemSize ;	// 後に座標を更新する
 
 				// 最初に設定したコンテントサイズより現在の末尾の位置の方が大きい場合にコンテントサイズを更新する(保険)
-				if( m_Infinity == false && index == ( m_ItemCount - 1 ) && m_ItemTailPosition >  ContentSize )
+				if( m_Infinity == false && index == ( m_ItemCount - 1 ) && m_ItemLowerPosition >  ContentSize )
 				{
 					// しかし完全な解決にはならない(
 //					Debug.Log( "オーバーしました:" + m_ItemTailPosition + " " + ContentSize ) ;
-					ContentSize = m_ItemTailPosition ;
+					ContentSize = m_ItemLowerPosition ;
 				}
 
 				m_CurrentItemIndex ++ ;
 			}
-			
+
 			//----------------------------------------------------------
 
-			float headPosition = base.ContentPosition ;
+			float upperPosition = base.ContentPosition ;
 
 			// インデックスは↑負に進む＝コンテントは↓正に進む((下のを上に持っていく)
-			while( m_ItemHeadPosition >  headPosition )
+			while( m_ItemUpperPosition >  upperPosition )
 			{
 				// 最後のアイテムを最初に付け直す
 				int lastIndex = WorkingItemCount - 1 ; 
@@ -1658,7 +1878,7 @@ namespace uGUIHelper
 				}
 				itemSize = item.Size ;
 
-				m_ItemTailPosition -= itemSize ;
+				m_ItemLowerPosition -= itemSize ;
 
 				m_CurrentItemIndex -- ;
 
@@ -1706,10 +1926,10 @@ namespace uGUIHelper
 				item.Size  = itemSize ;	// 位置変動したアイテムの縦幅をきちんと更新する
 				item.Index = index ;
 
-				m_ItemHeadPosition -= itemSize ;	// 先に座標を更新する
+				m_ItemUpperPosition -= itemSize ;	// 先に座標を更新する
 
 //				Debug.LogWarning( "↑位置:" + tIndex + " " + m_ItemHeadPosition ) ;
-				SetItemPosition( itemView, m_ItemHeadPosition ) ;
+				SetItemPosition( itemView, m_ItemUpperPosition ) ;
 				if( itemSize >  0 )
 				{
 					SetItemSize( itemView, itemSize ) ;
@@ -1722,7 +1942,7 @@ namespace uGUIHelper
 
 			if( workingItemFew == true )
 			{
-				Debug.LogWarning( "[UIListView] : WorkingItem is few -> " + m_ItemList.Count ) ;
+				Debug.LogWarning( "[UIListView] : WorkingItem is few -> " + m_ItemList.Count + " < " + Path ) ;
 			}
 		}
 
@@ -1750,9 +1970,9 @@ namespace uGUIHelper
 //			Debug.LogWarning( "リミット:" +  ( m_CanvasLength * 100f / 960f ) ) ;
 
 
-			float wheel = Input.GetAxis( "Mouse ScrollWheel" ) ;
+			Vector2 wheel = InputAdapter.UIEventSystem.MouseScrollDelta ;
 
-			if( CScrollRect.velocity.magnitude >  ( m_SnapThreshold * m_CanvasLength / 960f ) || CScrollRect.IsDrag == true || wheel != 0 )
+			if( CScrollRect.velocity.magnitude >  ( m_SnapThreshold * m_CanvasLength / 960f ) || CScrollRect.IsDrag == true || wheel.x != 0 || wheel.y != 0 )
 			{
 				m_Snapping = 0 ;
 
@@ -1848,8 +2068,8 @@ namespace uGUIHelper
 					}
 				}
 
-				float nearestPosition	= m_ItemHeadPosition ;
-				float position			= m_ItemHeadPosition ;
+				float nearestPosition	= m_ItemUpperPosition ;
+				float position			= m_ItemUpperPosition ;
 
 				float minimumDistance = Mathf.Abs( position - snapBasePosition ) ;
 				float distance ;
@@ -1890,8 +2110,8 @@ namespace uGUIHelper
 					}
 				}
 
-				float nearestPosition	= m_ItemHeadPosition ;
-				float position			= m_ItemHeadPosition + m_ItemList[ 0 ].Size ;
+				float nearestPosition	= m_ItemUpperPosition ;
+				float position			= m_ItemUpperPosition + m_ItemList[ 0 ].Size ;
 
 				float minimumDistance = Mathf.Abs( position - snapBasePosition ) ;
 				float distance ;
@@ -2046,87 +2266,433 @@ namespace uGUIHelper
 			}
 		}
 
+		//-----------------------------------------------------------
+
 		/// <summary>
-		/// 表示上の最初の位置にあるアイテムのインデックスを取得する
+		/// 表示上の最初の位置にあるアイテムのインデックスを取得する(アイテムが完全に見えていない場合でも該当する)　※現在の状態限定
 		/// </summary>
 		/// <returns></returns>
-		public int HeadItemIndex
+		public int ItemUpperIndex
 		{
 			get
 			{
+				( var viewUpperPosition, _ ) = GetViewPosition() ;
+
 				if( m_ItemListDirty == true )
 				{
 					// 変化があったので更新をかける
-//					SetContentPosition( contentPosition ) ;
 					UpdateItemList() ;
 				}
 
+				//---------------------------------
+
+				float itemUpperPosition = m_ItemUpperPosition ;
+				float itemLowerPosition ;
+
 				int index = m_CurrentItemIndex ;
 
-				float p0 = m_ItemHeadPosition ;
-				float p1 ;
-
-				float position = base.ContentPosition ;
 				int i, l = m_ItemList.Count ;
+
+				int upperIndex = -1 ;
 
 				for( i  = 0 ; i <  l ; i ++ )
 				{
-					p1 = p0 + m_ItemList[ i ].Size ;
-					if( position >= p0 && position <  p1 )
+					itemLowerPosition = itemUpperPosition + m_ItemList[ i ].Size ;
+
+					if( viewUpperPosition <  itemLowerPosition )
 					{
-						// ここ決定
-						return index ;
+						if( m_ItemList[ i ].View.ActiveSelf == false )
+						{
+							// 非表示に到達したら終了
+							break ;
+						}
+
+						if( itemUpperPosition <= viewUpperPosition && viewUpperPosition <  itemLowerPosition )
+						{
+							// ここ決定
+							upperIndex = index ;
+							break ;
+						}
 					}
 
-					p0 = p1 ;
+					itemUpperPosition = itemLowerPosition ;
 
 					index ++ ;
 				}
 
-				return -1 ;	// 該当無し
+				return upperIndex ;	// 該当無し
 			}
 		}
 
 		/// <summary>
-		/// 表示上の最後の位置にあるアイテムのインデックスを取得する
+		/// 表示上の最初の位置にあるアイテムのインデックスを取得する(アイテムが完全に見えていない場合でも該当する)
 		/// </summary>
 		/// <returns></returns>
-		public int TailItemIndex
+		public int GetItemUpperIndex( float viewUpperPosition )
+		{
+			int i, l = ItemCount ;
+
+			float itemUpperPosition = 0 ;
+			float itemLowerPosition ;
+
+			int itemIndex = -1 ;
+
+			for( i  = 0 ; i <  l ; i ++ )
+			{
+				itemLowerPosition = itemUpperPosition + OnItemUpdatedInner( i, null, null ) ; 
+
+				if( itemUpperPosition <= viewUpperPosition && viewUpperPosition < itemLowerPosition )
+				{
+					// ここに決定(最初に条件を満たしたアイテム
+					itemIndex = i ;
+					break ;
+				}
+
+				itemUpperPosition = itemLowerPosition ;
+			}
+
+			return itemIndex ;
+		}
+
+		/// <summary>
+		/// 表示上の最後の位置にあるアイテムのインデックスを取得する(アイテムが完全に見えていない場合でも該当する)　※現在の状態限定
+		/// </summary>
+		/// <returns></returns>
+		public int ItemLowerIndex
 		{
 			get
 			{
+				( var viewUpperPosition, var viewLowerPosition ) = GetViewPosition() ;
+
 				if( m_ItemListDirty == true )
 				{
 					// 変化があったので更新をかける
-//					SetContentPosition( contentPosition ) ;
 					UpdateItemList() ;
 				}
 
+				//---------------------------------
+
+				float itemUpperPosition = m_ItemUpperPosition ;
+				float itemLowerPosition ;
+
 				int index = m_CurrentItemIndex ;
 
-				float p0 = m_ItemHeadPosition ;
-				float p1 ;
-
-				float position = base.ContentPosition + ViewSize - 1 ;
 				int i, l = m_ItemList.Count ;
+
+				int itemIndex = -1 ;
 
 				for( i  = 0 ; i <  l ; i ++ )
 				{
-					p1 = p0 + m_ItemList[ i ].Size ;
-					if( position >= p0 && position <  p1 )
+					itemLowerPosition = itemUpperPosition + m_ItemList[ i ].Size ;
+
+					if( viewUpperPosition <  itemLowerPosition )
 					{
-						// ここ決定
-						return index ;
+						if( m_ItemList[ i ].View.ActiveSelf == false )
+						{
+							// 非表示に到達したら終了
+							break ;
+						}
+
+						if( itemUpperPosition <  viewLowerPosition && viewLowerPosition <= itemLowerPosition )
+						{
+							// ここ決定
+							itemIndex = index ;
+							break ;
+						}
 					}
 
-					p0 = p1 ;
+					itemUpperPosition = itemLowerPosition ;
 
 					index ++ ;
 				}
 
-				return -1 ;	// 該当無し
+				return itemIndex ;	// 該当無し
 			}
 		}
+
+		/// <summary>
+		/// 表示上の最後の位置にあるアイテムのインデックスを取得する(アイテムが完全に見えていない場合でも該当する)
+		/// </summary>
+		/// <returns></returns>
+		public int GetItemLowerIndex( float viewLowerPosition )
+		{
+			int i, l = ItemCount ;
+
+			float itemUpperPosition = 0 ;
+			float itemLowerPosition ;
+
+			int itemIndex = -1 ;
+
+			for( i  = 0 ; i <  l ; i ++ )
+			{
+				itemLowerPosition = itemUpperPosition + OnItemUpdatedInner( i, null, null ) ; 
+
+				if( itemUpperPosition <  viewLowerPosition && viewLowerPosition <= itemLowerPosition )
+				{
+					// ここに決定(最初に条件を満たしたアイテム
+					itemIndex = i ;
+					break ;
+				}
+
+				itemUpperPosition = itemLowerPosition ;
+			}
+
+			return itemIndex ;
+		}
+
+		//---------------
+
+		/// <summary>
+		/// 表示上の最初の位置にあるアイテムのインデックスを取得する(アイテムが完全に見えている場合のみ該当する)　※現在の状態限定
+		/// </summary>
+		/// <returns></returns>
+		public int ItemUpperInsideIndex
+		{
+			get
+			{
+				( var viewUpperPosition, _ ) = GetViewPosition() ;
+
+				if( m_ItemListDirty == true )
+				{
+					// 変化があったので更新をかける
+					UpdateItemList() ;
+				}
+
+				//---------------------------------
+
+
+				float itemUpperPosition = m_ItemUpperPosition ;
+				float itemLowerPosition ;
+
+				int index = m_CurrentItemIndex ;
+
+				int i, l = m_ItemList.Count ;
+
+				int itemIndex = -1 ;
+
+				for( i  = 0 ; i <  l ; i ++ )
+				{
+					itemLowerPosition = itemUpperPosition + m_ItemList[ i ].Size ;
+
+					if( viewUpperPosition <  itemLowerPosition )
+					{
+						if( m_ItemList[ i ].View.ActiveSelf == false )
+						{
+							// 非表示に到達したら終了
+							break ;
+						}
+
+						if( viewUpperPosition <= itemUpperPosition )
+						{
+							// ここ決定(最初に条件を満たしたアイテム)
+							itemIndex = index ;
+							break ;
+						}
+					}
+
+					itemUpperPosition = itemLowerPosition ;
+
+					index ++ ;
+				}
+
+				return itemIndex ;	// 該当無し
+			}
+		}
+
+		/// <summary>
+		/// 表示上の最初の位置にあるアイテムのインデックスを取得する(アイテムが完全に見えている場合のみ該当する)
+		/// </summary>
+		/// <returns></returns>
+		public int GetItemUpperInsideIndex( float viewUpperPosition )
+		{
+			int i, l = ItemCount ;
+
+			float itemUpperPosition = 0 ;
+
+			int itemIndex = -1 ;
+
+			for( i  = 0 ; i <  l ; i ++ )
+			{
+				if( viewUpperPosition <= itemUpperPosition )
+				{
+					// ここに決定(最初に条件を満たしたアイテム
+					itemIndex = i ;
+					break ;
+				}
+
+				itemUpperPosition += OnItemUpdatedInner( i, null, null ) ;
+			}
+
+			return itemIndex ;	// 該当無し
+		}
+
+		/// <summary>
+		/// 表示上の最後の位置にあるアイテムのインデックスを取得する(アイテムが完全に見えている場合のみ該当する)
+		/// </summary>
+		/// <returns></returns>
+		public int ItemLowerInsideIndex
+		{
+			get
+			{
+				( var viewUpperPosition, var viewLowerPosition ) = GetViewPosition() ;
+
+				if( m_ItemListDirty == true )
+				{
+					// 変化があったので更新をかける
+					UpdateItemList() ;
+				}
+
+				//---------------------------------
+
+				float itemUpperPosition = m_ItemUpperPosition ;
+				float itemLowerPositin ;
+
+				int index = m_CurrentItemIndex ;
+
+				int i, l = m_ItemList.Count ;
+
+				int itemIndex = -1 ;
+
+				for( i  = 0 ; i <  l ; i ++ )
+				{
+					itemLowerPositin = itemUpperPosition + m_ItemList[ i ].Size ;
+
+					if( viewUpperPosition <  itemLowerPositin )
+					{
+						if( m_ItemList[ i ].View.ActiveSelf == false )
+						{
+							// 非表示に到達したら終了
+							break ;
+						}
+
+						if( itemLowerPositin <= viewLowerPosition )
+						{
+							// 候補
+							itemIndex = index ;
+						}
+						else
+						{
+							// 溢れたら最後のものとする
+							break ;
+						}
+					}
+
+					itemUpperPosition = itemLowerPositin ;
+
+					index ++ ;
+				}
+
+				return itemIndex ;	// 該当無し
+			}
+		}
+
+		/// <summary>
+		/// 表示上の最後の位置にあるアイテムのインデックスを取得する(アイテムが完全に見えている場合のみ該当する)
+		/// </summary>
+		/// <returns></returns>
+		public int GetItemLowerInsideIndex( float viewLowerPosition )
+		{
+			int i, l = ItemCount ;
+
+			float itemLowerPosition = 0 ;
+
+			int itemIndex = -1 ;
+
+			for( i  = 0 ; i <  l ; i ++ )
+			{
+				itemLowerPosition += OnItemUpdatedInner( i, null, null ) ;
+
+				if( itemLowerPosition <= viewLowerPosition )
+				{
+					// 候補
+					itemIndex = i ;
+				}
+				else
+				{
+					// 溢れたら最後のものとする
+					break ;
+				}
+			}
+
+			return itemIndex ;	// 該当無し
+		}
+
+		//---------------
+
+		// コンテンツ座標上のビューポートの表示位置を取得する
+		private ( float, float ) GetViewPosition()
+		{
+			float contentPosition	= base.ContentPosition ;
+			float contentSize		= base.ContentSize ;
+			float viewSize			= ViewSize ;
+
+			float upperViewPosition = contentPosition ;
+			if( Infinity == false )
+			{
+				// 有限の場合は０で制限をかける(ScrollRect は誤差でマイナス値になっている場合がある)
+				if( upperViewPosition <  0 )
+				{
+					upperViewPosition  = 0 ;
+				}
+			}
+
+			float lowerViewPosition = upperViewPosition + viewSize ;
+			if( Infinity == false )
+			{
+				// 有限の場合はコンテントサイズで制限をかける(ScrollRect は誤差でコンテントサイズを超える値になっている場合がある)
+				if( lowerViewPosition >  contentSize )
+				{
+					lowerViewPosition  = contentSize ;
+					upperViewPosition  = lowerViewPosition - viewSize ;
+					if( upperViewPosition <  0 )
+					{
+						upperViewPosition  = 0 ;
+					}
+				}
+			}
+
+			return ( upperViewPosition, lowerViewPosition ) ;
+		}
+
+		//-----------------------------------------------------------
+
+		/// <summary>
+		/// 指定したインデックスの位置にフォーカスする
+		/// </summary>
+		/// <param name="index"></param>
+		public void SetFocusIndex( int index )
+		{
+			( float upperItemPosition, float lowerItemPosition ) = ConvertIndexToPositionRange( index ) ;
+
+			( float upperViewPosition, float lowerViewPosition ) = GetViewPosition() ;
+
+			// 上に移動か下に移動か
+
+			if( upperItemPosition <  upperViewPosition )
+			{
+				// 上に移動する
+				SetContentPosition( upperItemPosition ) ;
+			}
+			else
+			if( lowerViewPosition <  lowerItemPosition )
+			{
+				// 下に移動する
+				float contentPosition = lowerItemPosition - ViewSize ;
+				if( contentPosition <  0 )
+				{
+					contentPosition  = 0 ;
+				}
+
+				SetContentPosition( contentPosition ) ;
+			}
+			else
+			{
+				// 移動はしない
+				Restore() ;
+			}
+		}
+
+		//-----------------------------------------------------------
 
 		/// <summary>
 		/// スクロールが可能かどうか
@@ -2378,9 +2944,9 @@ namespace uGUIHelper
 				return null ;
 			}
 
-			float contentPosition = ConvertIndexToPosition( contentIndex ) ;
+			float contentPosition = ConvertIndexToPosition_Private( contentIndex ) ;
 
-			AsyncState state = new AsyncState( this ) ;
+			var state = new AsyncState( this ) ;
 			StartCoroutine( MoveToPosition_Private( contentPosition, duration, easeType, state ) ) ;
 			return state ;
 		}
@@ -2408,10 +2974,10 @@ namespace uGUIHelper
 			var afPoint = contentIndex - index ;
 
 			// どの地点まで移動させるのか？
-			var contentPosition = ConvertIndexToPosition( index )
-								+ ( DefaultItemSize * afPoint ) ;
+			float contentPosition = ConvertIndexToPosition_Private( index ) ;
+			contentPosition	+= ( DefaultItemSize * afPoint ) ;
 
-			AsyncState state = new AsyncState( this ) ;
+			var state = new AsyncState( this ) ;
 			StartCoroutine( MoveToPosition_Private( contentPosition, duration, easeType, state ) ) ;
 			return state ;
 		}
@@ -2438,7 +3004,7 @@ namespace uGUIHelper
 
 #if UNITY_EDITOR || UNITY_STANDALONE
 
-			position = Input.mousePosition ;
+			position = InputAdapter.UIEventSystem.MousePosition ;
 
 #elif !UNITY_EDITOR && ( UNITY_ANDROID || UNITY_IOS )
 
@@ -2461,15 +3027,8 @@ namespace uGUIHelper
 			}
 
 
-			if( m_LVRH_EventData == null )
-			{
-				m_LVRH_EventData		= new PointerEventData( EventSystem.current ) ;
-			}
-
-			if( m_LVRH_Results == null )
-			{
-				m_LVRH_Results		= new List<RaycastResult>() ;
-			}
+			m_LVRH_EventData	??= new PointerEventData( EventSystem.current ) ;
+			m_LVRH_Results		??= new List<RaycastResult>() ;
 
 			// スクリーン座標からRayを飛ばす
 
@@ -2510,5 +3069,463 @@ namespace uGUIHelper
 			return -1 ;
 		}
 
+		//-------------------------------------------------------------------------------------------
+		// ゲームパッド対応処理
+
+		/// <summary>
+		/// 選択状態のインデックス番号(ゲームパッドでの制御用)
+		/// </summary>
+		public int SelectedIndex
+		{
+			get
+			{
+				return m_SelectedIndex ;
+			}
+			set
+			{
+				m_SelectedIndex = value ;
+			}
+		}
+
+		protected	int m_SelectedIndex			= -1 ;
+		private		int m_SelectedIndex_Keep	= -1 ;
+
+		/// <summary>
+		/// フォーカスのオン・オフを行う(ゲームパッドでの制御用)
+		/// </summary>
+		/// <param name="state"></param>
+		public void SetPadFocus( bool state )
+		{
+			if( m_ItemCount <= 0 )
+			{
+				// 意味無し
+				return ;
+			}
+
+			//----------------------------------
+
+			if( state == true )
+			{
+				// フォーカスをオンにする
+
+				int itemUpperIndideIndex = ItemUpperInsideIndex ;
+				int itemLowerIndideIndex = ItemLowerInsideIndex ;
+
+				bool isLower = false ;
+
+				if( m_SelectedIndex_Keep >= 0 )
+				{
+					// 以前に設定された選択状態のインデックス番号が存在する
+					if( m_SelectedIndex_Keep <  itemUpperIndideIndex )
+					{
+						// 表示範囲外になってしまうため無効
+						m_SelectedIndex_Keep = -1 ;
+						isLower = false ;
+					}
+					if( m_SelectedIndex_Keep >  itemLowerIndideIndex )
+					{
+						// 表示範囲外になってしまうため無効
+						m_SelectedIndex_Keep = -1 ;
+						isLower = true ;
+					}
+				}
+
+				if( m_SelectedIndex_Keep >= 0 )
+				{
+					// 以前に設定された選択状態のインデックス番号は現時点でも有効である
+					m_SelectedIndex = m_SelectedIndex_Keep ;
+					m_SelectedIndex_Keep = -1 ;
+				}
+				else
+				{
+					// 以前に設定された選択状態のインデックス番号は現時点では無効である
+					if( isLower == false )
+					{
+						m_SelectedIndex = itemUpperIndideIndex ;
+					}
+					else
+					{
+						m_SelectedIndex = itemLowerIndideIndex ;
+					}
+				}
+
+				// 表示を更新する
+				Restore() ;
+			}
+			else
+			{
+				// フォーカスをオフにする
+				if( m_SelectedIndex >= 0 )
+				{
+					m_SelectedIndex_Keep = m_SelectedIndex ;
+
+					m_SelectedIndex = -1 ;
+
+					// 表示を更新する
+					Restore() ;
+				}
+			}
+		}
+
+		//-----------------------------------------------------------
+
+		/// <summary>
+		/// パッドアクションの種別
+		/// </summary>
+		public enum PadActions
+		{
+			/// <summary>
+			/// 何もしない
+			/// </summary>
+			None,
+
+
+			/// <summary>
+			/// １つ次のアイテムを選択状態にする
+			/// </summary>
+			NextItem,
+
+			/// <summary>
+			/// １つ前のアイテムを選択状態にする
+			/// </summary>
+			BackItem,
+
+
+			/// <summary>
+			/// １つ次のページを表示する
+			/// </summary>
+			NextPage,
+
+			/// <summary>
+			/// １つ前のページを表示する
+			/// </summary>
+			BackPage,
+
+
+			/// <summary>
+			/// 最後のアイテムを選択状態にする
+			/// </summary>
+			NextAll,
+
+			/// <summary>
+			/// 最初のアイテムを選択状態にする
+			/// </summary>
+			BackAll,
+		}
+
+		//-------------------------------------------------------------------------------------------
+
+		/// <summary>
+		/// パッドアクションを実行する
+		/// </summary>
+		/// <param name="selectedIndex"></param>
+		/// <param name=""></param>
+		public void ProcessPadAction( PadActions padAction )
+		{
+			if( TryGetComponent<UIPadAdapter>( out var padAdapter ) == true )
+			{
+				if( padAdapter.Focus == false )
+				{
+					// 無効
+					return ;
+				}
+			}
+
+			//----------------------------------
+
+			if( m_ItemCount <= 0 || m_SelectedIndex <  0 || m_SelectedIndex >= m_ItemCount )
+			{
+				// 選択対象インデックスが無効
+				return ;
+			}
+
+			//----------------------------------------------------------
+
+			int l = m_ItemCount ;
+
+			if( padAction == PadActions.NextItem )
+			{
+				// １つ次のアイテムへ
+
+				if( m_SelectedIndex <  ( l - 1 ) )
+				{
+					// １つ次に
+					m_SelectedIndex ++ ;
+				}
+				else
+				{
+					// 一番最初に
+					m_SelectedIndex = 0 ;
+				}
+
+				// 表示を更新する
+				SetFocusIndex( m_SelectedIndex ) ;
+			}
+			else
+			if( padAction == PadActions.BackItem )
+			{
+				// １つ前のアイテムへ
+
+				if( m_SelectedIndex >  0 )
+				{
+					// １つ前に
+					m_SelectedIndex -- ;
+				}
+				else
+				{
+					// 一番最後に
+					m_SelectedIndex = l - 1 ;
+				}
+
+				// 表示を更新する
+				SetFocusIndex( m_SelectedIndex ) ;
+			}
+			else
+			if( padAction == PadActions.NextPage )
+			{
+				// １つ次のページへ
+
+				float contentSize	= ContentSize ; 
+				float viewSize		= ViewSize ;
+
+				if( contentSize >  viewSize )
+				{
+					// 次のページへ進めるのはコンテントサイズがビューサイズより大きい場合のみ
+
+					float contentPosition = ContentPosition ;
+
+					float viewUpperPosition = contentPosition ;
+					float viewLowerPosition = viewUpperPosition + viewSize ;
+
+					float itemUpperPosition ;
+					float itemLowerPosition ;
+
+					if( ( m_Infinity == false && viewLowerPosition <  contentSize ) || m_Infinity == true )	// 無限の場合はこの判定は無い(無限に前のページに戻れる)
+					{
+						// まだ次のページへ進める余地がある
+
+						// 現在の選択インデックスからポジション(上)を取得する
+						( itemUpperPosition, _ ) = ConvertIndexToPositionRange( m_SelectedIndex ) ;
+						float itemPositionOffset	= itemUpperPosition - contentPosition ;
+
+						//---------
+						// 次のページの位置へ
+
+						viewUpperPosition += viewSize ;
+						viewLowerPosition += viewSize ;
+
+						if( viewLowerPosition >  contentSize )
+						{
+							// オーバーする
+							viewLowerPosition  = contentSize ;
+							viewUpperPosition  = viewLowerPosition - viewSize ;
+						}
+
+						itemUpperPosition = viewUpperPosition + itemPositionOffset ;
+
+						// インデックスを逆算する
+						int changedSelectedIndex = ConvertPositionToIndex( itemUpperPosition, false ) ;
+
+						( itemUpperPosition, itemLowerPosition ) = ConvertIndexToPositionRange( changedSelectedIndex ) ;
+						if( itemUpperPosition <  viewUpperPosition )
+						{
+							// 見切れるので補正が必要
+							changedSelectedIndex = GetItemUpperInsideIndex( viewUpperPosition ) ;
+						}
+						else
+						if( viewLowerPosition <  itemLowerPosition )
+						{
+							// 見切れるので補正が必要
+							changedSelectedIndex = GetItemLowerInsideIndex( viewLowerPosition ) ;
+						}
+
+						m_SelectedIndex = changedSelectedIndex ;
+
+						// 表示を更新する
+						SetContentPosition( viewUpperPosition ) ;
+					}
+					else
+					{
+						// 有限且つ既に最後のページが表示されている(無限の場合はここには来ない)
+
+						int itemUpperIndex = 0 ;
+						int itemLowerIndex = m_ItemCount - 1 ;
+
+						if( m_SelectedIndex <  itemLowerIndex )
+						{
+							// 最後のアイテムへ
+							m_SelectedIndex  = itemLowerIndex ;
+
+							// 表示を更新する
+							Restore() ;
+						}
+						else
+						{
+							// 最初のアイテムへ
+							m_SelectedIndex = itemUpperIndex ;
+
+							// 表示を更新する
+							SetFocusIndex( m_SelectedIndex ) ;
+						}
+					}
+				}
+				else
+				{
+					// ページ切り替えは出来ない
+
+					int itemUpperIndex = 0 ;
+					int itemLowerIndex = m_ItemCount - 1 ;
+
+					if( m_SelectedIndex <  itemLowerIndex )
+					{
+						// 最後のアイテムへ
+						m_SelectedIndex  = itemLowerIndex ;
+
+						// 表示を更新する
+						Restore() ;
+					}
+					else
+					{
+						// 最初のアイテムへ
+						m_SelectedIndex = itemUpperIndex ;
+
+						// 表示を更新する
+						SetFocusIndex( m_SelectedIndex ) ;
+					}
+				}
+			}
+			else
+			if( padAction == PadActions.BackPage )
+			{
+				// １つ前のページへ
+
+				float contentSize	= ContentSize ; 
+				float viewSize		= ViewSize ;
+
+				if( contentSize >  viewSize )
+				{
+					// 前のページへ戻れるのはコンテントサイズがビューサイズより大きい場合のみ
+
+					float contentPosition = ContentPosition ;
+
+					float viewUpperPosition = contentPosition ;
+					float viewLowerPosition = viewUpperPosition + viewSize ;
+
+					float itemUpperPosition ;
+					float itemLowerPosition ;
+
+					if( ( m_Infinity == false && viewUpperPosition >  0 ) || m_Infinity == true )	// 無限の場合はこの判定は無い(無限に前のページに戻れる)
+					{
+						// まだ前のページへ戻れる余地がある
+
+						// 現在の選択インデックスからポジション(上)を取得する
+						( _, itemLowerPosition ) = ConvertIndexToPositionRange( m_SelectedIndex ) ;
+						float itemPositionOffset	= itemLowerPosition - contentPosition ;
+
+						//---------
+						// 前のページの位置へ
+
+						viewUpperPosition -= viewSize ;
+						viewLowerPosition -= viewSize ;
+
+						if( viewUpperPosition <  0 )
+						{
+							// オーバーする
+							viewUpperPosition  = 0 ;
+							viewLowerPosition  = viewUpperPosition + viewSize ;
+						}
+
+						itemLowerPosition = viewUpperPosition + itemPositionOffset ;
+
+						// インデックスを逆算する
+						int changedSelectedIndex = ConvertPositionToIndex( itemLowerPosition, true ) ;
+
+						( itemUpperPosition, itemLowerPosition ) = ConvertIndexToPositionRange( changedSelectedIndex ) ;
+						if( itemUpperPosition <  viewUpperPosition )
+						{
+							// 見切れるので補正が必要
+							changedSelectedIndex = GetItemUpperInsideIndex( viewUpperPosition ) ;
+						}
+						else
+						if( viewLowerPosition <  itemLowerPosition )
+						{
+							// 見切れるので補正が必要
+							changedSelectedIndex = GetItemLowerInsideIndex( viewLowerPosition ) ;
+						}
+
+						m_SelectedIndex = changedSelectedIndex ;
+
+						// 表示を更新する
+						SetContentPosition( viewUpperPosition ) ;
+					}
+					else
+					{
+						// 有限且つ既に最初のページが表示されている(無限の場合はここには来ない)
+
+						int itemUpperIndex = 0 ;
+						int itemLowerIndex = m_ItemCount - 1 ;
+
+						if( m_SelectedIndex >  itemUpperIndex )
+						{
+							// 最初のアイテムへ
+							m_SelectedIndex  = itemUpperIndex ;
+
+							// 表示を更新する
+							Restore() ;
+						}
+						else
+						{
+							// 最後のアイテムへ
+							m_SelectedIndex = itemLowerIndex ;
+
+							// 表示を更新する
+							SetFocusIndex( m_SelectedIndex ) ;
+						}
+					}
+				}
+				else
+				{
+					// ページの切り替えは出来ない
+
+					int itemUpperIndex = 0 ;
+					int itemLowerIndex = m_ItemCount - 1 ;
+
+					if( m_SelectedIndex >  itemUpperIndex )
+					{
+						// 最初のアイテムへ
+						m_SelectedIndex  = itemUpperIndex ;
+
+						// 表示を更新する
+						Restore() ;
+					}
+					else
+					{
+						// 最後のアイテムへ
+						m_SelectedIndex = itemLowerIndex ;
+
+						// 表示を更新する
+						SetFocusIndex( m_SelectedIndex ) ;
+					}
+				}
+			}
+			else
+			if( padAction == PadActions.NextAll )
+			{
+				// 最後へ
+				m_SelectedIndex = m_ItemCount - 1 ;
+
+				// 表示を更新する
+				SetFocusIndex( m_SelectedIndex ) ;
+			}
+			else
+			if( padAction == PadActions.BackAll )
+			{
+				// 最初へ
+				m_SelectedIndex = 0 ;
+
+				// 表示を更新する
+				SetFocusIndex( m_SelectedIndex ) ;
+			}
+		}
 	}
 }

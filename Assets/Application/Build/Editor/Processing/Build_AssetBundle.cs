@@ -8,63 +8,13 @@ using UnityEditor ;
 using Tools.ForAssetBundle ;	// AssetBundleBuilder のパッケージ
 
 /// <summary>
-/// アセットバンドルのバッチビルド用クラス Version 2022/09/23
+/// アセットバンドルのバッチビルド用クラス Version 2024/03/27
 /// </summary>
 public partial class Build_AssetBundle
 {
 	//--------------------------------------------------------------------------------------------
-	// 共通設定
 
-	// Common Internal
-	private const string m_StreamingAssetsListFilePath_Common_Internal		= "Assets/Application/AssetBundle/list_local_common.txt" ;
-
-
-	//------------------------------------
-	// Source
-
-
-	// Assets RootFolderPath Default
-	private const string m_AssetsRootFolderPath_Default						= "Assets/Application/AssetBundle" ;
-
-	//----------------
-	// Internal
-
-	// RemoteAssets ListFilePath Default
-	private const string m_StreamingAssetsListFilePath_Default_Internal		= "Assets/Application/AssetBundle/list_local_internal.txt" ;
-
-	//----------------
-	// Development
-
-	// RemoteAssets ListFilePath Default
-	private const string m_RemoteAssetsListFilePath_Default_Development		= "Assets/Application/AssetBundle/list_remote.txt" ;
-
-	//----------------
-	// Release
-
-	// RemoteAssets ListFilePath Default
-	private const string m_RemoteAssetsListFilePath_Default_Release			= "Assets/Application/AssetBundle/list_remote_release.txt" ;
-
-	//----------------
-
-	// Assets RootFolderPath External
-//	private const string m_AssetsRootFolderPath_External					= "Assets/Application/AssetBundle_Application" ;
-
-	//------------------------------------------------------------
-	// Common
-
-	private const string m_AssetBundleRootFolderPath_StreamingAssets_Common_Internal
-		= "Assets/StreamingAssets/dbs/Common/Internal" ;
-
-	//------------------------------------------------------------
-	// Remote Only
-
-	// link.xml
-	private const string m_LinkFilePath			= "Assets/link.xml" ;
-
-
-	//--------------------------------------------------------------------------------------------
-
-	[MenuItem("Build/AssetBundle/StreamingAssets/Common", priority = 2)]
+	[MenuItem( "Build/AssetBundle/StreamingAssets/Common", priority = 2 )]
 	internal static bool Execute_StreamingAssets_Common()
 	{
 		string listFilePath					= m_StreamingAssetsListFilePath_Common_Internal ;
@@ -102,7 +52,7 @@ public partial class Build_AssetBundle
 	//--------------------------------------------------------------------------------------------
 
 	// AssetBundleのビルド実行
-	private static bool ProcessRemoteAssets( ( string, string, string )[] targets, BuildTarget buildTarget, bool makeLink )
+	private static bool ProcessRemoteAssets( ( string, string, string )[] targets, BuildTarget buildTarget, bool makeLink, bool isDedicatedServerBuild )
 	{
 		// 処理時間計測開始
 		StartClock() ;
@@ -113,7 +63,7 @@ public partial class Build_AssetBundle
 		string assetRootPath ;
 		string assetBundleRootPath ;
 
-		List<( string, string)> linkTargets = new List<( string, string )>() ;
+		var linkTargets = new List<( string, string )>() ;
 
 		int i, l = targets.Length ;
 		for( i  = 0 ; i <  l ; i ++ )
@@ -136,7 +86,8 @@ public partial class Build_AssetBundle
 						assetBundleRootPath,
 						buildTarget,
 						generateLinkFile: false,
-						strictMode: false
+						strictMode: false,
+						dedicatedServerBuild: isDedicatedServerBuild
 					)
 					== false
 				)
@@ -165,10 +116,10 @@ public partial class Build_AssetBundle
 #endif
 		Debug.Log( "<color=#7FFF7F>-------> Target : " + buildTarget + "</color>" ) ;
 
-		if( Application.isBatchMode && !result )
+		if( Application.isBatchMode == true && result == false )
 		{
 			// バッチモードで失敗した場合、エラーで終了させる
-			EditorApplication.Exit( 1 );
+			EditorApplication.Exit( 1 ) ;
 		}
 
 		return result ;
@@ -205,7 +156,7 @@ public partial class Build_AssetBundle
 				// Windows用
 				case "--platform-windows64" :
 				case "--platform-windows" :
-					platform	= BuildTarget.StandaloneWindows ;
+					platform	= BuildTarget.StandaloneWindows64 ;
 				break ;
 
 				// OSX用
@@ -222,6 +173,12 @@ public partial class Build_AssetBundle
 				// iOS用
 				case "--platform-ios" :
 					platform	= BuildTarget.iOS ;
+				break ;
+
+				// Linux用
+				case "--platform-linux64" :
+				case "--platform-linux" :
+					platform	= BuildTarget.StandaloneLinux64 ;
 				break ;
 
 				//---------------------------------
@@ -255,20 +212,22 @@ public partial class Build_AssetBundle
 			case BuildTypes.StreamingAssets	:
 				switch( platform )
 				{
-					case BuildTarget.StandaloneWindows	: result = Execute_StreamingAssets_Windows()	; break ;
-					case BuildTarget.StandaloneOSX		: result = Execute_StreamingAssets_OSX()		; break ;
-					case BuildTarget.Android			: result = Execute_StreamingAssets_Android()	; break ;
-					case BuildTarget.iOS				: result = Execute_StreamingAssets_iOS()		; break ;
+					case BuildTarget.StandaloneWindows64	: result = Execute_StreamingAssets_Runtime_Windows64()				; break ;
+					case BuildTarget.StandaloneOSX			: result = Execute_StreamingAssets_Runtime_OSX()					; break ;
+					case BuildTarget.Android				: result = Execute_StreamingAssets_Runtime_Android()				; break ;
+					case BuildTarget.iOS					: result = Execute_StreamingAssets_Runtime_iOS()					; break ;
+					case BuildTarget.StandaloneLinux64		: result = Execute_StreamingAssets_Runtime_Linux64()				; break ;
 				}
 			break ;
 
 			case BuildTypes.RemoteAssets	:
 				switch( platform )
 				{
-					case BuildTarget.StandaloneWindows	: result = Execute_RemoteAssets_Windows()		; break ;
-					case BuildTarget.StandaloneOSX		: result = Execute_RemoteAssets_OSX()			; break ;
-					case BuildTarget.Android			: result = Execute_RemoteAssets_Android()		; break ;
-					case BuildTarget.iOS				: result = Execute_RemoteAssets_iOS()			; break ;
+					case BuildTarget.StandaloneWindows64	: result = Execute_RemoteAssets_Runtime_Windows64_Development()		; break ;
+					case BuildTarget.StandaloneOSX			: result = Execute_RemoteAssets_Runtime_OSX_Development()			; break ;
+					case BuildTarget.Android				: result = Execute_RemoteAssets_Runtime_Android_Development()		; break ;
+					case BuildTarget.iOS					: result = Execute_RemoteAssets_Runtime_iOS_Development()			; break ;
+					case BuildTarget.StandaloneLinux64		: result = Execute_RemoteAssets_Runtime_Linux64_Development()		; break ;
 				}
 			break ;
 		}
@@ -290,7 +249,7 @@ public partial class Build_AssetBundle
 	//--------------------------------------------------------------------------------------------
 	// link.xml(コマンドラインからも可能)
 
-	[MenuItem("Build/AssetBundle/RemoteAssets/Make link.xml", priority = 2)]
+	[MenuItem( "Build/AssetBundle/RemoteAssets/Make link.xml", priority = 2 )]
 	internal static bool MakeLinkXmlFile()
 	{
 		// 処理時間計測開始
@@ -318,7 +277,7 @@ public partial class Build_AssetBundle
 	//--------------------------------------------------------------------------------------------
 	// チュートリアル用のアセットバンドルリストファイルをコピーする
 
-	[MenuItem("Build/AssetBundle/Copy AssetBundlePaths For Tutorial", priority = 2)]
+	[MenuItem( "Build/AssetBundle/Copy AssetBundlePaths For Tutorial", priority = 2 )]
 	internal static bool CopyAssetBundlePathsForTutorial()
 	{
 		bool result = false ;
@@ -367,28 +326,26 @@ public partial class Build_AssetBundle
 		return result ;
 	}
 
-
-
 	//--------------------------------------------------------------------------------------------
 
 	// 1970年01月01日 00時00分00秒 からの経過秒数を計算するためのエポック時間
-	private static readonly DateTime m_UNIX_EPOCH = new DateTime( 1970, 1, 1, 0, 0, 0, 0 ) ;
+	private static readonly DateTime m_UNIX_EPOCH = new ( 1970, 1, 1, 0, 0, 0, 0 ) ;
 
 	private static long m_ProcessingTime ;
 
 	// 時間計測を開始する
 	private static void StartClock()
 	{
-		DateTime dt = DateTime.Now ;
-		TimeSpan time = dt.ToUniversalTime() - m_UNIX_EPOCH ;
+		var dt = DateTime.Now ;
+		var time = dt.ToUniversalTime() - m_UNIX_EPOCH ;
 		m_ProcessingTime = ( long )time.TotalSeconds ;
 	}
 
 	// 時間計測を終了する
 	private static void StopClock()
 	{
-		DateTime dt = DateTime.Now ;
-		TimeSpan time = dt.ToUniversalTime() - m_UNIX_EPOCH ;
+		var dt = DateTime.Now ;
+		var time = dt.ToUniversalTime() - m_UNIX_EPOCH ;
 		long processtingTime = ( long )time.TotalSeconds - m_ProcessingTime ;
 
 		long hour   = ( processtingTime / 3600L ) ;

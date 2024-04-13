@@ -12,14 +12,15 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: be287209401ad174dbf9b7e1ef42d252, type: 3}
   m_Name: DefaultSettings
   m_EditorClassIdentifier: 
-  ButtonFrame: {fileID: 0}
+  InputSystemEnabled: 1
+  ButtonFrame: {fileID: 21300000, guid: bcdbb414f54ed384ea5d82f60c05b7d9, type: 3}
   ButtonDisabledColor: {r: 1, g: 1, b: 1, a: 1}
   ButtonLabelFontSize: 24
   ButtonLabelColor: {r: 0, g: 0, b: 0, a: 1}
   ButtonLabelShadow: 0
   ButtonLabelOutline: 0
-  ProgressbarFrame: {fileID: 0}
-  ProgressbarThumb: {fileID: 0}
+  ProgressbarFrame: {fileID: 21300000, guid: 7c4c4f4be8fc5234c8e0b039ac19a33b, type: 3}
+  ProgressbarThumb: {fileID: 21300002, guid: 7c4c4f4be8fc5234c8e0b039ac19a33b, type: 3}
   TextColor: {r: 1, g: 1, b: 1, a: 1}
   Text_Font: {fileID: 12800000, guid: 78203506eef816f438b9f9fba3aac04a, type: 3}
   Text_FontSize: 20

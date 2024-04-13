@@ -1,8 +1,9 @@
 #if UNITY_EDITOR
 
+using System.Collections.Generic ;
 using UnityEngine ;
 using UnityEditor ;
-using System.Collections.Generic ;
+
 
 namespace uGUIHelper
 {
@@ -21,10 +22,9 @@ namespace uGUIHelper
 			//--------------------------------------------
 
 			// ターゲットのインスタンス
-			UIInteraction interaction = target as UIInteraction ;
+			var interaction = target as UIInteraction ;
 
-			UIView view = interaction.GetComponent<UIView>() ;
-			if( view != null )
+			if( interaction.TryGetComponent<UIView>( out var view ) == true )
 			{
 				EditorGUILayout.Separator() ;   // 少し区切りスペース
 

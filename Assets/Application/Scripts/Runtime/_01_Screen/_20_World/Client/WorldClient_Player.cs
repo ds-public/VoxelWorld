@@ -29,7 +29,7 @@ namespace DSW.World
 		// プレイヤー情報をロードする
 		private bool LoadLocalPlayer()
 		{
-			if( StorageAccessor.Exists( m_LocalPlayerPath ) != StorageAccessor.Target.File )
+			if( StorageAccessor.Exists( m_LocalPlayerPath ) != StorageAccessor.TargetTypes.File )
 			{
 				// プレイヤー識別子は取得していない
 				return false ;

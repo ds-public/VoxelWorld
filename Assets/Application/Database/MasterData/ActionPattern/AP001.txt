@@ -1,4 +1,0 @@
-優先度	重み	行動種別	スキル	条件0	条件1	条件2	条件3	対象0	対象1	対象2	対象3	無効優先度	コスト無視
-priority	weight	action_category	skill_id	condition[0]	condition[1]	condition[2]	condition[3]	target[0]	target[1]	target[2]	target[3]	invalid_priority	ignore_cost
-int	int	int	long	string	string	string	string	string	string	string	string	int	bool
-1	1	|1|攻撃	|0|なし					MaxHP=↑					

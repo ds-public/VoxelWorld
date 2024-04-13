@@ -38,10 +38,11 @@ using uGUIHelper ;
 
 using DSW.World ;
 
+
 namespace DSW
 {
 	/// <summary>
-	/// アプリケーションマネージャクラス Version 2022/10/03 0
+	/// アプリケーションマネージャクラス Version 2024/04/13 0
 	/// </summary>
 	public class ApplicationManager : SingletonManagerBase<ApplicationManager>
 	{
@@ -240,7 +241,7 @@ namespace DSW
 
 			// 画面の向き設定
 //			Screen.orientation = ScreenOrientation.AutoRotation ;	// 回転許可
-			Screen.orientation = ScreenOrientation.Landscape ;		// 回転許可
+			Screen.orientation = ScreenOrientation.LandscapeLeft ;		// 回転許可
 			Screen.autorotateToPortrait           = false ;			// 縦許可
 			Screen.autorotateToPortraitUpsideDown = false ;			// 縦許可
 			Screen.autorotateToLandscapeLeft      = true ;			// 横禁止
@@ -382,14 +383,7 @@ namespace DSW
 			Debug.Log( "[Screen Resolution] W = " + screenWidth + " H = " + screenHeight ) ;
 
 			// 表示解像度を設定する
-			Screen.SetResolution( ( int )screenWidth, ( int )screenHeight, fullScreen, frameRate ) ;
-#endif
-			//----------------------------------------------------------
-
-#if UNITY_EDITOR || UNITY_STANDALONE
-
-			// 入力モードをカスタム(ＰＣ用)にする
-			UIEventSystem.ProcessType = StandaloneInputModuleWrapper.ProcessType.Custom ;
+			Screen.SetResolution( ( int )screenWidth, ( int )screenHeight, fullScreen == true ? FullScreenMode.ExclusiveFullScreen : FullScreenMode.Windowed, new RefreshRate(){ numerator = ( uint )frameRate, denominator = 1 } ) ;
 #endif
 			//----------------------------------------------------------
 			// Unity の情報収集を無効化する
@@ -461,7 +455,6 @@ namespace DSW
 			SetFacadeClasses() ;
 
 			//----------------------------------------------------------
-
 		}
 	
 		/// <summary>
@@ -492,11 +485,12 @@ namespace DSW
 			//----------------------------------------------------------
 			// ファサードクラスを GameObject の生存期間に同期させる(UniTaskをコロスため)
 
-			GameObject facade = new GameObject( "Facade Classes" ) ;
+			var facade = new GameObject( "Facade Classes" ) ;
 			facade.transform.SetParent( transform, false ) ;
-			facade.transform.localPosition	= Vector3.zero ;
-			facade.transform.localRotation	= Quaternion.identity ;
+			facade.transform.SetLocalPositionAndRotation( Vector3.zero, Quaternion.identity ) ;
 			facade.transform.localScale		= Vector3.one ;
+
+			facade.AddComponent<Preference>() ;
 
 			facade.AddComponent<Scene>() ;
 			facade.AddComponent<Asset>() ;
@@ -568,12 +562,6 @@ namespace DSW
 				PlayerDataManager.Create( transform ) ;
 			}
 
-			// プリファレンス情報保持用のゲームオブジェクトを生成する
-			if( PreferenceManager.Instance == null )
-			{
-				PreferenceManager.Create( transform ) ;
-			}
-
 			//----------------------------------------------------------
 			// このタイミングのエンドポイント設定は保険の意味合い程度で実際はブートで上書きされる
 
@@ -589,8 +577,8 @@ namespace DSW
 
 			if( ( string.IsNullOrEmpty( m_EndPoint ) == true || m_EndPoint == "http://localhost/" ) && settings != null )
 			{
-				var endPoints = settings.WebAPI_EndPoints ;
-				int endPointIndex = ( int )settings.WebAPI_DefaultEndPoint ;
+				var endPoints = settings.EndPoints ;
+				int endPointIndex = ( int )settings.EndPoint ;
 				if( endPoints != null && endPoints.Length >  0 && endPointIndex >= 0 && endPointIndex <  endPoints.Length )
 				{
 					m_EndPoint = endPoints[ endPointIndex ].Path ;	// デフォルトは開発サーバー
@@ -627,8 +615,8 @@ namespace DSW
 			// 汎用インプットマネージャの生成
 			if( InputManager.Instance == null )
 			{
-				InputManager.Create( transform ) ;
-//				GamePadMapper.Setup() ;
+				InputManager.Create( transform, true ) ;
+				GamePadMapper.Setup() ;
 			}
 
 			// 汎用アセットバンドルマネージャの生成
@@ -640,8 +628,8 @@ namespace DSW
 			//----------------------------------------------------------
 			// カーソルの制御を設定する
 
-			UIEventSystem.SetCursorProcessing( false ) ;
-			InputManager.SetCursorProcessing( false ) ;
+			InputManager.SetInputProcessingType( InputProcessingTypes.Switching ) ;
+			InputManager.SetCursorProcessing( true ) ;
 
 			//----------------------------------------------------------
 			// プレイヤー情報の初期値を設定しておく
@@ -772,17 +760,17 @@ namespace DSW
 #endif
 		//-------------------------------------------------------------------------------------------
 
+#if USE_EXCEPTION_DIALOG
 		internal void Update()
 		{
-#if USE_EXCEPTION_DIALOG
 			// サブスレッドで発生した例外もキャッチして表示したいため例外情報はリストにためてメインスレッドで表示する
 			if( m_Exceptions.Count >  0 && m_IsExceptionDialogOpening == false )
 			{
 				// 例外発生情報ダイアログを開く
 				OpenExceptionDialog().Forget() ;
 			}
-#endif
 		}
+#endif
 
 		//-----------------------------------------------------------------
 	
@@ -1144,7 +1132,7 @@ namespace DSW
 #if !UNITY_EDITOR
 				return false ;
 #else
-				string path = "AssetBundle/" + Define.PlatformName ;
+				string path = "AssetBundle/" + Define.AssetBundlePlatformName ;
 				return Directory.Exists( path ) ;
 #endif
 			}
@@ -1163,8 +1151,7 @@ namespace DSW
 				return null ;
 			}
 
-			AsyncState state = new AsyncState( m_Instance ) ;
-
+			var state = new AsyncState( m_Instance ) ;
 			m_Instance.StartCoroutine( m_Instance.HasAssetBundleInStreamingAssets_Private( path, onResult, state ) ) ;
 			return state ;
 		}

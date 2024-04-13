@@ -31,7 +31,7 @@ namespace DSW.World
 		{
 			string path = m_PlayerRootPath + id ;
 
-			if( StorageAccessor.Exists( path ) != StorageAccessor.Target.File )
+			if( StorageAccessor.Exists( path ) != StorageAccessor.TargetTypes.File )
 			{
 				// プレイヤーデータは存在しない
 				return null ;

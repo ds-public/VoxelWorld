@@ -15,7 +15,7 @@ namespace uGUIHelper
 	{
 		override protected void DrawInspectorGUI()
 		{
-			UIListView view = target as UIListView ;
+			var view = target as UIListView ;
 
 			EditorGUILayout.Separator() ;	// 少し区切りスペース
 		
@@ -35,6 +35,15 @@ namespace uGUIHelper
 		
 			// アイテムの追加と削除
 			DrawItem( view ) ;
+
+			//--------------------------------------------------------------------------
+			// ゲームパッド用の情報
+
+			EditorGUILayout.Separator() ;	// 少し区切りスペース
+
+			GUI.backgroundColor = Color.green ;
+			EditorGUILayout.IntField( "Selected Index", view.SelectedIndex ) ;
+			GUI.backgroundColor = Color.white ;
 		}
 
 		// Item 関係
@@ -45,6 +54,7 @@ namespace uGUIHelper
 				return ;
 			}
 
+			//----------------------------------
 
 			EditorGUILayout.Separator() ;	// 少し区切りスペース
 
@@ -67,8 +77,8 @@ namespace uGUIHelper
 				var components = view.Item.GetComponents<MonoBehaviour>() ;
 				if( components != null && components.Length >  0 )
 				{
-					List<MonoBehaviour> itemComponents = new List<MonoBehaviour>(){ null } ;
-					List<string> itemComponentNames = new List<string>(){ "Unknown" } ;
+					var itemComponents = new List<MonoBehaviour>(){ null } ;
+					var itemComponentNames = new List<string>(){ "Unknown" } ;
 
 					MonoBehaviour itemComponent ;
 
@@ -102,6 +112,14 @@ namespace uGUIHelper
 						EditorUtility.SetDirty( view ) ;
 					}
 				}
+			}
+
+			UIView itemEmptyPresentment = EditorGUILayout.ObjectField( "ItemEmptyPresentment", view.ItemEmptyPresentment, typeof( UIView ), true ) as UIView ;
+			if( itemEmptyPresentment != view.ItemEmptyPresentment )
+			{
+				Undo.RecordObject( view, "UIListView ItemEmptyPresentment : Change" ) ;	// アンドウバッファに登録
+				view.ItemEmptyPresentment = itemEmptyPresentment ;
+				EditorUtility.SetDirty( view ) ;
 			}
 
 			//------------------------------------------------
@@ -222,7 +240,7 @@ namespace uGUIHelper
 			// アイテムの更新が必要な時に呼び出されるイベント
 
 			// デリゲートの設定状況
-			SerializedObject so = new SerializedObject( view ) ;
+			var so = new SerializedObject( view ) ;
 
 			SerializedProperty sp = so.FindProperty( "onUpdateItem" ) ;
 			if( sp != null )
@@ -235,38 +253,38 @@ namespace uGUIHelper
 
 		//--------------------------------------------------------------------------
 
-		private readonly Dictionary<string,string> mJapanese_Message = new Dictionary<string, string>()
+		private readonly Dictionary<string,string> m_Japanese_Message = new ()
 		{
-			{ "SetAutoHide",			"Visibility を 'Auto Hide' に設定する事をお勧めします" },
-			{ "InteractionNone",		"UIInteraction クラスが必要です" },
-			{ "HSB_CanvasGroupNone",	"Horizontal Scrollbar に CanvasGroup クラスが必要です" },
-			{ "VSB_CanvasGroupNone",	"Vertical Scrollbar に CanvasGroup クラスが必要です" },
+			{ "SetAutoHide",			"Visibility を 'Auto Hide' に設定する事をお勧めします"	},
+			{ "InteractionNone",		"UIInteraction クラスが必要です"						},
+			{ "HSB_CanvasGroupNone",	"Horizontal Scrollbar に CanvasGroup クラスが必要です"	},
+			{ "VSB_CanvasGroupNone",	"Vertical Scrollbar に CanvasGroup クラスが必要です"	},
 		} ;
-		private readonly Dictionary<string,string> mEnglish_Message = new Dictionary<string, string>()
+		private readonly Dictionary<string,string> m_English_Message = new ()
 		{
-			{ "SetAutoHide",			"Recommend to set Visibility to 'Auto Hide'" },
-			{ "InteractionNone",		"'UIInteraction' is necessary" },
-			{ "HSB_CanvasGroupNone",	"'CanvasGroup' is necessary to horizontal scrollbar" },
-			{ "VSB_CanvasGroupNone",	"'CanvasGroup' is necessary to vertical scrollbar" },
+			{ "SetAutoHide",			"Recommend to set Visibility to 'Auto Hide'"			},
+			{ "InteractionNone",		"'UIInteraction' is necessary"							},
+			{ "HSB_CanvasGroupNone",	"'CanvasGroup' is necessary to horizontal scrollbar"	},
+			{ "VSB_CanvasGroupNone",	"'CanvasGroup' is necessary to vertical scrollbar"		},
 		} ;
 
-		private string GetMessage( string tLabel )
+		private string GetMessage( string label )
 		{
 			if( Application.systemLanguage == SystemLanguage.Japanese )
 			{
-				if( mJapanese_Message.ContainsKey( tLabel ) == false )
+				if( m_Japanese_Message.ContainsKey( label ) == false )
 				{
 					return "指定のラベル名が見つかりません" ;
 				}
-				return mJapanese_Message[ tLabel ] ;
+				return m_Japanese_Message[ label ] ;
 			}
 			else
 			{
-				if( mEnglish_Message.ContainsKey( tLabel ) == false )
+				if( m_English_Message.ContainsKey( label ) == false )
 				{
 					return "Specifying the label name can not be found" ;
 				}
-				return mEnglish_Message[ tLabel ] ;
+				return m_English_Message[ label ] ;
 			}
 		}
 	}

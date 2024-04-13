@@ -9,17 +9,18 @@ using UnityEngine ;
 using UnityEditor ;
 using UnityEditor.SceneManagement ;
 
+
 /// <summary>
 /// シンプルアセットバンドルビルダーパッケージ
 /// </summary>
 namespace Tools.ForAssetBundle
 {
 	/// <summary>
-	/// アセットバンドルビルダークラス(エディター用) Version 2022/05/15 0
+	/// アセットバンドルビルダークラス(エディター用) Version 2024/04/02 0
 	/// </summary>
 	public class SimpleAssetBundleBuilder : EditorWindow
 	{
-		[ MenuItem( "Tools/Simple AssetBundle Builder(アセットバンドル作成)" ) ]
+		[MenuItem( "Tools/Simple AssetBundle Builder(アセットバンドル作成)" )]
 		public static void OpenWindow()
 		{
 			EditorWindow.GetWindow<SimpleAssetBundleBuilder>( false, "AB Builder", true ) ;
@@ -45,7 +46,7 @@ namespace Tools.ForAssetBundle
 			}
 
 			public string			AssetBundlePath ;						// 書き出すアセットバンドルのパス
-			public List<AssetFile>	AssetFiles = new List<AssetFile>() ;	// 含めるアセットのパスのリスト
+			public List<AssetFile>	AssetFiles = new () ;					// 含めるアセットのパスのリスト
 
 			public int				SourceType ;							// 0=ファイル　1=フォルダ
 
@@ -67,7 +68,7 @@ namespace Tools.ForAssetBundle
 					return 0 ;
 				}
 
-				List<string> assetPaths = new List<string>() ;
+				var assetPaths = new List<string>() ;
 
 				foreach( var assetFile in AssetFiles )
 				{
@@ -147,10 +148,11 @@ namespace Tools.ForAssetBundle
 				{
 					// 拡張子あり
 					i ++ ;
-					string extension = path.Substring( i, l - i ) ;
+					string extension = path[ i.. ] ;
 					if( string.IsNullOrEmpty( extension ) == false )
 					{
-						if( extension == "meta" || extension == "cs" || extension == "js" )
+						extension = extension.ToLower() ;
+						if( extension == "meta" || extension == "cs" || extension == "js" || extension == "ds_store" )
 						{
 							return false ;	// meta と cs と js 以外はＯＫ
 						}
@@ -179,11 +181,6 @@ namespace Tools.ForAssetBundle
 		private bool						m_IgnoreTypeTreeChanges			= false ;					// タイプツリーが変わっても無視(ソースコードを変更しても変化したとはみなされない)
 		private bool						m_DisableWriteTypeTree			= false ;					// タイプツリー自体を削除(サイズ削減用途として)
 
-		/// <summary>
-		/// ビルド中にエラーが報告されている場合、ビルドを失敗させる
-		/// </summary>
-		/// <seealso cref="BuildAssetBundleOptions.StrictMode"/>
-		private bool m_StrictMode = false ;
 
 		private bool						m_CollectDependencies			= false ;					// 全てのアセットバンドルでそのアセットバンドルで使用するアセットを全て含ませる
 
@@ -193,6 +190,12 @@ namespace Tools.ForAssetBundle
 
 		private bool						m_GenerateLinkFile				= true ;
 		private string						m_LinkFilePath					= "Assets/link.xml" ;		// 参照アセンブリの定義ファイルのパス
+
+		// ビルド中にエラーが報告されている場合、ビルドを失敗させるかどうか
+		private bool                        m_StrictMode = false ;
+
+		// DedicatedServer 用にビルドするかどうか
+		private bool                        m_DedicatedServerBuild          = false ;
 
 		//--------------------------------------------------
 
@@ -247,7 +250,7 @@ namespace Tools.ForAssetBundle
 						{
 							// ファイルを指定
 
-							TextAsset textAsset = AssetDatabase.LoadAssetAtPath<TextAsset>( path ) ;
+							var textAsset = AssetDatabase.LoadAssetAtPath<TextAsset>( path ) ;
 							if( textAsset != null && string.IsNullOrEmpty( textAsset.text ) == false )
 							{
 								m_LocalAssetsListFilePath = path ;
@@ -258,14 +261,14 @@ namespace Tools.ForAssetBundle
 								int s = path.LastIndexOf( '.' ) ;
 								if( s >= 0 )
 								{
-									path = path.Substring( 0, s ) ;
+									path = path[ ..s ] ;
 								}
 
 								// 最後のフォルダ区切り位置を取得する
 								s = path.LastIndexOf( '/' ) ;
 								if( s >= 0 )
 								{
-									path = path.Substring( 0, s ) ;
+									path = path[ ..s ] ;
 								}
 
 								// ファイルかどうか判別するには System.IO.File.Exists
@@ -351,14 +354,14 @@ namespace Tools.ForAssetBundle
 							int s = path.LastIndexOf( '.' ) ;
 							if( s >= 0 )
 							{
-								path = path.Substring( 0, s ) ;
+								path = path[ ..s ] ;
 							}
 
 							// 最後のフォルダ区切り位置を取得する
 							s = path.LastIndexOf( '/' ) ;
 							if( s >= 0 )
 							{
-								path = path.Substring( 0, s ) ;
+								path = path[ ..s ] ;
 							}
 						}
 
@@ -381,7 +384,7 @@ namespace Tools.ForAssetBundle
 
 									if( smallFolderName == "windows" )
 									{
-										m_BuildTarget = BuildTarget.StandaloneWindows ;
+										m_BuildTarget = BuildTarget.StandaloneWindows64 ;
 										break ;
 									}
 									else
@@ -400,6 +403,12 @@ namespace Tools.ForAssetBundle
 									if( smallFolderName == "ios" || smallFolderName == "iphone" )
 									{
 										m_BuildTarget = BuildTarget.iOS ;
+										break ;
+									}
+									else
+									if( smallFolderName == "linux" )
+									{
+										m_BuildTarget = BuildTarget.StandaloneLinux64 ;
 										break ;
 									}
 								}
@@ -582,14 +591,14 @@ namespace Tools.ForAssetBundle
 									int s = path.LastIndexOf( '.' ) ;
 									if( s >= 0 )
 									{
-										path = path.Substring( 0, s ) ;
+										path = path[ ..s ] ;
 									}
 
 									// 最後のフォルダ区切り位置を取得する
 									s = path.LastIndexOf( '/' ) ;
 									if( s >= 0 )
 									{
-										path = path.Substring( 0, s ) ;
+										path = path[ ..s ] ;
 									}
 
 									// ファイルかどうか判別するには System.IO.File.Exists
@@ -668,9 +677,9 @@ namespace Tools.ForAssetBundle
 				GUI.backgroundColor = new Color( 1, 1, 0.5f, 1 ) ;
 				if( GUILayout.Button( "Create LinkXmlFile Only" ) == true )
 				{
-					TargetData[] targets = new TargetData[]
+					var targets = new TargetData[]
 					{
-						new TargetData()
+						new ()
 						{
 							ListFilePath	= m_LocalAssetsListFilePath,
 							RootFolderPath	= m_LocalAssetsRootFolderPath
@@ -737,8 +746,8 @@ namespace Tools.ForAssetBundle
 
 			//-------------------------------------------------
 
-			Color c0 = new Color( 0.0f, 1.0f, 1.0f, 1.0f ) ;
-			Color c1 = new Color( 1.0f, 1.0f, 1.0f, 1.0f ) ;
+			var c0 = new Color( 0.0f, 1.0f, 1.0f, 1.0f ) ;
+			var c1 = new Color( 1.0f, 1.0f, 1.0f, 1.0f ) ;
 
 			// スクロールビューで表示する
 			m_Scroll = GUILayout.BeginScrollView( m_Scroll ) ;
@@ -874,8 +883,8 @@ namespace Tools.ForAssetBundle
 			}
 
 			// リストファイルを読み出す
-			TextAsset textAsset = AssetDatabase.LoadAssetAtPath<TextAsset>( listFilePath ) ;
-			string text = textAsset.text ;
+			var textAsset = AssetDatabase.LoadAssetAtPath<TextAsset>( listFilePath ) ;
+			var text = textAsset.text ;
 
 			if( string.IsNullOrEmpty( text ) == true )
 			{
@@ -883,7 +892,7 @@ namespace Tools.ForAssetBundle
 				return ( null, null ) ;
 			}
 
-			string[] elements = text.Split( '\n', ( char )0x0D, ( char )0x0A ) ;
+			var elements = text.Split( '\n', ( char )0x0D, ( char )0x0A ) ;
 			if( elements == null || elements.Length == 0 )
 			{
 				return ( null, null ) ;
@@ -891,8 +900,8 @@ namespace Tools.ForAssetBundle
 
 			//-------------------------------------------------------------
 
-			List<AssetBundleFile> assetBundleFiles = new List<AssetBundleFile>() ;
-			List<string> ignoreFilePaths = new List<string>() ;
+			var assetBundleFiles = new List<AssetBundleFile>() ;
+			var ignoreFilePaths = new List<string>() ;
 
 			string		path ;
 			string[]	tags ;
@@ -1001,7 +1010,7 @@ namespace Tools.ForAssetBundle
 					return ;
 				}
 
-				parentPath = localAssetsPath.Substring( 0, p ) ;
+				parentPath = localAssetsPath[ ..p ] ;
 				if( parentPath.Length <  0 )
 				{
 					// ありえない
@@ -1034,7 +1043,7 @@ namespace Tools.ForAssetBundle
 								{
 									// 決定(単独ファイル)
 
-									AssetBundleFile assetBundleFile = new AssetBundleFile()
+									var assetBundleFile = new AssetBundleFile()
 									{
 										NoConvert		= noConvert,	// アセットバンドル化を行うかどうか
 										Tags			= tags			// タグ
@@ -1051,14 +1060,14 @@ namespace Tools.ForAssetBundle
 										if( p >= 0 )
 										{
 											p ++ ;
-											assetName = assetName.Substring( p, assetName.Length - p ) ;
+											assetName = assetName[ p.. ] ;
 										}
 
 										folderName = path ;
 										p = folderName.LastIndexOf( '/' ) ;
 										if( p >= 0 )
 										{
-											folderName = path.Substring( 0, p ) ;
+											folderName = path[ ..p ] ;
 										}
 										assetBundleFile.AssetBundlePath = folderName + "/" + assetName ;	// 出力パス(相対)
 									}
@@ -1088,7 +1097,7 @@ namespace Tools.ForAssetBundle
 				if( noConvert == false && Directory.Exists( localAssetsPath ) == true )
 				{
 					// フォルダ(1・3のケース)
-					AssetBundleFile assetBundleFile = new AssetBundleFile()
+					var assetBundleFile = new AssetBundleFile()
 					{
 						AssetBundlePath	= path,		// 出力パス
 						NoConvert		= false,	// アセットバンドル化を行うかどうか
@@ -1139,7 +1148,7 @@ namespace Tools.ForAssetBundle
 							{
 								// 決定(単独ファイル)
 
-								AssetBundleFile assetBundleFile = new AssetBundleFile()
+								var assetBundleFile = new AssetBundleFile()
 								{
 									NoConvert	= noConvert,	// アセットバンドル化を行うかどうか
 									Tags		= tags			// タグ
@@ -1150,7 +1159,7 @@ namespace Tools.ForAssetBundle
 								if( p >= 0 )
 								{
 									p ++ ;
-									assetName = assetName.Substring( p, assetName.Length - p ) ;
+									assetName = assetName[ p.. ] ;
 								}
 
 								if( noConvert == false )
@@ -1159,7 +1168,7 @@ namespace Tools.ForAssetBundle
 									p = assetName.IndexOf( '.' ) ;
 									if( p >= 0 )
 									{
-										assetName = assetName.Substring( 0, p ) ;
+										assetName = assetName[ ..p ] ;
 									}
 								}
 
@@ -1197,7 +1206,7 @@ namespace Tools.ForAssetBundle
 							// 対象はフォルダ
 							if( CheckFolderType( targetPaths[ i ] ) == true )
 							{
-								AssetBundleFile assetBundleFile = new AssetBundleFile()
+								var assetBundleFile = new AssetBundleFile()
 								{
 									Tags = tags		// タグ
 								} ;
@@ -1207,7 +1216,7 @@ namespace Tools.ForAssetBundle
 								if( p >= 0 )
 								{
 									p ++ ;
-									assetName = assetName.Substring( p, assetName.Length - p ) ;
+									assetName = assetName[ p.. ] ;
 								}
 
 								assetBundleFile.AssetBundlePath = path + "/" + assetName ;	// 出力パス
@@ -1304,7 +1313,7 @@ namespace Tools.ForAssetBundle
 					return ;
 				}
 
-				parentPath = localAssetsPath.Substring( 0, p ) ;
+				parentPath = localAssetsPath[ ..p ] ;
 				if( parentPath.Length <  0 )
 				{
 					// ありえない
@@ -1509,7 +1518,7 @@ namespace Tools.ForAssetBundle
 			}
 
 			// 最後にスラッシュが付いていればフォルダ限定
-			if( path[ path.Length - 1 ] == '/' )
+			if( path[ ^1 ] == '/' )
 			{
 				if( noConvert == true )
 				{
@@ -1528,7 +1537,7 @@ namespace Tools.ForAssetBundle
 			}
 
 			// 最後にアスタリスクが付いていれば複数対象
-			if( path[ path.Length - 1 ] == '*' )
+			if( path[ ^1 ] == '*' )
 			{
 				wildCard = true ;	// 対象は親フォルダ内の全て
 				path = path.TrimEnd( '*' ) ;
@@ -1537,7 +1546,7 @@ namespace Tools.ForAssetBundle
 			// 最後にスラッシュになってしまうようなら除外する
 			while( path.Length >= 1 )
 			{
-				if( path[ path.Length - 1 ] == '/' )
+				if( path[ ^1 ] == '/' )
 				{
 					path = path.Trim( '/' ) ;
 				}
@@ -1561,7 +1570,7 @@ namespace Tools.ForAssetBundle
 
 			// ワイルドカード部分を展開して全て個別のパスにする
 
-			List<string> stackedPaths = new List<string>() ;
+			var stackedPaths = new List<string>() ;
 
 			// 一時的に最後にスラッシュを付ける
 			path += "/" ;
@@ -1587,17 +1596,17 @@ namespace Tools.ForAssetBundle
 			string token,  fixedPath ;
 
 			string[]		folderPaths ;
-			List<string>	assetPaths = new List<string>() ;
+			var				assetPaths = new List<string>() ;
 
 			//----------------------------------
 
 			p = path.IndexOf( "/" ) ;
 
 			// 最初のスラッシュまで切り出し(絶対に０より大きい値になる
-			token = path.Substring( 0, p ) ;
+			token = path[ ..p ] ;
 
 			p ++ ;
-			path = path.Substring( p, path.Length - p ) ;
+			path = path[ p.. ] ;
 
 			if( token != "*" )
 			{
@@ -1737,10 +1746,11 @@ namespace Tools.ForAssetBundle
 			{
 				// 拡張子あり
 				i ++ ;
-				string extension = path.Substring( i, l - i ) ;
+				string extension = path[ i.. ] ;
 				if( string.IsNullOrEmpty( extension ) == false )
 				{
-					if( extension == "meta" || extension == "cs" || extension == "js" )
+					extension = extension.ToLower() ;
+					if( extension == "meta" || extension == "cs" || extension == "js" || extension == "ds_store" )
 					{
 						return false ;	// meta と cs と js 以外はＯＫ
 					}
@@ -1761,7 +1771,7 @@ namespace Tools.ForAssetBundle
 			string listFilePath ;
 			string rootFolderPath ;
 
-			List<AssetBundleFile>	fullAssetBundleFiles = new List<AssetBundleFile>() ;
+			var	fullAssetBundleFiles = new List<AssetBundleFile>() ;
 
 			AssetBundleFile[] assetBundleFiles ;
 
@@ -1787,7 +1797,7 @@ namespace Tools.ForAssetBundle
 
 			var generator = new SimpleLinkXMLGenerator() ;
 
-			List<string> assetPaths = new List<string>() ;
+			var assetPaths = new List<string>() ;
 			foreach( var assetBundleFile in assetBundleFiles )
 			{
 				assetPaths.AddRange( assetBundleFile.AssetFiles.Select( value => value.AssetPath ) ) ;
@@ -1847,6 +1857,25 @@ namespace Tools.ForAssetBundle
 			return result ;
 		}
 
+		/// <summary>
+		/// ファイルの差分情報を記録する
+		/// </summary>
+		[Serializable]
+		public class AssetBundleFileDifference
+		{
+			public string	Path ;
+			public int		Size ;
+			public uint		Crc ;
+		}
+
+		private Dictionary<string,AssetBundleFileDifference>	m_Differences ;
+
+		[Serializable]
+		public class AssetBundleJsonRecordPack
+		{
+			public List<AssetBundleFileDifference> AssetBundleFiles ;
+		}
+
 		// 必要なアセットバンドルを全て生成する
 		private bool CreateAssetBundleAll( AssetBundleFile[] assetBundleFiles, string[] ignoreFilePaths )
 		{
@@ -1885,7 +1914,7 @@ namespace Tools.ForAssetBundle
 
 			//----------------------------------
 
-			BuildAssetBundleOptions options = BuildAssetBundleOptions.DeterministicAssetBundle ;
+			BuildAssetBundleOptions options = BuildAssetBundleOptions.None ;
 
 			if( m_ChunkBasedCompression == true )
 			{
@@ -1907,7 +1936,7 @@ namespace Tools.ForAssetBundle
 				options |= BuildAssetBundleOptions.DisableWriteTypeTree ;
 			}
 
-			if ( m_StrictMode )
+			if( m_StrictMode == true )
 			{
 				options |= BuildAssetBundleOptions.StrictMode ;
 			}
@@ -1928,7 +1957,7 @@ namespace Tools.ForAssetBundle
 				l = assetBundleFiles.Length ;
 
 				// ここからが新版のメイン生成処理
-				List<AssetBundleBuild> maps = new List<AssetBundleBuild>() ;
+				var maps = new List<AssetBundleBuild>() ;
 				AssetBundleBuild map ;
 
 				for( i  = 0 ; i <  l ; i ++ )
@@ -1973,14 +2002,43 @@ namespace Tools.ForAssetBundle
 
 					AssetBundleManifest manifest ;
 
-					// アセットバンドルの生成
-					manifest = BuildPipeline.BuildAssetBundles
+					if
 					(
-						assetBundleRootFolderPath,
-						maps.ToArray(),
-						options,
-						m_BuildTarget
-					) ;
+						m_DedicatedServerBuild == true &&
+						(
+							m_BuildTarget == BuildTarget.StandaloneWindows64    ||
+							m_BuildTarget == BuildTarget.StandaloneWindows      ||
+							m_BuildTarget == BuildTarget.StandaloneLinux64
+						)
+					)
+					{
+						// DedicatedServer用のビルド
+						var serverAssetBundleParameters = new BuildAssetBundlesParameters
+						{
+							outputPath          = assetBundleRootFolderPath,
+							bundleDefinitions   = maps.ToArray(),
+							options             = options,
+							targetPlatform      = m_BuildTarget,
+							subtarget           = ( int )StandaloneBuildSubtarget.Server
+						} ;
+
+						// アセットバンドルの生成
+						manifest = BuildPipeline.BuildAssetBundles
+						(
+							serverAssetBundleParameters
+						) ;
+					}
+					else
+					{
+						// アセットバンドルの生成
+						manifest = BuildPipeline.BuildAssetBundles
+						(
+							assetBundleRootFolderPath,
+							maps.ToArray(),
+							options,
+							m_BuildTarget
+						) ;
+					}
 
 					if( manifest != null )
 					{
@@ -2009,8 +2067,8 @@ namespace Tools.ForAssetBundle
 				AssetBundleManifest manifest ;
 
 				string[] nameArray ;
-				List<string> nameList = new List<string>() ;
-				List<string> hashList = new List<string>() ;
+				var nameList = new List<string>() ;
+				var hashList = new List<string>() ;
 
 				string path ;
 
@@ -2094,7 +2152,7 @@ namespace Tools.ForAssetBundle
 			{
 				// アセットバンドル化しないファイルを出力する
 
-				List<string> nameList = new List<string>() ;
+				var nameList = new List<string>() ;
 				l = assetBundleFiles.Length ;
 
 				for( i  = 0 ; i <  l ; i ++ )
@@ -2114,6 +2172,14 @@ namespace Tools.ForAssetBundle
 
 			//-------------------------------------------------------------------------------
 
+			if( m_AssetBundleRootFolderPath.IndexOf( "StreamingAssets" ) >= 0 )
+			{
+				// StreamingAssets 下に出力する場合は念のためリフレッシュをかけておく
+				AssetDatabase.Refresh() ; 
+			}
+
+			//-------------------------------------------------------------------------------
+
 			// バージョンファイルを出力する
 			if( m_GenerateVersionFile == true )
 			{
@@ -2127,18 +2193,85 @@ namespace Tools.ForAssetBundle
 			// ＣＲＣファイルを出力する(CSV版)
 			if( m_GenerateCrcFile_Csv == true || m_GenerateCrcFile_Json == true )
 			{
+				string filePath_Csv  = m_AssetBundleRootFolderPath + GetAssetBundleRootName() + ".csv" ;
+				string filePath_Json = m_AssetBundleRootFolderPath + GetAssetBundleRootName() + ".json" ;
+
+				m_Differences = null ;
+				if( m_Differences == null && File.Exists( filePath_Csv )  == true )
+				{
+					// Csv  から古いファイル情報を取得する
+					string text = File.ReadAllText( filePath_Csv ) ;
+					if( string.IsNullOrEmpty( text ) == false )
+					{
+						// 分解して情報を格納する
+
+						string[] lines = text.Split( '\n' ) ;
+						if( lines != null && lines.Length >  0 )
+						{
+							m_Differences = new Dictionary<string, AssetBundleFileDifference>() ;
+
+							l = lines.Length ;
+							for( i  = 0 ; i <  l ; i ++ )
+							{
+								string[] elements = lines[ i ].TrimEnd( '\n' ).Split( ',' ) ;
+								if( elements != null && elements.Length == 3 )
+								{
+									m_Differences.Add( elements[ 0 ], new AssetBundleFileDifference()
+									{
+										Path = elements[ 0 ],
+										Size = int.Parse( elements[ 1 ] ),
+										Crc  = uint.Parse( elements[ 2 ] )
+									} ) ;
+								}
+							}
+						}
+					}
+				}
+				if( m_Differences == null && File.Exists( filePath_Json ) == true )
+				{
+					// Json から古いファイル情報を取得する
+
+					string text = File.ReadAllText( filePath_Json ) ;
+					if( string.IsNullOrEmpty( text ) == false )
+					{
+						// 分解して情報を格納する
+
+						var pack = JsonUtility.FromJson<AssetBundleJsonRecordPack>( text ) ;
+						if( pack != null && pack.AssetBundleFiles != null && pack.AssetBundleFiles.Count >  0 )
+						{
+							m_Differences = new Dictionary<string, AssetBundleFileDifference>() ;
+
+							l = pack.AssetBundleFiles.Count ;
+							for( i  = 0 ; i <  l ; i ++ )
+							{
+								m_Differences.Add( pack.AssetBundleFiles[ i ].Path, pack.AssetBundleFiles[ i ] ) ;
+							}
+						}
+					}
+				}
+
+				//---------------------------------------------------------
+
 //				Debug.LogWarning( "保存先ルートフォルダ:" + m_AssetBundleRootFolderPath ) ;
 //				Debug.LogWarning( "保存マニフェスト名:" + GetAssetBundleRootName() ) ;
 
+				string fillPath ;
 				byte[] data ;
+
+				string path ;
 				int size ;
 				uint crc ;
-				string path ;
 
 				long totalSize = 0 ;
+				long differenceCount = 0 ;
+				ulong differenceTotalSize = 0 ;
 
-				string textCsv	= string.Empty ;
-				string textJson	= string.Empty ;
+
+				var textCsv  = new ExStringBuilder() ;
+				var textJson = new ExStringBuilder() ;
+
+				// 差分
+				var difference = new ExStringBuilder() ;
 
 				AssetBundleFile assetBundleFile ;
 
@@ -2147,84 +2280,136 @@ namespace Tools.ForAssetBundle
 				{
 					assetBundleFile = assetBundleFiles[ i ] ;
 
-					path = m_AssetBundleRootFolderPath + assetBundleFile.AssetBundlePath ;
-					if( File.Exists( path ) == true )
+					fillPath = m_AssetBundleRootFolderPath + assetBundleFile.AssetBundlePath ;
+					if( File.Exists( fillPath ) == true )
 					{
-						data = File.ReadAllBytes( m_AssetBundleRootFolderPath + assetBundleFile.AssetBundlePath ) ;
+						data = File.ReadAllBytes( fillPath ) ;
+
+						path = assetBundleFile.AssetBundlePath ;
+
 						if( data != null && data.Length >  0 )
 						{
-							size  = data.Length ;
-							totalSize += size ;
+							size = data.Length ;
+							crc  = GetCRC32( data ) ;
+						}
+						else
+						{
+							size = 0 ;
+							crc  = 0 ;
+						}
 
-							crc   = GetCRC32( data ) ;
+						totalSize += size ;
 
-							//------------------------------------------------------
-							// Csv 版
+						//------------------------------------------------------
+						// 差分があれば差分情報を記録していく
 
-							textCsv += ( assetBundleFile.AssetBundlePath + "," + size + "," + crc ) ;
-							if( assetBundleFile.Tags != null && assetBundleFile.Tags.Length >  0 )
+						if( m_Differences != null )
+						{
+							if( m_Differences.ContainsKey( path ) == true )
 							{
-								textCsv += "," ;
+								// 過去にファイルが存在する
+								var d = m_Differences[ path ] ;
 
-								m = assetBundleFile.Tags.Length ;
-								for( c  = 0 ; c <   m ; c ++ )
+								if( d.Size != size || d.Crc != crc )
 								{
-									textCsv += assetBundleFile.Tags[ c ] ;
-									if( i <  ( m - 1 ) )
-									{
-										textCsv += " " ;	// タグの区切り記号はスペース
-									}
+									// Size または Crc が異なる
+									difference += "[U] " + path + " : " ;
+									difference += "Size = " + d.Size.ToString() + ( d.Size != size ? " -> " + size.ToString() : string.Empty ) + " " ;
+									difference += "Crc = "  + d.Crc.ToString()  + ( d.Crc  != crc  ? " -> " + crc.ToString()  : string.Empty ) + "\n" ;
+
+									differenceCount ++ ;
+									differenceTotalSize += ( ulong )size ;
 								}
 							}
-							textCsv += "\n" ;
-
-							//------------------------------------------------------
-							// Json 版
-
-							textJson += "{" ;
-
-							textJson +=
-								"\"Path\":\"" + assetBundleFile.AssetBundlePath + "\"," +
-								"\"Size\":" + size.ToString() + "," +
-								"\"Crc\":" + crc.ToString() ;
-
-							if( assetBundleFile.Tags != null && assetBundleFile.Tags.Length >  0 )
+							else
 							{
-								textJson += ",\"Tags\":[" ;
+								// 過去にファイルが存在しない
+								difference += "[C] " + path + " : Size = " + size.ToString() + " Crc = " + crc.ToString() + "\n" ;
 
-								m = assetBundleFile.Tags.Length ;
-								for( c  = 0 ; c <  m ; c ++ )
+								differenceCount ++ ;
+								differenceTotalSize += ( ulong )size ;
+							}
+						}
+
+						//------------------------------------------------------
+						// Csv 版
+
+						textCsv += path + "," + size.ToString() + "," + crc.ToString() ;
+						if( assetBundleFile.Tags != null && assetBundleFile.Tags.Length >  0 )
+						{
+							textCsv += "," ;
+
+							m = assetBundleFile.Tags.Length ;
+							for( c  = 0 ; c <   m ; c ++ )
+							{
+								textCsv += assetBundleFile.Tags[ c ] ;
+								if( i <  ( m - 1 ) )
 								{
-									textJson += ( "\"" + assetBundleFile.Tags[ c ] + "\"" ) ;
-									if( i <  ( m - 1 ) )
-									{
-										textJson += "," ;	// タグの区切り記号はスペース
-									}
+									textCsv += " " ;	// タグの区切り記号はスペース
 								}
-
-								textJson += "]" ;
 							}
+						}
+						textCsv += "\n" ;
 
-							textJson += "}" ;
+						//------------------------------------------------------
+						// Json 版
 
-							if( i <  ( l - 1 ) )
+						textJson += "{" ;
+
+						textJson +=
+							"\"Path\":\"" + path + "\"," +
+							"\"Size\":" + size.ToString() + "," +
+							"\"Crc\":" + crc.ToString() ;
+
+						if( assetBundleFile.Tags != null && assetBundleFile.Tags.Length >  0 )
+						{
+							textJson += ",\"Tags\":[" ;
+
+							m = assetBundleFile.Tags.Length ;
+							for( c  = 0 ; c <  m ; c ++ )
 							{
-								textJson += ",\n" ;
+								textJson += ( "\"" + assetBundleFile.Tags[ c ] + "\"" ) ;
+								if( i <  ( m - 1 ) )
+								{
+									textJson += "," ;	// タグの区切り記号はスペース
+								}
 							}
+
+							textJson += "]" ;
+						}
+
+						textJson += "}" ;
+
+						if( i <  ( l - 1 ) )
+						{
+							textJson += ",\n" ;
+						}
+						else
+						{
+							textJson += "\n" ;
 						}
 					}
 				}
 
-				if( m_GenerateCrcFile_Csv  == true  & string.IsNullOrEmpty( textCsv  ) == false )
+				string textCsvString  = textCsv.ToString() ;
+				if( m_GenerateCrcFile_Csv  == true  & string.IsNullOrEmpty( textCsvString ) == false )
 				{
-					File.WriteAllText( m_AssetBundleRootFolderPath + GetAssetBundleRootName() + ".csv",  textCsv ) ;
+					File.WriteAllText( filePath_Csv,  textCsvString ) ;
 				}
 
-				if( m_GenerateCrcFile_Json == true  & string.IsNullOrEmpty( textJson ) == false )
+				string textJsonString = textJson.ToString() ;
+				if( m_GenerateCrcFile_Json == true  & string.IsNullOrEmpty( textJsonString ) == false )
 				{
-					textJson = "{\"AssetBundleFiles\":[\n" + textJson + "\n]}" ;
+					// もし最後がカンマになっていたら削る
+					if( textJsonString[ ^1 ] == ',' )
+					{
+						textJsonString = textJsonString.TrimEnd( ',' ) ;
+					}
 
-					File.WriteAllText( m_AssetBundleRootFolderPath + GetAssetBundleRootName() + ".json", textJson ) ;
+					var textJsonFull = new ExStringBuilder() ;
+					textJsonFull += "{\"AssetBundleFiles\":[\n" + textJsonString + "]}" ;
+
+					File.WriteAllText( filePath_Json, textJsonFull.ToString() ) ;
 				}
 
 				Debug.Log( "<color=#FFFFFF>=======================================</color>" ) ;
@@ -2232,6 +2417,26 @@ namespace Tools.ForAssetBundle
 				Debug.Log( "<color=#FF00FF>Manifest Name : " + GetAssetBundleRootName() + "</color>" ) ;
 				Debug.Log( "<color=#FFFF00>File Count : " + assetBundleFiles.Length + "</color>" ) ;
 				Debug.Log( "<color=#00FF00>Total Size : " + GetSizeName( ( ulong )totalSize ) + "</color>" ) ;
+
+				if( m_Differences != null )
+				{
+					string differenceString = difference.ToString() ;
+					if( string.IsNullOrEmpty( differenceString ) == false )
+					{
+						// ビルド前との差分を表示する
+
+						var differenceFull = new ExStringBuilder() ;
+						differenceFull += "<color=#3FFFFF>Difference File Count : " + differenceCount.ToString() + " - Total Size : " + GetSizeName( differenceTotalSize ) + "</color>\n" ;
+						differenceFull += differenceString ;
+
+						Debug.Log( "<color=#FFFFFF>=======================================</color>" ) ;
+						Debug.Log( differenceFull.ToString() ) ;
+					}
+					else
+					{
+						Debug.Log( "<color=#7FFFFF>Difference File Count : 0</color>" ) ;
+					}
+				}
 			}
 
 			//-------------------------------------------------------------------------------
@@ -2297,7 +2502,7 @@ namespace Tools.ForAssetBundle
 				if( i >= 0 )
 				{
 					// フォルダ内のファイルなので処理を行う
-					path = path.Substring( 0, i ) ;	// フォルダ部分のみにする
+					path = path[ ..i ] ;	// フォルダ部分のみにする
 					string[] folderNames ;
 					if( path.Contains( "/" ) == false )
 					{
@@ -2338,7 +2543,7 @@ namespace Tools.ForAssetBundle
 		// アセットバンドルの情報を格納する
 		private AssetBundleBuild PostAssetBundleFile( AssetBundleFile assetBundleFile, string[] ignoreFilePaths )
 		{
-			AssetBundleBuild map = new AssetBundleBuild() ;
+			var map = new AssetBundleBuild() ;
 
 			string assetBundlePath = assetBundleFile.AssetBundlePath ;
 
@@ -2355,7 +2560,7 @@ namespace Tools.ForAssetBundle
 
 //			Debug.LogWarning( "Map assetBundleName:" + map.assetBundleName ) ;
 
-			List<string> assetPaths = new List<string>() ;
+			var assetPaths = new List<string>() ;
 
 			foreach( var assetFile in assetBundleFile.AssetFiles )
 			{
@@ -2393,7 +2598,7 @@ namespace Tools.ForAssetBundle
 			if( i >= 0 )
 			{
 				// フォルダが含まれている
-				string folderName = storePath.Substring( 0, i ) ;
+				string folderName = storePath[ ..i ] ;
 
 				if( Directory.Exists( folderName ) == false )
 				{
@@ -2412,6 +2617,13 @@ namespace Tools.ForAssetBundle
 		// ＣＲＣ値を取得する
 		public static uint GetCRC32( byte[] data )
 		{
+			if( data == null || data.Length == 0 )
+			{
+				return 0 ;
+			}
+
+			//----------------------------------
+
 			uint value = CRC32_MASK  ;
 
 			foreach( var code in data )
@@ -2490,14 +2702,14 @@ namespace Tools.ForAssetBundle
 
 			// 出力パスのアセットバンドル
 			string path = m_AssetBundleRootFolderPath ;
-			if( path[ path.Length - 1 ] == '/' )
+			if( path[ ^1 ] == '/' )
 			{
-				path = path.Substring( 0, path.Length - 1 ) ;
+				path = path[ ..( path.Length - 1 ) ] ;
 			}
 			int i = path.LastIndexOf( '/' ) ;
 			if( i >= 0 )
 			{
-				path = path.Substring( i + 1, path.Length - ( i + 1 ) ) ;
+				path = path[ ( i + 1 ).. ] ;
 			}
 
 			return path ;
@@ -2506,7 +2718,7 @@ namespace Tools.ForAssetBundle
 		// 不要になったアセットバンドルファイルを削除する
 		private void CleanAssetBundle( string[] assetBundleNames, string[] assetNames )
 		{
-			List<string> list = new List<string>() ;
+			var list = new List<string>() ;
 
 			//-------------------------------------------------
 
@@ -2623,9 +2835,9 @@ namespace Tools.ForAssetBundle
 					else
 					{
 						// フォルダのメタファイルを削除対象から除外する
-						if( path[ path.Length - 1 ] == '/' )
+						if( path[ ^1 ] == '/' )
 						{
-							path = path.Substring( 0, path.Length - 1 ) ;
+							path = path[ ..( path.Length - 1 ) ] ;
 						}
 						path += ".meta" ;
 
@@ -2690,7 +2902,7 @@ namespace Tools.ForAssetBundle
 
 		//----------------------------------------------------------------------------------------------
 
-		private static readonly Dictionary<string,string> m_Japanese_Message = new Dictionary<string, string>()
+		private static readonly Dictionary<string,string> m_Japanese_Message = new ()
 		{
 			{ "SelectLocalAssetsPath",	"AssetBundle化したいファイル一覧が記述されたリストファイルを設定してください" },
 			{ "SelectAssetBundlePath",	"生成したAssetBundleを格納するフォルダを設定してください" },
@@ -2701,9 +2913,9 @@ namespace Tools.ForAssetBundle
 			{ "Succeed",				"成功しました" },
 			{ "Yes",					"はい" },
 			{ "No",						"いいえ" },
-			{ "OK",						"閉じる" },
+			{ "OK",						"とじる" },
 		} ;
-		private static readonly Dictionary<string,string> m_English_Message = new Dictionary<string, string>()
+		private static readonly Dictionary<string,string> m_English_Message = new ()
 		{
 			{ "SelectLocalAssetsPath",	"Please set up a list file that lists the files you want AssetBundle." },
 			{ "SelectAssetBundlePath",	"Please set the folder in which to store the generated AssetBundle." },
@@ -2903,7 +3115,7 @@ namespace Tools.ForAssetBundle
 
 			if( path[ 0 ] == '/' )
 			{
-				path = path.Substring( 1, path.Length - 1 ) ;
+				path = path[ 1.. ] ;
 			}
 
 			if( path.Length <  1 )
@@ -2911,7 +3123,7 @@ namespace Tools.ForAssetBundle
 				return path ;
 			}
 
-			if( path[ path.Length - 1 ] != '/' )
+			if( path[ ^1 ] != '/' )
 			{
 				path += "/" ;
 			}
@@ -2931,7 +3143,7 @@ namespace Tools.ForAssetBundle
 
 			if( path[ 0 ] == '/' )
 			{
-				path = path.Substring( 1, path.Length - 1 ) ;
+				path = path[ 1.. ] ;
 			}
 
 			return path ;
@@ -2968,6 +3180,7 @@ namespace Tools.ForAssetBundle
 			{
 				buildTarget = BuildTarget.StandaloneWindows ;
 			}
+			else
 			if( value == "StandaloneWindows64".ToLower() || value == "Windows64".ToLower() )
 			{
 				buildTarget = BuildTarget.StandaloneWindows64 ;
@@ -2986,6 +3199,16 @@ namespace Tools.ForAssetBundle
 			if( value == "iOS".ToLower() || value == "iPhone".ToLower() )
 			{
 				buildTarget = BuildTarget.iOS ;
+			}
+			else
+			if( value == "StandaloneLinux".ToLower() || value == "Linux".ToLower() )
+			{
+				buildTarget = BuildTarget.StandaloneLinux64 ;
+			}
+			else
+			if( value == "StandaloneLinux64".ToLower() || value == "Linux64".ToLower() )
+			{
+				buildTarget = BuildTarget.StandaloneLinux64 ;
 			}
 
 			return buildTarget ;
@@ -3013,6 +3236,7 @@ namespace Tools.ForAssetBundle
 			bool?       generateCrcFile_Json    = null,		// 任意
 			bool?       generateLinkFile        = null,		// 任意
 			bool?		strictMode				= false,	// 任意
+			bool?		dedicatedServerBuild	= null,		// 任意
 			string		linkFilePath			= null		// 任意
 		)
 		{
@@ -3042,17 +3266,18 @@ namespace Tools.ForAssetBundle
 			sabb.m_BuildTarget					= buildTarget ;
 
 			// 任意
-			if( chunkBasedCompression	!= null ){ sabb.m_ChunkBasedCompression		= chunkBasedCompression.Value	;	}
-			if( forceRebuildAssetBundle	!= null ){ sabb.m_ForceRebuildAssetBundle	= forceRebuildAssetBundle.Value	;	}
-			if( ignoreTypeTreeChanges	!= null ){ sabb.m_IgnoreTypeTreeChanges		= ignoreTypeTreeChanges.Value	;	}
-			if( disableWriteTypeTree	!= null ){ sabb.m_DisableWriteTypeTree		= disableWriteTypeTree.Value	;	}
-			if( collectDependencies		!= null ){ sabb.m_CollectDependencies		= collectDependencies.Value		;	}
-			if( generateCrcFile_Csv		!= null ){ sabb.m_GenerateCrcFile_Csv		= generateCrcFile_Csv.Value		;	}
-			if( generateCrcFile_Json	!= null ){ sabb.m_GenerateCrcFile_Json		= generateCrcFile_Json.Value	;	}
-			if( generateLinkFile		!= null ){ sabb.m_GenerateLinkFile			= generateLinkFile.Value		;	}
-			if ( strictMode				!= null ) { sabb.m_StrictMode				= strictMode.Value ; }
+			if( chunkBasedCompression	!= null ){ sabb.m_ChunkBasedCompression		= chunkBasedCompression.Value	; }
+			if( forceRebuildAssetBundle	!= null ){ sabb.m_ForceRebuildAssetBundle	= forceRebuildAssetBundle.Value	; }
+			if( ignoreTypeTreeChanges	!= null ){ sabb.m_IgnoreTypeTreeChanges		= ignoreTypeTreeChanges.Value	; }
+			if( disableWriteTypeTree	!= null ){ sabb.m_DisableWriteTypeTree		= disableWriteTypeTree.Value	; }
+			if( collectDependencies		!= null ){ sabb.m_CollectDependencies		= collectDependencies.Value		; }
+			if( generateCrcFile_Csv		!= null ){ sabb.m_GenerateCrcFile_Csv		= generateCrcFile_Csv.Value		; }
+			if( generateCrcFile_Json	!= null ){ sabb.m_GenerateCrcFile_Json		= generateCrcFile_Json.Value	; }
+			if( generateLinkFile		!= null ){ sabb.m_GenerateLinkFile			= generateLinkFile.Value		; }
+			if( strictMode				!= null ){ sabb.m_StrictMode				= strictMode.Value              ; }
+			if( dedicatedServerBuild    != null ){ sabb.m_DedicatedServerBuild      = dedicatedServerBuild.Value    ; }
 
-			sabb.m_LinkFilePath					= CorrectFilePath( linkFilePath ) ;
+			sabb.m_LinkFilePath                 = CorrectFilePath( linkFilePath ) ;
 
 			//-----------------------------------------
 
@@ -3093,7 +3318,7 @@ namespace Tools.ForAssetBundle
 
 			// パラメータを設定する
 
-			List<TargetData> correctTargets = new List<TargetData>() ;
+			var correctTargets = new List<TargetData>() ;
 			TargetData target ;
 
 			string listFilePath ;
@@ -3127,6 +3352,58 @@ namespace Tools.ForAssetBundle
 
 			return result ;
 		}
+
+		//-------------------------------------------------------------------------------------------
+		// 文字列処理の高速化用
+
+
+		public class ExStringBuilder
+		{
+			private readonly StringBuilder m_StringBuilder ;
+
+			public ExStringBuilder()
+			{
+				m_StringBuilder			= new StringBuilder() ;
+			}
+
+			public int Length
+			{
+				get
+				{
+					return m_StringBuilder.Length ;
+				}
+			}
+
+			public int Count
+			{
+				get
+				{
+					return m_StringBuilder.Length ;
+				}
+			}
+
+			public void Clear()
+			{
+				m_StringBuilder.Clear() ;
+			}
+
+			public override string ToString()
+			{
+				return m_StringBuilder.ToString() ;
+			}
+		
+			public void Append( string s )
+			{
+				m_StringBuilder.Append( s ) ;
+			}
+
+			// これを使いたいがためにラッパークラス化
+			public static ExStringBuilder operator + ( ExStringBuilder sb, string s )
+			{
+				sb.Append( s ) ;
+				return sb ;
+			}
+		}
 	}
 
 	//--------------------------------------------------------------------------------------------
@@ -3136,25 +3413,27 @@ namespace Tools.ForAssetBundle
 	/// </summary>
 	public class SimpleLinkXMLGenerator
 	{
-		private readonly Dictionary<Type, Type> m_TypeConversion = new Dictionary<Type, Type>() ;
-		private readonly HashSet<Type> m_Types = new HashSet<Type>() ;
+		private readonly Dictionary<Type, Type> m_TypeConversion = new () ;
+		private readonly HashSet<Type> m_Types = new () ;
 
 		//-------------------------------------------------------------------------------------------
 
 		// 有効扱いする拡張子を絞り込む
-		private static readonly List<string> m_ValidExtensions = new List<string>()
+		private static readonly List<string> m_ValidExtensions = new ()
 		{
-			".prefab",			// Prefab
-			".asset",			// ScriptableObject
+			".prefab",					// Prefab
+			".asset",					// ScriptableObject
 
-//			".mat",				// Material
+//			".mat",						// Material
 
-//			".spriteatlas",		// SpriteAtlas
+//			".spriteatlas",				// SpriteAtlas
 
-			".controller",		// AnimationController
-//			".anim",			// AnimationClip
+			".controller",				// AnimationController
+			".overrideController",		// AnimatorOverrideController
 
-			".playable",		// Playable
+//			".anim",					// AnimationClip
+
+			".playable",				// Playable
 		} ;
 
 		/// <summary>
@@ -3179,7 +3458,7 @@ namespace Tools.ForAssetBundle
 			//------------------------------------------------------------------
 
 			// 検出した型を格納する
-			List<Type> usedAssetTypes = new List<Type>() ;
+			var usedAssetTypes = new List<Type>() ;
 
 			AssetDatabase.StartAssetEditing() ;
 			EditorApplication.LockReloadAssemblies() ;
@@ -3406,6 +3685,10 @@ namespace Tools.ForAssetBundle
 				.AppendLine( "this file is auto generated." )
 				.ToString() ;
 		}
+
+		//-------------------------------------------------------------------------------------------
+
+
 	}
 }
 

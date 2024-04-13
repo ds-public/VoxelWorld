@@ -3,7 +3,6 @@ using System.Collections ;
 using System.Collections.Generic ;
 
 using System.Threading ;
-using System.Threading.Tasks ;
 
 using UnityEngine ;
 
@@ -11,13 +10,14 @@ using UnityEngine ;
 using UnityEditor ;
 #endif
 
+
 /// <summary>
 /// アセットバンドルヘルパーパッケージ
 /// </summary>
 namespace AssetBundleHelper
 {
 	/// <summary>
-	/// アセットバンドルマネージャクラス(シングルトン) Version 2023/01/22
+	/// アセットバンドルマネージャクラス(シングルトン) Version 2024/03/28 0
 	/// </summary>
 	public partial class AssetBundleManager : MonoBehaviour
 	{
@@ -25,22 +25,20 @@ namespace AssetBundleHelper
 		/// <summary>
 		/// AssetBundleManagerを生成する
 		/// </summary>
-		[MenuItem("GameObject/Helper/AssetBundleHelper/AssetBundleManager", false, 24)]
+		[MenuItem( "GameObject/Helper/AssetBundleHelper/AssetBundleManager", false, 24 )]
 		public static void CreateAssetBundleManager()
 		{
-			GameObject go = new GameObject( "AssetBundleManager" ) ;
+			var go = new GameObject( "AssetBundleManager" ) ;
 		
 			Transform t = go.transform ;
 			t.SetParent( null ) ;
-			t.localPosition = Vector3.zero ;
-			t.localRotation = Quaternion.identity ;
+			t.SetLocalPositionAndRotation( Vector2.zero, Quaternion.identity ) ;
 			t.localScale = Vector3.one ;
 		
 			go.AddComponent<AssetBundleManager>() ;
 			Selection.activeGameObject = go ;
 		}
 #endif
-
 		//-------------------------------------------------------------------------------------------
 
 		// シングルトンインスタンス
@@ -111,10 +109,10 @@ namespace AssetBundleHelper
 		
 			// オブジェクトが非アクティブだと検出されないのでオブジェクトを非アクティブにしてはならない
 			// この判定は必須で mInstance は static であるためシーンの最初はオブジェクトが存在しても null になっている
-			m_Instance = GameObject.FindObjectOfType( typeof( AssetBundleManager ) ) as AssetBundleManager ;
+			m_Instance = GameObject.FindAnyObjectByType( typeof( AssetBundleManager ) ) as AssetBundleManager ;
 			if( m_Instance == null )
 			{
-				GameObject go = new GameObject( "AssetBundleManager" ) ;
+				var go = new GameObject( "AssetBundleManager" ) ;
 				if( parent != null )
 				{
 					go.transform.SetParent( parent, false ) ;
@@ -221,7 +219,7 @@ namespace AssetBundleHelper
 				return ;
 			}
 		
-			AssetBundleManager instanceOther = GameObject.FindObjectOfType( typeof( AssetBundleManager ) ) as AssetBundleManager ;
+			var instanceOther = GameObject.FindAnyObjectByType( typeof( AssetBundleManager ) ) as AssetBundleManager ;
 			if( instanceOther != null )
 			{
 				if( instanceOther != this )
@@ -242,14 +240,13 @@ namespace AssetBundleHelper
 				DontDestroyOnLoad( gameObject ) ;
 			}
 
-	//		gameObject.hideFlags = HideFlags.HideInHierarchy ;
-		
+			//		gameObject.hideFlags = HideFlags.HideInHierarchy ;
+
 			//-----------------------------
-		
+
 			// 原点じゃないと気持ち悪い
-			gameObject.transform.localPosition = Vector3.zero ;
-			gameObject.transform.localRotation = Quaternion.identity ;
-			gameObject.transform.localScale = Vector3.one ;
+			gameObject.transform.SetLocalPositionAndRotation( Vector2.zero, Quaternion.identity ) ;
+			gameObject.transform.localScale		= Vector3.one ;
 
 			//-----------------------------
 		
@@ -337,7 +334,7 @@ namespace AssetBundleHelper
 
 			if( i >  0 )
 			{
-				path = path.Substring( i, path.Length - i ) ;
+				path = path[ ..i ] ;
 			}
 
 			if( string.IsNullOrEmpty( path ) == true )
@@ -359,7 +356,7 @@ namespace AssetBundleHelper
 
 			if( i <  ( path.Length - 1 ) )
 			{
-				path = path.Substring( 0, i + 1 ) ;
+				path = path[ ..( i + 1 ) ] ;
 			}
 
 			if( string.IsNullOrEmpty( path ) == true )
@@ -398,12 +395,13 @@ namespace AssetBundleHelper
 				// マニフェストの指定が有る
 
 				// マニフェスト名を取得
-				manifestName = path.Substring( 0, i ) ;
+				manifestName = path[ ..i ] ;
 
 				// アセットバンドル名を取得する
-				if( ( l - ( i + 1 ) ) >  0 )
+				i ++ ;
+				if( ( l - i ) >  0 )
 				{
-					assetBundlePath = path.Substring( i + 1, l - ( i + 1 ) ) ;
+					assetBundlePath = path[ i.. ] ;
 				}
 				else
 				{
@@ -418,8 +416,8 @@ namespace AssetBundleHelper
 			if( i >= 0 )
 			{
 				// 複合アセットのアセットバンドルとみなす
-				assetName = assetBundlePath.Substring( i + 2, assetBundlePath.Length - ( i + 2 ) ) ;
-				assetBundlePath = assetBundlePath.Substring( 0, i ) ;
+				assetName = assetBundlePath[ ( i + 2 ).. ] ;
+				assetBundlePath = assetBundlePath[ ..i ] ;
 			}
 
 			// アセットバンドル名は大文字と小文字の区別を無くす(管理上は全て小文字管理)

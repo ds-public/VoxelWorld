@@ -23,7 +23,7 @@ namespace AssetBundleHelper
 	{
 		// ハッシュ生成インスタンス
 		//		private static MD5CryptoServiceProvider mHashGenerator = new MD5CryptoServiceProvider() ;
-		private static readonly HMACSHA256 m_HashGenerator = new HMACSHA256( new byte[]{ 0, 1, 2, 3 } ) ;	// コンストラクタに適当なキー値を入れる事(でないと毎回ランダムになってしまう)
+		private static readonly HMACSHA256 m_HashGenerator = new ( new byte[]{ 0, 1, 2, 3 } ) ;	// コンストラクタに適当なキー値を入れる事(でないと毎回ランダムになってしまう)
 
 		// ハッシュコードを計算する
 		private static string GetHash( string fileName )
@@ -194,7 +194,7 @@ namespace AssetBundleHelper
 
 
 		// ローカルストレージへのファイルの存在確認
-		private static StorageAccessor.Target StorageAccessor_Exists( string fileName )
+		private static StorageAccessor.TargetTypes StorageAccessor_Exists( string fileName )
 		{
 			return StorageAccessor.Exists( GetFullPath( fileName ) ) ;
 		}

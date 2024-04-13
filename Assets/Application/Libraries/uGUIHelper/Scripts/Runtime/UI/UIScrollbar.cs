@@ -1,18 +1,18 @@
+using System ;
 using UnityEngine ;
 using UnityEngine.UI ;
-using UnityEngine.Events ;
 using UnityEngine.EventSystems ;
-using System ;
-using System.Collections ;
+
 
 namespace uGUIHelper
 {
 	/// <summary>
 	/// uGUI:Scrollbar クラスの機能拡張コンポーネントクラス(複合)
 	/// </summary>
-	[ RequireComponent(typeof(ScrollbarWrapper))]
+	[RequireComponent(typeof( ScrollbarWrapper ))]
 	public class UIScrollbar : UIImage
 	{
+		// 位置
 		public float Offset
 		{
 			get
@@ -33,6 +33,9 @@ namespace uGUIHelper
 			}
 		}
 
+		/// <summary>
+		/// 長さ
+		/// </summary>
 		public float Length
 		{
 			get
@@ -53,6 +56,7 @@ namespace uGUIHelper
 			}
 		}
 
+		// 段階
 		public int Step
 		{
 			get
@@ -109,18 +113,30 @@ namespace uGUIHelper
 			Horizontal = 1,
 			Vertical   = 2,
 		}
-		
+
+		//-----------------------------------
+
+		/// <summary>
+		/// 基本の方向タイプ
+		/// </summary>
+		public Scrollbar.Direction BaseDirectionType
+		{
+			get
+			{
+				if( CScrollbar == null )
+				{
+					return Scrollbar.Direction.LeftToRight ;
+				}
+				return CScrollbar.direction ;
+			}
+		}
+
 		//-----------------------------------------------------------
 
 		// 各派生クラスでの初期化処理を行う（メニューまたは AddView から生成される場合のみ実行れる）
-		override protected void OnBuild( string option = "" )
+		protected override void OnBuild( string option = "" )
 		{
-			Scrollbar scrollbar = CScrollbar ;
-
-			if( scrollbar == null )
-			{
-				scrollbar = gameObject.AddComponent<Scrollbar>() ;
-			}
+			var scrollbar = CScrollbar != null ? CScrollbar : gameObject.AddComponent<Scrollbar>() ;
 			if( scrollbar == null )
 			{
 				// 異常
@@ -205,7 +221,7 @@ namespace uGUIHelper
 		}
 		
 		// 派生クラスの Start
-		override protected void OnStart()
+		protected override void OnStart()
 		{
 			base.OnStart() ;
 		
@@ -223,7 +239,7 @@ namespace uGUIHelper
 		//---------------------------------------------
 	
 		// Down
-		override protected void OnPointerDownBasic( PointerEventData pointer, bool fromScrollView )
+		protected override void OnPointerDownBasic( PointerEventData pointer, bool fromScrollView )
 		{
 			base.OnPointerDownBasic( pointer, fromScrollView ) ;
 
@@ -232,17 +248,17 @@ namespace uGUIHelper
 				if( CScrollbar.direction == Scrollbar.Direction.LeftToRight || CScrollbar.direction == Scrollbar.Direction.RightToLeft )
 				{
 					// 横
-					m_ScrollViewElastic.SetPositionFromScrollbar( UIScrollView.DirectionTypes.Horizontal, Offset ) ;
+					m_ScrollViewElastic.SetPositionFromScrollbar( UIScrollView.DirectionTypes.Horizontal, Offset, CScrollbar.direction ) ;
 				}
 				if( CScrollbar.direction == Scrollbar.Direction.TopToBottom || CScrollbar.direction == Scrollbar.Direction.BottomToTop )
 				{
 					// 縦
-					m_ScrollViewElastic.SetPositionFromScrollbar( UIScrollView.DirectionTypes.Vertical,   Offset ) ;
+					m_ScrollViewElastic.SetPositionFromScrollbar( UIScrollView.DirectionTypes.Vertical,   Offset, CScrollbar.direction ) ;
 				}
 			}
 		}
 
-		override protected void OnDragBasic( PointerEventData pointer, bool fromScrollView )
+		protected override void OnDragBasic( PointerEventData pointer, bool fromScrollView )
 		{
 			base.OnPointerDownBasic( pointer, fromScrollView ) ;
 
@@ -251,12 +267,12 @@ namespace uGUIHelper
 				if( CScrollbar.direction == Scrollbar.Direction.LeftToRight || CScrollbar.direction == Scrollbar.Direction.RightToLeft )
 				{
 					// 横
-					m_ScrollViewElastic.SetPositionFromScrollbar( UIScrollView.DirectionTypes.Horizontal, Offset ) ;
+					m_ScrollViewElastic.SetPositionFromScrollbar( UIScrollView.DirectionTypes.Horizontal, Offset, CScrollbar.direction ) ;
 				}
 				if( CScrollbar.direction == Scrollbar.Direction.TopToBottom || CScrollbar.direction == Scrollbar.Direction.BottomToTop )
 				{
 					// 縦
-					m_ScrollViewElastic.SetPositionFromScrollbar( UIScrollView.DirectionTypes.Vertical,   Offset ) ;
+					m_ScrollViewElastic.SetPositionFromScrollbar( UIScrollView.DirectionTypes.Vertical,   Offset, CScrollbar.direction ) ;
 				}
 			}
 		}

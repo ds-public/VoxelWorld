@@ -199,7 +199,7 @@ namespace uGUIHelper
 			// Androidで戻るキーでアプリを終了させる
 			if( QuitOnAndroid == true )
 			{
-				if( Application.platform == RuntimePlatform.Android && Input.GetKey( KeyCode.Escape ) )
+				if( Application.platform == RuntimePlatform.Android && InputAdapter.UIEventSystem.GetKeyDown( InputAdapter.KeyCodes.Escape ) )
 				{
 					Application.Quit() ;
 				}
@@ -352,7 +352,7 @@ namespace uGUIHelper
 				m_R.x = Screen.width - w ; m_R.y = h *  6.0f ; m_R.width = w ; m_R.height = h ;
 				if( GUI.Button( m_R, _HIER, m_ButtonStyle ) == true )
 				{
-					GameObject[] gos =  Array.FindAll( GameObject.FindObjectsOfType<GameObject>(), ( item ) => item.transform.parent == null ) ;
+					GameObject[] gos = Array.FindAll( GameObject.FindObjectsByType<GameObject>( FindObjectsSortMode.None ), ( item ) => item.transform.parent == null ) ;
 					int i, l = 0 ;
 					if( gos != null )
 					{
@@ -539,7 +539,7 @@ namespace uGUIHelper
 			
 			if( m_Instance == null )
 			{
-				ds = ( DebugScreen )GameObject.FindObjectOfType( typeof( DebugScreen ) ) ;
+				ds = ( DebugScreen )GameObject.FindAnyObjectByType( typeof( DebugScreen ) ) ;
 				if( ds == null )
 				{
 					return ;
@@ -578,7 +578,7 @@ namespace uGUIHelper
 			TextColor = textColor | 0xFF000000 ;
 			FontSize  = fontSize ;
 			
-			DebugScreen ds = ( DebugScreen )GameObject.FindObjectOfType( typeof( DebugScreen ) ) ;
+			DebugScreen ds = ( DebugScreen )GameObject.FindAnyObjectByType( typeof( DebugScreen ) ) ;
 			if( ds == null )
 			{
 				GameObject go = new GameObject( "DebugScreen" ) ;
@@ -594,7 +594,7 @@ namespace uGUIHelper
 		
 		public static void Terminate()
 		{
-			DebugScreen ds = ( DebugScreen )GameObject.FindObjectOfType( typeof( DebugScreen ) ) ;
+			DebugScreen ds = ( DebugScreen )GameObject.FindAnyObjectByType( typeof( DebugScreen ) ) ;
 			if( ds != null )
 			{
 				Destroy( ds.gameObject ) ;

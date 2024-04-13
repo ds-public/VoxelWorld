@@ -101,19 +101,19 @@ namespace DSW.Screens
 				//---------------------------------------------------------
 
 				// マスターデータのダウンロード(CheckVersion があるのでアセットバンドルのセットアップより前に行う必要がある)
-				bool result = await MasterDataManager.DownloadAsync( false, ( float progress ) =>
-				{
+//				bool result = await MasterDataManager.DownloadAsync( false, ( float progress ) =>
+//				{
 //					SetProgress( progressMin, progressMax, progress ) ;
-				} ) ;
+//				} ) ;
 
-				if( result == false )
-				{
-					// 失敗
-					return ;
-				}
+//				if( result == false )
+//				{
+//					// 失敗
+//					return ;
+//				}
 
 				// マスターデータをメモリに展開する
-				await MasterDataManager.LoadAsync() ;
+//				await MasterDataManager.LoadAsync() ;
 
 				//---------------------------------------------------------
 
@@ -279,7 +279,7 @@ namespace DSW.Screens
 
 			string manifestName = "Default" ;
 
-			if( AssetBundleManager.IsManifest( manifestName ) <  0 )
+			if( AssetBundleManager.HasManifest( manifestName ) == false )
 			{
 				// 登録されていない
 				Progress.On( "データ確認中" ) ;
@@ -289,7 +289,7 @@ namespace DSW.Screens
 
 				await Progress.OffAsync() ;
 
-				if( AssetBundleManager.IsManifest( manifestName ) <  0 )
+				if( AssetBundleManager.HasManifest( manifestName ) == false )
 				{
 					// ロード出来なかった
 					Debug.Log( "Can not load Manifest = " + manifestName ) ;

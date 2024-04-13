@@ -15,7 +15,7 @@ using AudioHelper ;
 namespace DSW
 {
 	/// <summary>
-	/// ＢＧＭクラス Version 2022/10/01 0
+	/// ＢＧＭクラス Version 2024/04/13 0
 	/// </summary>
 	public class BGM : ExMonoBehaviour
 	{
@@ -41,10 +41,11 @@ namespace DSW
 		public const string Lobby			= "008_Lobby" ;
 		public const string World			= "010_World" ;
 
+
 		//-----------------------------------------------------------
 
 		// 基本パス(環境に合わせて書き換える事)
-		private const string m_Path			= "Sounds/BGM/" ;
+		private const string m_Path		= "Sounds/BGM/" ;
 
 		//-----------------------------------------------------------
 
@@ -111,18 +112,6 @@ namespace DSW
 		// パスの保険
 		private static string CorrectPath( string path )
 		{
-			// ＢＧＭはファイル単位でアセットバンドル化するため以下まような保険は不要
-//			// 保険をかける
-//			if( path.Contains( "//" ) == false )
-//			{
-//				// アセットバンドルのパス指定が無い
-//				int p = path.LastIndexOf( '/' ) ;
-//				if( p >= 0 )
-//				{
-//					path = path.Substring( 0, p ) + "//" + path.Substring( p + 1, path.Length - ( p + 1 ) ) ;
-//				}
-//			}
-
 			if( path.IndexOf( m_InternalPath ) <  0 )
 			{
 				path = m_Path + path ;
@@ -481,6 +470,34 @@ namespace DSW
 		}
 
 		/// <summary>
+		/// メインＢＧＭを一時停止する
+		/// </summary>
+		/// <returns></returns>
+		public static bool PauseMain()
+		{
+			if( m_MainBGM_PlayId <  0 )
+			{
+				return false ;	// 元々鳴っていない
+			}
+
+			return AudioManager.Pause( m_MainBGM_PlayId ) ;
+		}
+
+		/// <summary>
+		/// メインＢＧＭを再開する
+		/// </summary>
+		/// <returns></returns>
+		public static bool UnpauseMain()
+		{
+			if( m_MainBGM_PlayId <  0 )
+			{
+				return false ;	// 元々鳴っていない
+			}
+
+			return AudioManager.Unpause( m_MainBGM_PlayId ) ;
+		}
+
+		/// <summary>
 		/// メインＢＧＭが再生中か確認する
 		/// </summary>
 		/// <param name="audioClipName ">曲の名前(再生中の曲の種類を限定したい場合は指定する)</param>
@@ -674,6 +691,34 @@ namespace DSW
 			}
 
 			return true ;
+		}
+
+		/// <summary>
+		/// ＢＧＭを一時停止する
+		/// </summary>
+		/// <returns></returns>
+		public static bool Pause( int playId )
+		{
+			if( playId <  0 )
+			{
+				return false ;	// 元々鳴っていない
+			}
+
+			return AudioManager.Pause( playId ) ;
+		}
+
+		/// <summary>
+		/// ＢＧＭを再開する
+		/// </summary>
+		/// <returns></returns>
+		public static bool Unpause( int playId )
+		{
+			if( playId <  0 )
+			{
+				return false ;	// 元々鳴っていない
+			}
+
+			return AudioManager.Unpause( playId ) ;
 		}
 
 		/// <summary>

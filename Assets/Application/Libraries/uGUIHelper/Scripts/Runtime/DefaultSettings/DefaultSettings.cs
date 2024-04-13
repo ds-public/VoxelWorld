@@ -12,6 +12,11 @@ namespace uGUIHelper
 	[CreateAssetMenu( fileName = "DefaultSettings", menuName = "ScriptableObject/uGUIHelper/DefaultSettings" )]
 	public class DefaultSettings : ScriptableObject
 	{
+		/// <summary>
+		/// InputSystem を使用するかどうか
+		/// </summary>
+		public bool				InputSystemEnabled = false ;
+
 		// ボタン関係
 		public Sprite			ButtonFrame = null ;
 		public Color			ButtonDisabledColor = new Color( 0.75f, 0.75f, 0.75f, 0.5f ) ;
