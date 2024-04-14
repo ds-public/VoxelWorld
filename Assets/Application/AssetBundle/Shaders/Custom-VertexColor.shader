@@ -1,3 +1,5 @@
+// 参考 https://tech.spark-creative.co.jp/entry/2021/01/13/130743
+
 Shader "Custom/VertexColor"
 {
 	Properties
@@ -9,15 +11,34 @@ Shader "Custom/VertexColor"
 	{
 		Tags
 		{
-			"RenderType"="Opaque"
-			"RenderPipeline"="UniversalPipeline"
+			"RenderType" = "Opaque"
+			"RenderPipeline" = "UniversalPipeline"
 		}
 		LOD 100
+
+		//-------------------------------------------------------------------------------------------
+
+		// 各Passでcbufferが変わらないようにここに定義する
+        HLSLINCLUDE
+
+        #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"
+
+		TEXTURE2D( _MainTex ) ;
+		SAMPLER( sampler_MainTex ) ;
+
+		CBUFFER_START( UnityPerMaterial )
+		float4 _MainTex_ST ;
+		float3 _AmbientLight ;
+		CBUFFER_END
+
+		ENDHLSL
+
+		//-------------------------------------------------------------------------------------------
 
 		Pass
 		{
 			Name "ForwardLit"
-			Tags { "LightMode"="UniversalForward" }
+			Tags { "LightMode" = "UniversalForward" }
 
 			HLSLPROGRAM
 			#pragma vertex vert
@@ -25,7 +46,12 @@ Shader "Custom/VertexColor"
 			// make fog work
 			#pragma multi_compile_fog
 
-			#include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"
+			// Universal Pipeline shadow keywords
+			#pragma multi_compile _ _MAIN_LIGHT_SHADOWS
+			#pragma multi_compile _ _MAIN_LIGHT_SHADOWS_CASCADE
+			#pragma multi_compile _ _ADDITIONAL_LIGHT_SHADOWS
+			#pragma multi_compile _ _SHADOWS_SOFT
+
 			#include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Lighting.hlsl"
 
 			struct appdata
@@ -43,16 +69,8 @@ Shader "Custom/VertexColor"
 				float4 color	: COLOR ;
 				float2 uv		: TEXCOORD0 ;
 				float fogFactor	: TEXCOORD1 ;
+				float3 posWS	: TEXCOORD2 ;
 			} ;
-
-			TEXTURE2D( _MainTex ) ;
-			SAMPLER( sampler_MainTex ) ;
-
-			CBUFFER_START( UnityPerMaterial )
-			float4 _MainTex_ST ;
-			CBUFFER_END
-
-			float3 _AmbientLight ;
 
 			v2f vert( appdata v )
 			{
@@ -63,6 +81,7 @@ Shader "Custom/VertexColor"
 				o.color		= v.color ;
 				o.uv		= TRANSFORM_TEX( v.uv, _MainTex ) ;
 				o.fogFactor	= ComputeFogFactor( o.vertex.z ) ;
+				o.posWS		= TransformObjectToWorld( v.vertex.xyz ) ;
 
 				return o ;
 			}
@@ -74,20 +93,36 @@ Shader "Custom/VertexColor"
 
 				//-------------
 
+//				float4 shadowCoord = TransformWorldToShadowCoord( i.posWS ) ;
+
 				// ライト情報を取得
-				Light light = GetMainLight() ;
+//				Light mainLight = GetMainLight( shadowCoord ) ;
+
+//				half shadow = mainLight.shadowAttenuation ;
+
+//				Light addLight0 = GetAdditionalLight( 0, i.posWS ) ;
+
+//				shadow *= addLight0.shadowAttenuation ;
+
+//				color.rgb *= shadow ;
+
+				//-----------------------
+				// シンプルなシェード
+
+				// ライト情報を取得
+				Light mainLight = GetMainLight() ;
 
 				// ピクセルの法線とライトの方向の内積を計算する
-				float t = dot( i.normal, light.direction ) ;
+				float t = dot( i.normal, mainLight.direction ) ;
 
 				// 内積の値を0以上の値にする
 				t = max( 0, t ) ;
 
 				// 拡散反射光を計算する
-				float3 diffuseLight = light.color * t ;
+				float3 diffuseLight = mainLight.color * t ;
 
 				// 拡散反射光を反映
-				color.rgb *= diffuseLight + _AmbientLight ;
+				color.rgb *= ( diffuseLight + _AmbientLight ) ;
 
 				//-------------
 
@@ -100,5 +135,62 @@ Shader "Custom/VertexColor"
 			}
 			ENDHLSL
 		}
+/*
+		Pass
+		{
+			Tags { "LightMode"="ShadowCaster" }
+
+			HLSLPROGRAM
+			#pragma vertex vert
+			#pragma fragment frag
+
+			#pragma multi_compile_instancing
+            
+			#include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Lighting.hlsl"
+
+			// ShadowsCasterPass.hlsl に定義されているグローバルな変数
+			float3 _LightDirection ;
+            
+			struct appdata
+			{
+				float4 vertex : POSITION ;
+				float3 normal : NORMAL ;
+				UNITY_VERTEX_INPUT_INSTANCE_ID
+			} ;
+
+			struct v2f
+			{
+				float4 pos : SV_POSITION;
+			} ;
+
+			v2f vert( appdata v )
+			{
+				UNITY_SETUP_INSTANCE_ID( v ) ;
+
+				v2f o ;
+
+				// ShadowsCasterPass.hlsl の GetShadowPositionHClip() を参考に
+				float3 positionWS	= TransformObjectToWorld( v.vertex.xyz ) ;
+				float3 normalWS		= TransformObjectToWorldNormal( v.normal ) ;
+				float4 positionCS	= TransformWorldToHClip( ApplyShadowBias( positionWS, normalWS, _LightDirection ) ) ;
+
+#if UNITY_REVERSED_Z
+				positionCS.z = min( positionCS.z, positionCS.w * UNITY_NEAR_CLIP_VALUE ) ;
+#else
+				positionCS.z = max( positionCS.z, positionCS.w * UNITY_NEAR_CLIP_VALUE ) ;
+#endif
+				o.pos = positionCS ;
+
+				return o ;
+			}
+
+			float4 frag( v2f i ) : SV_Target
+			{
+				return 0.0 ;
+			}
+
+			ENDHLSL
+		}
+*/
 	}
 }
