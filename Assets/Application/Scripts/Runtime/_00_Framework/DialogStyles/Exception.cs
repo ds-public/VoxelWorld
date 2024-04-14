@@ -8,7 +8,7 @@ using UnityEngine ;
 
 using uGUIHelper ;
 
-namespace DBS.DialogStyle
+namespace DSW.DialogStyle
 {
 	/// <summary>
 	/// エクセプションタイプのダイアログ

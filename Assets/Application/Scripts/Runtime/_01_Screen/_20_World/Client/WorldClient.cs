@@ -7,21 +7,15 @@ using UnityEngine ;
 
 using Cysharp.Threading.Tasks ;
 
-using WebSocketSharp ;
-using WebSocketSharp.Net ;
-
-
 using uGUIHelper ;
 using TransformHelper ;
 
 using MathHelper ;
 using StorageHelper ;
 
-using DBS.UI ;
+using DSW.World ;
 
-using DBS.World ;
-
-namespace DBS.World
+namespace DSW.World
 {
 	/// <summary>
 	/// クライアント(メイン)
@@ -42,9 +36,6 @@ namespace DBS.World
 
 		[SerializeField]
 		protected SoftTransform		m_ChunkRoot ;
-
-		[SerializeField]
-		protected Camera			m_Camera ;
 
 		[SerializeField]
 		protected Light				m_Light ;
@@ -132,17 +123,6 @@ namespace DBS.World
 		[SerializeField]
 		protected UINumberMesh		m_P_Chunk_V ;
 
-		[SerializeField]
-		protected UINumberMesh		m_P_ProcrssingChunk_T_Now ;
-
-		[SerializeField]
-		protected UINumberMesh		m_P_ProcrssingChunk_T_Max ;
-
-		[SerializeField]
-		protected UINumberMesh		m_P_ProcrssingChunk_C_Now ;
-
-		[SerializeField]
-		protected UINumberMesh		m_P_ProcrssingChunk_C_Max ;
 
 
 		[Header( "プレイヤーのコリジョン情報" )]
@@ -228,6 +208,7 @@ namespace DBS.World
 
 		private float	m_DateTime ;
 
+		// プレイヤーが行動可能になったかどうかの判定用
 		private bool	m_EnableMoving = false ;
 
 		// 選択中のアクティブアイテムのインデックス
@@ -248,17 +229,49 @@ namespace DBS.World
 		[SerializeField]
 		protected Material	m_DefaultMaterial ;
 
-
+		// クライアント識別子
 		private string	m_ClientId ;
+
+		// プレイヤー識別子
 		private string	m_PlayerId ;
 
+		/// <summary>
+		/// 視点の種別
+		/// </summary>
+		public enum PlayerViewTypes
+		{
+			/// <summary>
+			/// 主観視点
+			/// </summary>
+			FirstPerson			= 0,
+
+			/// <summary>
+			/// 客観視点(通常)
+			/// </summary>
+			ThirdPerson_Normal	= 1,
+
+			/// <summary>
+			/// 客観視点(反転)
+			/// </summary>
+			ThirdPerson_Invert	= 2,
+		}
+
+		// 視点の種別
+		private PlayerViewTypes	m_PlayerViewType = PlayerViewTypes.FirstPerson ;
+
+		// プレイヤーがスニーク中かどうか
+		private bool m_IsPlayerSneaking = false ;
+
+		// 位置と方向を送信するかどうか判定用(変化が無ければ送信しない)
 		private float	m_TransformInterval ;
 		private Vector3	m_TransformPosition		= new Vector3() ;
 		private Vector3 m_TransformDirection	= new Vector3() ;
 
+
+
 		private int		m_Center_CsId ;
 
-
+		// 現在位置のチャンクのみ表示する(デバッグ用)
 		private bool	m_ViewVolumeCenterOnly ;
 
 		//-----------------------------------
@@ -275,6 +288,16 @@ namespace DBS.World
 		/// <returns></returns>
 		public async UniTask<bool> Prepare()
 		{
+
+			Vector3 center = new Vector3( -0.2f,-0.2f,-0.2f ) ;
+//			Vector3 center = new Vector3(  0.5f, 0.5f, 0.5f ) ;
+			float radius = 0.4f ;
+			( bool isHit, Vector3 p ) = IsHitSphereAndCube( center, radius, 0, 0, 0 ) ;
+			Debug.Log( "<color=#FFFF00>--------------->結果:" + isHit + " p = " + p + "</color>" ) ;
+
+			//----------------------------------------------------------
+
+
 			// 状態を初期化する
 			m_IsReady	= false ;
 			m_IsQuit	= false ;
@@ -295,10 +318,6 @@ namespace DBS.World
 			m_P_Chunk_O.Value				= 0 ;
 			m_P_Chunk_E.Value				= 0 ;
 			m_P_Chunk_V.Value				= 0 ;
-			m_P_ProcrssingChunk_T_Now.Value	= 0 ;
-			m_P_ProcrssingChunk_T_Max.Value	= 0 ;
-			m_P_ProcrssingChunk_C_Now.Value	= 0 ;
-			m_P_ProcrssingChunk_C_Max.Value	= 0 ;
 
 			//------------------------------------------------------------------------------------------
 
@@ -359,7 +378,7 @@ namespace DBS.World
 
 			// ファークリップを設定する
 			float farClip = 16 * WorldSettings.DISPLAY_CHUNK_RANGE ;
-			m_Camera.farClipPlane = farClip ;
+			m_PlayerActor.GetCamera().farClipPlane = farClip ;
 
 			// フォグはシーンのライト設定の有効化も必要
 //			SetFog( true, farClip ) ;
@@ -387,8 +406,8 @@ namespace DBS.World
 
 			//----------------------------------------------------------
 
-			// レイヤー情報をロードする
-			LoadPlayer() ;
+			// プレイヤー情報をロードする
+			LoadLocalPlayer() ;
 
 			//------------------------------------------------------------------------------------------
 
@@ -516,32 +535,6 @@ namespace DBS.World
 				m_FpsCount = 0 ;
 			}
 		}
-
-		/// <summary>
-		/// クライアントを終了する
-		/// </summary>
-		public void Shutdown()
-		{
-			if( m_IsLogin == true )
-			{
-				// ログイン済みの場合はプレイヤー情報をセーブする(ログイン用の識別子)　※保険
-				SaveLocalPlayer() ;
-			}
-
-			m_IsLogin	= false ;
-
-			// ソケットを閉じる(Ready 状態に関係なく実行が必要)
-			EndWebSocketClient() ;
-
-			m_IsQuit	= true ;	// 終了			
-			m_IsReady	= false ;
-		}
-
-		internal void OnDestroy()
-		{
-			Shutdown() ;
-		}
-
 		//-------------------------------------------------------------------------------------------
 
 		/// <summary>
@@ -620,7 +613,7 @@ namespace DBS.World
 			UpdateChunks() ;
 
 			// オクルージョンカリングで見えないチャンクを非アクティブにする
-			OcclusionCulling( m_Camera.transform.position ) ;
+			OcclusionCulling( m_PlayerActor.GetCamera().transform.position ) ;
 
 			// ネームプレートの表示位置を更新する
 			UpdatePlayerNamePlates() ;
@@ -649,78 +642,7 @@ namespace DBS.World
 
 		//-------------------------------------------------------------------------------------------
 
-		private string m_LocalPlayerPath = "Client/LoaclPlayer.json" ;
-
-		// プレイヤー情報をロードする
-		private bool LoadPlayer()
-		{
-			if( StorageAccessor.Exists( m_LocalPlayerPath ) != StorageAccessor.Target.File )
-			{
-				// プレイヤー識別子は取得していない
-				return false ;
-			}
-
-			byte[] data = StorageAccessor.Load( m_LocalPlayerPath ) ;
-			if( data == null || data.Length == 0 )
-			{
-				// 失敗
-				return false ;
-			}
-
-			var player = DataPacker.Deserialize<LocalPlayerData>( data, false, Settings.DataTypes.Json ) ;
-			if( player == null )
-			{
-				// 失敗
-				return false ;
-			}
-
-			// プレイヤー識別子を取得する
-			m_PlayerId = player.PlayerId ;
-
-			// 成功
-			return true ;
-		}
-
-		// プレイヤー情報をセーブする
-		private bool SaveLocalPlayer()
-		{
-			var player = new LocalPlayerData()
-			{
-				ServerAddress		= PlayerData.ServerAddress,
-				ServerPortNumber	= PlayerData.ServerPortNumber,
-				PlayerId			= m_PlayerId	// プレイヤー識別子を更新する
-			} ;
-
-			var data = DataPacker.Serialize( player, false, Settings.DataTypes.Json ) ;
-			if( data == null || data.Length == 0 )
-			{
-				// 失敗
-				return false ;
-			}
-
-			return StorageAccessor.Save( m_LocalPlayerPath, data, makeFolder:true ) ;
-		}
-
 		//-------------------------------------------------------------------------------------------
-
-		// プレイヤーの姿勢を設定する
-		private void SetPlayerTransform( Vector3 p, Vector3 d )
-		{
-			SetPlayerTransform( p.x, p.z, p.y, d.x, d.z, d.y ) ;
-		}
-
-		// プレイヤーの姿勢を設定する
-		private void SetPlayerTransform( float px, float pz, float py, float dx, float dz, float dy )
-		{
-			m_PlayerActor.SetPosition( px, py, pz ) ;
-
-			Vector3 direction = new Vector3( dx, 0, dz ) ;
-			direction.Normalize() ;	// 念のため正規化する
-
-			m_PlayerActor.Forward = direction ;
-			m_PlayerActor.Up = new Vector3( 0, 1, 0 ) ;
-		}
-
 		//-------------------------------------------------------------------------------------------
 
 		private float m_LogDisplayKeepTime ; 
@@ -830,6 +752,36 @@ namespace DBS.World
 			float angle = Mathf.Atan2( direction.z, direction.x ) ;
 			angle = 180.0f * angle / Mathf.PI ;
 			m_Compas.Roll = angle ;
+		}
+
+		//-------------------------------------------------------------------------------------------
+
+		/// <summary>
+		/// クライアントを終了する
+		/// </summary>
+		public void Shutdown()
+		{
+			if( m_IsLogin == true )
+			{
+				// ログイン済みの場合はプレイヤー情報をセーブする(ログイン用の識別子)　※保険
+				SaveLocalPlayer() ;
+			}
+
+			m_IsLogin	= false ;
+
+			// ソケットを閉じる(Ready 状態に関係なく実行が必要)
+			EndWebSocketClient() ;
+
+			m_IsQuit	= true ;	// 終了			
+			m_IsReady	= false ;
+		}
+
+		/// <summary>
+		/// オブジェクトが破棄される際に呼び出される
+		/// </summary>
+		internal void OnDestroy()
+		{
+			Shutdown() ;
 		}
 	}
 }

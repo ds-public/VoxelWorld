@@ -68,7 +68,7 @@ namespace SceneManagementHelper
 		
 			// オブジェクトが非アクティブだと検出されないのでオブジェクトを非アクティブにしてはならない
 			// この判定は必須で mInstance は static であるためシーンの最初はオブジェクトが存在しても null になっている
-			m_Instance = GameObject.FindObjectOfType<EnhancedSceneManager>() ;
+			m_Instance = GameObject.FindAnyObjectByType<EnhancedSceneManager>() ;
 			if( m_Instance == null )
 			{
 				GameObject go = new GameObject( "EnhancedSceneManager" ) ;
@@ -114,7 +114,7 @@ namespace SceneManagementHelper
 				return ;
 			}
 		
-			EnhancedSceneManager instanceOther = GameObject.FindObjectOfType<EnhancedSceneManager>() ;
+			EnhancedSceneManager instanceOther = GameObject.FindAnyObjectByType<EnhancedSceneManager>() ;
 			if( instanceOther != null )
 			{
 				if( instanceOther != this )
@@ -901,7 +901,7 @@ namespace SceneManagementHelper
 				// 指定の型のコンポーネントが存在する場合はそれが完全に消滅するまで待つ
 				while( true )
 				{
-					if( GameObject.FindObjectOfType( type ) == null )
+					if( GameObject.FindAnyObjectByType( type ) == null )
 					{
 						break ;
 					}

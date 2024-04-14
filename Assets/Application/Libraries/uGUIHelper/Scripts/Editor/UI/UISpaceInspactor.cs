@@ -2,7 +2,7 @@
 
 using UnityEngine ;
 using UnityEditor ;
-using System.Collections.Generic ;
+
 
 namespace uGUIHelper
 {
@@ -14,59 +14,103 @@ namespace uGUIHelper
 	{
 		override protected void DrawInspectorGUI()
 		{
-			UISpace tTarget = target as UISpace ;
+			UISpace view = target as UISpace ;
 
 			EditorGUILayout.Separator() ;	// 少し区切りスペース
 		
 			//-------------------------------------------------------------------
 		
-			// キャンバスグループを有効にするかどうか
-			DrawCanvasGroup( tTarget ) ;
+			GUI.backgroundColor = Color.green ;
+			Transform worldRoot = EditorGUILayout.ObjectField( "World Root", view.WorldRoot, typeof( Transform ), true ) as Transform ;
+			GUI.backgroundColor = Color.white ;
+			if( worldRoot != view.WorldRoot )
+			{
+				Undo.RecordObject( view, "UISpace : World Root Change" ) ;	// アンドウバッファに登録
+				view.WorldRoot = worldRoot ;
+				EditorUtility.SetDirty( view ) ;
+			}
+
+			if( view.WorldRoot != null )
+			{
+				GUILayout.BeginHorizontal() ;	// 横並び
+				{
+					// 実行時のレイヤーの強制設定
+					bool isForceWorldLayer = EditorGUILayout.Toggle( view.IsForceWorldLayer, GUILayout.Width( 16f ) ) ;
+					if( isForceWorldLayer != view.IsForceWorldLayer )
+					{
+						Undo.RecordObject( view, "UISpace : IsForceWorldLayer Change" ) ;	// アンドウバッファに登録
+						view.IsForceWorldLayer = isForceWorldLayer ;
+						EditorUtility.SetDirty( view ) ;
+					}
+					GUILayout.Label( "Is Force World Layer" ) ;
+
+					//-------------
+
+					if( view.IsForceWorldLayer == true )
+					{
+						string[] layerNames = new string[ 32 ] ;
+						int layer ;
+						for( layer  = 0 ; layer <  layerNames.Length ; layer ++ )
+						{
+							layerNames[ layer ] = layer.ToString( "D2" ) + " : " + LayerMask.LayerToName( layer ) ;
+						}
+
+						int targetLayer = EditorGUILayout.Popup( view.WorldLayer, layerNames ) ;
+						if( targetLayer != view.WorldLayer )
+						{
+							Undo.RecordObject( view, "UISpace : World Layer Change" ) ;	// アンドウバッファに登録
+							view.WorldLayer = targetLayer ;
+							EditorUtility.SetDirty( view ) ;
+						}
+					}
+				}
+				GUILayout.EndHorizontal() ;		// 横並び終了
+			}
 
 			EditorGUILayout.Separator() ;	// 少し区切りスペース
-		
+
 			GUI.backgroundColor = Color.magenta ;
-			Camera tTargetCamera = EditorGUILayout.ObjectField( "Target Camera", tTarget.TargetCamera, typeof( Camera ), true ) as Camera ;
+			Camera targetCamera = EditorGUILayout.ObjectField( "Target Camera", view.TargetCamera, typeof( Camera ), true ) as Camera ;
 			GUI.backgroundColor = Color.white ;
-			if( tTargetCamera != tTarget.TargetCamera )
+			if( targetCamera != view.TargetCamera )
 			{
-				Undo.RecordObject( tTarget, "UISpace : Target Camera Change" ) ;	// アンドウバッファに登録
-				tTarget.TargetCamera = tTargetCamera ;
-				EditorUtility.SetDirty( tTarget ) ;
+				Undo.RecordObject( view, "UISpace : Target Camera Change" ) ;	// アンドウバッファに登録
+				view.TargetCamera = targetCamera ;
+				EditorUtility.SetDirty( view ) ;
 //				UnityEditor.SceneManagement.EditorSceneManager.MarkSceneDirty( UnityEditor.SceneManagement.EditorSceneManager.GetActiveScene() ) ;
 			}
 
-			if( tTarget.TargetCamera != null )
+			if( view.TargetCamera != null )
 			{
-				Vector2 tCameraOffset = EditorGUILayout.Vector2Field( "Camera Offset", tTarget.CameraOffset ) ;
-				if( tCameraOffset.Equals( tTarget.CameraOffset ) == false )
+				Vector2 cameraOffset = EditorGUILayout.Vector2Field( "Camera Offset", view.CameraOffset ) ;
+				if( cameraOffset.Equals( view.CameraOffset ) == false )
 				{
-					Undo.RecordObject( tTarget, "UISpace : Camera Offset Change" ) ;	// アンドウバッファに登録
-					tTarget.CameraOffset = tCameraOffset ;
-					EditorUtility.SetDirty( tTarget ) ;
+					Undo.RecordObject( view, "UISpace : Camera Offset Change" ) ;	// アンドウバッファに登録
+					view.CameraOffset = cameraOffset ;
+					EditorUtility.SetDirty( view ) ;
 				}
 			}
 
 
 			GUILayout.BeginHorizontal() ;	// 横並び
 			{
-				bool tFlexibleFieldOfView = EditorGUILayout.Toggle( tTarget.FlexibleFieldOfView, GUILayout.Width( 16f ) ) ;
-				if( tFlexibleFieldOfView != tTarget.FlexibleFieldOfView )
+				bool flexibleFieldOfView = EditorGUILayout.Toggle( view.FlexibleFieldOfView, GUILayout.Width( 16f ) ) ;
+				if( flexibleFieldOfView != view.FlexibleFieldOfView )
 				{
-					Undo.RecordObject( tTarget, "UISpace : Flexible Field Of View Change" ) ;	// アンドウバッファに登録
-					tTarget.FlexibleFieldOfView = tFlexibleFieldOfView ;
-					EditorUtility.SetDirty( tTarget ) ;
+					Undo.RecordObject( view, "UISpace : Flexible Field Of View Change" ) ;	// アンドウバッファに登録
+					view.FlexibleFieldOfView = flexibleFieldOfView ;
+					EditorUtility.SetDirty( view ) ;
 				}
 				GUILayout.Label( "Flexible Field Of View" ) ;
 
-				if( tTarget.FlexibleFieldOfView == true )
+				if( view.FlexibleFieldOfView == true )
 				{
-					float tBasisHeight = EditorGUILayout.FloatField( "Basis Height", tTarget.BasisHeight ) ;
-					if( tBasisHeight != tTarget.BasisHeight )
+					float basisHeight = EditorGUILayout.FloatField( "Basis Height", view.BasisHeight ) ;
+					if( basisHeight != view.BasisHeight )
 					{
-						Undo.RecordObject( tTarget, "UISpace : Basis Height Change" ) ;	// アンドウバッファに登録
-						tTarget.BasisHeight = tBasisHeight ;
-						EditorUtility.SetDirty( tTarget ) ;
+						Undo.RecordObject( view, "UISpace : Basis Height Change" ) ;	// アンドウバッファに登録
+						view.BasisHeight = basisHeight ;
+						EditorUtility.SetDirty( view ) ;
 					}
 				}
 
@@ -80,12 +124,12 @@ namespace uGUIHelper
 		
 			GUILayout.BeginHorizontal() ;	// 横並び
 			{
-				bool tRenderTextureEnabled = EditorGUILayout.Toggle( tTarget.RenderTextureEnabled, GUILayout.Width( 16f ) ) ;
-				if( tRenderTextureEnabled != tTarget.RenderTextureEnabled )
+				bool renderTextureEnabled = EditorGUILayout.Toggle( view.RenderTextureEnabled, GUILayout.Width( 16f ) ) ;
+				if( renderTextureEnabled != view.RenderTextureEnabled )
 				{
-					Undo.RecordObject( tTarget, "UISpace : Render Texture Enabled Change" ) ;	// アンドウバッファに登録
-					tTarget.RenderTextureEnabled = tRenderTextureEnabled ;
-					EditorUtility.SetDirty( tTarget ) ;
+					Undo.RecordObject( view, "UISpace : Render Texture Enabled Change" ) ;	// アンドウバッファに登録
+					view.RenderTextureEnabled = renderTextureEnabled ;
+					EditorUtility.SetDirty( view ) ;
 				}
 				GUILayout.Label( "Render Texture Enabled" ) ;
 			}
@@ -93,8 +137,22 @@ namespace uGUIHelper
 
 			//----------------------------------------------------------
 
-			if( tTarget.RenderTextureEnabled == true )
+			if( view.RenderTextureEnabled == true )
 			{
+				// 設定されているイメージ
+				GUI.contentColor = Color.cyan ;	// ボタンの下地を緑に
+				EditorGUILayout.ObjectField( "Raw Image", view.Image, typeof( UIRawImage ), false ) ;
+				GUI.contentColor = Color.white ;	// ボタンの下地を緑に
+
+				// 強制更新
+				GUI.backgroundColor = Color.cyan ;	// ボタンの下地を緑に
+				if( GUILayout.Button( "Force Render", GUILayout.Width( 140f ) ) == true )
+				{
+					view.Render() ;
+				}
+				GUI.backgroundColor = Color.white ;	// ボタンの下地を緑に
+
+
 				EditorGUILayout.Separator() ;	// 少し区切りスペース
 
 				EditorGUIUtility.labelWidth =  60f ;
@@ -102,21 +160,21 @@ namespace uGUIHelper
 
 				GUILayout.BeginHorizontal() ;	// 横並び
 				{
-					bool tIsMask = EditorGUILayout.Toggle( tTarget.ImageMask, GUILayout.Width( 16f ) ) ;
-					if( tIsMask != tTarget.ImageMask )
+					bool isMask = EditorGUILayout.Toggle( view.ImageMask, GUILayout.Width( 16f ) ) ;
+					if( isMask != view.ImageMask )
 					{
-						Undo.RecordObject( tTarget, "UISpace : Mask Change" ) ;	// アンドウバッファに登録
-						tTarget.ImageMask = tIsMask ;
-						EditorUtility.SetDirty( tTarget ) ;
+						Undo.RecordObject( view, "UISpace : Mask Change" ) ;	// アンドウバッファに登録
+						view.ImageMask = isMask ;
+						EditorUtility.SetDirty( view ) ;
 					}
 					GUILayout.Label( "Mask" ) ;
 
-					bool tIsInversion = EditorGUILayout.Toggle( tTarget.ImageInversion, GUILayout.Width( 16f ) ) ;
-					if( tIsInversion != tTarget.ImageInversion )
+					bool isInversion = EditorGUILayout.Toggle( view.ImageInversion, GUILayout.Width( 16f ) ) ;
+					if( isInversion != view.ImageInversion )
 					{
-						Undo.RecordObject( tTarget, "UISpace : Image Inversion Change" ) ;	// アンドウバッファに登録
-						tTarget.ImageInversion = tIsInversion ;
-						EditorUtility.SetDirty( tTarget ) ;
+						Undo.RecordObject( view, "UISpace : Image Inversion Change" ) ;	// アンドウバッファに登録
+						view.ImageInversion = isInversion ;
+						EditorUtility.SetDirty( view ) ;
 					}
 					GUILayout.Label( "Inversion" ) ;
 				}
@@ -125,30 +183,30 @@ namespace uGUIHelper
 
 				GUILayout.BeginHorizontal() ;	// 横並び
 				{
-					bool tIsShadow = EditorGUILayout.Toggle( tTarget.ImageShadow, GUILayout.Width( 16f ) ) ;
-					if( tIsShadow != tTarget.IsShadow )
+					bool isShadow = EditorGUILayout.Toggle( view.ImageShadow, GUILayout.Width( 16f ) ) ;
+					if( isShadow != view.IsShadow )
 					{
-						Undo.RecordObject( tTarget, "UISpace : Shadow Change" ) ;	// アンドウバッファに登録
-						tTarget.ImageShadow = tIsShadow ;
-						EditorUtility.SetDirty( tTarget ) ;
+						Undo.RecordObject( view, "UISpace : Shadow Change" ) ;	// アンドウバッファに登録
+						view.ImageShadow = isShadow ;
+						EditorUtility.SetDirty( view ) ;
 					}
 					GUILayout.Label( "Shadow" ) ;
 
-					bool tIsOutline = EditorGUILayout.Toggle( tTarget.ImageOutline, GUILayout.Width( 16f ) ) ;
-					if( tIsOutline != tTarget.ImageOutline )
+					bool isOutline = EditorGUILayout.Toggle( view.ImageOutline, GUILayout.Width( 16f ) ) ;
+					if( isOutline != view.ImageOutline )
 					{
-						Undo.RecordObject( tTarget, "UISpace : Outline Change" ) ;	// アンドウバッファに登録
-						tTarget.ImageOutline = tIsOutline ;
-						EditorUtility.SetDirty( tTarget ) ;
+						Undo.RecordObject( view, "UISpace : Outline Change" ) ;	// アンドウバッファに登録
+						view.ImageOutline = isOutline ;
+						EditorUtility.SetDirty( view ) ;
 					}
 					GUILayout.Label( "Outline" ) ;
 
-					bool tIsGradient = EditorGUILayout.Toggle( tTarget.ImageGradient, GUILayout.Width( 16f ) ) ;
-					if( tIsGradient != tTarget.ImageGradient )
+					bool isGradient = EditorGUILayout.Toggle( view.ImageGradient, GUILayout.Width( 16f ) ) ;
+					if( isGradient != view.ImageGradient )
 					{
-						Undo.RecordObject( tTarget, "UISpace : Gradient Change" ) ;	// アンドウバッファに登録
-						tTarget.ImageGradient = tIsGradient ;
-						EditorUtility.SetDirty( tTarget ) ;
+						Undo.RecordObject( view, "UISpace : Gradient Change" ) ;	// アンドウバッファに登録
+						view.ImageGradient = isGradient ;
+						EditorUtility.SetDirty( view ) ;
 					}
 					GUILayout.Label( "Gradient" ) ;
 				}

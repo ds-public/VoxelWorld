@@ -200,7 +200,7 @@ namespace AssetBundleHelper
 			if( m_ResourceCache != null && m_ResourceCache.Count >  0 )
 			{
 #if UNITY_EDITOR
-				Debug.Log( "[AssetBundleManager] キャッシュからクリア対象となる展開済みリソース数 = " + m_ResourceCache.Count ) ;
+				Debug.Log( "<color=#FF80FF>[AssetBundleManager] キャッシュからクリア対象となる展開済みリソース数 = " + m_ResourceCache.Count + "</color>" ) ;
 #endif
 				if( noMarkingOnly == false )
 				{
@@ -213,7 +213,7 @@ namespace AssetBundleHelper
 				else
 				{
 					// マークが付いていないもののみ消去する
-					List<string> paths = new List<string>() ;
+					var paths = new List<string>() ;
 					foreach( var element in m_ResourceCache )
 					{
 						if( element.Value.Mark == false )
@@ -240,6 +240,9 @@ namespace AssetBundleHelper
 			// ランタイムでのリソースキャッシュをクリア
 			if( unloadUnusedAssets == true )
 			{
+#if UNITY_EDITOR
+				Debug.Log( "<color=#FF80FF>[AssetBundleManager] *** Resources.UnloadUnusedAssets() が実行されました ***</color>" ) ;
+#endif
 				Resources.UnloadUnusedAssets() ;
 				System.GC.Collect() ;
 			}

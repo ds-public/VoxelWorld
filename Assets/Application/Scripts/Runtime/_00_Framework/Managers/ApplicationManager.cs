@@ -36,12 +36,13 @@ using StorageHelper ;
 
 using uGUIHelper ;
 
-using DBS.World ;
+using DSW.World ;
 
-namespace DBS
+
+namespace DSW
 {
 	/// <summary>
-	/// アプリケーションマネージャクラス Version 2022/10/03 0
+	/// アプリケーションマネージャクラス Version 2024/04/13 0
 	/// </summary>
 	public class ApplicationManager : SingletonManagerBase<ApplicationManager>
 	{
@@ -240,7 +241,7 @@ namespace DBS
 
 			// 画面の向き設定
 //			Screen.orientation = ScreenOrientation.AutoRotation ;	// 回転許可
-			Screen.orientation = ScreenOrientation.Landscape ;		// 回転許可
+			Screen.orientation = ScreenOrientation.LandscapeLeft ;		// 回転許可
 			Screen.autorotateToPortrait           = false ;			// 縦許可
 			Screen.autorotateToPortraitUpsideDown = false ;			// 縦許可
 			Screen.autorotateToLandscapeLeft      = true ;			// 横禁止
@@ -382,14 +383,7 @@ namespace DBS
 			Debug.Log( "[Screen Resolution] W = " + screenWidth + " H = " + screenHeight ) ;
 
 			// 表示解像度を設定する
-			Screen.SetResolution( ( int )screenWidth, ( int )screenHeight, fullScreen, frameRate ) ;
-#endif
-			//----------------------------------------------------------
-
-#if UNITY_EDITOR || UNITY_STANDALONE
-
-			// 入力モードをカスタム(ＰＣ用)にする
-			UIEventSystem.ProcessType = StandaloneInputModuleWrapper.ProcessType.Custom ;
+			Screen.SetResolution( ( int )screenWidth, ( int )screenHeight, fullScreen == true ? FullScreenMode.ExclusiveFullScreen : FullScreenMode.Windowed, new RefreshRate(){ numerator = ( uint )frameRate, denominator = 1 } ) ;
 #endif
 			//----------------------------------------------------------
 			// Unity の情報収集を無効化する
@@ -461,7 +455,6 @@ namespace DBS
 			SetFacadeClasses() ;
 
 			//----------------------------------------------------------
-
 		}
 	
 		/// <summary>
@@ -492,11 +485,12 @@ namespace DBS
 			//----------------------------------------------------------
 			// ファサードクラスを GameObject の生存期間に同期させる(UniTaskをコロスため)
 
-			GameObject facade = new GameObject( "Facade Classes" ) ;
+			var facade = new GameObject( "Facade Classes" ) ;
 			facade.transform.SetParent( transform, false ) ;
-			facade.transform.localPosition	= Vector3.zero ;
-			facade.transform.localRotation	= Quaternion.identity ;
+			facade.transform.SetLocalPositionAndRotation( Vector3.zero, Quaternion.identity ) ;
 			facade.transform.localScale		= Vector3.one ;
+
+			facade.AddComponent<Preference>() ;
 
 			facade.AddComponent<Scene>() ;
 			facade.AddComponent<Asset>() ;
@@ -568,12 +562,6 @@ namespace DBS
 				PlayerDataManager.Create( transform ) ;
 			}
 
-			// プリファレンス情報保持用のゲームオブジェクトを生成する
-			if( PreferenceManager.Instance == null )
-			{
-				PreferenceManager.Create( transform ) ;
-			}
-
 			//----------------------------------------------------------
 			// このタイミングのエンドポイント設定は保険の意味合い程度で実際はブートで上書きされる
 
@@ -589,8 +577,8 @@ namespace DBS
 
 			if( ( string.IsNullOrEmpty( m_EndPoint ) == true || m_EndPoint == "http://localhost/" ) && settings != null )
 			{
-				var endPoints = settings.WebAPI_EndPoints ;
-				int endPointIndex = ( int )settings.WebAPI_DefaultEndPoint ;
+				var endPoints = settings.EndPoints ;
+				int endPointIndex = ( int )settings.EndPoint ;
 				if( endPoints != null && endPoints.Length >  0 && endPointIndex >= 0 && endPointIndex <  endPoints.Length )
 				{
 					m_EndPoint = endPoints[ endPointIndex ].Path ;	// デフォルトは開発サーバー
@@ -627,8 +615,8 @@ namespace DBS
 			// 汎用インプットマネージャの生成
 			if( InputManager.Instance == null )
 			{
-				InputManager.Create( transform ) ;
-//				GamePadMapper.Setup() ;
+				InputManager.Create( transform, true ) ;
+				GamePadMapper.Setup() ;
 			}
 
 			// 汎用アセットバンドルマネージャの生成
@@ -640,8 +628,8 @@ namespace DBS
 			//----------------------------------------------------------
 			// カーソルの制御を設定する
 
-			UIEventSystem.SetCursorProcessing( false ) ;
-			InputManager.SetCursorProcessing( false ) ;
+			InputManager.SetInputProcessingType( InputProcessingTypes.Switching ) ;
+			InputManager.SetCursorProcessing( true ) ;
 
 			//----------------------------------------------------------
 			// プレイヤー情報の初期値を設定しておく
@@ -698,6 +686,11 @@ namespace DBS
 					PlayerData.ServerPortNumber	= 32000 ;
 				}
 			}
+
+			//----------------------------------------------------------
+
+			// サーバー検知パケットを一定時間ごとに送信する
+			ServerDetactor.Create( -1, parent:transform, isSuspending:true ) ;
 
 			//----------------------------------------------------------
 
@@ -782,6 +775,21 @@ namespace DBS
 				OpenExceptionDialog().Forget() ;
 			}
 #endif
+			//----------------------------------
+			// タイマー関係
+
+			float delta = Time.unscaledDeltaTime ;
+
+			if( m_IsMasterTimePausing == false )
+			{
+				// タイマー増加
+				m_MasterTimeDelta = delta ;
+				m_MasterTime += delta ;
+			}
+			else
+			{
+				m_MasterTimeDelta = 0 ;
+			}
 		}
 
 		//-----------------------------------------------------------------
@@ -1144,7 +1152,7 @@ namespace DBS
 #if !UNITY_EDITOR
 				return false ;
 #else
-				string path = "AssetBundle/" + Define.PlatformName ;
+				string path = "AssetBundle/" + Define.AssetBundlePlatformName ;
 				return Directory.Exists( path ) ;
 #endif
 			}
@@ -1163,8 +1171,7 @@ namespace DBS
 				return null ;
 			}
 
-			AsyncState state = new AsyncState( m_Instance ) ;
-
+			var state = new AsyncState( m_Instance ) ;
 			m_Instance.StartCoroutine( m_Instance.HasAssetBundleInStreamingAssets_Private( path, onResult, state ) ) ;
 			return state ;
 		}
@@ -1208,6 +1215,128 @@ namespace DBS
 
 			// 空き容量は足りている
 			return true ;
+		}
+
+		//-------------------------------------------------------------------------------------------
+		// タイマー系
+
+		// ゲーム全体の時間経過
+		private double	m_MasterTime ;
+
+		// ゲーム全体の時間経過(差分)
+		private double	m_MasterTimeDelta ;
+
+		// マスタータイムがボーズ中かどうか
+		private bool	m_IsMasterTimePausing ;
+
+		//-----------------------------------
+
+		/// <summary>
+		/// マスタータイム
+		/// </summary>
+		public static double MasterTime
+		{
+			get
+			{
+				if( m_Instance == null )
+				{
+					// まだ準備が出来ていない
+					return 0 ;
+				}
+				return m_Instance.m_MasterTime ;
+			}
+		}
+
+		/// <summary>
+		/// マスタータイム
+		/// </summary>
+		public static double MasterTimeDelta
+		{
+			get
+			{
+				if( m_Instance == null )
+				{
+					// まだ準備が出来ていない
+					return 0 ;
+				}
+				return m_Instance.m_MasterTimeDelta ;
+			}
+		}
+
+		/// <summary>
+		/// マスタータイムを一時停止させる
+		/// </summary>
+		public static void PauseTime()
+		{
+			if( m_Instance == null )
+			{
+				return ;
+			}
+			
+			m_Instance.m_IsMasterTimePausing = true ;
+		}
+
+		/// <summary>
+		/// マスタータイムの一時停止を解除する
+		/// </summary>
+		public static void UnpauseTime()
+		{
+			if( m_Instance == null )
+			{
+				return ;
+			}
+			
+			m_Instance.m_IsMasterTimePausing = false ;
+		}
+
+		//-------------------------------------------------------------------------------------------
+
+		/// <summary>
+		/// セーフエリアを取得する
+		/// </summary>
+		/// <returns></returns>
+		public static Rect GetSafeArea()
+		{
+			Rect safeArea = Screen.safeArea ;
+
+#if SAFE_AREA_EXSAMPLE
+			if( Application.isPlaying == true )
+			{
+				// SafeAreaCorrector の生成・削除が行われシーンファイルが更新扱いにならないようにするため
+				// ランタイム実行時のみ試験的セーフエリアは有効とする
+
+				// UnityEditor - GameView では解像度(Screen .width .height)が可変であるためセーフエリアは解像度に対する比率で考える事
+				float safeArea_L = Screen.width  *   0 / 540 ;	// セーフエリア(左)[仮] / 画面解像度(横)[仮]
+				float safeArea_R = Screen.width  *   0 / 540 ;	// セーフエリア(右)[仮] / 画面解像度(横)[仮]
+				float safeArea_B = Screen.height *  80 / 960 ;	// セーフエリア(下)[仮] / 画面解像度(縦)[仮]
+				float safeArea_T = Screen.height *  40 / 960 ;	// セーフエリア(上)[仮] / 画面解像度(縦)[仮]
+
+				// セーフエリアの大きさ単位は画面(Screen)解像度単位
+				safeArea = new Rect
+				(
+					safeArea_L,
+					safeArea_B,
+					Screen.width  - safeArea_L - safeArea_R,
+					Screen.height - safeArea_B - safeArea_T
+				) ;
+			}
+#endif
+			return safeArea ;
+		}
+
+
+		//-------------------------------------------------------------------------------------------
+
+		/// <summary>
+		/// アプリケーションを終了する
+		/// </summary>
+		public static void Quit()
+		{
+#if !UNITY_EDITOR
+			Application.Quit() ;
+#else
+			EditorApplication.isPlaying = false ;
+#endif
 		}
 	}
 }

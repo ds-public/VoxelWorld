@@ -55,7 +55,7 @@ namespace AssetBundleHelper
 				/// <summary>
 				/// アセットバンドルファイルのサイズ
 				/// </summary>
-				public int		Size = 0 ;			// サイズ(処理の高速化のためにここに保持しておく)※キャッシュオーバーなどの際の処理に使用する
+				public long		Size = 0 ;			// サイズ(処理の高速化のためにここに保持しておく)※キャッシュオーバーなどの際の処理に使用する
 
 				/// <summary>
 				/// ＣＲＣ値(０で使用しない)
@@ -110,7 +110,7 @@ namespace AssetBundleHelper
 				/// <param name="path">マニフェスト内での相対パス</param>
 				/// <param name="hash">ハッシュ値</param>
 				/// <param name="time">最終更新日時</param>
-				public AssetBundleInfo( string path, string hash, int size, uint crc, string[] tags, long lastUpdateTime )
+				public AssetBundleInfo( string path, string hash, long size, uint crc, string[] tags, long lastUpdateTime )
 				{
 					Path			= path ;
 					Hash			= hash ;
@@ -236,7 +236,7 @@ namespace AssetBundleHelper
 						return null ;
 					}
 
-					List<( string, Type )> allAssetPaths = new List<( string, Type )>() ;
+					var allAssetPaths = new List<( string, Type )>() ;
 
 					// アセットバンドル部のパスと拡張子を削除する
 					int i, l = paths.Length ;
@@ -257,8 +257,8 @@ namespace AssetBundleHelper
 						else
 						{
 							// 拡張子あり
-							extension = path.Substring( i1, path.Length - i1 ) ;
-							path = path.Substring( 0, i1 ) ;
+							extension = path[ i1.. ] ;
+							path = path[ ..i1 ] ;
 
 							allAssetPaths.Add( ( path, instance.GetTypeFromExtension( extension ) ) ) ;
 						}
@@ -287,7 +287,7 @@ namespace AssetBundleHelper
 						return null ;
 					}
 
-					List<string> allAssetPaths = new List<string>() ;
+					var allAssetPaths = new List<string>() ;
 
 					// アセットバンドル部のパスと拡張子を削除する
 					int i, l = paths.Length ;
@@ -308,10 +308,10 @@ namespace AssetBundleHelper
 						else
 						{
 							// 拡張子あり
-							extension = path.Substring( i1, path.Length - i1 ) ;
+							extension = path[ i1.. ] ;
 							if( instance.GetTypeFromExtension( extension ) == type )
 							{
-								path = path.Substring( 0, i1 ) ;
+								path = path[ ..i1 ] ;
 								allAssetPaths.Add( path ) ;
 							}
 						}
@@ -500,7 +500,7 @@ namespace AssetBundleHelper
 					if( type != null && assets != null && assets.Length >  0 )
 					{
 						// タイプ指定があるならタイプで絞る
-						List<UnityEngine.Object> temporaryAssets = new List<UnityEngine.Object>() ;
+						var temporaryAssets = new List<UnityEngine.Object>() ;
 						foreach( var asset in assets )
 						{
 							if( asset.GetType() == type )

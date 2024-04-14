@@ -52,7 +52,9 @@ namespace uGUIHelper
 				if( m_DisplayType != value )
 				{
 					m_DisplayType  = value ;
-					UpdateThumb() ;
+//					UpdateThumb() ;
+
+					m_IsRefresh = true ;
 				}
 			}
 		}
@@ -71,12 +73,12 @@ namespace uGUIHelper
 			}
 			set
 			{
-				if( m_Value != value )
-				{
-					m_Value = value ;
-					UpdateThumb() ;
-					UpdateLabel() ;
-				}
+				// 同値かどうかのチェックを行ってはらない(ゲージの表示が違っている状態であっても同値だと更新されない)
+				m_Value = value ;
+//				UpdateThumb() ;
+//				UpdateLabel() ;
+
+				m_IsRefresh = true ;
 			}
 		}
 
@@ -93,14 +95,18 @@ namespace uGUIHelper
 			}
 			set
 			{
-				if( m_Number != value )
-				{
-					m_Number = value ;
-					UpdateThumb() ;
-					UpdateLabel() ;
-				}
+				// 同値かどうかのチェックを行ってはらない(ゲージの表示が違っている状態であっても同値だと更新されない)
+				m_Number = value ;
+
+//				UpdateThumb() ;
+//				UpdateLabel() ;
+				m_IsRefresh = true ;
 			}
 		}
+
+		//-----------------------------------------------------
+
+		private bool m_IsRefresh = true ;
 
 		//-----------------------------------------------------
 
@@ -108,8 +114,10 @@ namespace uGUIHelper
 		{
 			base.OnAwake() ;
 
-			UpdateThumb() ;
-			UpdateLabel() ;
+//			UpdateThumb() ;
+//			UpdateLabel() ;
+
+			m_IsRefresh = true ;
 		}
 
 		/// <summary>
@@ -230,6 +238,23 @@ namespace uGUIHelper
 
 		//----------------------------------------------------
 
+		// HorizontalLayoutGroup VerticalLayoutGroup GridLayoutGroup は Update() のタイミングで処理され。
+		// それまで、その子ビュー deltaSize は正確な値が取れない。
+		// m_Scope.Width もその影響を受けるため、UIProgress の処理は LateUpdate() のタイミングで行う必要がある。
+		// すなわち UIView.Width UIView.Height は、LayoutGroup の子である場合は、
+		// 最初のフレームでは正確な値が取れない。
+		// 回避するためには、スタティックメソッド Canvas.ForceUpdateCanvases() ; を実行してから値を取る事。
+		override protected void OnLateUpdate()
+		{
+			if( m_IsRefresh == true )
+			{
+				UpdateThumb() ;
+				UpdateLabel() ;
+
+				m_IsRefresh = false ;
+			}
+		}
+		
 		/// <summary>
 		/// Thumb 更新
 		/// </summary>
@@ -240,9 +265,16 @@ namespace uGUIHelper
 				return ;
 			}
 
+			float value = m_Value ;
+//			if( value <  0.01f )
+//			{
+//				// 極端に小さい値だとバグるため最小制限を入れる
+//				value  = 0.01f ;
+//			}
+
 			if( m_DisplayType == DisplayTypes.Stretch )
 			{
-				if( m_Value <= 0 )
+				if( value <= 0 )
 				{
 					m_Scope.SetActive( false ) ;
 				}
@@ -252,7 +284,7 @@ namespace uGUIHelper
 	
 					m_Scope.SetAnchorToStretch() ;
 					m_Scope.SetAnchorMin(       0, 0 ) ;
-					m_Scope.SetAnchorMax( m_Value, 1 ) ;
+					m_Scope.SetAnchorMax( value, 1 ) ;
 
 					m_Thumb.SetAnchorToStretch() ;
 					m_Thumb.SetMargin(   0,   0,   0,   0 ) ;
@@ -261,7 +293,7 @@ namespace uGUIHelper
 			else
 			if( m_DisplayType == DisplayTypes.Mask )
 			{
-				if( m_Value <= 0 )
+				if( value <= 0 )
 				{
 					m_Scope.SetActive( false ) ;
 				}
@@ -270,7 +302,7 @@ namespace uGUIHelper
 					m_Scope.SetActive( true ) ;
 					m_Scope.SetAnchorToStretch() ;
 
-					float d = m_Scope.Width * ( 1.0f - m_Value ) ;
+					float d = m_Scope.Width * ( 1.0f - value ) ;
 
 					m_Scope.SetMargin(  0, d,  0,  0 ) ;
 	

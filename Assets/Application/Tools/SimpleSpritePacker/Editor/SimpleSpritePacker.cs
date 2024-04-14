@@ -1,8 +1,13 @@
 using System ;
 using System.IO ;
 using System.Collections.Generic ;
-using UnityEngine ;
 using UnityEditor ;
+
+// Assembly に Unity.2D.Sprite.Editor が必要
+using UnityEditor.U2D.Sprites ;
+
+using UnityEngine ;
+
 
 /// <summary>
 /// シンプルスプライトパッカーパッケージ
@@ -10,7 +15,7 @@ using UnityEditor ;
 namespace Tools.ForSprite
 {
 	/// <summary>
-	/// スプライトパッカークラス(エディター用) Version 2021/04/22 0
+	/// スプライトパッカークラス(エディター用) Version 2023/06/01 0
 	/// </summary>
 	public class SimpleSpritePacker : EditorWindow
 	{
@@ -33,7 +38,7 @@ namespace Tools.ForSprite
 		public class SpriteElement
 		{
 			public	Texture2D		Texture ;	// 追加または更新が行われ場合の別テクスチャファイルのインスタンス
-			public	SpriteMetaData	MetaData ;
+			public	SpriteRect		SpriteRect ;
 			public	SpriteAction	Action ;
 			public	int				Type ;      // 要素となる画像がテクスチャ・シングルタイプスプライト(0)なのかマルチプルタイプスプライト(1)なのか
 
@@ -424,7 +429,7 @@ namespace Tools.ForSprite
 				m_SpriteElementHash.Clear() ;
 			}
 		
-			Dictionary<string,SpriteElement> spriteElementHash = new Dictionary<string,SpriteElement>() ;
+			var spriteElementHash = new Dictionary<string,SpriteElement>() ;
 
 			if( atlas != null )
 			{
@@ -432,17 +437,24 @@ namespace Tools.ForSprite
 				string atlasPath = AssetDatabase.GetAssetPath( atlas.GetInstanceID() ) ;
 			
 				TextureImporter textureImporter = AssetImporter.GetAtPath( atlasPath ) as TextureImporter ;
-			
-				foreach( SpriteMetaData spriteMetaData in textureImporter.spritesheet )
+
+				var factory = new SpriteDataProviderFactories() ;
+				factory.Init() ;
+				var dataProvider = factory.GetSpriteEditorDataProviderFromObject( textureImporter ) ;
+				dataProvider.InitSpriteEditorDataProvider() ;
+
+				var spriteRects = dataProvider.GetSpriteRects() ;
+
+				foreach( var spriteRect in spriteRects )
 				{
-					string spriteName = spriteMetaData.name ;
+					string spriteName = spriteRect.name ;
 
 					if( m_SpriteElementHash.TryGetValue( spriteName, out SpriteElement spriteElement ) )
 					{
 						// 既にリストに登録済みの情報
 						spriteElement.Texture = null ;
 
-						spriteElement.MetaData = spriteMetaData ;
+						spriteElement.SpriteRect = spriteRect ;
 
 						if( spriteElement.Action == SpriteAction.Delete )
 						{
@@ -460,7 +472,7 @@ namespace Tools.ForSprite
 						spriteElement = new SpriteElement()
 						{
 							Texture = null,
-							MetaData = spriteMetaData,
+							SpriteRect = spriteRect,
 							Action = SpriteAction.None,
 							Type = 0
 						} ;
@@ -502,8 +514,8 @@ namespace Tools.ForSprite
 							// 既に存在するのでアップデートになる
 							spriteElement.Texture = texture ;
 						
-							spriteElement.MetaData.border	= textureImporter.spriteBorder ;
-							spriteElement.MetaData.pivot	= textureImporter.spritePivot ;
+							spriteElement.SpriteRect.border	= textureImporter.spriteBorder ;
+							spriteElement.SpriteRect.pivot	= textureImporter.spritePivot ;
 						
 							spriteElement.Action = SpriteAction.Update ;
 							spriteElement.Type = 0 ;
@@ -516,7 +528,7 @@ namespace Tools.ForSprite
 								Texture = texture
 							} ;
 						
-							spriteElement.MetaData = new SpriteMetaData()
+							spriteElement.SpriteRect = new SpriteRect()
 							{
 								name	= spriteName,
 								border	= textureImporter.spriteBorder,
@@ -533,16 +545,23 @@ namespace Tools.ForSprite
 					if( textureImporter.spriteImportMode == SpriteImportMode.Multiple )
 					{
 						// マルチプルタイプ
-						foreach( SpriteMetaData spriteMetaData in textureImporter.spritesheet )
+
+						var factory = new SpriteDataProviderFactories() ;
+						factory.Init();
+						var dataProvider = factory.GetSpriteEditorDataProviderFromObject( textureImporter ) ;
+						dataProvider.InitSpriteEditorDataProvider() ;
+						var spriteRects = dataProvider.GetSpriteRects() ;
+
+						foreach( var spriteRect in spriteRects )
 						{
-							spriteName = spriteMetaData.name ;
+							spriteName = spriteRect.name ;
 						
 							if( spriteElementHash.TryGetValue( spriteName, out spriteElement ) )
 							{
 								// 既に存在するのでアップデートになる
 								spriteElement.Texture = texture ;
 							
-								spriteElement.MetaData = spriteMetaData ;
+								spriteElement.SpriteRect = spriteRect ;
 
 								spriteElement.Action = SpriteAction.Update ;
 								spriteElement.Type = 1 ;
@@ -555,7 +574,7 @@ namespace Tools.ForSprite
 									Texture = texture
 								} ;
 							
-								spriteElement.MetaData = spriteMetaData ;
+								spriteElement.SpriteRect = spriteRect ;
 
 								spriteElement.Action = SpriteAction.Add ;
 								spriteElement.Type = 1 ;
@@ -586,7 +605,7 @@ namespace Tools.ForSprite
 							Texture = texture
 						} ;
 						
-						spriteElement.MetaData = new SpriteMetaData()
+						spriteElement.SpriteRect = new SpriteRect()
 						{
 							name = spriteName
 						} ;
@@ -607,7 +626,7 @@ namespace Tools.ForSprite
 		{
 			Texture2D texture = new Texture2D( 1, 1, TextureFormat.ARGB32, false ) ;
 		
-			List<SpriteMetaData> spriteSheetList = new List<SpriteMetaData>() ;
+			List<SpriteRect> spriteRectList = new List<SpriteRect>() ;
 			List<Texture2D> spriteTextureList = new List<Texture2D>() ;
 			List<string> deleteSpriteList = new List<string>() ;
 		
@@ -652,12 +671,12 @@ namespace Tools.ForSprite
 				{
 					// アトラススプライトに内包される領域
 					case SpriteAction.None :
-						spriteSheetList.Add( spriteElement.MetaData ) ;
+						spriteRectList.Add( spriteElement.SpriteRect ) ;
 					
-						x = ( int )spriteElement.MetaData.rect.x ;
-						y = ( int )spriteElement.MetaData.rect.y ;
-						w = ( int )spriteElement.MetaData.rect.width ;
-						h = ( int )spriteElement.MetaData.rect.height ;
+						x = ( int )spriteElement.SpriteRect.rect.x ;
+						y = ( int )spriteElement.SpriteRect.rect.y ;
+						w = ( int )spriteElement.SpriteRect.rect.width ;
+						h = ( int )spriteElement.SpriteRect.rect.height ;
 					
 						elementTexture = new Texture2D( w, h, TextureFormat.ARGB32, false ) ;
 						elementTexture.SetPixels( atlas.GetPixels( x, y, w, h ) ) ;
@@ -668,7 +687,7 @@ namespace Tools.ForSprite
 
 					// 新規追加
 					case SpriteAction.Add :
-						spriteSheetList.Add( spriteElement.MetaData ) ;
+						spriteRectList.Add( spriteElement.SpriteRect ) ;
 					
 						path = AssetDatabase.GetAssetPath( spriteElement.Texture.GetInstanceID() ) ;
 						
@@ -684,10 +703,10 @@ namespace Tools.ForSprite
 						else
 						{
 							// マルチプルスプライトタイプ
-							x = ( int )spriteElement.MetaData.rect.x ;
-							y = ( int )spriteElement.MetaData.rect.y ;
-							w = ( int )spriteElement.MetaData.rect.width ;
-							h = ( int )spriteElement.MetaData.rect.height ;
+							x = ( int )spriteElement.SpriteRect.rect.x ;
+							y = ( int )spriteElement.SpriteRect.rect.y ;
+							w = ( int )spriteElement.SpriteRect.rect.width ;
+							h = ( int )spriteElement.SpriteRect.rect.height ;
 						
 							elementTexture = new Texture2D( w, h, TextureFormat.ARGB32, false ) ;
 							elementTexture.SetPixels( spriteElement.Texture.GetPixels( x, y, w, h ) ) ;
@@ -699,7 +718,7 @@ namespace Tools.ForSprite
 
 					// 領域更新
 					case SpriteAction.Update :
-						spriteSheetList.Add( spriteElement.MetaData ) ;
+						spriteRectList.Add( spriteElement.SpriteRect ) ;
 				
 						path = AssetDatabase.GetAssetPath( spriteElement.Texture.GetInstanceID() ) ;
 
@@ -715,10 +734,10 @@ namespace Tools.ForSprite
 						else
 						{
 							// マルチプルスプライトタイプ
-							x = ( int )spriteElement.MetaData.rect.x ;
-							y = ( int )spriteElement.MetaData.rect.y ;
-							w = ( int )spriteElement.MetaData.rect.width ;
-							h = ( int )spriteElement.MetaData.rect.height ;
+							x = ( int )spriteElement.SpriteRect.rect.x ;
+							y = ( int )spriteElement.SpriteRect.rect.y ;
+							w = ( int )spriteElement.SpriteRect.rect.width ;
+							h = ( int )spriteElement.SpriteRect.rect.height ;
 						
 							elementTexture = new Texture2D( w, h, TextureFormat.ARGB32, false ) ;
 							elementTexture.SetPixels( spriteElement.Texture.GetPixels( x, y, w, h ) ) ;
@@ -741,7 +760,7 @@ namespace Tools.ForSprite
 
 			//--------------------------------------------------------------------------
 
-			if( spriteSheetList.Count >  0 && spriteTextureList.Count >  0 )
+			if( spriteRectList.Count >  0 && spriteTextureList.Count >  0 )
 			{
 				int maxSize = Mathf.Min( SystemInfo.maxTextureSize, m_MaxTextureSize ) ;
 
@@ -807,7 +826,7 @@ namespace Tools.ForSprite
 				float tw = texture.width ;
 				float th = texture.height ;
 
-				l = spriteSheetList.Count ;
+				l = spriteRectList.Count ;
 
 				for( i  = 0 ; i <  l ; i ++ )
 				{
@@ -965,20 +984,26 @@ namespace Tools.ForSprite
 			
 				for( i  = 0 ; i <  l ; i ++ )
 				{
-					SpriteMetaData spriteMetaData = spriteSheetList[ i ] ;
+					SpriteRect spriteRect = spriteRectList[ i ] ;
 
-					spriteMetaData.rect = rectList[ i ] ;
+					spriteRect.rect = rectList[ i ] ;
 
-					spriteSheetList[ i ] = spriteMetaData ;
+					spriteRectList[ i ] = spriteRect ;
 				}
-			
-				textureImporter.spritesheet = spriteSheetList.ToArray() ;
+
+				var factory = new SpriteDataProviderFactories() ;
+				factory.Init();
+				var dataProvider = factory.GetSpriteEditorDataProviderFromObject( textureImporter ) ;
+				dataProvider.InitSpriteEditorDataProvider() ;
+
+				dataProvider.SetSpriteRects( spriteRectList.ToArray() ) ;
+				dataProvider.Apply() ;
 			
 				textureImporter.SaveAndReimport() ;
 			
 				atlas = AssetDatabase.LoadAssetAtPath( atlasFullPath, typeof( Texture2D ) ) as Texture2D ;
 
-				spriteSheetList.Clear() ;
+				spriteRectList.Clear() ;
 				spriteTextureList.Clear() ;
 
 				Resources.UnloadUnusedAssets() ;
@@ -1071,10 +1096,18 @@ namespace Tools.ForSprite
 //				EditorApplication.LockReloadAssemblies() ;
 //				AssetDatabase.StartAssetEditing() ;
 
-				int pn = 0 ;
-				int pm = atlasTextureImporter.spritesheet.Length ;
 
-				foreach( SpriteMetaData spriteMetaData in atlasTextureImporter.spritesheet )
+				var factory = new SpriteDataProviderFactories() ;
+				factory.Init();
+				var dataProvider = factory.GetSpriteEditorDataProviderFromObject( atlasTextureImporter ) ;
+				dataProvider.InitSpriteEditorDataProvider() ;
+
+				var spriteRects = dataProvider.GetSpriteRects() ;
+
+				int pn = 0 ;
+				int pm = spriteRects.Length ;
+
+				foreach( var spriteRect in spriteRects )
 				{
 					// プログレスバーを表示
 					EditorUtility.DisplayProgressBar
@@ -1085,16 +1118,16 @@ namespace Tools.ForSprite
 					) ;
 					pn ++ ;
 
-					x = ( int )spriteMetaData.rect.x ;
-					y = ( int )spriteMetaData.rect.y ;
-					w = ( int )spriteMetaData.rect.width ;
-					h = ( int )spriteMetaData.rect.height ;
+					x = ( int )spriteRect.rect.x ;
+					y = ( int )spriteRect.rect.y ;
+					w = ( int )spriteRect.rect.width ;
+					h = ( int )spriteRect.rect.height ;
 			
 					elementTexture = new Texture2D( w, h, TextureFormat.ARGB32, false ) ;
 					elementTexture.SetPixels( atlas.GetPixels( x, y, w, h ) ) ;
 					elementTexture.Apply() ;
 
-					elementPath = folderPath + spriteMetaData.name + ".png" ;
+					elementPath = folderPath + spriteRect.name + ".png" ;
 
 					// テクスチャをＰＮＧ画像として保存する
 					byte[] data = elementTexture.EncodeToPNG() ;
@@ -1112,8 +1145,8 @@ namespace Tools.ForSprite
 
 					elementTextureImporter.spriteImportMode		= SpriteImportMode.Single ;
 
-					elementTextureImporter.spriteBorder			= spriteMetaData.border ;
-					elementTextureImporter.spritePivot			= spriteMetaData.pivot ;
+					elementTextureImporter.spriteBorder			= spriteRect.border ;
+					elementTextureImporter.spritePivot			= spriteRect.pivot ;
 
 					elementTextureImporter.SaveAndReimport() ;
 

@@ -25,8 +25,8 @@ namespace AssetBundleHelper
 		/// </summary>
 		public class ProcessingEntity
 		{
-			public	int	DownloadingSize ;
-			public	int	WritingSize ;
+			public	long	DownloadingSize ;
+			public	long	WritingSize ;
 		}
 
 		//-----------------------------------------------------------
@@ -49,11 +49,11 @@ namespace AssetBundleHelper
 
 		private string GetUri_Private( string path )
 		{
-			if( GetManifestNameAndAssetBundleName( path, out string manifestName, out string assetBundlePath, out _ ) == true )
+			if( GetManifestNameAndAssetBundleName( path, out string manifestName, out string assetBundlePath, out string assetPath ) == true )
 			{
 				if( string.IsNullOrEmpty( manifestName ) == false && m_ManifestHash.ContainsKey( manifestName ) == true )
 				{
-					if( string.IsNullOrEmpty( assetBundlePath ) == false )
+					if( string.IsNullOrEmpty( assetBundlePath ) == false && m_ManifestHash[ manifestName ].CorrectPath( ref assetBundlePath, ref assetPath ) == true )
 					{
 						return m_ManifestHash[ manifestName ].GetUri( assetBundlePath ) ;
 					}
@@ -71,7 +71,7 @@ namespace AssetBundleHelper
 		/// <param name="path">アセットバンドルのパス</param>
 		/// <param name="keep">キャッシュオーバー時の動作(true=キャッシュオーバー時に保持する・false=キャッシュオーバー時に破棄する)</param>
 		/// <returns>アセットバンドルのダウンロードリクエストクラスのインスタンス</returns>
-		public static Request DownloadAssetBundleAsync( string path, bool keep = false, Action<int,float,float> onProgress = null, Action<string> onResult = null, bool isManifestSaving = true )
+		public static Request DownloadAssetBundleAsync( string path, bool keep = false, Action<long,float,float> onProgress = null, Action<string> onResult = null, bool isManifestSaving = true )
 		{
 			if( m_Instance == null )
 			{
@@ -79,28 +79,28 @@ namespace AssetBundleHelper
 				return null ;
 			}
 
-			Request request = new Request( m_Instance ) ;
+			var request = new Request( m_Instance ) ;
 			m_Instance.StartCoroutine( m_Instance.DownloadAssetBundleAsync_Private( path, keep, onProgress, onResult, isManifestSaving, request ) ) ;
 			return request ;
 		}
 
 		// アセットバンドルのダウンロードを行う
-		private IEnumerator DownloadAssetBundleAsync_Private( string path, bool keep, Action<int,float,float> onProgress, Action<string> onResult, bool isManifestSaving, Request request )
+		private IEnumerator DownloadAssetBundleAsync_Private( string path, bool keep, Action<long,float,float> onProgress, Action<string> onResult, bool isManifestSaving, Request request )
 		{
 			string message = string.Empty ;
 
-			if( GetManifestNameAndAssetBundleName( path, out string manifestName, out string assetBundlePath, out _ ) == true )
+			if( GetManifestNameAndAssetBundleName( path, out string manifestName, out string assetBundlePath, out string assetPath ) == true )
 			{
 				if( string.IsNullOrEmpty( manifestName ) == false && m_ManifestHash.ContainsKey( manifestName ) == true )
 				{
-					if( string.IsNullOrEmpty( assetBundlePath ) == false )
+					if( string.IsNullOrEmpty( assetBundlePath ) == false && m_ManifestHash[ manifestName ].CorrectPath( ref assetBundlePath, ref assetPath ) == true )
 					{
 						yield return StartCoroutine( m_ManifestHash[ manifestName ].DownloadAssetBundle_Coroutine
 						(
 							assetBundlePath,
 							keep,
 							onProgress,
-							( int length, string error ) =>
+							( long length, string error ) =>
 							{
 								message = error ;
 								onResult?.Invoke( error ) ;
@@ -132,7 +132,7 @@ namespace AssetBundleHelper
 		/// <param name="path">アセットバンドルのパス</param>
 		/// <param name="keep">キャッシュオーバー時の動作(true=キャッシュオーバー時に保持する・false=キャッシュオーバー時に破棄する)</param>
 		/// <returns>アセットバンドルのダウンロードリクエストクラスのインスタンス</returns>
-		public static Request DownloadAssetBundlesAsync( DownloadEntity[] entities, int parallel = 0, Action<long,int,int,int> onPregress = null, Action<string> onResult = null, bool isAllManifestsSaving = true )
+		public static Request DownloadAssetBundlesAsync( DownloadEntity[] entities, int parallel = 0, Action<long,long,int,int> onPregress = null, Action<string> onResult = null, bool isAllManifestsSaving = true )
 		{
 			if( m_Instance == null )
 			{
@@ -140,13 +140,13 @@ namespace AssetBundleHelper
 				return null ;
 			}
 
-			Request request = new Request( m_Instance ) ;
+			var request = new Request( m_Instance ) ;
 			m_Instance.StartCoroutine( m_Instance.DownloadAssetBundlesAsync_Private( entities, parallel, onPregress, onResult, isAllManifestsSaving, request ) ) ;
 			return request ;
 		}
 
 		// 複数のアセットバンドルのダウンロードを行う
-		private IEnumerator DownloadAssetBundlesAsync_Private( DownloadEntity[] entities, int parallel, Action<long,int,int,int> onProgress, Action<string> onResult, bool isAllManifestsSaving, Request request )
+		private IEnumerator DownloadAssetBundlesAsync_Private( DownloadEntity[] entities, int parallel, Action<long,long,int,int> onProgress, Action<string> onResult, bool isAllManifestsSaving, Request request )
 		{
 			if( m_IsBlockDownloading == true )
 			{
@@ -164,6 +164,10 @@ namespace AssetBundleHelper
 
 			// 一括ダウンロード中
 			m_IsBlockDownloading = true ;
+
+			// 受信バッファをクリアしておく
+			m_Instance.ClearLargeReceiveBufferCache( false ) ;	// 使用していないもののみ破棄
+			m_Instance.ClearSmallReceiveBufferCache( false ) ;	// 使用していないもののみ破棄
 
 			//----------------------------------
 			// ＨＴＴＰのバージョンによって並列最大数に制限をかける
@@ -183,8 +187,8 @@ namespace AssetBundleHelper
 			int fileCursor = -1 ;
 			int fileAmount = entities.Length ;
 			int fileStored = 0 ;
-			int totalDownloadingSize = 0 ;
-			int totalWritingSize = 0 ;
+			long totalDownloadingSize = 0 ;
+			long totalWritingSize = 0 ;
 
 			//----------------------------------------------------------
 			// ダウンロード済みのものを確認する
@@ -209,7 +213,7 @@ namespace AssetBundleHelper
 				{
 					// 既にダウンロード済み
 					fileStored ++ ;
-					int size = GetSize_Private( path ) ;
+					long size = GetSize_Private( path ) ;
 					totalDownloadingSize	+= size ;
 					totalWritingSize		+= size ;
 				}
@@ -243,14 +247,14 @@ namespace AssetBundleHelper
 							(
 								path,
 								keep,
-								( string _, int length, float downloadingProgress, float writingProgress ) =>
+								( string _, long length, float downloadingProgress, float writingProgress ) =>
 								{
-									int downloadingSize = ( int )( length * downloadingProgress	) ;
-									int writingSize		= ( int )( length * writingProgress		) ;
+									long downloadingSize	= ( long )( length * downloadingProgress	) ;
+									long writingSize		= ( long )( length * writingProgress		) ;
 
 									onProgress?.Invoke( totalDownloadingSize + downloadingSize, totalWritingSize + writingSize, fileStored, 1 ) ;
 								},
-								( string _, int length, string error ) =>
+								( string _, long length, string error ) =>
 								{
 									if( string.IsNullOrEmpty( error ) == true )
 									{
@@ -306,10 +310,10 @@ namespace AssetBundleHelper
 				// 注意:エラーが発生したら一旦通信中のものが全て終了するのを待って呼び出し元で最初からリトライするかリブートするか判断してもらう(既に通信に成功しているものはダウンロードはスキップされる)
 
 				// ダウンロード中のアセットバンドル情報
-				Dictionary<string,ProcessingEntity> processingEntities = new Dictionary<string,ProcessingEntity>() ;
+				var processingEntities = new Dictionary<string,ProcessingEntity>() ;
 
 				// 発生中のエラー
-				List<string> errors = new List<string>() ;
+				var errors = new List<string>() ;
 			
 				//----------------------------------------------------------
 				// ダウンロードを行う
@@ -379,7 +383,7 @@ namespace AssetBundleHelper
 				//---------------------------------------------------------
 
 				// ダウンロードの状態に更新がある場合に呼び出されるインナーメソッド
-				void OnProgress( string path, int length, float downloadingProgress, float writingProgress )
+				void OnProgress( string path, long length, float downloadingProgress, float writingProgress )
 				{
 					// ダウンロード状況に変化があった
 
@@ -390,8 +394,8 @@ namespace AssetBundleHelper
 					//------------
 
 					// プログレスの表示更新(確定を除くダウンロード中のファイルサイズの合計)
-					int downloadingSize	= 0 ;
-					int writingSize		= 0 ; 
+					long downloadingSize	= 0 ;
+					long writingSize		= 0 ; 
 					foreach( var processingEntity in processingEntities )
 					{
 						downloadingSize	+= processingEntity.Value.DownloadingSize ;
@@ -403,7 +407,7 @@ namespace AssetBundleHelper
 				} ;
 
 				// ダウンロードが終了(成功・失敗)した場合に呼び出されるインナーメソッド
-				void OnResult( string path, int length, string error )
+				void OnResult( string path, long length, string error )
 				{
 					// ダウンロードが完了した
 					if( string.IsNullOrEmpty( error ) == true )
@@ -425,8 +429,8 @@ namespace AssetBundleHelper
 						//------------
 
 						// プログレスの表示更新(確定を除くダウンロード中のファイルサイズの合計)
-						int downloadingSize	= 0 ;
-						int writingSize		= 0 ;
+						long downloadingSize	= 0 ;
+						long writingSize		= 0 ;
 						foreach( var processingEntity in processingEntities )
 						{
 							downloadingSize += processingEntity.Value.DownloadingSize ;
@@ -459,7 +463,18 @@ namespace AssetBundleHelper
 //				yield return StartCoroutine( SaveAllManifestInfoAsync_Private() ) ;	// 非同期版
 			}
 
+			//----------------------------------------------------------
+
+			Debug.Log( "<color=#00FFFF>受信バッファ(大)の使用中の数:" + m_Instance.GetUsingLargeReceiveBufferCount() + "</color>" ) ;
+			Debug.Log( "<color=#00FFFF>受信バッファ(小)の使用中の数:" + m_Instance.GetUsingSmallReceiveBufferCount() + "</color>" ) ;
+
+			// 受信バッファをクリアしておく
+			m_Instance.ClearLargeReceiveBufferCache( false ) ;	// 使用していないもののみ破棄
+			m_Instance.ClearSmallReceiveBufferCache( false ) ;	// 使用していないもののみ破棄
+
 			m_IsBlockDownloading = false ;	// 一括ダウンロード終了
+
+			//----------------------------------------------------------
 
 			// 成功
 			onResult?.Invoke( string.Empty ) ;
@@ -467,13 +482,13 @@ namespace AssetBundleHelper
 		}
 
 		// シンプルにアセットバンドルをダウンロードする
-		private IEnumerator DownloadExecute_Private( string path, bool keep, Action<string,int,float,float> onProgress, Action<string,int,string> onResult )
+		private IEnumerator DownloadExecute_Private( string path, bool keep, Action<string,long,float,float> onProgress, Action<string,long,string> onResult )
 		{
-			if( GetManifestNameAndAssetBundleName( path, out string manifestName, out string assetBundlePath, out _ ) == true )
+			if( GetManifestNameAndAssetBundleName( path, out string manifestName, out string assetBundlePath, out string assetPath ) == true )
 			{
 				if( string.IsNullOrEmpty( manifestName ) == false && m_ManifestHash.ContainsKey( manifestName ) == true )
 				{
-					if( string.IsNullOrEmpty( assetBundlePath ) == false )
+					if( string.IsNullOrEmpty( assetBundlePath ) == false && m_ManifestHash[ manifestName ].CorrectPath( ref assetBundlePath, ref assetPath ) == true )
 					{
 						yield return StartCoroutine
 						(
@@ -481,11 +496,11 @@ namespace AssetBundleHelper
 							(
 								assetBundlePath,
 								keep,
-								( int length, float downloadingProgress, float writingProgress ) =>
+								( long length, float downloadingProgress, float writingProgress ) =>
 								{
 									onProgress?.Invoke( path, length, downloadingProgress, writingProgress ) ;
 								},
-								( int length, string error ) =>
+								( long length, string error ) =>
 								{
 									onResult?.Invoke( path, length, error ) ;
 								},

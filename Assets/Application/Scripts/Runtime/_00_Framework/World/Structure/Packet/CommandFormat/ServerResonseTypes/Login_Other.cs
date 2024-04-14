@@ -8,7 +8,7 @@ using Cysharp.Threading.Tasks ;
 
 using MessagePack ;	// 1.7.3.5 は Api Compatibility Lavel を .Net 4.x にしないと使えない
 
-namespace DBS.World.Packet.ServerResponseTypes
+namespace DSW.World.Packet.ServerResponseTypes
 {
 	/// <summary>
 	/// 他のプレイヤーが加わった際のレスポンス

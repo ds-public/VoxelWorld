@@ -1,6 +1,10 @@
+using System ;
+
 using UnityEngine ;
 using UnityEngine.UI ;
-using System.Collections ;
+
+using UnityEngine.Experimental.Rendering ;
+using UnityEngine.Rendering ;
 
 namespace uGUIHelper
 {
@@ -141,19 +145,108 @@ namespace uGUIHelper
 			SetSize( Texture.width, Texture.height ) ;
 		}
 
+		//----------------------------------------------------------------------------------
+
+		/// <summary>
+		/// ブラー効果の強度
+		/// </summary>
+		public enum BlurIntensities
+		{
+			/// <summary>
+			/// 無し
+			/// </summary>
+			None,
+
+			/// <summary>
+			/// 弱い
+			/// </summary>
+			Soft,
+
+			/// <summary>
+			/// 標準
+			/// </summary>
+			Normal,
+
+			/// <summary>
+			/// 強い
+			/// </summary>
+			Hard,
+		}
+
+
+		/// <summary>
+		/// 全画面のブラーエフェクトとして使用するかどうかとその強さ
+		/// </summary>
+		[SerializeField]
+		protected BlurIntensities m_BlurIntensity = BlurIntensities.None ;
+
+		/// <summary>
+		/// 全画面のブラーエフェクトとして使用するかどうかとその強さ
+		/// </summary>
+		public BlurIntensities BlurIntensity
+		{
+			get
+			{
+				return m_BlurIntensity ;
+			}
+			set
+			{
+				if( m_BlurIntensity != value )
+				{
+					m_BlurIntensity  = value ;
+
+					if( m_BlurIntensity == BlurIntensities.None )
+					{
+						DisposeBlur() ;
+					}
+					else
+					{
+						DeleteDrawableTexture() ;
+					}
+				}
+			}
+		}
+
+		//-----------------------------------
+
 		/// <summary>
 		/// 自動的に描画可能なテクスチャを生成するかどうか
 		/// </summary>
 		[SerializeField]
 		protected bool m_AutoCreateDrawableTexture = false ;
+
+		/// <summary>
+		/// 自動的に描画可能なテクスチャを生成するかどうか
+		/// </summary>
 		public bool AutoCreateDrawableTexture{ get{ return m_AutoCreateDrawableTexture ; } set{ m_AutoCreateDrawableTexture = value ; } }
+
+		//-------------------------------------------------------------------------------------------
+
+		// 縦方向の座標を反転するかどうか
+		[SerializeField][HideInInspector]
+		private bool m_FlipVertical = false ;
+
+		/// <summary>
+		/// 縦方向の座標を反転するかどうか
+		/// </summary>
+		public bool IsFlipVertical
+		{
+			get
+			{
+				return m_FlipVertical ;
+			}
+			set
+			{
+				m_FlipVertical = value ;
+			}
+		}
 
 		//-----------------------------------------------------
 	
 		// 各派生クラスでの初期化処理を行う（メニューまたは AddView から生成される場合のみ実行れる）
 		override protected void OnBuild( string option = "" )
 		{
-			RawImage rawImage = CRawImage ;
+			var rawImage = CRawImage ;
 
 			if( rawImage == null )
 			{
@@ -186,7 +279,48 @@ namespace uGUIHelper
 			}
 		}
 
+		// GameObject が有効になる際に呼び出される
+		protected override void OnEnable()
+		{
+			base.OnEnable() ;
+
+			//----------------------------------
+
+			if( m_BlurIntensity != BlurIntensities.None )
+			{
+				AddCallback() ;
+			}
+		}
+
+		// GameObject が無効になる際に呼び出される
+		protected override void OnDisable()
+		{
+			// ブラー関連処理の後始末を行う
+			DisposeBlur() ;
+
+			//----------------------------------
+
+			base.OnDisable() ;
+		}
+
+		// GameObject が破棄される際に呼び出される
+		protected override void OnDestroy()
+		{
+			// ブラー関連処理の後始末を行う
+			DisposeBlur() ;
+
+			//----------------------------------
+
+			// 描画可能テクスチャが生成されていれば破棄する
+			DeleteDrawableTexture() ;
+
+			//----------------------------------
+
+			base.OnDestroy() ;
+		}
+
 		//-------------------------------------------------------------------
+		// 描画可能テクスチャの情報
 
 		private int m_Width  = 0 ;
 		private int m_Height = 0 ;
@@ -195,29 +329,13 @@ namespace uGUIHelper
 
 		private Texture2D m_DrawableTexture = null ;
 
-		// 縦方向の座標反転
-		[SerializeField][HideInInspector]
-		private bool m_FlipVertical = false ;
-
-		public bool IsFlipVertical
-		{
-			get
-			{
-				return m_FlipVertical ;
-			}
-			set
-			{
-				m_FlipVertical = value ;
-			}
-		}
-
 		//-----------------------------------------------------------
 
 		/// <summary>
 		/// 描画可能なテクスチャを生成して割り当てる
 		/// </summary>
-		/// <param name="tWidth"></param>
-		/// <param name="tHeight"></param>
+		/// <param name="width"></param>
+		/// <param name="height"></param>
 		/// <returns></returns>
 		public bool CreateDrawableTexture( int width = 0, int height = 0 )
 		{
@@ -262,7 +380,19 @@ namespace uGUIHelper
 		{
 			if( m_DrawableTexture != null )
 			{
-				DestroyImmediate( m_DrawableTexture ) ;
+				if( Texture == m_DrawableTexture )
+				{
+					Texture  = null ;
+				}
+
+				if( Application.isPlaying == false )
+				{
+					DestroyImmediate( m_DrawableTexture ) ;
+				}
+				else
+				{
+					Destroy( m_DrawableTexture ) ;
+				}
 				m_DrawableTexture = null ;
 			}
 
@@ -270,12 +400,6 @@ namespace uGUIHelper
 
 			m_Width  = 0 ;
 			m_Height = 0 ;
-		}
-
-		// ＵＩが破棄される際に描画可能テクスチャが生成されていたら破棄する
-		override protected void OnDestroy()
-		{
-			DeleteDrawableTexture() ;
 		}
 
 		//-----------------------------------------------------------
@@ -288,10 +412,10 @@ namespace uGUIHelper
 		/// <param name="y0"></param>
 		/// <param name="x1"></param>
 		/// <param name="y1"></param>
-		/// <param name="tColor"></param>
-		/// <param name="tPixels"></param>
-		/// <param name="tWidth"></param>
-		/// <param name="tHeight"></param>
+		/// <param name="color"></param>
+		/// <param name="pixels"></param>
+		/// <param name="width"></param>
+		/// <param name="height"></param>
 		public bool DrawLine( int x0, int y0, int x1, int y1, uint color, bool isUpdate = true )
 		{
 			if( m_Pixels == null )
@@ -420,7 +544,7 @@ namespace uGUIHelper
 		/// </summary>
 		/// <param name="x"></param>
 		/// <param name="y"></param>
-		/// <param name="tColor"></param>
+		/// <param name="color"></param>
 		/// <returns></returns>
 		public bool DrawPixel( int x, int y, uint color, bool isUpdate = true )
 		{
@@ -467,7 +591,7 @@ namespace uGUIHelper
 		/// <param name="y"></param>
 		/// <param name="w"></param>
 		/// <param name="h"></param>
-		/// <param name="tColor"></param>
+		/// <param name="color"></param>
 		/// <returns></returns>
 		public bool FillRectangle( int x, int y, int w, int h, uint color, bool isUpdate = true )
 		{
@@ -537,6 +661,569 @@ namespace uGUIHelper
 			m_DrawableTexture.Apply() ;
 
 			return true ;
+		}
+
+		//-------------------------------------------------------------------------------------------
+		// ブラーエフェクト関連
+
+		// マテリアルのパス
+		private const string m_FlipVerticalMaterialPath = "uGUIHelper/Materials/FlipVertical" ;
+
+		/// <summary>
+		/// ボックスフィルタリングをするためのマテリアル
+		/// </summary>
+		private static Material m_FlipVerticalMaterial ;
+
+		/// <summary>
+		/// ボックスフィルタリングをするためのマテリアル
+		/// </summary>
+		private static Material FlipVerticalMaterial
+		{
+			get
+			{
+				if( m_FlipVerticalMaterial == null )
+				{
+					// 無ければロードする
+					m_FlipVerticalMaterial = ( Material )Resources.Load
+					(
+						m_FlipVerticalMaterialPath,
+						typeof( Material )
+					) ;
+				}
+
+				return m_FlipVerticalMaterial ;
+			}
+		}
+
+		//---------------
+
+		// マテリアルのパス
+		private const string m_BlurFilterMaterialPath = "uGUIHelper/Materials/BlurFilter" ;
+
+		/// <summary>
+		/// ボックスフィルタリングをするためのマテリアル
+		/// </summary>
+		private static Material m_BlurFilterMaterial ;
+
+		/// <summary>
+		/// ボックスフィルタリングをするためのマテリアル
+		/// </summary>
+		private static Material BlurFilterMaterial
+		{
+			get
+			{
+				if( m_BlurFilterMaterial == null )
+				{
+					// 無ければロードする
+					m_BlurFilterMaterial = ( Material )Resources.Load
+					(
+						m_BlurFilterMaterialPath,
+						typeof( Material )
+					) ;
+				}
+
+				return m_BlurFilterMaterial ;
+			}
+		}
+
+		//-----------------------------------------------------------
+
+		// ブラーエフェクトを描画するレンダーテクスチャ
+		private RenderTexture m_BlurKeptTexture ;
+
+		// Enable になってから OnWillRenderCanvases() が呼ばれた回数
+		private int m_CallCount ;
+
+		// RectTransform の操作禁止化
+		private DrivenRectTransformTracker m_RectTransformTracker ;
+
+		private Action<bool> m_OnBlurProcessing ;
+
+		/// <summary>
+		/// ブラー処理時のコールバックを登録する
+		/// </summary>
+		/// <param name="onBlurProcessing"></param>
+		public void SetOnBlurProcessing( Action<bool> onBlurProcessing )
+		{
+			m_OnBlurProcessing = onBlurProcessing ;
+		}
+
+		//-----------------------------------------------------------
+
+		// コールバックを登録する
+		private void AddCallback()
+		{
+			Canvas.willRenderCanvases -= OnWillRenderCanvases ;
+			Canvas.willRenderCanvases += OnWillRenderCanvases ;
+
+			CRawImage.enabled = false ;
+
+			m_CallCount = 0 ;
+		}
+
+		// コールバックを解除する
+		private void RemoveCallback()
+		{
+			Canvas.willRenderCanvases -= OnWillRenderCanvases ;
+		}
+
+		//-----------------------------------
+
+		// キャンバスへの描画が行われる前に呼び出される
+		private void OnWillRenderCanvases()
+		{
+			m_CallCount ++ ;
+			if( m_CallCount == 1 )
+			{
+				// 最初の呼び出しは無視する
+
+				// ブラー開始時のコールバックを呼ぶ
+				m_OnBlurProcessing?.Invoke( true ) ;
+
+				return ;
+			}
+
+			//----------------------------------
+
+			ProcessBlur() ;
+
+			RemoveCallback() ;
+
+			//----------------------------------
+
+			// ブラー開始時のコールバックを呼ぶ
+			m_OnBlurProcessing?.Invoke( false ) ;
+		}
+
+		// ブラー処理を行う
+		private void ProcessBlur()
+		{
+			//----------------------------------------------------------
+
+			// 表示テクスチャをクリアする
+			CRawImage.enabled = false ;
+			Texture = null ;
+
+			//----------------------------------------------------------
+			// ブラーの強度から反復処理の回数を決定する
+
+			int		division = 2 ;
+
+			int		level = 1 ;
+			float	delta = 1 ;
+
+			switch( m_BlurIntensity )
+			{
+				case BlurIntensities.Soft	: level = 0 ; delta = 1.0f ; break ;
+				case BlurIntensities.Normal	: level = 1 ; delta = 1.0f ; break ;
+				case BlurIntensities.Hard	: level = 2 ; delta = 1.0f ; break ;
+			}
+
+			//------------------------------------------------------------------------------------------
+
+			// 画面サイズ
+			int screenWidth  = Screen.width ;
+			int screenHeight = Screen.height ;
+
+			//--------------
+
+
+			// 表示するレンダーテクスチャのサイズを決定する
+			int width  = screenWidth  / division ;
+			int height = screenHeight / division ; 
+
+			// レンダーテクスチャが存在済みで且つサイズが変わっていたら破棄する
+			if
+			(
+				( m_BlurKeptTexture != null ) &&
+				(
+					( m_BlurKeptTexture.width  != width  ) ||
+					( m_BlurKeptTexture.height != height )
+				)
+			)
+			{
+				DeleteBlurKeptTexture() ;
+			}
+
+			//--------------
+
+			// レンダーテクスチャを生成する
+			CreateBlurKeptTexture( width, height ) ;
+
+			//------------------------------------------------------------------------------------------
+			// コマンドバッファを生成する
+
+			// コマンドの作成
+			var commandBuffer = new CommandBuffer() ;
+
+			//----------------------------------
+
+			// キャプチャ用のコマンドを取得する
+			int captureNameId = Shader.PropertyToID( "_Capture" ) ;
+			var captureIdentifier = new RenderTargetIdentifier( captureNameId ) ;
+
+			// 画面キャプチャを描画するレンダーテクスチャを作成するコマンドを格納する
+			commandBuffer.GetTemporaryRT
+			(
+				captureNameId,
+				screenWidth,
+				screenHeight,
+				0,
+				FilterMode.Point,
+				SystemInfo.GetGraphicsFormat( DefaultFormat.LDR ),
+				1,
+				false,
+				RenderTextureMemoryless.Depth | RenderTextureMemoryless.MSAA,
+				false
+			) ;
+
+			//--------------
+
+			// 画面キャプチャをレンダーテクスチャに描画するコマンドを格納する
+
+			RenderTargetIdentifier originRenderTarget  = default ;
+
+#if UNITY_EDITOR
+			if( Application.isPlaying == false )
+			{
+				// 既に作成済みのレンダーテクスチャ
+				RenderTexture gameViewRT     = null ;
+
+				// 全ての生成中のレンダーテクスチャを取得する
+				var renderTextures = Resources.FindObjectsOfTypeAll<RenderTexture>() ;
+				foreach( var renderTexture in renderTextures )
+				{
+					// ※ GameView RT という名前は固定
+					if( renderTexture.name == "GameView RT" )
+					{
+						// Game タブのウィンドウに対応するキャプチャ用のレンダーテクスチャは生成済みになっている
+						gameViewRT = renderTexture ;
+						break ;
+					}
+				}
+
+				if( gameViewRT == null )
+				{
+					// GameView の RenderTexture が取得できなかった
+					Debug.LogWarning( $"[uGUIHelper] GameView RT is null.\nGameObject : {Path}" ) ;
+					captureIdentifier = 0 ;
+					return ;
+				}
+
+				originRenderTarget = gameViewRT ;
+			}
+			else
+#endif
+			{
+				// 描画対象になっているテクスチャ(フレームバッファ)
+				originRenderTarget = BuiltinRenderTextureType.BindableTexture ;
+			}
+
+			//----
+
+			// 画面キャプチャを一時的に生成したレンダーテクスチャに描画するコマンドを格納する
+			commandBuffer.Blit
+			(
+				originRenderTarget,
+				captureIdentifier
+			) ;
+
+			// キャプチャまでのコマンドが格納された
+
+			//----------------------------------------------------------
+
+			// ２つの作業用レンダーテクスチャを生成する
+
+			int i, l = 2 ;
+
+			var identifiers				= new RenderTextureIdentifier[ l ] ;
+
+			for( i = 0 ; i <  l ; i ++ )
+			{
+				identifiers[ i ] = new RenderTextureIdentifier( $"_BlurRT_{i}" ) ; ;
+
+				// コマンドバッファにレンダーテクスチャ生成を追加する
+				commandBuffer.GetTemporaryRT
+				(
+					identifiers[ i ].NameId,	// レンダーテクスチャの識別子
+					width,
+					height,
+					0,
+					FilterMode.Bilinear,
+					SystemInfo.GetGraphicsFormat( DefaultFormat.LDR ),
+					1,
+					false,
+					RenderTextureMemoryless.Depth | RenderTextureMemoryless.MSAA,
+					false
+				) ;
+			}
+
+			//--------------
+
+			// キャプチャー画像を作業用のレンダーテクスチャの１枚目にフィルタ付きで描画する
+
+			// シェーダーに渡す値を設定する
+			commandBuffer.SetGlobalFloat
+			(
+				"_SamplingDelta",
+				delta
+			) ;
+
+			// レンダリングを実行する
+			commandBuffer.Blit
+			(
+				captureIdentifier,					// 描画元のレンダーテクスチャの識別子(最初は画面キャプチャーしたレンダーテクスチャ)
+				identifiers[ 0 ].Identifier,		// 描画先のレンダーテクスチャの識別子
+				FlipVerticalMaterial,				// マテリアル(シェーダー)
+				0									// シェーダーのパス
+			) ;
+
+			//----------------------------------------------------------
+			// 作業用のレンダーテクスチャ間で交互に描画する
+
+			for( i  = 0 ; i <  level ; i ++ )
+			{
+				// シェーダーに渡す値を設定する
+				commandBuffer.SetGlobalFloat
+				(
+					"_SamplingDelta",
+					delta
+				) ;
+
+				// レンダリングを実行する(大きい→小さい)
+				commandBuffer.Blit
+				(
+					identifiers[ 0 ].Identifier,		// 描画元のレンダーテクスチャの識別子(最初は画面キャプチャーしたレンダーテクスチャ)
+					identifiers[ 1 ].Identifier,		// 描画先のレンダーテクスチャの識別子
+					BlurFilterMaterial,						// マテリアル(シェーダー)
+					0									// シェーダーのパス
+				) ;
+
+				// シェーダーに渡す値を設定する
+				commandBuffer.SetGlobalFloat
+				(
+					"_SamplingDelta",
+					delta
+				) ;
+
+				// レンダリングを実行する(大きい→小さい)
+				commandBuffer.Blit
+				(
+					identifiers[ 1 ].Identifier,		// 描画元のレンダーテクスチャの識別子(最初は画面キャプチャーしたレンダーテクスチャ)
+					identifiers[ 0 ].Identifier,		// 描画先のレンダーテクスチャの識別子
+					BlurFilterMaterial,						// マテリアル(シェーダー)
+					0									// シェーダーのパス
+				) ;
+			}
+
+			//----------------------------------
+			// 最後に表示用のレンダーテクスチャに描画する
+
+			// シェーダーに渡す値を設定する
+			commandBuffer.SetGlobalFloat
+			(
+				"_SamplingDelta",
+				delta
+			) ;
+
+			// レンダリングを実行する(最も大きい→画面キャプチャが描画されたテクスチャ)
+			commandBuffer.Blit
+			(
+				identifiers[ 0 ].Identifier,
+				m_BlurKeptTexture,
+				BlurFilterMaterial,			// マテリアル(シェーダー)
+				0							// シェーダーのパス
+			) ;
+
+			//----------------------------------
+			// 作業用のレンダーテクスチャを破棄する
+
+			for( i  = ( l - 1 ) ; i >= 0 ; i -- )
+			{
+				// 一時テクスチャを解放する(小さい方から)
+				commandBuffer.ReleaseTemporaryRT( identifiers[ i ].NameId ) ;
+			}
+
+			//------------------------------------------------------------------------------------------
+
+			// 最後に画面キャプチャ用のレンダーテクスチャを破棄するコマンドを格納する
+
+			// 一時的に生成した画面キャプチャ用のレンダーテクスチャを破棄する
+			commandBuffer.ReleaseTemporaryRT( captureNameId ) ;
+
+			// 退避しておいた元のレンダーターゲットを設定する
+			commandBuffer.SetRenderTarget( originRenderTarget ) ;
+
+			//------------------------------------------------------------------------------------------
+			// コマンドバッファの実行
+
+			// コマンドバッファを実行する
+			Graphics.ExecuteCommandBuffer( commandBuffer ) ;
+
+			// コマンドバッファを破棄する
+			commandBuffer.Release() ;
+
+			//----------------------------------
+
+			// テクスチャを設定する
+			Texture = m_BlurKeptTexture ;
+
+			// 表示を行う
+			CRawImage.enabled = true ;
+
+			//----------------------------------
+
+			// RectTransform を編集不可にしてルートキャンバスに追従させる
+			FitToScreen() ;
+
+			//----------------------------------------------------------
+		}
+
+		// RectTransform を編集不可にしてルートキャンバスに追従させる
+		private void FitToScreen()
+		{
+			var canvas = CRawImage.canvas ;
+			if( canvas == null )
+			{
+				return ;
+			}
+
+			var rootCanvas		= canvas.rootCanvas ;
+			var rootTransform	= ( RectTransform )rootCanvas.transform ;
+			var size			= rootTransform.rect.size ;
+
+			var rectTransform = CRawImage.rectTransform ;
+
+			//----------------------------------
+
+			m_RectTransformTracker.Clear() ;
+
+			m_RectTransformTracker.Add
+			(
+				this,
+				rectTransform,
+				DrivenTransformProperties.SizeDelta
+			) ;
+
+			rectTransform.SetSizeWithCurrentAnchors
+			(
+				RectTransform.Axis.Horizontal,
+				size.x
+			) ;
+
+			rectTransform.SetSizeWithCurrentAnchors
+			(
+				RectTransform.Axis.Vertical,
+				size.y
+			) ;
+
+			m_RectTransformTracker.Add
+			(
+				this,
+				rectTransform,
+				DrivenTransformProperties.AnchoredPosition3D
+			) ;
+
+			rectTransform.position = rootTransform.position ;
+		}
+
+		// ブラー関連処理の後始末を行う
+		private void DisposeBlur()
+		{
+			RemoveCallback() ;
+
+			DeleteBlurKeptTexture() ;
+
+			m_RectTransformTracker.Clear() ;
+		}
+
+		//-------------------------------------------------------------------------------------------
+
+		// レンダーテクスチャを生成する
+		private void CreateBlurKeptTexture( int width, int height )
+		{
+			if( m_BlurKeptTexture == null )
+			{
+				// レンダーテクスチャを生成する
+				m_BlurKeptTexture = new RenderTexture
+				(
+					width,
+					height,
+					0,
+					RenderTextureFormat.ARGB32,
+					RenderTextureReadWrite.Default
+				)
+				{
+					name				= $"BlurTexture_{GetInstanceID()}",
+					enableRandomWrite	= false,
+					memorylessMode		= RenderTextureMemoryless.Depth | RenderTextureMemoryless.MSAA,
+					filterMode			= FilterMode.Bilinear,
+					useMipMap			= false,
+					autoGenerateMips	= false,
+					useDynamicScale		= false,
+					antiAliasing		= 1,
+					anisoLevel			= 1,
+					depth				= 0,
+					wrapMode			= TextureWrapMode.Clamp,
+					vrUsage				= VRTextureUsage.OneEye,
+					hideFlags			= HideFlags.DontSave | HideFlags.NotEditable
+				} ;
+				m_BlurKeptTexture.Create() ;
+			}
+		}
+
+		// レンダーテクスチャを破棄する
+		private void DeleteBlurKeptTexture()
+		{
+			if( m_BlurKeptTexture != null )
+			{
+				if( Texture == m_BlurKeptTexture )
+				{
+					Texture  = null ;
+				}
+
+				//-------------
+
+				if( m_BlurKeptTexture.IsCreated() == true )
+				{
+					m_BlurKeptTexture.Release() ;
+				}
+
+#if UNITY_EDITOR
+				if( Application.IsPlaying( m_BlurKeptTexture ) == false )
+				{
+					DestroyImmediate
+					(
+						m_BlurKeptTexture,
+						true
+					) ;
+				}
+				else
+#endif
+				{
+					Destroy( m_BlurKeptTexture ) ;
+				}
+
+				m_BlurKeptTexture = null ;
+			}
+		}
+
+		//-----------------------------------------------------------
+
+		public readonly struct RenderTextureIdentifier
+		{
+			public readonly int                    NameId ;
+			public readonly RenderTargetIdentifier Identifier ;
+
+			public RenderTextureIdentifier( int nameId )
+			{
+				NameId     = nameId ;
+				Identifier = new RenderTargetIdentifier( nameId ) ;
+			}
+
+			public RenderTextureIdentifier( string name ) : this( Shader.PropertyToID( name ) )
+			{
+			}
 		}
 	}
 }

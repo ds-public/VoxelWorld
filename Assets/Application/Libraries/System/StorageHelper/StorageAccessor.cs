@@ -16,19 +16,17 @@ using UnityEngine.Networking ;
 namespace StorageHelper
 {
 	/// <summary>
-	/// ストレージアクセサクラス Version 2022/10/04 0
+	/// ストレージアクセサクラス Version 2023/11/09 0
 	/// </summary>
 	public class StorageAccessor
 	{
-		// 初期化キー
-//		private const string m_Key    = "lkirwf897+22#bbtrm8814z5qq=498j5" ;	// RM  用 32 byte
-	
-		// 初期化ベクタ
-//		private const string m_Vector = "741952hheeyy66#cs!9hjv887mxx7@8y" ;	// 16 byte
-
-		public enum Target
+		/// <summary>
+		/// 存在の種別
+		/// </summary>
+		public enum TargetTypes
 		{
 			Unknown	= -1,
+
 			None	=  0,
 			File	=  1,
 			Folder	=  2,
@@ -103,7 +101,7 @@ namespace StorageHelper
 				if( path_1[ 0 ] == '!' || path_1[ 0 ] == '@' )
 				{
 					// 絶対パス
-					return path_1.Substring( 1, path_1.Length - 1 ) ;
+					return path_1[ 1.. ] ;
 				}
 			}
 			
@@ -121,19 +119,12 @@ namespace StorageHelper
 
 			path_1 = path_1.Replace( "\\", "/" ) ;
 
-			int l0 = path_0.Length ;
-			if( path_0[ l0 - 1 ] == '/' )
-			{
-				path_0 = path_0.Substring( 0, l0 - 1 ) ;
-			}
+			//--------------
 
-			int l1 = path_1.Length ;
-			if( path_1[ 0 ] == '/' )
-			{
-				path_1 = path_1.Substring( 1, l1 - 1 ) ;
-			}
+			path_0 = path_0.TrimEnd( '/' ) ;
+			path_1 = path_1.TrimStart( '/' ) ;
 
-			return path_0 + "/" + path_1 ;
+			return $"{path_0}/{path_1}" ;
 		}
 
 		//-----------------------------------------------------------
@@ -170,7 +161,7 @@ namespace StorageHelper
 			if( i >= 0 )
 			{
 				// フォルダが含まれている
-				string folderName = fullPath.Substring( 0, i ) ;
+				string folderName = fullPath[ ..i ] ;
 
 				if( Directory.Exists( folderName ) == false )
 				{
@@ -186,7 +177,7 @@ namespace StorageHelper
 						
 						// Apple 審査のリジェクト回避用コード
 #if !UNITY_EDITOR && ( UNITY_IOS || UNITY_IPHONE )
-							UnityEngine.iOS.Device.SetNoBackupFlag( folderName ) ;
+						UnityEngine.iOS.Device.SetNoBackupFlag( folderName ) ;
 #endif
 					}
 				}
@@ -213,7 +204,7 @@ namespace StorageHelper
 
 			// Apple 審査のリジェクト回避用コード
 #if !UNITY_EDITOR && ( UNITY_IOS || UNITY_IPHONE )
-				UnityEngine.iOS.Device.SetNoBackupFlag( fullPath ) ;
+			UnityEngine.iOS.Device.SetNoBackupFlag( fullPath ) ;
 #endif
 
 			return true ;
@@ -239,7 +230,6 @@ namespace StorageHelper
 #if UNITY_EDITOR
 				Debug.LogError( "Storage Data File SaveAsync Error : Path = " + path + " Data = " + data ) ;
 #endif
-
 				onResult?.Invoke( false ) ;
 				yield break ;
 			}
@@ -254,7 +244,7 @@ namespace StorageHelper
 			if( i >= 0 )
 			{
 				// フォルダが含まれている
-				string folderName = fullPath.Substring( 0, i ) ;
+				string folderName = fullPath[ ..i ] ;
 
 				if( Directory.Exists( folderName ) == false )
 				{
@@ -271,14 +261,14 @@ namespace StorageHelper
 
 						// Apple 審査のリジェクト回避用コード
 #if !UNITY_EDITOR && ( UNITY_IOS || UNITY_IPHONE )
-							UnityEngine.iOS.Device.SetNoBackupFlag( folderName ) ;
+						UnityEngine.iOS.Device.SetNoBackupFlag( folderName ) ;
 #endif
 					}
 				}
 			}
 
 			//----------------------------------------------------------
-
+#if false
 			// サブスレッドから直接メインスレッドのコールバッグメソッドを呼ぶと例外が発生して UnityEditor ごと落とされるので一旦変数を経由させる。
 			float progress = 0 ;
 
@@ -323,29 +313,97 @@ namespace StorageHelper
 				onResult?.Invoke( false ) ;
 				yield break ;
 			}
+#endif
+			if( data.Length >  0 && string.IsNullOrEmpty( key ) == false && string.IsNullOrEmpty( vector ) == false )
+			{
+				// 暗号化する
+				data = Encrypt( data, key, vector ) ;
+			}
 
-			//----------------------------------
+			//----------------------------------------------------------
 
-//			if( data.Length >  0 && string.IsNullOrEmpty( key ) == false && string.IsNullOrEmpty( vector ) == false )
-//			{
-//				// 暗号化する
-//				data = Encrypt( data, key, vector ) ;
-//			}
+			if( File.Exists( fullPath ) == true )
+			{
+				// 削除する(古いファイルのサイズが大きいとサイズが古いファイルのままになってしまう(末尾にゴミ)
+				File.Delete( fullPath ) ;
+			}
 
-			// 保存する
-//			File.WriteAllBytes( fullPath, data ) ;
+			bool result = false ;
+			long length = data.Length ;
+
+			// 非同期保存を行う
+			var fs = File.OpenWrite( fullPath ) ;
+			if( fs == null )
+			{
+				// セーブ出来ません
+				onResult?.Invoke( false ) ;
+				yield break ;
+			}
+
+			// 非同期で保存を実行する
+//			Debug.Log( "<color=#FF00FF>書き込みを行う</color>" ) ;
+			Task task = fs.WriteAsync( data, 0, data.Length, token ) ;
+
+			long offset = fs.Position ;
+
+			// 書き込み状況をモニタリングする
+			while( true )
+			{
+				if( onProgress != null && offset != fs.Position )
+				{
+					offset = fs.Position ;
+					onProgress( ( float )( ( double )offset / ( double )length ) ) ;
+//					Debug.Log( "現在位置:" + offset  + "/" + length ) ;
+				}
+
+				if
+				(
+					task.Status == TaskStatus.RanToCompletion	||
+					task.Status == TaskStatus.Faulted			||
+					task.Status == TaskStatus.Canceled
+				)
+				{
+					break ;	// 成功・失敗・キャンセルのいずれかで終了
+				}
+
+				// １フレーム待機
+				yield return null ;
+			}
+
+			// 書き込み後のサイズ確認
+			result = ( fs.Position == length ) ;
+
+			// ファイルハンドルをクローズする
+			fs.Close() ;
+			fs.Dispose() ;
+
+			// タスクが成功したか確認する
+			if( result == false || task.Status != TaskStatus.RanToCompletion )
+			{
+//				Debug.Log( "<color=#FF0000>キャンセルされた2:" + fullPath + "</color>" ) ;
+				// セーブ出来ません
+
+				if( File.Exists( fullPath ) == true )
+				{
+					// 削除する(内容が不確定であるため)
+					File.Delete( fullPath ) ;
+				}
+
+				onResult?.Invoke( false ) ;
+				yield break ;
+			}
 
 			//----------------------------------------------------------
 
 			// Apple 審査のリジェクト回避用コード
 #if !UNITY_EDITOR && ( UNITY_IOS || UNITY_IPHONE )
-				UnityEngine.iOS.Device.SetNoBackupFlag( fullPath ) ;
+			UnityEngine.iOS.Device.SetNoBackupFlag( fullPath ) ;
 #endif
-
 			// 成功
 			onResult?.Invoke( true ) ;
 		}
 
+#if false
 		// サブスレッドでのファイル保存用タスク
 		private static bool SaveAsync_Task( string fullPath, byte[] data, string key, string vector, Action<float> onProgress, CancellationToken cancellationToken )
 		{
@@ -357,7 +415,7 @@ namespace StorageHelper
 				data = Encrypt( data, key, vector ) ;
 			}
 
-            if( cancellationToken.IsCancellationRequested == true )
+			if( cancellationToken.IsCancellationRequested == true )
 			{
 //				Debug.Log( "<color=#FF0000>キャンセルされた1:" + fullPath + "</color>" ) ;
 
@@ -400,7 +458,7 @@ namespace StorageHelper
 						if( offset != fs.Position )
 						{
 							offset = fs.Position ;
-							onProgress( ( float )offset / ( float )length ) ;
+							onProgress( ( float )( ( double )offset / ( double )length ) ) ;
 //							Debug.Log( "現在位置:" + offset  + "/" + length ) ;
 						}
 
@@ -427,14 +485,11 @@ namespace StorageHelper
 
 			//----------------------------------
 
-			// 保存する
-//			File.WriteAllBytes( fullPath, data ) ;
-
 //			Debug.Log( "<color=#FFFF00>サブスレッドでのファイル書き込み終了:" + fullPath + " " + data.Length + "</color>" ) ;
 
 			return result ;
 		}
-
+#endif
 		//-------------------------------------------------------------------------------------------
 
 		/// <summary>
@@ -520,11 +575,11 @@ namespace StorageHelper
 		/// <summary>
 		/// ローカルストレージからバイト配列を読み出す
 		/// </summary>
-		/// <param name="tName">ファイル名(相対パス)</param>
-		/// <param name="tKey">暗号化キー(null で複合化は行わない)</param>
-		/// <param name="tVector">暗号化ベクター(null で複合化は行わない)</param>
-		/// <returns>バイト配列(null で失敗)</returns>
-		public static byte[] Load( string path, int offset, int length )
+		/// <param name="path"></param>
+		/// <param name="offset"></param>
+		/// <param name="length"></param>
+		/// <returns></returns>
+		public static byte[] Load( string path, long offset, long length )
 		{
 			if( string.IsNullOrEmpty( path ) == true )
 			{
@@ -543,7 +598,7 @@ namespace StorageHelper
 				return null ;
 			}
 
-			int size = GetSize( path ) ;
+			long size = GetSize( path ) ;
 			if( size <= 0 || offset <  0 || offset >= size )
 			{
 #if UNITY_EDITOR
@@ -569,7 +624,7 @@ namespace StorageHelper
 			stream.Seek( offset, SeekOrigin.Begin ) ;
 
 			byte[] data = new byte[ length ] ;
-			size = stream.Read( data, 0, length ) ;
+			size = stream.Read( data, 0, ( int )length ) ;
 
 			if( size != length )
 			{
@@ -613,47 +668,6 @@ namespace StorageHelper
 			return Encoding.UTF8.GetString( data ) ;
 		}
 
-		//-----------------------------------------------------------
-#if false
-		/// <summary>
-		/// オブジェクトをバイナリデータ化して返す
-		/// </summary>
-		/// <param name="tObject"></param>
-		/// <returns></returns>
-		public static byte[] GetBinary<T>( T tObject ) where T : class
-		{
-			// iOSでは下記設定を行わないとエラーになる
-#if UNITY_IOS || UNITY_IPHONE
-			Environment.SetEnvironmentVariable( "MONO_REFLECTION_SERIALIZER", "yes" ) ;
-#endif
-
-			BinaryFormatter tBF = new BinaryFormatter() ;
-			MemoryStream tMS = new MemoryStream() ;
-
-			tBF.Serialize( tMS, tObject ) ;
-			return tMS.GetBuffer() ;
-		}
-
-		public static T SetBinary<T>( T tOverwriteObject, byte[] tData ) where T : class 
-		{
-			// iOSでは下記設定を行わないとエラーになる
-#if UNITY_IOS || UNITY_IPHONE
-			Environment.SetEnvironmentVariable( "MONO_REFLECTION_SERIALIZER", "yes" ) ;
-#endif
-
-			BinaryFormatter tBF = new BinaryFormatter() ;
-			MemoryStream tMS = new MemoryStream( tData ) ;
-
-			T tObject = tBF.Deserialize( tMS ) as T ;
-
-			if( tOverwriteObject != null && tObject != null )
-			{
-				tOverwriteObject  = tObject ;
-			}
-
-			return tObject ;
-		}
-#endif
 		//-------------------------------------------------------------------------------------------
 		// Stream
 
@@ -696,7 +710,6 @@ namespace StorageHelper
 #if UNITY_EDITOR
 				Debug.LogError( "Storage Data File Save Error : Path = " + path ) ;
 #endif
-
 				return null ;
 			}
 
@@ -712,7 +725,7 @@ namespace StorageHelper
 				if( i >= 0 )
 				{
 					// フォルダが含まれている
-					string folderName = fullPath.Substring( 0, i ) ;
+					string folderName = fullPath[ ..i ] ;
 
 					if( Directory.Exists( folderName ) == false )
 					{
@@ -728,7 +741,7 @@ namespace StorageHelper
 						
 							// Apple 審査のリジェクト回避用コード
 #if !UNITY_EDITOR && ( UNITY_IOS || UNITY_IPHONE )
-								UnityEngine.iOS.Device.SetNoBackupFlag( folderName ) ;
+							UnityEngine.iOS.Device.SetNoBackupFlag( folderName ) ;
 #endif
 						}
 					}
@@ -754,13 +767,11 @@ namespace StorageHelper
 #if UNITY_EDITOR
 					Debug.LogWarning( "Storage Data File Not Found : Path = " + path ) ;
 #endif
-
 					return null ;
 				}
 			}
 
 			//----------------------------------
-
 
 			FileStream file ;
 
@@ -804,7 +815,7 @@ namespace StorageHelper
 		/// <param name="offset"></param>
 		/// <param name="length"></param>
 		/// <returns></returns>
-		public static bool Write( FileStream file, byte[] data, int offset = 0, int length = 0 )
+		public static bool Write( FileStream file, byte[] data, long offset = 0, long length = 0 )
 		{
 			if( file == null || data == null || data.Length == 0 )
 			{
@@ -820,9 +831,95 @@ namespace StorageHelper
 				length  = data.Length ;
 			}
 
-			file.Write( data, offset, length ) ;
+			file.Write( data, ( int )offset, ( int )length ) ;
 
 			return true ;
+		}
+
+		/// <summary>
+		/// データを書き込む
+		/// </summary>
+		/// <param name="file"></param>
+		/// <param name="data"></param>
+		/// <param name="offset"></param>
+		/// <param name="length"></param>
+		/// <returns></returns>
+		public static IEnumerator WriteAsync( FileStream file, byte[] data, long offset = 0, long length = 0, long seekPosition = -1, Action<bool> onResult = null, CancellationToken token = default )
+		{
+			if( file == null || data == null || data.Length == 0 )
+			{
+				onResult?.Invoke( false ) ;
+				yield break ;
+			}
+
+			if( offset <  0 || offset >= data.Length )
+			{
+				offset  = 0 ;
+			}
+			if( length <= 0 || length >  data.Length )
+			{
+				length  = data.Length ;
+			}
+
+			//----------------------------------------------------------
+
+			// 必要に応じてシークする
+			if( file.CanSeek == true )
+			{
+				if( seekPosition >= 0 )
+				{
+					file.Seek( seekPosition, SeekOrigin.Begin ) ;
+				}
+				else
+				{
+					file.Seek( 0, SeekOrigin.End ) ;
+				}
+			}
+
+			// サブスレッドで書き込みを実行する
+			Task task = file.WriteAsync( data, ( int )offset, ( int )length, token ) ; 
+			if( task == null )
+			{
+				// 基本的にはここに来る事はないが念の為
+				onResult?.Invoke( false ) ;
+				yield break ;
+			}
+
+//			Debug.Log( "<color=#00FFFF>待機開始</color>" ) ;
+			// サブスレッドで実行中の書き込みタスクの終了を待つ
+			while( true )
+			{
+				if
+				(
+					task.Status == TaskStatus.RanToCompletion	||
+					task.Status == TaskStatus.Faulted			||
+					task.Status == TaskStatus.Canceled
+				)
+				{
+					break ;
+				}
+
+//				if( progress >  0 )
+//				{
+//					Debug.Log( "<color=#00FF00>現在位置:" + progress + "</color>" ) ;
+//				}
+
+				yield return null ;
+			}
+//			Debug.Log( "<color=#00FFFF>待機終了 " + task.Result + "</color>" ) ;
+
+			// 書き込みの結果を判定する
+			if( task.Status != TaskStatus.RanToCompletion )
+			{
+				// 失敗
+				onResult?.Invoke( false ) ;
+				yield break ;
+			}
+
+			//----------------------------------------------------------
+
+			// 成功
+			onResult?.Invoke( true ) ;
 		}
 
 		/// <summary>
@@ -833,7 +930,7 @@ namespace StorageHelper
 		/// <param name="offset"></param>
 		/// <param name="length"></param>
 		/// <returns></returns>
-		public static int Read( FileStream file, byte[] data, int offset = 0, int length = 0 )
+		public static int Read( FileStream file, byte[] data, long offset = 0, long length = 0 )
 		{
 			if( file == null || data == null || data.Length == 0 )
 			{
@@ -849,7 +946,7 @@ namespace StorageHelper
 				length  = data.Length ;
 			}
 
-			return file.Read( data, offset, length ) ;
+			return file.Read( data, ( int )offset, ( int )length ) ;
 		}
 
 		/// <summary>
@@ -858,7 +955,7 @@ namespace StorageHelper
 		/// <param name="file"></param>
 		/// <param name="offset"></param>
 		/// <returns></returns>
-		public static bool Seek( FileStream file, int offset, SeekOrigin seekOrigin )
+		public static bool Seek( FileStream file, long offset, SeekOrigin seekOrigin )
 		{
 			if( file == null || offset <  0 || file.CanSeek == false )
 			{
@@ -900,9 +997,8 @@ namespace StorageHelper
 
 			// Apple 審査のリジェクト回避用コード
 #if !UNITY_EDITOR && ( UNITY_IOS || UNITY_IPHONE )
-				UnityEngine.iOS.Device.SetNoBackupFlag( fullPath ) ;
+			UnityEngine.iOS.Device.SetNoBackupFlag( fullPath ) ;
 #endif
-
 			//----------------------------------------------------------
 
 			return File.Exists( fullPath ) ;
@@ -948,7 +1044,7 @@ namespace StorageHelper
 			}
 		
 			// イメージデータは取得出来た
-			Texture2D texture = new Texture2D( 4, 4, TextureFormat.ARGB32, false, true ) ;	// MipMap を事前に切るのがミソ
+			var texture = new Texture2D( 4, 4, TextureFormat.ARGB32, false, true ) ;	// MipMap を事前に切るのがミソ
 			texture.LoadImage( data ) ;
 		
 	//		Debug.Log( "ミップマップカウント:" + tTexture.mipmapCount ) ;	// これが１になってなっていればＯＫ
@@ -968,7 +1064,7 @@ namespace StorageHelper
 		/// <returns>列挙子</returns>
 		public static IEnumerator LoadAudioClip( string path, Action<AudioClip> onLoaded, AudioType audioType = AudioType.WAV )
 		{
-			if( Exists( path ) != Target.File )
+			if( Exists( path ) != TargetTypes.File )
 			{
 				yield break ;	// ファイルが存在しない
 			}
@@ -1015,7 +1111,7 @@ namespace StorageHelper
 		{
 			if( string.IsNullOrEmpty( key ) == true && string.IsNullOrEmpty( vector ) == true )
 			{
-				if( Exists( path ) != Target.File )
+				if( Exists( path ) != TargetTypes.File )
 				{
 					return null ;	// ファイルが存在しない
 				}
@@ -1050,7 +1146,7 @@ namespace StorageHelper
 
 			if( string.IsNullOrEmpty( key ) == true && string.IsNullOrEmpty( vector ) == true )
 			{
-				if( Exists( path ) != Target.File )
+				if( Exists( path ) != TargetTypes.File )
 				{
 					yield break ;	// ファイルが存在しない
 				}
@@ -1111,7 +1207,7 @@ namespace StorageHelper
 		/// <returns>結果(true=成功・false=失敗)</returns>
 		public static bool PlayMovie( string path, bool isCancelOnInput )
 		{
-			if( Exists( path ) != Target.File )
+			if( Exists( path ) != TargetTypes.File )
 			{
 				return false ;	// ファイルが存在しない
 			}
@@ -1155,7 +1251,7 @@ namespace StorageHelper
 		/// </summary>
 		/// <param name="path">ファイル名(相対パス)</param>
 		/// <returns>ファイルのサイズ(-1 でファイルが存在しない)</returns>
-		public static int GetSize( string path )
+		public static long GetSize( string path )
 		{
 			if( string.IsNullOrEmpty( path ) == true )
 			{
@@ -1172,9 +1268,9 @@ namespace StorageHelper
 				return -1 ;
 			}
 		
-			FileInfo info = new FileInfo( fullPath ) ;
+			var info = new FileInfo( fullPath ) ;
 		
-			return ( int )info.Length ;
+			return info.Length ;
 		}
 	
 		/// <summary>
@@ -1253,29 +1349,29 @@ namespace StorageHelper
 		/// </summary>
 		/// <param name="path">ファイルまたはフォルダの名前(相対パス)</param>
 		/// <returns>結果(-1=名前が不正・0=存在しない・1=ファイルが存在する・2=フォルダが存在する)</returns>
-		public static Target Exists( string path )
+		public static TargetTypes Exists( string path )
 		{
 			if( string.IsNullOrEmpty( path ) == true )
 			{
 #if UNITY_EDITOR
 				Debug.LogError( "Storage Exist Error : Path = " + path ) ;
 #endif
-				return Target.None ;
+				return TargetTypes.None ;
 			}
 
 			string fullPath = Combine( Path, path ) ;
 
 			if( File.Exists( fullPath ) == true )
 			{
-				return Target.File ;
+				return TargetTypes.File ;
 			}
 			else
 			if( Directory.Exists( fullPath ) == true )
 			{
-				return Target.Folder ;
+				return TargetTypes.Folder ;
 			}
 
-			return Target.None ;
+			return TargetTypes.None ;
 		}
 
 		/// <summary>
@@ -1329,7 +1425,32 @@ namespace StorageHelper
 			
 			// Apple 審査のリジェクト回避用コード
 #if !UNITY_EDITOR && ( UNITY_IOS || UNITY_IPHONE )
-				UnityEngine.iOS.Device.SetNoBackupFlag( fullPath_1 ) ;
+			UnityEngine.iOS.Device.SetNoBackupFlag( fullPath_1 ) ;
+#endif
+			return true ;
+		}
+
+		/// <summary>
+		/// 指定したパスにフォルダを生成する
+		/// </summary>
+		/// <param name="path"></param>
+		/// <returns></returns>
+		public static bool CreateFolder( string path )
+		{
+			string fullPath = Combine( Path, path ) ;
+		
+			if( Directory.Exists( fullPath ) == true )
+			{
+				// 既にフォルダが存在する
+				return false ;
+			}
+
+			// フォルダを生成する(多階層をまとめて生成出来る)
+			Directory.CreateDirectory( fullPath ) ;
+						
+			// Apple 審査のリジェクト回避用コード
+#if !UNITY_EDITOR && ( UNITY_IOS || UNITY_IPHONE )
+			UnityEngine.iOS.Device.SetNoBackupFlag( fullPath ) ;
 #endif
 			return true ;
 		}
@@ -1396,10 +1517,7 @@ namespace StorageHelper
 		/// <param name="path">フォルダの名前(相対パス)</param>
 		public static void RemoveAllEmptyFolders( string path = "" )
 		{
-			if( path == null )
-			{
-				path = string.Empty ;
-			}
+			path ??= string.Empty ;
 			RemoveEmptyFolderAllLoop( Combine( Path, path ) ) ;	// ルートフォルダは残す
 		}
 
@@ -1462,6 +1580,7 @@ namespace StorageHelper
 
 		//------------------------------------------------------------------------------
 
+/*
 		/// <summary>
 		/// バイト配列を暗号化する
 		/// </summary>
@@ -1699,7 +1818,7 @@ namespace StorageHelper
 			// 文字列をbyte型配列に変換する
 			return GetMD5Hash( Encoding.UTF8.GetBytes( text ) ) ;
 		}
-		
+*/		
 		//-------------------------------------------------------
 
 		/// <summary>
@@ -1924,7 +2043,7 @@ namespace StorageHelper
 			if( data != null && data.Length >  0 )
 			{
 				// イメージデータは取得出来た
-				Texture2D texture = new Texture2D( 4, 4, TextureFormat.ARGB32, false, true ) ;	// MipMap を事前に切るのがミソ
+				var texture = new Texture2D( 4, 4, TextureFormat.ARGB32, false, true ) ;	// MipMap を事前に切るのがミソ
 				texture.LoadImage( data ) ;
 
 				onLoaded?.Invoke( texture, null ) ;
@@ -2102,6 +2221,226 @@ namespace StorageHelper
 			}
 
 			return uuid ;
+		}
+
+		//-------------------------------------------------------------------------------------------
+		// 暗号化と復号化
+
+		/// <summary>
+		/// AES128 で暗号化する
+		/// </summary>
+		/// <param name="data"></param>
+		/// <param name="key"></param>
+		/// <param name="vector"></param>
+		/// <returns></returns>
+		public static byte[] Encrypt( byte[] data, string key = null, string vector = null )
+		{
+			// テキストをバイナリに変更する
+			( var key_Bytes, var vector_Bytes ) = KeyAndVectorToArray( key, vector ) ;
+
+			return Encrypt( data, key_Bytes, vector_Bytes ) ;
+		}
+
+		/// <summary>
+		/// AES128 で暗号化する
+		/// </summary>
+		/// <param name="data"></param>
+		/// <param name="key"></param>
+		/// <param name="vector"></param>
+		/// <returns></returns>
+		public static byte[] Encrypt( byte[] data, byte[] key = null, byte[] vector = null )
+		{
+			// キーとベクターに問題があれば補正する
+			( key, vector ) = CorrectKeyAndVector( key, vector ) ;
+			
+			//----------------------------------
+
+			var aes	= Aes.Create() ;
+			{
+				aes.BlockSize	= 16 * 8 ;			// 128 bit
+				aes.KeySize		= key.Length * 8 ;
+				aes.Mode		= CipherMode.CBC ;
+				aes.Padding		= PaddingMode.PKCS7 ;
+				aes.Key			= key ;
+				aes.IV			= vector ;	// GenerateIV() を使ってはダメ。毎回値が変わる。
+			} ;
+
+			//----------------------------------
+
+			ICryptoTransform encryptor = aes.CreateEncryptor( aes.Key, aes.IV ) ;
+
+			byte[] encodedData = encryptor.TransformFinalBlock( data, 0, data.Length ) ;
+
+			encryptor.Dispose() ;
+
+			aes.Dispose() ;
+
+			return encodedData ;
+		}
+
+		/// <summary>
+		/// AES128 で復号化する(バイナリ→バイナリ)
+		/// </summary>
+		/// <param name="data"></param>
+		/// <param name="key"></param>
+		/// <param name="vector"></param>
+		/// <returns></returns>
+		public static byte[] Decrypt( byte[] data, string key = null, string vector = null )
+		{
+			// テキストをバイナリに変更する
+			( var key_Bytes, var vector_Bytes ) = KeyAndVectorToArray( key, vector ) ;
+
+			return Decrypt( data, key_Bytes, vector_Bytes ) ;
+		}
+
+		/// <summary>
+		/// AES128 で復号化する(バイナリ→バイナリ)
+		/// </summary>
+		/// <param name="data"></param>
+		/// <param name="key"></param>
+		/// <param name="vector"></param>
+		/// <returns></returns>
+		public static byte[] Decrypt( byte[] data, byte[] key = null, byte[] vector = null )
+		{
+			// キーとベクターに問題があれば補正する
+			( key, vector ) = CorrectKeyAndVector( key, vector ) ;
+			
+			//----------------------------------
+
+			var aes	= Aes.Create() ;
+			aes.BlockSize	= 16 * 8 ;			// 128 bit
+			aes.KeySize		= key.Length * 8 ;
+			aes.Mode		= CipherMode.CBC ;
+			aes.Padding		= PaddingMode.PKCS7 ;
+			aes.Key			= key ;
+			aes.IV			= vector ;	// GenerateIV() を使ってはダメ。毎回値が変わる。
+
+			//----------------------------------
+
+			ICryptoTransform decrypter = aes.CreateDecryptor( aes.Key, aes.IV ) ;
+
+			byte[] decodedData ;
+
+			try
+			{
+				decodedData = decrypter.TransformFinalBlock( data, 0, data.Length ) ;
+			}
+			catch( CryptographicException )
+			{
+				Debug.LogWarning( "Decrypt faild." ) ;
+				decodedData = null ;
+			}
+
+			decrypter.Dispose() ;
+			aes.Dispose() ;
+
+			return decodedData ;
+		}
+
+		//-----------------------------------
+
+		/// <summary>
+		/// 通信用暗号化キー(省略時に使用)
+		/// </summary>
+		public static readonly byte[] AESKey	= { 0x51, 0x66, 0x54, 0x6A, 0x57, 0x6E, 0x5A, 0x72, 0x34, 0x75, 0x37, 0x77, 0x21, 0x7A, 0x25, 0x43 } ;
+
+		/// <summary>
+		/// 通信用暗号化ベクター(省略時に使用)
+		/// </summary>
+		public static readonly byte[] AESVector	= { 0x79, 0x2F, 0x42, 0x3F, 0x45, 0x28, 0x48, 0x2B, 0x4D, 0x62, 0x51, 0x65, 0x54, 0x68, 0x57, 0x6D } ;
+
+
+		//-----------------------------------
+
+		// テキストのキーとベクターをバイナリのキーとベクターに変換する
+		private static ( byte[] key, byte[] vector ) KeyAndVectorToArray( string key, string vector )
+		{
+			byte[] key_Bytes = null ;
+
+			if( key != null )
+			{
+				key_Bytes = Encoding.UTF8.GetBytes( key ) ;
+			}
+
+			byte[] vector_Bytes = null ;
+
+			if( vector != null )
+			{
+				vector_Bytes = Encoding.UTF8.GetBytes( vector ) ;
+			}
+
+			return ( key_Bytes, vector_Bytes ) ;
+		}
+
+		// キーとベクターに問題があれば補正する
+		private static ( byte[] key, byte[] vector ) CorrectKeyAndVector( byte[] key, byte[] vector )
+		{
+			key		??= AESKey ;
+			vector	??= AESVector ;
+
+			int length = 16 ;
+
+			if( key.Length <  length )
+			{
+				byte[] clonedKey = new byte[ length ] ;
+				Array.Copy( key, 0, clonedKey, 0, key.Length ) ;
+				key = clonedKey ;
+			}
+			else
+			if( key.Length >  length )
+			{
+				key = Slice( key,  0, length ) ;
+			}
+
+			if( vector.Length <  length )
+			{
+				byte[] clonedVector = new byte[ length ] ;
+				Array.Copy( vector, 0, clonedVector, 0, vector.Length ) ;
+				vector = clonedVector ;
+			}
+			else
+			if( vector.Length >  length )
+			{
+				vector = Slice( vector,  0, length ) ;
+			}
+
+			return ( key, vector ) ;
+		}
+
+		// バイト配列の椎した範囲を取り出して新しいバイト配列として取得する
+		private static byte[] Slice( byte[] data, int offset, int length )
+		{
+			if( data == null || data.Length == 0 )
+			{
+				return data ;
+			}
+
+			if( offset <  0 )
+			{
+				offset  = 0 ;
+			}
+
+			if( offset >= data.Length )
+			{
+				offset  = data.Length - 1 ;
+			}
+
+			if( length <= 0 )
+			{
+				length = data.Length ;
+			}
+
+			if( ( offset + length ) >  data.Length )
+			{
+				length = data.Length - offset ;
+			}
+
+			if( offset != 0 || length != data.Length )
+			{
+				data = data.AsSpan( offset, length ).ToArray() ;
+			}
+
+			return data ;
 		}
 	}
 }

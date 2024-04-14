@@ -305,7 +305,7 @@ namespace AssetBundleHelper
 				if( isAbsolute == false )
 				{
 					// 非キャッシグ・非保持・異なるフレームカウントのものを破棄する
-					List<string> paths = new List<string>() ;
+					var paths = new List<string>() ;
 
 					foreach( var element in m_AssetBundleCache )
 					{
@@ -332,7 +332,7 @@ namespace AssetBundleHelper
 				else
 				{
 					// 強制的に全てのアセットバンドルを破棄する
-					List<string> paths = new List<string>() ;
+					var paths = new List<string>() ;
 
 					foreach( var element in m_AssetBundleCache )
 					{
@@ -379,7 +379,7 @@ namespace AssetBundleHelper
 			{
 				public	string		Path ;
 				public	string		Hash ;
-				public	int			Size ;
+				public	long		Size ;
 				public	uint		Crc ;
 				public	bool		IsCompleted ;
 				public	string[]	Tags ;
@@ -389,7 +389,7 @@ namespace AssetBundleHelper
 			[Serializable]
 			public class StoredManifest
 			{
-				public List<AssetBundleFileInfo>	Files = new List<AssetBundleFileInfo>() ;
+				public List<AssetBundleFileInfo>	Files = new () ;
 			}
 
 			//------------------------------------------------------------------------------------------
@@ -631,7 +631,7 @@ namespace AssetBundleHelper
 						// アセットバンドルファイルの保存パス
 						storagePath = StorageCacheRootPath + ManifestName + "/" + assetBundleInfo.Path ;
 
-						if( StorageAccessor_Exists( storagePath ) == StorageAccessor.Target.File )
+						if( StorageAccessor_Exists( storagePath ) == StorageAccessor.TargetTypes.File )
 						{
 							StorageAccessor_Remove( storagePath ) ;
 						}
@@ -890,6 +890,9 @@ namespace AssetBundleHelper
 				{
 					// CRC[JSON版]ファイルを展開する
 
+					// Jenkins でビルドした際に妙な改行が入っている事があるため検査して不備があれば修正する
+					crcJsonText = CorrectCrcJsonText( crcJsonText ) ;
+
 					//--------------------------------------------------------
 #if UNITY_EDITOR
 					// 確認用にＣＲＣ[CSV版]ファイルを保存する
@@ -992,25 +995,35 @@ namespace AssetBundleHelper
 						if( assetBundleInfo.UpdateRequired == true )
 						{
 							// 更新が必要なもののみ StreamingAssets と比較する
+
+							// 基本はストレージ参照になる
+							assetBundleInfo.LocationPriority = LocationPriorities.Storage ;
+
 							if( m_AssetBundleHash_Constant.ContainsKey( assetBundleInfo.Path ) == true )
 							{
 								// StreamingAssets にも存在する
 								var assetBundleInfo_Constant = m_AssetBundleHash_Constant[ assetBundleInfo.Path ] ;
 
-								if
-								(
-									assetBundleInfo.Size	== assetBundleInfo_Constant.Size	&&
-									assetBundleInfo.Crc		== assetBundleInfo_Constant.Crc
-								)
+								if( StreamingAssetsDirectAccessEnabled == true )
 								{
-									// 完全に同一なので StreamingAssets の方を優先する
-									assetBundleInfo.LocationPriority = LocationPriorities.StreamingAssets ;
+									// StreamingAssets へダイレクトアクセス可能な環境のみ StreamingAssets に残存するアセットバンドルが使用できる
 
-									if( StreamingAssetsDirectAccessEnabled == true )
+									if( StorageAccesor_ExistsInStreamingAssets( StreamingAssetsRootPath + "/" + assetBundleInfo.Path ) == true )
 									{
-										// StreamingAssest へのダイレクトアクセスが有効なのでダウンロード済み扱いとする
-										assetBundleInfo.UpdateRequired = false ;	// ダウンロード済み扱いとする
-										Modified = true ;
+										// StreamingAssets にファイルが存在している
+										if
+										(
+											assetBundleInfo.Size	== assetBundleInfo_Constant.Size	&&
+											assetBundleInfo.Crc		== assetBundleInfo_Constant.Crc
+										)
+										{
+											// 完全に同一ファイルが StreamingAssets に存在しているので StreamingAssets の方を優先する
+											assetBundleInfo.LocationPriority = LocationPriorities.StreamingAssets ;
+
+											// StreamingAssest へのダイレクトアクセスが有効なのでダウンロード済み扱いとする
+											assetBundleInfo.UpdateRequired = false ;	// ダウンロード済み扱いとする
+											Modified = true ;
+										}
 									}
 								}
 							}
@@ -1062,6 +1075,67 @@ namespace AssetBundleHelper
 				onCompleted?.Invoke() ;
 			}
 
+			// Jsonテキストを検査しておかしな箇所があれば修正した状態のものを返す
+			private string CorrectCrcJsonText( string crcJsonText )
+			{
+				if( string.IsNullOrEmpty( crcJsonText ) == true )
+				{
+					// 処理出来ない
+					return crcJsonText ;
+				}
+
+				//---------------------------------------------------------
+
+				var newLines = new List<string>() ;
+
+				var oldLines = crcJsonText.Split( '\n' ) ;
+				int i, l = oldLines.Length ;
+				for( i  = 0 ; i <  l ; i ++ )
+				{
+					// 念のため改行的なものとカンマを完全に削除しておく
+					oldLines[ i ] = oldLines[ i ].Trim( '\x0A' ) ;
+					oldLines[ i ] = oldLines[ i ].Trim( '\x0D' ) ;
+					oldLines[ i ] = oldLines[ i ].Trim( ',' ) ;
+
+					if( string.IsNullOrEmpty( oldLines[ i ] ) == false )
+					{
+						// 文字列が存在する
+						newLines.Add( oldLines[ i ] ) ;
+					}
+				}
+
+				if( newLines.Count >= 3 )
+				{
+					// 最低でも３行は存在するはず
+
+					var sb = new StringBuilder() ;
+
+					// 最初の行
+					sb.Append( newLines[ 0 ] ) ;
+					sb.Append( "\n" ) ;
+
+					l = newLines.Count - 1 ;
+
+					for( i  = 1 ; i <  ( l - 1 ) ; i ++ )
+					{
+						sb.Append( newLines[ i ] ) ;
+						sb.Append( ",\n" ) ;
+					}
+
+					sb.Append( newLines[ l - 1 ] ) ;
+					sb.Append( "\n" ) ;				// 最後の項目はカンマ無し
+
+					// 最後の行
+					sb.Append( newLines[ l ] ) ;
+
+					crcJsonText = sb.ToString() ;
+				}
+
+//				Debug.Log( "<color=#FF00FF>-------- CrcJsonText 結果</color>\n" + crcJsonText ) ;
+
+				return crcJsonText ;
+			}
+
 			// マニフェストフェイルをダウンロードする(ＣＲＣファイルと並列ダウンロード用)
 			private IEnumerator LoadManifestAsync( Action<bool,byte[]> onLoaded, AssetBundleManager instance )
 			{
@@ -1086,7 +1160,8 @@ namespace AssetBundleHelper
 						DownloadFromRemote
 						(
 							path,
-							null,
+							0,		// 予めサイズがわかっているとメモリ確保が若干最適化される
+							null,	// ダイレクトにストレージに保存する場合のストレージのパスを指定する
 							0,
 							( DownloadStates state, byte[] downloadedData, float progress, long downloadedSize, string errorMessage, int version ) =>
 							{
@@ -1154,7 +1229,8 @@ namespace AssetBundleHelper
 						DownloadFromRemote
 						(
 							path,
-							null,
+							0,		// 予めサイズがわかっているとメモリ確保が若干最適化される
+							null,	// ダイレクトにストレージに保存する場合のストレージのパスを指定する
 							0,
 							( DownloadStates state, byte[] downloadedData, float progress, long downloadedSize, string errorMessage, int version ) =>
 							{
@@ -1215,7 +1291,7 @@ namespace AssetBundleHelper
 
 				string fullPath = path + ManifestName + ".manifest" ;
 
-				if( StorageAccessor_Exists( fullPath ) != StorageAccessor.Target.File )
+				if( StorageAccessor_Exists( fullPath ) != StorageAccessor.TargetTypes.File )
 				{
 					// ファイルが保存されていない(保存する必要がある)
 					Modified = true ;
@@ -1250,7 +1326,7 @@ namespace AssetBundleHelper
 				// メモリに展開されたローカルマニフェストの各アセットバンドル情報を参照高速化のためハッシュ参照化する
 				AssetBundleFileInfo node ;
 				List<AssetBundleFileInfo> files = storedManifest.Files ;
-				Dictionary<string,AssetBundleFileInfo> hash = new Dictionary<string, AssetBundleFileInfo>() ;
+				var hash = new Dictionary<string, AssetBundleFileInfo>() ;
 
 				foreach( var file in files )
 				{
@@ -1261,7 +1337,7 @@ namespace AssetBundleHelper
 					
 				// リモートマニフェストをベースに更新が必要なアセットバンドルをチェックする
 				string assetBundlePath ;
-				int size ;
+				long size ;
 
 				bool updateRequired ;
 				int modifiedCount = 0 ;
@@ -1422,7 +1498,7 @@ namespace AssetBundleHelper
 
 				string path = StorageCacheRootPath + ManifestName + "/" + ManifestName + ".manifest" ;
 
-				StoredManifest storedManifest = new StoredManifest() ;
+				var storedManifest = new StoredManifest() ;
 
 				foreach( var assetBundleInfo in m_AssetBundleInfo )
 				{

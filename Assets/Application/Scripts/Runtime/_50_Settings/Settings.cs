@@ -7,10 +7,10 @@ using UnityEngine ;
 using UnityEditor ;
 #endif
 
-namespace DBS
+namespace DSW
 {
 	/// <summary>
-	/// 起動時の各種設定クラス Version 2022/10/10
+	/// 起動時の各種設定クラス Version 2024/04/13
 	/// </summary>
 	[CreateAssetMenu( fileName = "Settings", menuName = "ScriptableObject/DBS/Settings" )]
 	public class Settings : ScriptableObject
@@ -121,6 +121,7 @@ namespace DBS
 			OSX,			// アセットバンドルのプラットフォームを強制的にOSXにする
 			Android,		// アセットバンドルのプラットフォームを強制的にAndroidにする
 			iOS,			// アセットバンドルのプラットフォームを強制的にiOSにする
+			Linux,			// アセットバンドルのプラットフォームを強制的にiOSにする
 		}
 
 		/// <summary>
@@ -152,6 +153,12 @@ namespace DBS
 		/// </summary>
 		[Header( "リモートのアセットバンドルを使用するかどうか" )]
 		public bool UseRemoteAssetBundle = true ;
+
+		/// <summary>
+		/// ストリーミングアセットのダイレクトアクセスを有効にするか
+		/// </summary>
+		[Header( "ストリーミングアセットのダイレクトアクセスを有効にするか(Android実機では自動的に無効化されます" )]
+		public bool StreamingAssetsDirectAccessEnabled = true ;
 
 		/// <summary>
 		/// 並列ダウンロードを使用するかどうか
@@ -265,7 +272,7 @@ namespace DBS
 			public string			Description ;
 		}
 
-		private static Dictionary<EndPointNames,string> m_EndPointNames = new Dictionary<EndPointNames, string>()
+		private static Dictionary<EndPointNames,string> m_EndPointNames = new ()
 		{
 			{ EndPointNames.Experiment,		"実験サーバー"			},
 			{ EndPointNames.Development,	"開発サーバー"			},
@@ -275,7 +282,7 @@ namespace DBS
 
 
 		[Header( "WebAPIの通信先(エンドポイント)リスト" )] //[NonSerialized]
-		public EndPointData[] WebAPI_EndPoints = new EndPointData[]
+		public EndPointData[] EndPoints = new EndPointData[]
 		{
 			new EndPointData()
 			{
@@ -304,7 +311,7 @@ namespace DBS
 		} ;
 
 		[Header( "デフォルトのWebAPIの通信先(エンドポイント)" )]
-		public EndPointNames WebAPI_DefaultEndPoint = EndPointNames.Development ;	// バッチビルド時に書き換える
+		public EndPointNames EndPoint = EndPointNames.Development ;	// バッチビルド時に書き換える
 
 		[Header( "各種デバッグ用の機能を有効にするか(ただし開発環境でのみ有効)" )]
 		public bool DevelopmentMode = true ;	// バッチビルド時に書き換える

@@ -12,7 +12,7 @@ using AssetBundleHelper ;
 
 using uGUIHelper ;
 
-namespace DBS
+namespace DSW
 {
 	/// <summary>
 	/// アセットクラス(アセット全般の読み出しに使用する) Version 2022/10/04 0
@@ -921,7 +921,7 @@ namespace DBS
 		/// <param name="isNoDialog"></param>
 		/// <param name="onProgress"></param>
 		/// <returns></returns>
-		public static async UniTask<bool> DownloadAssetBundleAsync( string path, bool keep = false, Action<int,float,float> onProgress = null, bool isNoDialog = false )
+		public static async UniTask<bool> DownloadAssetBundleAsync( string path, bool keep = false, Action<long,float,float> onProgress = null, bool isNoDialog = false )
 		{
 			// リトライループ
 			while( true )
@@ -979,7 +979,7 @@ namespace DBS
 		(
 			AssetBundleManager.DownloadEntity[] entities,
 			int parallel = 0,
-			Action<long,int,int,int> onProgress = null,
+			Action<long,long,int,int> onProgress = null,
 			bool isAllManifestsSaving = true,
 			bool isNoDialog = false
 		)
@@ -1062,7 +1062,7 @@ namespace DBS
 			float progress = 0 ;
 			while( true )
 			{
-				var assetRequest = AssetBundleManager.LoadAssetBundleAysnc( path, isRetain, keep ) ;
+				var assetRequest = AssetBundleManager.LoadAssetBundleAsync( path, isRetain, keep ) ;
 				while( true )
 				{
 					if( progress != assetRequest.Progress )
@@ -1143,7 +1143,7 @@ namespace DBS
 		/// </summary>
 		/// <param name="path">パス</param>
 		/// <returns></returns>
-		public static int GetSize( string path )
+		public static long GetSize( string path )
 		{
 			return AssetBundleManager.GetSize( path ) ;
 		}
@@ -1342,7 +1342,7 @@ namespace DBS
 				return null ;
 			}
 
-			Dictionary<string,Sprite> spriteSet = new Dictionary<string, Sprite>() ;
+			var spriteSet = new Dictionary<string, Sprite>() ;
 			foreach( var sprite in sprites )
 			{
 				if( spriteSet.ContainsKey( sprite.name ) == false )
@@ -1374,7 +1374,7 @@ namespace DBS
 				return null ;
 			}
 
-			Dictionary<string,Sprite> spriteSet = new Dictionary<string, Sprite>() ;
+			var spriteSet = new Dictionary<string, Sprite>() ;
 			foreach( var sprite in sprites )
 			{
 				if( spriteSet.ContainsKey( sprite.name ) == false )
@@ -1411,7 +1411,7 @@ namespace DBS
 			Sprite[] sprites = new Sprite[ count ] ;
 			spriteAtlas.GetSprites( sprites ) ;
 
-			Dictionary<string,Sprite> spriteSet = new Dictionary<string, Sprite>() ;
+			var spriteSet = new Dictionary<string, Sprite>() ;
 			foreach( var sprite in sprites )
 			{
 				string spriteName = sprite.name.Replace( "(Clone)", "" ) ;
@@ -1448,7 +1448,7 @@ namespace DBS
 			Sprite[] sprites = new Sprite[ count ] ;
 			spriteAtlas.GetSprites( sprites ) ;
 
-			Dictionary<string,Sprite> spriteSet = new Dictionary<string, Sprite>() ;
+			var spriteSet = new Dictionary<string, Sprite>() ;
 			foreach( var sprite in sprites )
 			{
 				string spriteName = sprite.name.Replace( "(Clone)", "" ) ; 

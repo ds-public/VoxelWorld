@@ -1,3 +1,5 @@
+//#if false
+
 #if UNITY_EDITOR
 
 using UnityEngine ;
@@ -24,88 +26,95 @@ namespace uGUIHelper
 			//--------------------------------------------
 		
 			// ターゲットのインスタンス
-			Line tTarget = target as Line ;
+			Line view = target as Line ;
 		
 			// Graphic の基本情報を描画する
-			DrawBasis( tTarget ) ;
+			DrawBasis( view ) ;
 
 			EditorGUILayout.Separator() ;   // 少し区切りスペース
 
 			// スプライト
-			Sprite tSprite = EditorGUILayout.ObjectField( "Sprite", tTarget.sprite, typeof( Sprite ), false ) as Sprite ;
-			if( tSprite != tTarget.sprite )
+			Sprite sprite = EditorGUILayout.ObjectField( "Sprite", view.sprite, typeof( Sprite ), false ) as Sprite ;
+			if( sprite != view.sprite )
 			{
-				Undo.RecordObject( tTarget, "Line : Sprite Change" ) ;	// アンドウバッファに登録
-				tTarget.sprite = tSprite ;
-				EditorUtility.SetDirty( tTarget ) ;
+				Undo.RecordObject( view, "Line : Sprite Change" ) ;	// アンドウバッファに登録
+				view.sprite = sprite ;
+				EditorUtility.SetDirty( view ) ;
 			}
 
 			// 最初の太さ
-			float tStartWidth = EditorGUILayout.FloatField( "Start Width", tTarget.startWidth ) ;
-			if( tStartWidth != tTarget.startWidth && tStartWidth >  0 )
+			float startWidth = EditorGUILayout.FloatField( "Start Width", view.startWidth ) ;
+			if( startWidth != view.startWidth && startWidth >  0 )
 			{
-				Undo.RecordObject( tTarget, "Line : Start Width Change" ) ;	// アンドウバッファに登録
-				tTarget.startWidth = tStartWidth ;
-				EditorUtility.SetDirty( tTarget ) ;
+				Undo.RecordObject( view, "Line : Start Width Change" ) ;	// アンドウバッファに登録
+				view.startWidth = startWidth ;
+				EditorUtility.SetDirty( view ) ;
 			}
 
 			// 最後の太さ
-			float tEndWidth = EditorGUILayout.FloatField( "End Width", tTarget.endWidth ) ;
-			if( tEndWidth != tTarget.endWidth && tEndWidth >  0 )
+			float endWidth = EditorGUILayout.FloatField( "End Width", view.endWidth ) ;
+			if( endWidth != view.endWidth && endWidth >  0 )
 			{
-				Undo.RecordObject( tTarget, "Line : Start Width Change" ) ;	// アンドウバッファに登録
-				tTarget.endWidth = tEndWidth ;
-				EditorUtility.SetDirty( tTarget ) ;
+				Undo.RecordObject( view, "Line : Start Width Change" ) ;	// アンドウバッファに登録
+				view.endWidth = endWidth ;
+				EditorUtility.SetDirty( view ) ;
 			}
 
 			// 最初の色
-			Color tStartColor = new Color( tTarget.startColor.r, tTarget.startColor.g, tTarget.startColor.b, tTarget.startColor.a ) ;
-			tStartColor = EditorGUILayout.ColorField( "Start Color", tStartColor ) ;
-			if( tStartColor.r != tTarget.startColor.r || tStartColor.g != tTarget.startColor.g || tStartColor.b != tTarget.startColor.b || tStartColor.a != tTarget.startColor.a )
+			Color startColor = new Color( view.startColor.r, view.startColor.g, view.startColor.b, view.startColor.a ) ;
+			startColor = EditorGUILayout.ColorField( "Start Color", startColor ) ;
+			if( startColor.r != view.startColor.r || startColor.g != view.startColor.g || startColor.b != view.startColor.b || startColor.a != view.startColor.a )
 			{
-				Undo.RecordObject( tTarget, "Line : Start Color Change" ) ;	// アンドウバッファに登録
-				tTarget.startColor = tStartColor ;
-				EditorUtility.SetDirty( tTarget ) ;
+				Undo.RecordObject( view, "Line : Start Color Change" ) ;	// アンドウバッファに登録
+				view.startColor = startColor ;
+				EditorUtility.SetDirty( view ) ;
 			}
 
 			// 最後の色
-			Color tEndColor = new Color( tTarget.endColor.r, tTarget.endColor.g, tTarget.endColor.b, tTarget.endColor.a ) ;
-			tEndColor = EditorGUILayout.ColorField( "End Color", tEndColor ) ;
-			if( tEndColor.r != tTarget.endColor.r || tEndColor.g != tTarget.endColor.g || tEndColor.b != tTarget.endColor.b || tEndColor.a != tTarget.endColor.a )
+			Color endColor = new Color( view.endColor.r, view.endColor.g, view.endColor.b, view.endColor.a ) ;
+			endColor = EditorGUILayout.ColorField( "End Color", endColor ) ;
+			if( endColor.r != view.endColor.r || endColor.g != view.endColor.g || endColor.b != view.endColor.b || endColor.a != view.endColor.a )
 			{
-				Undo.RecordObject( tTarget, "Line : End Color Change" ) ;	// アンドウバッファに登録
-				tTarget.endColor = tEndColor ;
-				EditorUtility.SetDirty( tTarget ) ;
+				Undo.RecordObject( view, "Line : End Color Change" ) ;	// アンドウバッファに登録
+				view.endColor = endColor ;
+				EditorUtility.SetDirty( view ) ;
 			}
 
 			// オフセット
-			Vector2 tOffset = EditorGUILayout.Vector2Field( "Offset", tTarget.offset ) ;
-			if( tOffset.Equals( tTarget.offset ) == false )
+			Vector2 offset = EditorGUILayout.Vector2Field( "Offset", view.offset ) ;
+			if( offset.Equals( view.offset ) == false )
 			{
-				Undo.RecordObject( tTarget, "Line : Offset Change" ) ;	// アンドウバッファに登録
-				tTarget.offset = tOffset ;
-				EditorUtility.SetDirty( tTarget ) ;
+				Undo.RecordObject( view, "Line : Offset Change" ) ;	// アンドウバッファに登録
+				view.offset = offset ;
+				EditorUtility.SetDirty( view ) ;
 			}
 
 			// データ配列
-			SerializedObject tSO = new SerializedObject( tTarget ) ;
-			SerializedProperty tSP = tSO.FindProperty( "vertices" ) ;
-			if( tSP != null )
+			SerializedObject so = new SerializedObject( view ) ;
+			so.Update() ;
+			SerializedProperty sp = so.FindProperty( "vertices" ) ;
+			if( sp != null )
 			{
-				EditorGUILayout.PropertyField( tSP, new GUIContent( "Vertices" ), true ) ;
+				EditorGUILayout.PropertyField( sp, new GUIContent( "Vertices" ) ) ;
 			}
-			tSO.ApplyModifiedProperties() ;
+//			if( so.hasModifiedProperties == true )
+//			{
+				so.ApplyModifiedProperties() ;
+//			}
+
 
 			// ポジションタイプ
-			Line.PositionType tPositionType = ( Line.PositionType )EditorGUILayout.EnumPopup( "Position Type",  tTarget.positionType ) ;
-			if( tPositionType != tTarget.positionType )
+			Line.PositionType positionType = ( Line.PositionType )EditorGUILayout.EnumPopup( "Position Type",  view.positionType ) ;
+			if( positionType != view.positionType )
 			{
-				Undo.RecordObject( tTarget, "Line : Position Type Change" ) ;	// アンドウバッファに登録
-				tTarget.positionType = tPositionType ;
-				EditorUtility.SetDirty( tTarget ) ;
+				Undo.RecordObject( view, "Line : Position Type Change" ) ;	// アンドウバッファに登録
+				view.positionType = positionType ;
+				EditorUtility.SetDirty( view ) ;
 			}
 		}
 	}
 }
 
 #endif
+
+//#endif

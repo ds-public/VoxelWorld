@@ -9,7 +9,7 @@ using uGUIHelper ;
 
 using MathHelper ;
 
-namespace DBS.Screens.LobbyClasses.UI
+namespace DSW.Screens.LobbyClasses.UI
 {
 	public class ModeSettingPanel : ExMonoBehaviour
 	{
@@ -73,10 +73,14 @@ namespace DBS.Screens.LobbyClasses.UI
 		protected UIInputField					m_ServerAddress_InputField ;
 
 		[SerializeField]
+		protected UIButton						m_ServerSearchButton ;
+
+		[SerializeField]
 		protected UITextMesh					m_ServerPortNumber_Label ;
 
 		[SerializeField]
 		protected UIInputField					m_ServerPortNumber_InputField ;
+
 
 		[Header( "アクション" )]
 
@@ -84,6 +88,9 @@ namespace DBS.Screens.LobbyClasses.UI
 		protected UIButton						m_StartButton ;
 
 		//-------------------------------------------------------------------------------------------
+
+		private Lobby	m_Owner ;
+
 
 		private int		m_TabIndex				= -1 ;
 
@@ -101,8 +108,8 @@ namespace DBS.Screens.LobbyClasses.UI
 
 		//-------------------------------------------------------------------------------------------
 
-		private static	Color32	m_PositiveColor	= new Color32( 255, 255, 255, 255 ) ;
-		private static	Color32	m_NegativeColor	= new Color32( 143, 143, 143, 255 ) ;
+		private static	Color32	m_PositiveColor	= new ( 255, 255, 255, 255 ) ;
+		private static	Color32	m_NegativeColor	= new ( 143, 143, 143, 255 ) ;
 
 
 		//-------------------------------------------------------------------------------------------
@@ -111,8 +118,13 @@ namespace DBS.Screens.LobbyClasses.UI
 		/// 準備を行う
 		/// </summary>
 		/// <returns></returns>
-		public void Prepare()
+		public void Prepare( Lobby owner )
 		{
+			// オーナーを保存
+			m_Owner = owner ;
+
+			//----------------------------------------------------------
+
 			// タブ操作
 			m_TabButtonBase.SetOnValueChanged( ( string identity, UIButton button, bool option ) =>
 			{
@@ -271,6 +283,14 @@ namespace DBS.Screens.LobbyClasses.UI
 			UpdateServerPortNumber() ;
 
 			//----------------------------------------------------------
+			// サーバー検索へ
+
+			m_ServerSearchButton.SetOnSimpleClick( () =>
+			{
+				OpenAddressSelectionDialog( m_ServerPortNumber ).Forget() ;
+			} ) ;
+
+			//----------------------------------------------------------
 
 			int tabIndex = 0 ;
 			if( playMode == PlayerData.PlayModes.Single )
@@ -387,6 +407,7 @@ namespace DBS.Screens.LobbyClasses.UI
 				m_ServerAddress_Label.Color = m_NegativeColor ;
 				m_ServerAddress_InputField.Text = "localhost" ;
 				m_ServerAddress_InputField.Interactable = false ;
+				m_ServerSearchButton.Interactable = false ;
 			}
 			else
 			if( m_TabIndex == 1 )
@@ -395,6 +416,7 @@ namespace DBS.Screens.LobbyClasses.UI
 				m_ServerAddress_Label.Color = m_PositiveColor ;
 				m_ServerAddress_InputField.Text = m_ServerAddress ;
 				m_ServerAddress_InputField.Interactable = true ;
+				m_ServerSearchButton.Interactable = true ;
 			}
 		}
 
@@ -454,6 +476,39 @@ namespace DBS.Screens.LobbyClasses.UI
 
 			m_StartButton.Interactable = isReady ;
 		}
+
+		// サーバー検索ダイアログを開く
+		private async UniTask OpenAddressSelectionDialog( int serverPort )
+		{
+			string endPoint = await m_Owner.DialogController.AddressSelectionDialog.Open() ;
+			if( string.IsNullOrEmpty( endPoint ) == false )
+			{
+				int i = endPoint.IndexOf( ':' ) ;
+				if( i >= 0 )
+				{
+					// アドレスとポート番号を分離する
+					m_ServerAddress = endPoint[ ..i ] ;
+					m_ServerAddress_InputField.Text = m_ServerAddress ;
+
+					i ++ ;
+					string serverPortNumberName = endPoint[ i.. ] ;
+					if( int.TryParse( serverPortNumberName, out int serverPortNumber ) == true )
+					{
+						m_ServerPortNumber = serverPortNumber ;
+						m_ServerPortNumber_InputField.Text = serverPortNumber.ToString() ;
+					}
+				}
+				else
+				{
+					// アドレスを更新する
+					m_ServerAddress = endPoint ;
+					m_ServerAddress_InputField.Text = m_ServerAddress ;
+				}
+
+				m_StartButton.Interactable = true ;
+			}
+		}
+
 
 		//-----------------------------------------------------------
 

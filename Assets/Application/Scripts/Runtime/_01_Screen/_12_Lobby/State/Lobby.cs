@@ -7,9 +7,9 @@ using Cysharp.Threading.Tasks ;
 using uGUIHelper ;
 using MathHelper ;
 
-using DBS.Screens.LobbyClasses.UI ;
+using DSW.Screens.LobbyClasses.UI ;
 
-namespace DBS.Screens
+namespace DSW.Screens
 {
 	public partial class Lobby : ScreenBase
 	{
@@ -21,6 +21,7 @@ namespace DBS.Screens
 		[SerializeField]
 		protected UIImage			m_Background ;
 
+		// 背景画像
 		[SerializeField]
 		protected Sprite[]			m_BackgroundImages = new Sprite[ 4 ] ;
 
@@ -29,6 +30,17 @@ namespace DBS.Screens
 		[SerializeField]
 		protected ModeSettingPanel	m_ModeSettingPanel ;
 
+		//-----------------------------------------------------------
+
+		[Header( "固有ダイアログ" )]
+
+		[SerializeField]
+		protected SceneDialogController m_DialogController ;
+
+		/// <summary>
+		/// 固有ダイアログコントローラー
+		/// </summary>
+		public SceneDialogController	DialogController =>m_DialogController ;
 
 		//-------------------------------------------------------------------------------------------
 

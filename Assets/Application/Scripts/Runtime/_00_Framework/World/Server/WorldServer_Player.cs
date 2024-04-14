@@ -15,9 +15,9 @@ using MathHelper ;
 
 using StorageHelper ;
 
-using DBS.WorldServerClasses ;
+using DSW.WorldServerClasses ;
 
-namespace DBS.World
+namespace DSW.World
 {
 	/// <summary>
 	/// サーバー(プレイヤー管理)
@@ -31,7 +31,7 @@ namespace DBS.World
 		{
 			string path = m_PlayerRootPath + id ;
 
-			if( StorageAccessor.Exists( path ) != StorageAccessor.Target.File )
+			if( StorageAccessor.Exists( path ) != StorageAccessor.TargetTypes.File )
 			{
 				// プレイヤーデータは存在しない
 				return null ;

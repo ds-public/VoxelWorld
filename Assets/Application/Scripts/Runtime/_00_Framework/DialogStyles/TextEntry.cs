@@ -8,9 +8,9 @@ using UnityEngine ;
 
 using uGUIHelper ;
 
-using DBS.UI ;
+using DSW.UI ;
 
-namespace DBS.DialogStyle
+namespace DSW.DialogStyle
 {
 	/// <summary>
 	/// インプットタイプのダイアログ

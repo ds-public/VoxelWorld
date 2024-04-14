@@ -1,9 +1,9 @@
 using UnityEngine ;
 
-namespace DBS
+namespace DSW
 {
 	/// <summary>
-	/// Math 型のメソッド拡張
+	/// Math 型のメソッド拡張 Version 2022/09/18
 	/// </summary>
 	public static class Mathi
 	{
@@ -68,6 +68,28 @@ namespace DBS
 			return v ;
 		}
 
+	}
+
+
+	public class ExMathf
+	{
+		/// <summary>
+		/// v0 → v1 の factor(0～1) で示した変化中の値を取得する
+		/// </summary>
+		/// <param name="v0"></param>
+		/// <param name="v1"></param>
+		/// <param name="factor"></param>
+		/// <returns></returns>
+		public static Vector2 Lerp( Vector2 v0, Vector2 v1, float factor )
+		{
+			float inverse = 1.0f - factor ;
+
+			float x = v0.x * inverse + v1.x * factor ;
+			float y = v0.y * inverse + v1.y * factor ;
+
+			return new Vector2( x, y ) ;
+		}
+
 		/// <summary>
 		/// <see cref="a"/>, <see cref="b"/> の値から最大・最小範囲を計算します
 		/// </summary>
@@ -75,14 +97,15 @@ namespace DBS
 		/// <param name="b"></param>
 		/// <param name="min">最小値</param>
 		/// <param name="max">最大値</param>
-		public static void GetMinMaxVector3(
+		public static void GetMinMaxVector3
+		(
 			in  Vector3 a,
 			in  Vector3 b,
 			out Vector3 min,
 			out Vector3 max
 		)
 		{
-			if ( a.x < b.x )
+			if( a.x < b.x )
 			{
 				min.x = a.x ;
 				max.x = b.x ;
@@ -93,7 +116,7 @@ namespace DBS
 				max.x = a.x ;
 			}
 
-			if ( a.y < b.y )
+			if( a.y < b.y )
 			{
 				min.y = a.y ;
 				max.y = b.y ;
@@ -104,7 +127,7 @@ namespace DBS
 				max.y = a.y ;
 			}
 
-			if ( a.z < b.z )
+			if( a.z < b.z )
 			{
 				min.z = a.z ;
 				max.z = b.z ;
@@ -115,5 +138,6 @@ namespace DBS
 				max.z = a.z ;
 			}
 		}
+
 	}
 }

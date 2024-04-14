@@ -1,0 +1,23 @@
+ManifestFileVersion: 0
+CRC: 824049960
+Hashes:
+  AssetFileHash:
+    serializedVersion: 2
+    Hash: c68269b4bd636a88f2ac2d1320d964bc
+  TypeTreeHash:
+    serializedVersion: 2
+    Hash: 1dadf3ffe9bb0f47a51fdf1cdd350c05
+  IncrementalBuildHash:
+    serializedVersion: 2
+    Hash: 04202edae2754e3ff206c9816f896ca9
+HashAppended: 0
+ClassTypes:
+- Class: 28
+  Script: {instanceID: 0}
+- Class: 213
+  Script: {instanceID: 0}
+SerializeReferenceClassIdentifiers: []
+Assets:
+- Assets/Application/AssetBundle/Textures/terrain1.4.5.png
+- Assets/Application/AssetBundle/Textures/grass_side_carried.png
+Dependencies: []

@@ -12,20 +12,23 @@ using TMPro ;
 
 #if UNITY_EDITOR
 using UnityEditor ;
+using UnityEditor.SceneManagement ;
 #endif
+
 
 namespace uGUIHelper
 {
-	[ RequireComponent( typeof( RectTransform ) ) ]
+	[ExecuteAlways]
+	[DisallowMultipleComponent]
+	[RequireComponent( typeof( RectTransform ) )]
 	
-	[ ExecuteInEditMode ]
-
 	/// <summary>
 	/// uGUIの使い勝手を向上させるヘルパークラス(基底クラス)
 	/// </summary>
 	public class UIView : UIBehaviour
 	{
-		public const string Version = "Version 2022/10/06  0" ;
+		public const string Version = "Version 2024/04/13 0" ;
+
 		// ソースコード
 		// https://bitbucket.org/Unity-Technologies/ui/src/2019.1/
 
@@ -102,6 +105,15 @@ namespace uGUIHelper
 		protected bool			m_IsApplyColorToChildren = false ;
 
 		/// <summary>
+		/// 親オブジェクトからの色の適用の無視
+		/// </summary>
+		public	  bool			  IgnoreParentEffectiveColor{ get{ return m_IgnoreParentEffectiveColor ; } set{ m_IgnoreParentEffectiveColor = value ; } }
+
+		[SerializeField]
+		protected bool			m_IgnoreParentEffectiveColor = false ;
+
+
+		/// <summary>
 		/// 子を含めた乗算色
 		/// </summary>
 		public	  Color			  EffectiveColor
@@ -112,14 +124,13 @@ namespace uGUIHelper
 			}
 			set
 			{
-				if( m_EffectiveColor.r != value.r || m_EffectiveColor.g != value.g || m_EffectiveColor.b != value.b || m_EffectiveColor.a != value.a )
-				{
-					m_EffectiveColor = value ;
+				// 変化の判定をしてはいけない(非アクティブ→アクティブの際に色が変わっていなくて１フレーム反映されない事がある)
 
-					if( m_IsApplyColorToChildren == true && this.GetType() != typeof( UIButton ) )
-					{
-						ApplyColorToChidren( m_EffectiveColor, true ) ;
-					}
+				m_EffectiveColor = value ;
+
+				if( m_IsApplyColorToChildren == true && this.GetType() != typeof( UIButton ) )
+				{
+					ApplyColorToChidren( m_EffectiveColor, true ) ;
 				}
 			}
 		}
@@ -198,9 +209,11 @@ namespace uGUIHelper
 		{
 			base.OnDisable() ;
 
-			m_HoverAtFirst = false ;	// 非アクティブになったら一度ホバーフラグはクリアする
+			m_RefreshChildrenColor	= true ;	// 子への影響色は再び設定が必要
 
-			m_SingleClickCheck = false ;	// スマートクリックのシングルクリックを計測していたなら無効化
+			m_HoverAtFirst			= false ;	// 非アクティブになったら一度ホバーフラグはクリアする
+
+			m_SingleClickCheck		= false ;	// スマートクリックのシングルクリックを計測していたなら無効化
 
 			if( m_ActiveAnimations != null )
 			{
@@ -253,7 +266,7 @@ namespace uGUIHelper
 
 		//-------------------------------------------------------------------------------------------
 	
-		override protected void Awake()
+		protected override void Awake()
 		{
 			base.Awake() ;
 
@@ -269,7 +282,7 @@ namespace uGUIHelper
 			//-------------------------------------------------
 
 			// オーバーライドマテリアルを設定する(プレハブの場合は Awake で毎回設定しないと、プレハブオリジナルのものが設定されてしまう)
-			Graphic graphic = GetGraphic() ;
+			var graphic = GetGraphic() ;
 
 			if( m_MaterialType != MaterialTypes.Default && m_ActiveMaterial == null )
 			{
@@ -285,6 +298,15 @@ namespace uGUIHelper
 			// 基本的なインタラクションイベントを登録する(非アクティブの場合はStartはアクティブになるまで呼ばれないためAwakeでないとマズい)
 			if( Application.isPlaying == true )
 			{
+				var pivot = Pivot ;
+				if( m_AutoPivotToCenter == true && ( pivot.x != 0.5f || pivot.y != 0.5f ) )
+				{
+					// ピボットを強制的に中心に補正する
+					SetPivot( 0.5f, 0.5f, true ) ;	
+				}
+
+				//---------------------------------
+
 				AddInteractionCallback() ;
 				AddInteractionForScrollViewCallback() ;
 			}
@@ -301,8 +323,7 @@ namespace uGUIHelper
 		// RectTransfrom を初期化する
 		protected void ResetRectTransform()
 		{
-			RectTransform rectTransform = GetRectTransform() ;
-			if( rectTransform != null )
+			if( transform is RectTransform rectTransform )
 			{
 				rectTransform.anchoredPosition3D = Vector3.zero ;
 				rectTransform.localScale = Vector3.one ;
@@ -310,7 +331,7 @@ namespace uGUIHelper
 			}
 		}
 
-		virtual protected void OnAwake(){}
+		protected virtual void OnAwake(){}
 
 		// Tween などで使用する基準情報を保存する
 		protected void SetLocalState()
@@ -337,7 +358,7 @@ namespace uGUIHelper
 			int i, l = transform.childCount ;
 			if( l >  0 )
 			{
-				GameObject[] childObjects = new GameObject[ l ] ;
+				var childObjects = new GameObject[ l ] ;
 				for( i  = 0 ; i <  l ; i ++ )
 				{
 					childObjects[ i ] = transform.GetChild( i ).gameObject ;
@@ -358,16 +379,16 @@ namespace uGUIHelper
 		}
 		
 		// 各派生クラスでの初期化処理を行う（メニューまたは AddView から生成される場合のみ実行れる）
-		virtual protected void OnBuild( string option = "" ){}
+		protected virtual void OnBuild( string option = "" ){}
 
-		override protected void Start()
+		protected override void Start()
 		{
 			base.Start() ;
 
 			OnStart() ;
 		}
 
-		virtual protected void OnStart(){}
+		protected virtual void OnStart(){}
 
 		internal void Update()
 		{
@@ -376,7 +397,7 @@ namespace uGUIHelper
 			if( Application.isPlaying == false )
 			{
 				bool tweenChecker = false ;
-				UITween[] tweens = GetComponents<UITween>() ;
+				var tweens = GetComponents<UITween>() ;
 				if( tweens != null && tweens.Length >  0 )
 				{
 					for( int i  = 0 ; i <  tweens.Length ; i++ )
@@ -421,26 +442,50 @@ namespace uGUIHelper
 #endif
 			//----------------------------------------------------------
 
-			SingleClickCheckProcess() ;
-
-			if( OnPinchAction != null || OnPinchDelegate != null || OnTouchAction != null || OnTouchDelegate != null )
+			if( Application.isPlaying == true )
 			{
-				ProcessMultiTouch() ;
-			}
+				// バックキーの処理
+				if( m_BackKeyEnabled == true )
+				{
+					if( InputAdapter.UIEventSystem.GetKeyDown( InputAdapter.KeyCodes.Escape ) == true )
+					{
+						ProcessBackKey() ;
+					}
+				}
 
-			if( OnLongPressAction != null || OnLongPressDelegate != null )
-			{
-				OnLongPressInner() ;
-			}
+				//----------------------------------------------------------
 
-			if( OnRepeatPressAction != null || OnRepeatPressDelegate != null )
-			{
-				OnRepeatPressInner( 1 ) ;
-			}
+				SingleClickCheckProcess() ;
 
-			if( m_Click == true && m_ClickCountTime != Time.frameCount )
-			{
-				m_Click  = false ;
+				if( OnHoverAction != null || OnHoverDelegate != null )
+				{
+					ProcessHover() ;
+				}
+
+				if( OnPinchAction != null || OnPinchDelegate != null || OnTouchAction != null || OnTouchDelegate != null )
+				{
+					ProcessMultiTouch() ;
+				}
+
+				if( OnRepeatPressAction != null || OnRepeatPressDelegate != null )
+				{
+					ProcessRepeatPress() ;
+				}
+
+				if( OnLongPressAction != null || OnLongPressDelegate != null )
+				{
+					ProcessLongPress() ;
+				}
+
+				if( OnWheelAction != null || OnWheelDelegate != null )
+				{
+					ProcessWheel() ;
+				}
+
+				if( m_Click == true && m_ClickCountTime != Time.frameCount )
+				{
+					m_Click  = false ;
+				}
 			}
 
 			//----------------------------------------------------------
@@ -472,25 +517,33 @@ namespace uGUIHelper
 			//----------------------------------
 
 			// 子 GameObject 群の CanvasRenderer を取得する
-			List<CanvasRenderer> targets ;
+			IEnumerable<CanvasRenderer> targets ;
 
 			if( withMyself == false )
 			{
 				// 自身を含めない
-				targets = GetComponentsInChildren<CanvasRenderer>().Where( _ => _.gameObject != gameObject ).ToList() ;
+				targets = GetComponentsInChildren<CanvasRenderer>().Where( _ => _.gameObject != gameObject ) ;
 			}
 			else
 			{
 				// 自身を含める
-				targets = GetComponentsInChildren<CanvasRenderer>().ToList() ;
+				targets = GetComponentsInChildren<CanvasRenderer>() ;
 			}
 
-			if( targets != null && targets.Count >  0 )
+			if( targets != null && targets.Any() == true )
 			{
-				targets.ForEach( _ =>
+				foreach( var target in targets )
 				{
-					_.SetColor( color ) ;
-				} ) ;
+					if( target.TryGetComponent<UIView>( out var view ) == false )
+					{
+						target.SetColor( color ) ;
+					}
+					else
+					if( view.IgnoreParentEffectiveColor == false )
+					{
+						target.SetColor( color ) ;
+					}
+				} ;
 			}
 
 			//----------------------------------
@@ -641,6 +694,12 @@ namespace uGUIHelper
 				m_RemoveToggleGroup = false ;
 			}
 
+			if( m_RemovePadAdapter == true )
+			{
+				RemovePadAdapter() ;
+				m_RemovePadAdapter = false ;
+			}
+
 			if( m_RemoveAnimator == true )
 			{
 				RemoveAnimator() ;
@@ -664,7 +723,7 @@ namespace uGUIHelper
 #endif
 
 
-		virtual protected void OnUpdate(){}
+		protected virtual void OnUpdate(){}
 
 		internal void LateUpdate()
 		{
@@ -686,12 +745,16 @@ namespace uGUIHelper
 			}
 		}
 
-		virtual protected void OnLateUpdate(){}
+		protected virtual void OnLateUpdate(){}
 
 		//------------------------------------------------------------------
 
 		[SerializeField][HideInInspector]
 		private Vector3 m_LocalPosition = Vector3.zero ;
+
+		/// <summary>
+		/// 位置(ローカルキャッシュ)
+		/// </summary>
 		public  Vector3   LocalPosition
 		{
 			get
@@ -704,6 +767,9 @@ namespace uGUIHelper
 			}
 		}
 
+		/// <summary>
+		/// 位置(ローカル)
+		/// </summary>
 		public Vector3 Position
 		{
 			get
@@ -714,24 +780,21 @@ namespace uGUIHelper
 				}
 				else
 				{
-					RectTransform rectTransform = GetRectTransform() ;
-					if( rectTransform == null )
+					if( transform is RectTransform rectTransform )
 					{
-						return Vector3.zero ;
+						return rectTransform.anchoredPosition3D ;
 					}
-					return rectTransform.anchoredPosition3D ;
+					return Vector3.zero ;
 				}
 			}
 			set
 			{
 				m_LocalPosition = value ;
 
-				RectTransform rectTransform = GetRectTransform() ;
-				if( rectTransform == null )
+				if( transform is RectTransform rectTransform )
 				{
-					return ;
+					rectTransform.anchoredPosition3D = value ;
 				}
-				rectTransform.anchoredPosition3D = value ;
 			}
 		}
 
@@ -872,173 +935,41 @@ namespace uGUIHelper
 		/// </summary>
 		public void RefreshPosition()
 		{
-			m_LocalPosition = GetRectTransform().anchoredPosition3D ;
+			if( transform is RectTransform rectTransform )
+			{
+				m_LocalPosition = rectTransform.anchoredPosition3D ;
+			}
 		}
 
 		/// <summary>
 		/// サイズ(ショートカット)
 		/// </summary>
-		virtual public Vector2 Size
+		public virtual Vector2 Size
 		{
 			get
 			{
-				RectTransform rectTransform = GetRectTransform() ;
-				if( rectTransform == null )
+				if( transform is RectTransform rectTransform )
 				{
-					return Vector2.zero ;
+					return rectTransform.rect.size ;
 				}
-				Vector2 size = rectTransform.sizeDelta ;
-
-				// Ｘのチェック
-				if( GetRectTransform().anchorMin.x != GetRectTransform().anchorMax.x )
-				{
-					// Stretch なので Stretch じゃなくなるまで親をたどる
-					List<RectTransform> hierarchyRects = new List<RectTransform>()
-					{
-						GetRectTransform()
-					} ;
-
-					Transform parentRect = GetRectTransform().parent ;
-					Canvas canvas ;
-					Vector2 canvasSize ;
-					RectTransform targetRect ;
-					float delta = 0 ;
-					for( int i  = 0 ; i <  64 ; i ++ )
-					{
-						if( parentRect != null )
-						{
-							canvas = parentRect.GetComponent<Canvas>() ;
-							if( canvas != null )
-							{
-								// キャンバスに到達した
-								canvasSize = GetCanvasSize() ;	// 正確な値を取得する
-								delta = canvasSize.x ;
-								break ;
-							}
-							else
-							{
-								targetRect = parentRect.GetComponent<RectTransform>() ;
-								if( targetRect != null )
-								{
-									if( targetRect.anchorMin.x == targetRect.anchorMax.x  )
-									{
-										// 発見
-										delta = targetRect.sizeDelta.x ;
-										break ;
-									}
-									else
-									{
-										hierarchyRects.Add( targetRect ) ;
-									}
-								}
-								parentRect = parentRect.parent ;
-							}
-						}
-						else
-						{
-							// 検索終了
-							break ;
-						}
-					}
-
-					if( delta >   0 )
-					{
-						// マージン分を引く
-						for( int i  = hierarchyRects.Count - 1 ; i >= 0 ; i -- )
-						{
-							delta *= ( hierarchyRects[ i ].anchorMax.x - hierarchyRects[ i ].anchorMin.x ) ;
-							delta += hierarchyRects[ i ].sizeDelta.x ;
-						}
-
-						size.x = delta ;
-					}
-				}
-
-				// Ｙのチェック
-				if( GetRectTransform().anchorMin.y != GetRectTransform().anchorMax.y )
-				{
-					// Stretch なので Stretch じゃなくなるまで親をたどる
-					List<RectTransform> hierarchyRects = new List<RectTransform>()
-					{
-						GetRectTransform()
-					} ;
-
-					Transform parentRect = GetRectTransform().parent ;
-					Canvas canvas ;
-					Vector2 canvasSize ;
-					RectTransform targetRect ;
-					float delta = 0 ;
-					for( int i  = 0 ; i <  64 ; i ++ )
-					{
-						if( parentRect != null )
-						{
-							canvas = parentRect.GetComponent<Canvas>() ;
-							if( canvas != null )
-							{
-								// キャンバスに到達した
-								canvasSize = GetCanvasSize() ;	// 正確な値を取得する
-								delta = canvasSize.y ;
-								break ;
-							}
-							else
-							{
-								targetRect = parentRect.GetComponent<RectTransform>() ;
-								if( targetRect != null )
-								{
-									if( targetRect.anchorMin.y == targetRect.anchorMax.y )
-									{
-										// 発見
-										delta = targetRect.sizeDelta.y ;
-										break ;
-									}
-									else
-									{
-										hierarchyRects.Add( targetRect ) ;
-									}
-								}
-								parentRect = parentRect.parent ;
-							}
-						}
-						else
-						{
-							// 検索終了
-							break ;
-						}
-					}
-
-					if( delta >   0 )
-					{
-						// マージン分を引く
-						for( int i  = hierarchyRects.Count - 1 ; i >= 0 ; i -- )
-						{
-							delta *= ( hierarchyRects[ i ].anchorMax.y - hierarchyRects[ i ].anchorMin.y ) ;
-							delta += hierarchyRects[ i ].sizeDelta.y ;
-						}
-
-						size.y = delta ;
-					}
-				}
-
-				return size ;
+				return Vector2.zero ;
 			}
 			set
 			{
-				RectTransform rectTransform = GetRectTransform() ;
-				if( rectTransform == null )
+				if( transform is RectTransform rectTransform )
 				{
-					return ;
-				}
+					var size = rectTransform.sizeDelta ;
+					if( rectTransform.anchorMin.x == rectTransform.anchorMax.x )
+					{
+						size.x = value.x ;
+					}
+					if( rectTransform.anchorMin.y == rectTransform.anchorMax.y )
+					{
+						size.y = value.y ;
+					}
 
-				Vector2 size = rectTransform.sizeDelta ;
-				if( rectTransform.anchorMin.x == rectTransform.anchorMax.x )
-				{
-					size.x = value.x ;
+					rectTransform.sizeDelta = size ;
 				}
-				if( rectTransform.anchorMin.y == rectTransform.anchorMax.y )
-				{
-					size.y = value.y ;
-				}
-				rectTransform.sizeDelta = size ;
 			}
 		}
 
@@ -1049,8 +980,8 @@ namespace uGUIHelper
 		{
 			get
 			{
-				Vector2 size = Size ;
-				Vector2 pivot = Pivot ;
+				var size	= Size ;
+				var pivot	= Pivot ;
 
 				return new Vector3( size.x * ( 0.5f - pivot.x ), size.y * ( 0.5f - pivot.y ), 0 ) ;
 			}
@@ -1063,7 +994,7 @@ namespace uGUIHelper
 		{
 			get
 			{
-				Vector2 position = PositionInCanvas ;
+				var position = PositionInCanvas ;
 
 				float w = Width ;
 				float h = Height ;
@@ -1081,38 +1012,28 @@ namespace uGUIHelper
 		{
 			get
 			{
-				// 親サイズ
-				Vector2 ps = GetCanvasSize() ;
+				// 属するキャンバスのサイズ
+				var ps = GetCanvasSize() ;
 
-//				Debug.LogWarning( "キャンバスの大きさ:" + ps ) ;
-
-				List<RectTransform> hierarchyRects = new List<RectTransform>() ;
+				var hierarchyRects = new List<RectTransform>() ;
 				int i, l ;
 
-				Transform t = transform ;
+				var t = transform ;
 				RectTransform rt ;
 
 				// まずはキャンバスを検出するまでリストに格納する
-				for( i  =  0 ; i <  64 ; i ++ )
+				while( t != null )
 				{
-					if( t != null )
+					if( t.GetComponent<Canvas>() == null )
 					{
-						if( t.GetComponent<Canvas>() == null )
+						if( t is RectTransform )
 						{
-							rt = t.GetComponent<RectTransform>() ;
-							if( rt != null )
-							{
-								hierarchyRects.Add( rt ) ;
-							}
-						}
-						else
-						{
-							break ;	// 終了
+							hierarchyRects.Add( t as RectTransform ) ;
 						}
 					}
 					else
 					{
-						break ;	// 終了
+						break ;	// 属するキャンバスが見つかったので終了
 					}
 
 					t = t.parent ;
@@ -1123,19 +1044,18 @@ namespace uGUIHelper
 					return Vector2.zero ;	// 異常
 				}
 
+				//---------------------------------
+
 				float pw = ps.x ;
 				float ph = ps.y ;
 
 				float px  = pw * 0.5f ;
 				float px0 = 0, px1 ;
-//				float px1 = pw ;
 
 				float py  = ph * 0.5f ;
 				float py0 = 0, py1 ;
-//				float py1 = ph ;
 
 				l = hierarchyRects.Count ;
-//				Debug.LogWarning( "階層の数:" + l ) ;
 				for( i  = ( l - 1 ) ; i >= 0 ; i -- )
 				{
 					rt = hierarchyRects[ i ] ;
@@ -1145,7 +1065,7 @@ namespace uGUIHelper
 					// 自身の横幅(次の親の横幅)
 					if( rt.anchorMin.x != rt.anchorMax.x )
 					{
-						px0 += ( pw * rt.anchorMin.x ) ;	// 親の最小
+						px0 += ( pw * rt.anchorMin.x ) ;		// 親の最小
 						px1  = px0 + ( pw * rt.anchorMax.x ) ;	// 親の最大
 						
 						// マージンの補正をかける
@@ -1154,15 +1074,12 @@ namespace uGUIHelper
 
 						pw = px1 - px0 ;
 
-//						Debug.Log( "親のX:" + px0 + " ～ " + px1 + " / " + pw ) ;
-
 						// 中心位置
-						px = px0 + ( pw * rt.pivot.x ) /* - ( ( rt.sizeDelta.x * rt.pivot.x ) - rt.anchoredPosition.x ) */ ;
+						px = px0 + ( pw * rt.pivot.x ) ;
 					}
 					else
 					{
 						// 中心位置
-//						Debug.Log( "親のX:" + px0 + " ～ " + px1 ) ;
 						px = px0 + ( pw * rt.anchorMin.x ) + rt.anchoredPosition.x ;
 
 						pw = rt.sizeDelta.x ;
@@ -1170,15 +1087,12 @@ namespace uGUIHelper
 
 					// 親の範囲更新
 					px0 = px - ( pw * rt.pivot.x ) ;
-//					px1 = px0 + pw ;
-
-//					Debug.Log( "x:" + px ) ;
 
 					// Y
 					// 自身の横幅(次の親の横幅)
 					if( rt.anchorMin.y != rt.anchorMax.y )
 					{
-						py0 += ( ph * rt.anchorMin.y ) ;	// 親の最小
+						py0 += ( ph * rt.anchorMin.y ) ;		// 親の最小
 						py1  = py0 + ( ph * rt.anchorMax.y ) ;	// 親の最大
 						
 						// マージンの補正をかける
@@ -1187,15 +1101,11 @@ namespace uGUIHelper
 
 						ph = py1 - py0 ;
 
-//						Debug.Log( "親のY:" + py0 + " ～ " + py1 + " / " + ph ) ;
-
 						// 中心位置
-						py = py0 + ( ph * rt.pivot.y ) /* - ( ( rt.sizeDelta.x * rt.pivot.x ) - rt.anchoredPosition.x ) */ ;
+						py = py0 + ( ph * rt.pivot.y ) ;
 					}
 					else
 					{
-//						Debug.Log( "親のY:" + py0 + " ～ " + py1 + " / " + py ) ;
-
 						// 中心位置
 						py = py0 + ( ph * rt.anchorMin.y ) + rt.anchoredPosition.y ;
 
@@ -1204,9 +1114,6 @@ namespace uGUIHelper
 
 					// 親の範囲更新
 					py0 = py - ( ph * rt.pivot.y ) ;
-//					py1 = py0 + ph ;
-
-//					Debug.Log( "y:" + py ) ;
 				}
 
 				// 画面の中心基準
@@ -1218,44 +1125,36 @@ namespace uGUIHelper
 		}
 
 		/// <summary>
-		/// キャンバス上での座標を取得する
+		/// キャンバス上での領域を取得する(画面中心が原点[0,0]・領域は左下が基準位置[x,y]となる)
 		/// </summary>
 		public Rect RectInCanvas
 		{
 			get
 			{
-				// 親サイズ
-				Vector2 ps = GetCanvasSize() ;
+				// 属するキャンバスのサイズ
+				var ps = GetCanvasSize() ;
 
 //				Debug.LogWarning( "キャンバスの大きさ:" + ps ) ;
 
-				List<RectTransform> hierarchyRects = new List<RectTransform>() ;
+				var hierarchyRects = new List<RectTransform>() ;
 				int i, l ;
 
-				Transform t = transform ;
+				var t = transform ;
 				RectTransform rt ;
 
 				// まずはキャンバスを検出するまでリストに格納する
-				for( i  =  0 ; i <  64 ; i ++ )
+				while( t != null )
 				{
-					if( t != null )
+					if( t.GetComponent<Canvas>() == null )
 					{
-						if( t.GetComponent<Canvas>() == null )
+						if( t is RectTransform )
 						{
-							rt = t.GetComponent<RectTransform>() ;
-							if( rt != null )
-							{
-								hierarchyRects.Add( rt ) ;
-							}
-						}
-						else
-						{
-							break ;	// 終了
+							hierarchyRects.Add( t as RectTransform ) ;
 						}
 					}
 					else
 					{
-						break ;	// 終了
+						break ;	// 属するキャンバスが見つかったので終了
 					}
 
 					t = t.parent ;
@@ -1266,31 +1165,28 @@ namespace uGUIHelper
 					return new Rect() ;	// 異常
 				}
 
+				//---------------------------------
+
 				float pw = ps.x ;
 				float ph = ps.y ;
 
 				float px  = pw * 0.5f ;
 				float px0 = 0, px1 ;
-//				float px1 = pw ;
 
 				float py  = ph * 0.5f ;
 				float py0 = 0, py1 ;
-//				float py1 = ph ;
 
 				l = hierarchyRects.Count ;
-//				Debug.LogWarning( "階層の数:" + l ) ;
 				for( i  = ( l - 1 ) ; i >= 0 ; i -- )
 				{
 					rt = hierarchyRects[ i ] ;
-
-//					Debug.Log( rt.name ) ;
 
 					// X
 
 					// 自身の横幅(次の親の横幅)
 					if( rt.anchorMin.x != rt.anchorMax.x )
 					{
-						px0 += ( pw * rt.anchorMin.x ) ;	// 親の最小
+						px0 += ( pw * rt.anchorMin.x ) ;		// 親の最小
 						px1 = px0 + ( pw * rt.anchorMax.x ) ;	// 親の最大
 						
 						// マージンの補正をかける
@@ -1299,15 +1195,12 @@ namespace uGUIHelper
 
 						pw = px1 - px0 ;
 
-//						Debug.Log( "親のX:" + px0 + " ～ " + px1 + " / " + pw ) ;
-
 						// 中心位置
-						px = px0 + ( pw * rt.pivot.x ) /* - ( ( rt.sizeDelta.x * rt.pivot.x ) - rt.anchoredPosition.x ) */ ;
+						px = px0 + ( pw * rt.pivot.x ) ;
 					}
 					else
 					{
 						// 中心位置
-//						Debug.Log( "親のX:" + px0 + " ～ " + px1 ) ;
 						px = px0 + ( pw * rt.anchorMin.x ) + rt.anchoredPosition.x ;
 
 						pw = rt.sizeDelta.x ;
@@ -1315,15 +1208,12 @@ namespace uGUIHelper
 
 					// 親の範囲更新
 					px0 = px - ( pw * rt.pivot.x ) ;
-//					px1 = px0 + pw ;
-
-//					Debug.Log( "x:" + px ) ;
 
 					// Y
 					// 自身の横幅(次の親の横幅)
 					if( rt.anchorMin.y != rt.anchorMax.y )
 					{
-						py0 += ( ph * rt.anchorMin.y ) ;	// 親の最小
+						py0 += ( ph * rt.anchorMin.y ) ;		// 親の最小
 						py1 = py0 + ( ph * rt.anchorMax.y ) ;	// 親の最大
 						
 						// マージンの補正をかける
@@ -1332,15 +1222,11 @@ namespace uGUIHelper
 
 						ph = py1 - py0 ;
 
-//						Debug.Log( "親のY:" + py0 + " ～ " + py1 + " / " + ph ) ;
-
 						// 中心位置
-						py = py0 + ( ph * rt.pivot.y ) /* - ( ( rt.sizeDelta.x * rt.pivot.x ) - rt.anchoredPosition.x ) */ ;
+						py = py0 + ( ph * rt.pivot.y ) ;
 					}
 					else
 					{
-//						Debug.Log( "親のY:" + py0 + " ～ " + py1 + " / " + py ) ;
-
 						// 中心位置
 						py = py0 + ( ph * rt.anchorMin.y ) + rt.anchoredPosition.y ;
 
@@ -1349,9 +1235,6 @@ namespace uGUIHelper
 
 					// 親の範囲更新
 					py0 = py - ( ph * rt.pivot.y ) ;
-//					py1 = py0 + ph ;
-
-//					Debug.Log( "y:" + py ) ;
 				}
 				
 				// 画面の中心基準
@@ -1365,49 +1248,38 @@ namespace uGUIHelper
 				py -= ( ph * Pivot.y ) ;
 
 				return new Rect( px, py, pw, ph ) ;
-//				return new Rect( new Vector2( px, py ), new Vector2( pw, ph ) ) ;
 			}
 		}
 
 		/// <summary>
-		/// キャンバス上での領域を取得する
+		/// キャンバス上でのビューポートを取得する(画面中心が原点[0,0]・値は -1 ～ +1 の範囲)
 		/// </summary>
 		public Rect ViewInCanvas
 		{
 			get
 			{
-				// 親サイズ
-				Vector2 ps = GetCanvasSize() ;
+				// 属するキャンバスのサイズ
+				var ps = GetCanvasSize() ;
 
-//				Debug.LogWarning( "キャンバスの大きさ:" + ps ) ;
-
-				List<RectTransform> hierarchyRects = new List<RectTransform>() ;
+				var hierarchyRects = new List<RectTransform>() ;
 				int i, l ;
 
-				Transform t = transform ;
+				var t = transform ;
 				RectTransform rt ;
 
 				// まずはキャンバスを検出するまでリストに格納する
-				for( i  =  0 ; i <  64 ; i ++ )
+				while( t != null )
 				{
-					if( t != null )
+					if( t.GetComponent<Canvas>() == null )
 					{
-						if( t.GetComponent<Canvas>() == null )
+						if( t is RectTransform )
 						{
-							rt = t.GetComponent<RectTransform>() ;
-							if( rt != null )
-							{
-								hierarchyRects.Add( rt ) ;
-							}
-						}
-						else
-						{
-							break ;	// 終了
+							hierarchyRects.Add( t as RectTransform ) ;
 						}
 					}
 					else
 					{
-						break ;	// 終了
+						break ;	// 属するキャンバスが見つかったので終了
 					}
 
 					t = t.parent ;
@@ -1418,32 +1290,28 @@ namespace uGUIHelper
 					return new Rect() ;	// 異常
 				}
 
+				//---------------------------------
+
 				float pw = ps.x ;
 				float ph = ps.y ;
 
 				float px  = pw * 0.5f ;
 				float px0 = 0, px1 ;
-//				float px1 = pw ;
 
 				float py  = ph * 0.5f ;
 				float py0 = 0, py1 ;
-//				float py1 = ph ;
-
 
 				l = hierarchyRects.Count ;
-//				Debug.LogWarning( "階層の数:" + l ) ;
 				for( i  = ( l - 1 ) ; i >= 0 ; i -- )
 				{
 					rt = hierarchyRects[ i ] ;
-
-//					Debug.Log( rt.name ) ;
 
 					// X
 
 					// 自身の横幅(次の親の横幅)
 					if( rt.anchorMin.x != rt.anchorMax.x )
 					{
-						px0 += ( pw * rt.anchorMin.x ) ;	// 親の最小
+						px0 += ( pw * rt.anchorMin.x ) ;		// 親の最小
 						px1 = px0 + ( pw * rt.anchorMax.x ) ;	// 親の最大
 						
 						// マージンの補正をかける
@@ -1452,15 +1320,12 @@ namespace uGUIHelper
 
 						pw = px1 - px0 ;
 
-//						Debug.Log( "親のX:" + px0 + " ～ " + px1 + " / " + pw ) ;
-
 						// 中心位置
-						px = px0 + ( pw * rt.pivot.x ) /* - ( ( rt.sizeDelta.x * rt.pivot.x ) - rt.anchoredPosition.x ) */ ;
+						px = px0 + ( pw * rt.pivot.x ) ;
 					}
 					else
 					{
 						// 中心位置
-//						Debug.Log( "親のX:" + px0 + " ～ " + px1 ) ;
 						px = px0 + ( pw * rt.anchorMin.x ) + rt.anchoredPosition.x ;
 
 						pw = rt.sizeDelta.x ;
@@ -1468,15 +1333,12 @@ namespace uGUIHelper
 
 					// 親の範囲更新
 					px0 = px - ( pw * rt.pivot.x ) ;
-//					px1 = px0 + pw ;
-
-//					Debug.Log( "x:" + px ) ;
 
 					// Y
 					// 自身の横幅(次の親の横幅)
 					if( rt.anchorMin.y != rt.anchorMax.y )
 					{
-						py0 += ( ph * rt.anchorMin.y ) ;	// 親の最小
+						py0 += ( ph * rt.anchorMin.y ) ;		// 親の最小
 						py1 = py0 + ( ph * rt.anchorMax.y ) ;	// 親の最大
 						
 						// マージンの補正をかける
@@ -1485,15 +1347,11 @@ namespace uGUIHelper
 
 						ph = py1 - py0 ;
 
-//						Debug.Log( "親のY:" + py0 + " ～ " + py1 + " / " + ph ) ;
-
 						// 中心位置
-						py = py0 + ( ph * rt.pivot.y ) /* - ( ( rt.sizeDelta.x * rt.pivot.x ) - rt.anchoredPosition.x ) */ ;
+						py = py0 + ( ph * rt.pivot.y ) ;
 					}
 					else
 					{
-//						Debug.Log( "親のY:" + py0 + " ～ " + py1 + " / " + py ) ;
-
 						// 中心位置
 						py = py0 + ( ph * rt.anchorMin.y ) + rt.anchoredPosition.y ;
 
@@ -1502,9 +1360,6 @@ namespace uGUIHelper
 
 					// 親の範囲更新
 					py0 = py - ( ph * rt.pivot.y ) ;
-//					py1 = py0 + ph ;
-
-//					Debug.Log( "y:" + py ) ;
 				}
 				
 				// 画面の中心基準
@@ -1525,7 +1380,6 @@ namespace uGUIHelper
 				float vh = ( ph / ps.y ) * 2.0f ;
 
 				return new Rect( vx, vy, vw, vh ) ;
-//				return new Rect( new Vector2( vx, vy ), new Vector2( vw, vh ) ) ;
 			}
 		}
 
@@ -1540,32 +1394,24 @@ namespace uGUIHelper
 
 			UIView screenView = null ;
 
-			List<RectTransform> hierarchyRects = new List<RectTransform>() ;
+			var hierarchyRects = new List<RectTransform>() ;
 
-			Transform t = this.transform ;
+			var t = transform ;
 			RectTransform rt ;
 
 			// まずはスクリーンを検出するまでリストに格納する
-			for( i  =  0 ; i <  64 ; i ++ )
+			while( t != null )
 			{
-				if( t != null )
+				if( t.GetComponent<T>() == null )
 				{
-					if( t.GetComponent<T>() == null )
+					if( t is RectTransform )
 					{
-						rt = t.GetComponent<RectTransform>() ;
-						if( rt != null )
-						{
-							hierarchyRects.Add( rt ) ;
-						}
-					}
-					else
-					{
-						screenView = t.GetComponent<UIView>() ;
-						break ;	// 終了
+						hierarchyRects.Add( t as RectTransform ) ;
 					}
 				}
 				else
 				{
+					screenView = t.GetComponent<UIView>() ;
 					break ;	// 終了
 				}
 
@@ -1574,31 +1420,33 @@ namespace uGUIHelper
 
 			if( screenView == null )
 			{
-				// 異常
-				Debug.LogWarning( "Not found parent : Component = <" + typeof( T ).ToString() + "> : Path = " + this.Path ) ;
-
-				// ScreenSizeFitter の付いたスクリーンが見つからなかったのでキャンバス上の座標を返す
-				return this.CenterPositionInCanvas ;
+#if UNITY_EDITOR
+				var isPrefabMode = PrefabStageUtility.GetCurrentPrefabStage() != null ;
+				if( isPrefabMode == false )
+				{
+					// 異常
+					Debug.LogWarning( "Not found parent : Component = <" + typeof( T ).ToString() + "> : Path = " + this.Path ) ;
+				}
+#endif
+				// 指定のコンポーネントの付いたビューが見つからなかったのでキャンバス上の座標を返す
+				return CenterPositionInCanvas ;
 			}
 
 			//------------------------------------------------------------------------------------------
 
 			// 親サイズ
-			Vector2 ps = screenView.Size ;
+			var ps = screenView.Size ;
 
 			float pw = ps.x ;
 			float ph = ps.y ;
 
 			float px  = pw * 0.5f ;
 			float px0 = 0, px1 ;
-//				float px1 = pw ;
 
 			float py  = ph * 0.5f ;
 			float py0 = 0, py1 ;
-//				float py1 = ph ;
 
 			l = hierarchyRects.Count ;
-//				Debug.LogWarning( "階層の数:" + l ) ;
 			for( i  = ( l - 1 ) ; i >= 0 ; i -- )
 			{
 				rt = hierarchyRects[ i ] ;
@@ -1608,7 +1456,7 @@ namespace uGUIHelper
 				// 自身の横幅(次の親の横幅)
 				if( rt.anchorMin.x != rt.anchorMax.x )
 				{
-					px0 += ( pw * rt.anchorMin.x ) ;	// 親の最小
+					px0 += ( pw * rt.anchorMin.x ) ;		// 親の最小
 					px1  = px0 + ( pw * rt.anchorMax.x ) ;	// 親の最大
 						
 					// マージンの補正をかける
@@ -1617,15 +1465,12 @@ namespace uGUIHelper
 
 					pw = px1 - px0 ;
 
-//						Debug.Log( "親のX:" + px0 + " ～ " + px1 + " / " + pw ) ;
-
 					// 中心位置
-					px = px0 + ( pw * rt.pivot.x ) /* - ( ( rt.sizeDelta.x * rt.pivot.x ) - rt.anchoredPosition.x ) */ ;
+					px = px0 + ( pw * rt.pivot.x ) ;
 				}
 				else
 				{
 					// 中心位置
-//						Debug.Log( "親のX:" + px0 + " ～ " + px1 ) ;
 					px = px0 + ( pw * rt.anchorMin.x ) + rt.anchoredPosition.x ;
 
 					pw = rt.sizeDelta.x ;
@@ -1633,15 +1478,12 @@ namespace uGUIHelper
 
 				// 親の範囲更新
 				px0 = px - ( pw * rt.pivot.x ) ;
-//					px1 = px0 + pw ;
-
-//					Debug.Log( "x:" + px ) ;
 
 				// Y
 				// 自身の横幅(次の親の横幅)
 				if( rt.anchorMin.y != rt.anchorMax.y )
 				{
-					py0 += ( ph * rt.anchorMin.y ) ;	// 親の最小
+					py0 += ( ph * rt.anchorMin.y ) ;		// 親の最小
 					py1  = py0 + ( ph * rt.anchorMax.y ) ;	// 親の最大
 						
 					// マージンの補正をかける
@@ -1650,15 +1492,11 @@ namespace uGUIHelper
 
 					ph = py1 - py0 ;
 
-//						Debug.Log( "親のY:" + py0 + " ～ " + py1 + " / " + ph ) ;
-
 					// 中心位置
-					py = py0 + ( ph * rt.pivot.y ) /* - ( ( rt.sizeDelta.x * rt.pivot.x ) - rt.anchoredPosition.x ) */ ;
+					py = py0 + ( ph * rt.pivot.y ) ;
 				}
 				else
 				{
-//						Debug.Log( "親のY:" + py0 + " ～ " + py1 + " / " + py ) ;
-
 					// 中心位置
 					py = py0 + ( ph * rt.anchorMin.y ) + rt.anchoredPosition.y ;
 
@@ -1667,23 +1505,20 @@ namespace uGUIHelper
 
 				// 親の範囲更新
 				py0 = py - ( ph * rt.pivot.y ) ;
-//					py1 = py0 + ph ;
-
-//					Debug.Log( "y:" + py ) ;
 			}
 
 			// 画面の中心基準
 			px -= ( ps.x * 0.5f ) ;
 			py -= ( ps.y * 0.5f ) ;
 
-			Vector2 position = new Vector2( px, py ) ;
+			var position = new Vector2( px, py ) ;
 
 			//----------------------------------------------------------
 
 			// 中心位置に補正する
-			Vector2 pivot = this.Pivot ;
-			float w = this.Width ;
-			float h = this.Height ;
+			var pivot = Pivot ;
+			float w = Width ;
+			float h = Height ;
 
 			position.x += ( ( 0.5f - pivot.x ) * w ) ;
 			position.y += ( ( 0.5f - pivot.y ) * h ) ;
@@ -1721,8 +1556,7 @@ namespace uGUIHelper
 			}
 			set
 			{
-				RectTransform rectTransform = GetRectTransform() ;
-				if( rectTransform != null )
+				if( transform is RectTransform rectTransform )
 				{
 					SetSize( value, rectTransform.sizeDelta.y ) ;
 				}
@@ -1740,8 +1574,7 @@ namespace uGUIHelper
 			}
 			set
 			{
-				RectTransform rectTransform = GetRectTransform() ;
-				if( rectTransform != null )
+				if( transform is RectTransform rectTransform )
 				{
 					SetSize( rectTransform.sizeDelta.x, value ) ;
 				}
@@ -1757,19 +1590,19 @@ namespace uGUIHelper
 			{
 				if( this is UIText )
 				{
-					UIText text = this as UIText ;
+					var text = this as UIText ;
 					return text.TextSize.x ;
 				}
 				else
 				if( this is UIRichText )
 				{
-					UIRichText text = this as UIRichText ;
+					var text = this as UIRichText ;
 					return text.TextSize.x ;
 				}
 				else
 				if( this is UITextMesh )
 				{
-					UITextMesh text = this as UITextMesh ;
+					var text = this as UITextMesh ;
 					return text.TextSize.x ;
 				}
 				return 0 ;	
@@ -1785,19 +1618,19 @@ namespace uGUIHelper
 			{
 				if( this is UIText )
 				{
-					UIText text = this as UIText ;
+					var text = this as UIText ;
 					return text.TextSize.y ;
 				}
 				else
 				if( this is UIRichText )
 				{
-					UIRichText text = this as UIRichText ;
+					var text = this as UIRichText ;
 					return text.TextSize.y ;
 				}
 				else
 				if( this is UITextMesh )
 				{
-					UITextMesh text = this as UITextMesh ;
+					var text = this as UITextMesh ;
 					return text.TextSize.y ;
 				}
 				return 0 ;	
@@ -1811,21 +1644,18 @@ namespace uGUIHelper
 		{
 			get
 			{
-				RectTransform rectTransform = GetRectTransform() ;
-				if( rectTransform == null )
+				if( transform is RectTransform rectTransform )
 				{
-					return Vector2.zero ;
+					return rectTransform.anchorMin ;
 				}
-				return rectTransform.anchorMin ;
+				return Vector2.zero ;
 			}
 			set
 			{
-				RectTransform rectTransform = GetRectTransform() ;
-				if( rectTransform == null )
+				if( transform is RectTransform rectTransform )
 				{
-					return ;
+					rectTransform.anchorMin = value ;
 				}
-				rectTransform.anchorMin = value ;
 			}
 		}
 		
@@ -1875,21 +1705,18 @@ namespace uGUIHelper
 		{
 			get
 			{
-				RectTransform rectTransform = GetRectTransform() ;
-				if( rectTransform == null )
+				if( transform is RectTransform rectTransform )
 				{
-					return Vector2.zero ;
+					return rectTransform.anchorMax ;
 				}
-				return rectTransform.anchorMax ;
+				return Vector2.zero ;
 			}
 			set
 			{
-				RectTransform rectTransform = GetRectTransform() ;
-				if( rectTransform == null )
+				if( transform is RectTransform rectTransform )
 				{
-					return ;
+					rectTransform.anchorMax = value ;
 				}
-				rectTransform.anchorMax = value ;
 			}
 		}
 		
@@ -1937,8 +1764,102 @@ namespace uGUIHelper
 		/// </summary>
 		/// <param name="anchorMin"></param>
 		/// <param name="anchorMax"></param>
-		public void SetAnchorMinAndMax( Vector2 anchorMin, Vector2 anchorMax )
+		public void SetAnchorMinAndMax( Vector2 anchorMin, Vector2 anchorMax, bool correct = false )
 		{
+			if( correct == true && transform.parent != null )
+			{
+				// 表示位置は変化させない
+
+				if( transform.parent.TryGetComponent<UIView>( out var parentView ) == true )
+				{
+					float w = parentView.Width ;
+
+					float ax0 = 0 ;
+					if( AnchorMin.x == 0.0f && AnchorMax.x == 0.0f )
+					{
+						// 変化前のアンカーは左
+						ax0 = 0.0f ;
+					}
+					else
+					if( AnchorMin.x == 0.5f && AnchorMax.x == 0.5f )
+					{
+						// 変化前のアンカーは中
+						ax0 = 0.5f ;
+					}
+					else
+					if( AnchorMin.x == 1.0f && AnchorMax.x == 1.0f )
+					{
+						// 変化前のアンカーは右
+						ax0 = 1.0f ;
+					}
+
+					float ax1 = 0 ;
+					if( anchorMin.x == 0.0f && anchorMax.x == 0.0f )
+					{
+						// 変化後のアンカーは左
+						ax1 = 0.0f ;
+					}
+					else
+					if( anchorMin.x == 0.5f && anchorMax.x == 0.5f )
+					{
+						// 変化後のアンカーは中
+						ax1 = 0.5f ;
+					}
+					else
+					if( anchorMin.x == 1.0f && anchorMax.x == 1.0f )
+					{
+						// 変化後のアンカーは右
+						ax1 = 1.0f ;
+					}
+
+					Rx -= ( ( ax1 - ax0 ) * w ) ;
+
+					//---
+
+					float h = parentView.Height ;
+
+					float ay0 = 0 ;
+					if( AnchorMin.y == 0.0f && AnchorMax.y == 0.0f )
+					{
+						// 変化前のアンカーは左
+						ay0 = 0.0f ;
+					}
+					else
+					if( AnchorMin.y == 0.5f && AnchorMax.y == 0.5f )
+					{
+						// 変化前のアンカーは中
+						ay0 = 0.5f ;
+					}
+					else
+					if( AnchorMin.y == 1.0f && AnchorMax.y == 1.0f )
+					{
+						// 変化前のアンカーは右
+						ay0 = 1.0f ;
+					}
+
+					float ay1 = 0 ;
+					if( anchorMin.y == 0.0f && anchorMax.y == 0.0f )
+					{
+						// 変化後のアンカーは左
+						ay1 = 0.0f ;
+					}
+					else
+					if( anchorMin.y == 0.5f && anchorMax.y == 0.5f )
+					{
+						// 変化後のアンカーは中
+						ay1 = 0.5f ;
+					}
+					else
+					if( anchorMin.y == 1.0f && anchorMax.y == 1.0f )
+					{
+						// 変化後のアンカーは右
+						ay1 = 1.0f ;
+					}
+
+					Ry -= ( ( ay1 - ay0 ) * h ) ;
+				}
+			}
+
 			AnchorMin = anchorMin ;
 			AnchorMax = anchorMax ;
 		}
@@ -1963,21 +1884,18 @@ namespace uGUIHelper
 		{
 			get
 			{
-				RectTransform rectTransform = GetRectTransform() ;
-				if( rectTransform == null )
+				if( transform is RectTransform rectTransform )
 				{
-					return 0 ;
+					return rectTransform.anchorMin.x ;
 				}
-				return rectTransform.anchorMin.x ;
+				return 0 ;
 			}
 			set
 			{
-				RectTransform rectTransform = GetRectTransform() ;
-				if( rectTransform == null )
+				if( transform is RectTransform rectTransform )
 				{
-					return ;
+					rectTransform.anchorMin = new Vector2( value, rectTransform.anchorMin.y ) ;
 				}
-				rectTransform.anchorMin = new Vector2( value, rectTransform.anchorMin.y ) ;
 			}
 		}
 
@@ -1988,21 +1906,18 @@ namespace uGUIHelper
 		{
 			get
 			{
-				RectTransform rectTransform = GetRectTransform() ;
-				if( rectTransform == null )
+				if( transform is RectTransform rectTransform )
 				{
-					return 0 ;
+					return rectTransform.anchorMin.y ;
 				}
-				return rectTransform.anchorMin.y ;
+				return 0 ;
 			}
 			set
 			{
-				RectTransform rectTransform = GetRectTransform() ;
-				if( rectTransform == null )
+				if( transform is RectTransform rectTransform )
 				{
-					return ;
+					rectTransform.anchorMin = new Vector2( rectTransform.anchorMin.x, value ) ;
 				}
-				rectTransform.anchorMin = new Vector2( rectTransform.anchorMin.x, value ) ;
 			}
 		}
 
@@ -2013,21 +1928,18 @@ namespace uGUIHelper
 		{
 			get
 			{
-				RectTransform rectTransform = GetRectTransform() ;
-				if( rectTransform == null )
+				if( transform is RectTransform rectTransform )
 				{
-					return 0 ;
+					return rectTransform.anchorMax.x ;
 				}
-				return rectTransform.anchorMax.x ;
+				return 0 ;
 			}
 			set
 			{
-				RectTransform rectTransform = GetRectTransform() ;
-				if( rectTransform == null )
+				if( transform is RectTransform rectTransform )
 				{
-					return ;
+					rectTransform.anchorMax = new Vector2( value, rectTransform.anchorMax.y ) ;
 				}
-				rectTransform.anchorMax = new Vector2( value, rectTransform.anchorMax.y ) ;
 			}
 		}
 
@@ -2038,21 +1950,18 @@ namespace uGUIHelper
 		{
 			get
 			{
-				RectTransform rectTransform = GetRectTransform() ;
-				if( rectTransform == null )
+				if( transform is RectTransform rectTransform )
 				{
-					return 0 ;
+					return rectTransform.anchorMax.y ;
 				}
-				return rectTransform.anchorMax.y ;
+				return 0 ;
 			}
 			set
 			{
-				RectTransform rectTransform = GetRectTransform() ;
-				if( rectTransform == null )
+				if( transform is RectTransform rectTransform )
 				{
-					return ;
+					rectTransform.anchorMax = new Vector2( rectTransform.anchorMax.x, value ) ;
 				}
-				rectTransform.anchorMax = new Vector2( rectTransform.anchorMax.x, value ) ;
 			}
 		}
 
@@ -2083,8 +1992,8 @@ namespace uGUIHelper
 		/// <param name="maxX"></param>
 		public void SetAnchorX( float minX, float maxX )
 		{
-			Vector2 anchorMin = AnchorMin ;
-			Vector2 anchorMax = AnchorMax ;
+			var anchorMin = AnchorMin ;
+			var anchorMax = AnchorMax ;
 
 			anchorMin.x = minX ;
 			anchorMax.x = maxX ;
@@ -2109,8 +2018,8 @@ namespace uGUIHelper
 		/// <param name="maxY"></param>
 		public void SetAnchorY( float minY, float maxY )
 		{
-			Vector2 anchorMin = AnchorMin ;
-			Vector2 anchorMax = AnchorMax ;
+			var anchorMin = AnchorMin ;
+			var anchorMax = AnchorMax ;
 
 			anchorMin.y = minY ;
 			anchorMax.y = maxY ;
@@ -2258,7 +2167,7 @@ namespace uGUIHelper
 		/// <returns></returns>
 		public RectOffset GetMargin()
 		{
-			RectOffset margin = new RectOffset() ;
+			var margin = new RectOffset() ;
 
 			GetMargin( out float left, out float right, out float top, out float bottom ) ;
 
@@ -2285,8 +2194,7 @@ namespace uGUIHelper
 			top		= 0 ;
 			bottom	= 0 ;
 
-			RectTransform rectTransform = GetRectTransform() ;
-			if( rectTransform != null )
+			if( transform is RectTransform rectTransform )
 			{
 				if( rectTransform.anchorMin.x != rectTransform.anchorMax.x )
 				{
@@ -2322,16 +2230,18 @@ namespace uGUIHelper
 			left	= 0 ;
 			right	= 0 ;
 
-			RectTransform rectTransform = GetRectTransform() ;
-			if( rectTransform != null && rectTransform.anchorMin.x != rectTransform.anchorMax.x )
+			if( transform is RectTransform rectTransform )
 			{
-				// 横方向はマージン設定が可能な状態
-				float px = Pivot.x ;
-				float x = rectTransform.anchoredPosition3D.x ;
-				float w = rectTransform.sizeDelta.x ;
+				if( rectTransform.anchorMin.x != rectTransform.anchorMax.x )
+				{
+					// 横方向はマージン設定が可能な状態
+					float px = Pivot.x ;
+					float x = rectTransform.anchoredPosition3D.x ;
+					float w = rectTransform.sizeDelta.x ;
 
-				right		= - x - ( w * ( 1 - px ) ) ;
-				left		=   x - ( w *       px )   ;
+					right		= - x - ( w * ( 1 - px ) ) ;
+					left		=   x - ( w *       px )   ;
+				}
 			}
 		}
 
@@ -2345,16 +2255,18 @@ namespace uGUIHelper
 			top		= 0 ;
 			bottom	= 0 ;
 
-			RectTransform rectTransform = GetRectTransform() ;
-			if( rectTransform != null && rectTransform.anchorMin.y != rectTransform.anchorMax.y )
+			if( transform is RectTransform rectTransform )
 			{
-				// 縦方向はマージン設定が可能な状態(座標系が Top=Right Bottom=Left なのに注意)
-				float py = Pivot.y ;
-				float y = rectTransform.anchoredPosition3D.y ;
-				float h = rectTransform.sizeDelta.y ;
+				if( rectTransform.anchorMin.y != rectTransform.anchorMax.y )
+				{
+					// 縦方向はマージン設定が可能な状態(座標系が Top=Right Bottom=Left なのに注意)
+					float py = Pivot.y ;
+					float y = rectTransform.anchoredPosition3D.y ;
+					float h = rectTransform.sizeDelta.y ;
 
-				top			= - y - ( h * ( 1 - py ) ) ;
-				bottom		=   y - ( h *       py )   ;
+					top			= - y - ( h * ( 1 - py ) ) ;
+					bottom		=   y - ( h *       py )   ;
+				}
 			}
 		}
 
@@ -2381,8 +2293,7 @@ namespace uGUIHelper
 		/// <param name="bottom"></param>
 		public void SetMargin( float left, float right, float top, float bottom )
 		{
-			RectTransform rectTransform = GetRectTransform() ;
-			if( rectTransform != null )
+			if( transform is RectTransform rectTransform )
 			{
 				float x, w ;
 				float px = Pivot.x ;
@@ -2428,18 +2339,20 @@ namespace uGUIHelper
 		/// <param name="right"></param>
 		public void SetMarginX( float left, float right )
 		{
-			RectTransform rectTransform = GetRectTransform() ;
-			if( rectTransform != null && rectTransform.anchorMin.x != rectTransform.anchorMax.x )
+			if( transform is RectTransform rectTransform )
 			{
-				// 横方向はマージン設定が可能な状態
-				float px = Pivot.x ;
-				float x = ( left * ( 1.0f - px ) ) - ( right * px ) ;
-				float w = - left - right ;
+				if( rectTransform.anchorMin.x != rectTransform.anchorMax.x )
+				{
+					// 横方向はマージン設定が可能な状態
+					float px = Pivot.x ;
+					float x = ( left * ( 1.0f - px ) ) - ( right * px ) ;
+					float w = - left - right ;
 
-				rectTransform.anchoredPosition3D = new Vector3( x, rectTransform.anchoredPosition3D.y, rectTransform.anchoredPosition3D.z ) ;
-				rectTransform.sizeDelta = new Vector2( w, rectTransform.sizeDelta.y ) ;
+					rectTransform.anchoredPosition3D = new Vector3( x, rectTransform.anchoredPosition3D.y, rectTransform.anchoredPosition3D.z ) ;
+					rectTransform.sizeDelta = new Vector2( w, rectTransform.sizeDelta.y ) ;
 
-				m_LocalPosition = rectTransform.anchoredPosition3D ;
+					m_LocalPosition = rectTransform.anchoredPosition3D ;
+				}
 			}
 		}
 		
@@ -2450,18 +2363,20 @@ namespace uGUIHelper
 		/// <param name="bottom"></param>
 		public void SetMarginY( float top, float bottom )
 		{
-			RectTransform rectTransform = GetRectTransform() ;
-			if( rectTransform != null && rectTransform.anchorMin.y != rectTransform.anchorMax.y )
+			if( transform is RectTransform rectTransform )
 			{
-				// 縦方向はマージン設定が可能な状態(座標系が Top=Right Bottom=Left なのに注意)
-				float py = Pivot.y ;
-				float y = ( ( bottom * ( 1.0f - py ) ) - ( top * py ) ) ;
-				float h = - bottom - top ;
+				if( rectTransform.anchorMin.y != rectTransform.anchorMax.y )
+				{
+					// 縦方向はマージン設定が可能な状態(座標系が Top=Right Bottom=Left なのに注意)
+					float py = Pivot.y ;
+					float y = ( ( bottom * ( 1.0f - py ) ) - ( top * py ) ) ;
+					float h = - bottom - top ;
 
-				rectTransform.anchoredPosition3D = new Vector3( rectTransform.anchoredPosition3D.x, y, rectTransform.anchoredPosition3D.z ) ;
-				rectTransform.sizeDelta = new Vector2( rectTransform.sizeDelta.x, h ) ;
+					rectTransform.anchoredPosition3D = new Vector3( rectTransform.anchoredPosition3D.x, y, rectTransform.anchoredPosition3D.z ) ;
+					rectTransform.sizeDelta = new Vector2( rectTransform.sizeDelta.x, h ) ;
 
-				m_LocalPosition = rectTransform.anchoredPosition3D ;
+					m_LocalPosition = rectTransform.anchoredPosition3D ;
+				}
 			}
 		}
 	
@@ -2472,21 +2387,18 @@ namespace uGUIHelper
 		{
 			get
 			{
-				RectTransform rectTransform = GetRectTransform() ;
-				if( rectTransform == null )
+				if( transform is RectTransform rectTransform )
 				{
-					return new Vector2( 0.5f, 0.5f ) ;
+					return rectTransform.pivot ;
 				}
-				return rectTransform.pivot ;
+				return new Vector2( 0.5f, 0.5f ) ;
 			}
 			set
 			{
-				RectTransform rectTransform = GetRectTransform() ;
-				if( rectTransform == null )
+				if( transform is RectTransform rectTransform )
 				{
-					return ;
+					rectTransform.pivot = value ;
 				}
-				rectTransform.pivot = value ;
 			}
 		}
 		
@@ -2497,26 +2409,47 @@ namespace uGUIHelper
 		/// <param name="y"></param>
 		public void SetPivot( float x, float y, bool correct = false )
 		{
+			if( transform is not RectTransform )
+			{
+				return ;
+			}
+
+			var rt = transform as RectTransform ;
+
+			//----------------------------------
+
+			var localPosition = transform.localPosition ;
+			var size = rt.rect.size ;
+
+			//--------------
+
+			var pivotOld = rt.pivot ;
+			var pivotNew = rt.pivot ;
+
+			pivotNew.x = x ;
+			pivotNew.y = y ;
+
+			rt.pivot = pivotNew ;
+
 			if( correct == true )
 			{
 				// 表示位置は変化させない
 
-				Vector2 pivot = Pivot ;
-				
-				float w = this.Width ;
-				float dx0 = w * pivot.x ;
-				float dx1 = w * x ;
+				//---------------------------------
 
-				this.Rx += ( dx1 - dx0 ) ;
+				// X
+				localPosition.x += ( x - pivotOld.x ) * size.x ;
 
-				float h = this.Height ;
-				float dy0 = h * pivot.y ;
-				float dy1 = h * y ;
+				// Y
+				localPosition.y += ( y - pivotOld.y ) * size.y ;
 
-				this.Ry += ( dy1 - dy0 ) ;
+				// 表示位置をピボット変更前と同じ位置に補正する
+				transform.localPosition = localPosition ;
 			}
 
-			Pivot = new Vector2( x, y ) ;
+			//----------------------------------
+
+			m_LocalPosition = rt.anchoredPosition3D ;
 		}
 		
 		/// <summary>
@@ -2620,6 +2553,13 @@ namespace uGUIHelper
 		/// </summary>
 		public void SetPivotToCenter( bool correct			= false ){ SetPivot( 0.5f, 0.5f, correct ) ; }
 
+		/// <summary>
+		/// ピボットを自動的に実行時に中心にする
+		/// </summary>
+		public bool AutoPivotToCenter{ get{ return m_AutoPivotToCenter ; } set{ m_AutoPivotToCenter = value ; } }
+		[SerializeField][Tooltip( "ランタイム実行時に\nピボットを強制的に中心(0.5,0.5)に変更します" )]
+		protected bool m_AutoPivotToCenter = false ;
+
 		//-------------------------------------------------------------------------------------------
 
 		[SerializeField][HideInInspector]
@@ -2667,24 +2607,21 @@ namespace uGUIHelper
 				}
 				else
 				{
-					RectTransform rectTransform = GetRectTransform() ;
-					if( rectTransform == null )
+					if( transform is RectTransform rectTransform )
 					{
-						return Vector3.zero ;
+						return rectTransform.localEulerAngles ;
 					}
-					return rectTransform.localEulerAngles ;
+					return Vector3.zero ;
 				}
 			}
 			set
 			{
 				m_LocalRotation = value ;
 
-				RectTransform rectTransform = GetRectTransform() ;
-				if( rectTransform == null )
+				if( transform is RectTransform rectTransform )
 				{
-					return ;
+					rectTransform.localEulerAngles = value ;
 				}
-				rectTransform.localEulerAngles = value ;
 			}
 		}
 
@@ -2759,24 +2696,21 @@ namespace uGUIHelper
 				}
 				else
 				{
-					RectTransform rectTransform = GetRectTransform() ;
-					if( rectTransform == null )
+					if( transform is RectTransform rectTransform )
 					{
-						return Vector3.zero ;
+						return rectTransform.localScale ;
 					}
-					return rectTransform.localScale ;
+					return Vector3.zero ;
 				}
 			}
 			set
 			{
 				m_LocalScale = value ;
 
-				RectTransform rectTransform = GetRectTransform() ;
-				if( rectTransform == null )
+				if( transform is RectTransform rectTransform )
 				{
-					return ;
+					rectTransform.localScale = value ;
 				}
-				rectTransform.localScale = value ;
 			}
 		}
 		
@@ -2832,7 +2766,10 @@ namespace uGUIHelper
 		/// </summary>
 		public void RefreshScale()
 		{
-			m_LocalScale = GetRectTransform().localScale ;
+			if( transform is RectTransform rectTransform )
+			{
+				m_LocalScale = rectTransform.localScale ;
+			}
 		}
 
 		//-----------------------------------
@@ -2908,12 +2845,11 @@ namespace uGUIHelper
 		/// <summary>
 		/// レイキャストターゲット(ショートカット)
 		/// </summary>
-		virtual public bool RaycastTarget
+		public virtual bool RaycastTarget
 		{
 			get
 			{
-				Graphic g = GetComponent<Graphic>() ;
-				if( g == null )
+				if( TryGetComponent<Graphic>( out var g ) == false )
 				{
 					return false ;
 				}
@@ -2922,8 +2858,7 @@ namespace uGUIHelper
 			}
 			set
 			{
-				Graphic g = GetComponent<Graphic>() ;
-				if( g == null )
+				if( TryGetComponent<Graphic>( out var g ) == false )
 				{
 					return  ;
 				}
@@ -2966,7 +2901,7 @@ namespace uGUIHelper
 				{
 					m_MaterialType  = value ;
 
-					Graphic graphic = GetGraphic() ;
+					var graphic = GetGraphic() ;
 	
 					if( graphic != null )
 					{
@@ -3119,7 +3054,7 @@ namespace uGUIHelper
 		// セピアの反映
 		private bool ProcessSepia()
 		{
-			Graphic graphic = GetGraphic() ;
+			var graphic = GetGraphic() ;
 
 			if( m_MaterialType != MaterialTypes.Sepia || graphic == null || m_ActiveMaterial == null )
 			{
@@ -3177,7 +3112,7 @@ namespace uGUIHelper
 		// インターポレーションの反映
 		private bool ProcessInterpolation()
 		{
-			Graphic graphic = GetGraphic() ;
+			var graphic = GetGraphic() ;
 
 			if( m_MaterialType != MaterialTypes.Interpolation || graphic == null || m_ActiveMaterial == null )
 			{
@@ -3236,7 +3171,7 @@ namespace uGUIHelper
 		// モザイク反映
 		private bool ProcessMosaic()
 		{
-			Graphic graphic = GetGraphic() ;
+			var graphic = GetGraphic() ;
 
 			if( m_MaterialType != MaterialTypes.Mosaic || graphic == null || m_ActiveMaterial == null )
 			{
@@ -3378,7 +3313,7 @@ namespace uGUIHelper
 		/// タイムスケールが変更された際に呼び出される
 		/// </summary>
 		/// <param name="timeScale"></param>
-		virtual protected void OnTimeScaleChanged( float timeScale ){}
+		protected virtual void OnTimeScaleChanged( float timeScale ){}
 
 		//-------------------------------------------
 
@@ -3412,7 +3347,7 @@ namespace uGUIHelper
 		/// <param name="identity"></param>
 		public UITween AddTween( string identity )
 		{
-			UITween tween = gameObject.AddComponent<UITween>() ;
+			var tween = gameObject.AddComponent<UITween>() ;
 			tween.Identity = identity ;
 
 			return tween ;
@@ -3425,7 +3360,7 @@ namespace uGUIHelper
 		/// <param name="instance"></param>
 		public void RemoveTween( string identity, int instance = 0 )
 		{
-			UITween[] tweens = GetComponents<UITween>() ;
+			var tweens = GetComponents<UITween>() ;
 			if( tweens == null || tweens.Length == 0 )
 			{
 				return ;
@@ -3464,7 +3399,7 @@ namespace uGUIHelper
 		/// <returns></returns>
 		public UITween GetTween( string identity )
 		{
-			UITween[] tweens = gameObject.GetComponents<UITween>() ;
+			var tweens = gameObject.GetComponents<UITween>() ;
 			if( tweens == null || tweens.Length == 0 )
 			{
 				return null ;
@@ -3491,13 +3426,13 @@ namespace uGUIHelper
 		/// <returns></returns>
 		public Dictionary<string,UITween> GetAllTweens()
 		{
-			UITween[] tweens = gameObject.GetComponents<UITween>() ;
+			var tweens = gameObject.GetComponents<UITween>() ;
 			if( tweens == null || tweens.Length == 0 )
 			{
 				return null ;
 			}
 
-			Dictionary<string,UITween> targets = new Dictionary<string, UITween>() ;
+			var targets = new Dictionary<string, UITween>() ;
 
 			int i, l = tweens.Length ;
 			for( i  = 0 ; i <  l ; i ++ )
@@ -3528,7 +3463,7 @@ namespace uGUIHelper
 		/// <returns></returns>
 		public bool SetTweenTime( string identity, float delay = -1, float duration = -1 )
 		{
-			UITween tween = GetTween( identity ) ;
+			var tween = GetTween( identity ) ;
 			if( tween == null )
 			{
 				return false ;
@@ -3551,7 +3486,7 @@ namespace uGUIHelper
 		/// <returns></returns>
 		public bool PlayTweenDirect( string identity, float delay = -1, float duration = -1, float offset = 0, Action<string,UITween> onFinishedAction = null, float additionalDelay = 0, float additionalDuration = 0 )
 		{
-			UITween tween = GetTween( identity ) ;
+			var tween = GetTween( identity ) ;
 			if( tween == null )
 			{
 				return false ;
@@ -3608,10 +3543,10 @@ namespace uGUIHelper
 		/// <returns></returns>
 		public AsyncState PlayTween( string identity, float delay = -1, float duration = -1, float offset = 0, Action<string,UITween> onFinishedAction = null, float additionalDelay = 0, float additionalDuration = 0, bool ifHiding = false, bool autoHide = false )
 		{
-			UITween tween = GetTween( identity ) ;
+			var tween = GetTween( identity ) ;
 			if( tween == null )
 			{
-				Debug.LogWarning( "Not found identity of tween : " + identity + " / " + name ) ;
+				Debug.LogWarning( "Not found identity of tween : " + identity + " / " + Path ) ;
 				return null ;
 			}
 
@@ -3641,7 +3576,7 @@ namespace uGUIHelper
 				return new AsyncState( this ){ IsDone = true } ;
 			}
 
-			AsyncState state = new AsyncState( this ) ;
+			var state = new AsyncState( this ) ;
 			StartCoroutine( PlayTweenAsync_Private( tween, delay, duration, offset, onFinishedAction, additionalDelay, additionalDuration, autoHide, state ) ) ;
 			return state ;
 		}
@@ -3657,7 +3592,7 @@ namespace uGUIHelper
 
 			//----------------------------------------------------------
 
-			bool destroyAtEnd = tween.DestroyAtEnd ;
+			var destroyAtEnd = tween.DestroyAtEnd ;
 			tween.DestroyAtEnd = false ;
 
 			tween.Play( delay, duration, offset, onFinishedAction, additionalDelay, additionalDuration ) ;
@@ -3684,7 +3619,7 @@ namespace uGUIHelper
 		/// <returns></returns>
 		public bool IsTweenPlaying( string identity )
 		{
-			UITween tween = GetTween( identity ) ;
+			var tween = GetTween( identity ) ;
 			if( tween == null )
 			{
 				return false ;
@@ -3705,7 +3640,7 @@ namespace uGUIHelper
 		{
 			get
 			{
-				UITween[] tweens = gameObject.GetComponents<UITween>() ;
+				var tweens = gameObject.GetComponents<UITween>() ;
 				if( tweens == null || tweens.Length == 0 )
 				{
 					return false ;
@@ -3737,12 +3672,10 @@ namespace uGUIHelper
 				}
 
 				// 親も含めてトゥイーンが動作中か確認する
-				UIView view ;
-				Transform t = transform.parent ;
+				var t = transform.parent ;
 				while( t != null )
 				{
-					view = t.GetComponent<UIView>() ;
-					if( view != null )
+					if( t.TryGetComponent<UIView>( out var view ) == true )
 					{
 						if( view.IsAnyTweenPlaying == true )
 						{
@@ -3763,7 +3696,7 @@ namespace uGUIHelper
 		/// <returns></returns>
 		public bool PauseTween( string identity )
 		{
-			UITween tween = GetTween( identity ) ;
+			var tween = GetTween( identity ) ;
 			if( tween == null )
 			{
 				return false ;
@@ -3780,7 +3713,7 @@ namespace uGUIHelper
 		/// <returns></returns>
 		public bool UnpauseTween( string identity )
 		{
-			UITween tween = GetTween( identity ) ;
+			var tween = GetTween( identity ) ;
 			if( tween == null )
 			{
 				return false ;
@@ -3797,7 +3730,7 @@ namespace uGUIHelper
 		/// <returns></returns>
 		public bool StopTween( string identity )
 		{
-			UITween tween = GetTween( identity ) ;
+			var tween = GetTween( identity ) ;
 			if( tween == null )
 			{
 				return false ;
@@ -3814,7 +3747,7 @@ namespace uGUIHelper
 		/// <returns></returns>
 		public bool StopAndResetTween( string identity )
 		{
-			UITween tween = GetTween( identity ) ;
+			var tween = GetTween( identity ) ;
 			if( tween == null )
 			{
 				return false ;
@@ -3831,7 +3764,7 @@ namespace uGUIHelper
 		/// <returns></returns>
 		public bool FinishTween( string identity )
 		{
-			UITween tween = GetTween( identity ) ;
+			var tween = GetTween( identity ) ;
 			if( tween == null )
 			{
 				return false ;
@@ -3846,7 +3779,7 @@ namespace uGUIHelper
 		/// </summary>
 		public bool StopAllTweens()
 		{
-			UITween[] tweens = gameObject.GetComponents<UITween>() ;
+			var tweens = gameObject.GetComponents<UITween>() ;
 			if( tweens == null || tweens.Length == 0 )
 			{
 				return false ;
@@ -3868,7 +3801,7 @@ namespace uGUIHelper
 		/// </summary>
 		public bool StopAndResetAllTweens()
 		{
-			UITween[] tweens = gameObject.GetComponents<UITween>() ;
+			var tweens = gameObject.GetComponents<UITween>() ;
 			if( tweens == null || tweens.Length == 0 )
 			{
 				return false ;
@@ -3890,7 +3823,7 @@ namespace uGUIHelper
 		/// </summary>
 		public bool FinishAllTweens()
 		{
-			UITween[] tweens = gameObject.GetComponents<UITween>() ;
+			var tweens = gameObject.GetComponents<UITween>() ;
 			if( tweens == null || tweens.Length == 0 )
 			{
 				return false ;
@@ -3914,7 +3847,7 @@ namespace uGUIHelper
 		/// <returns></returns>
 		public float GetTweenProcessTime( string identity )
 		{
-			UITween tween = GetTween( identity ) ;
+			var tween = GetTween( identity ) ;
 			if( tween == null )
 			{
 				return 0 ;
@@ -3930,7 +3863,7 @@ namespace uGUIHelper
 		/// <param name="time"></param>
 		public bool SetTweenProcessTime( string identity, float time )
 		{
-			UITween tween = GetTween( identity ) ;
+			var tween = GetTween( identity ) ;
 			if( tween == null )
 			{
 				return false ;
@@ -4105,7 +4038,7 @@ namespace uGUIHelper
 				return new AsyncState( this ){ IsDone = true } ;
 			}
 
-			AsyncState state = new AsyncState( this ) ;
+			var state = new AsyncState( this ) ;
 			StartCoroutine( PlayFlipperAsync_Private( flipper, destroyAtEnd, speed, delay, state ) ) ;
 			return state ;
 		}
@@ -4217,15 +4150,15 @@ namespace uGUIHelper
 		/// <returns></returns>
 		public Canvas GetParentCanvas()
 		{
-			int i, l = 64 ;
+			return GetComponentInParent<Canvas>() ;
+#if false
 
-			Canvas canvas ;
+			int i, l = 64 ;
 
 			Transform t = gameObject.transform ;
 			for( i  =  0 ; i <  l ; i ++ )
 			{
-				canvas = t.gameObject.GetComponent<Canvas>() ;
-				if( canvas != null )
+				if( t.gameObject.TryGetComponent<Canvas>( out var canvas ) == true )
 				{
 					return canvas ;
 				}
@@ -4238,6 +4171,7 @@ namespace uGUIHelper
 			}
 
 			return null ;
+#endif
 		}
 
 
@@ -4253,8 +4187,7 @@ namespace uGUIHelper
 				return Vector2.zero ;
 			}
 
-			CanvasScaler canvasScaler = canvas.gameObject.GetComponent<CanvasScaler>() ;
-			if( canvasScaler == null )
+			if( canvas.gameObject.TryGetComponent<CanvasScaler>( out var canvasScaler ) == false )
 			{
 				return Vector2.zero ;
 			}
@@ -4285,8 +4218,7 @@ namespace uGUIHelper
 
 			if( Application.isPlaying == false || isReal == true )
 			{
-				RectTransform rt = canvas.gameObject.GetComponent<RectTransform>() ;
-				if( rt == null )
+				if( ( canvas.transform is RectTransform rt ) == false )
 				{
 					return  new Vector2( sw, sh ) ;
 				}
@@ -4294,8 +4226,7 @@ namespace uGUIHelper
 				return rt.sizeDelta ;
 			}
 
-			CanvasScaler scaler = canvas.GetComponent<CanvasScaler>() ;
-			if( scaler == null )
+			if( canvas.TryGetComponent<CanvasScaler>( out var scaler ) == false )
 			{
 				return new Vector2( sw, sh ) ;
 			}
@@ -4424,8 +4355,7 @@ namespace uGUIHelper
 			else
 			if( scaler.uiScaleMode == CanvasScaler.ScaleMode.ConstantPhysicalSize )
 			{
-				RectTransform rt = canvas.gameObject.GetComponent<RectTransform>() ;
-				if( rt == null )
+				if( ( canvas.transform is RectTransform rt ) == false )
 				{
 					return  new Vector2( sw, sh ) ;
 				}
@@ -4434,15 +4364,6 @@ namespace uGUIHelper
 			}
 
 			return new Vector2( sw, sh ) ;
-
-
-//			RectTransform tRectTransform = tCanvas.gameObject.GetComponent<RectTransform>() ;
-//			if( tRectTransform == null )
-//			{
-//				return Vector2.zero ;
-//			}
-//
-//			return tRectTransform.sizeDelta ;
 		}
 
 		/// <summary>
@@ -4539,8 +4460,7 @@ namespace uGUIHelper
 				Transform t = gameObject.transform ;
 				for( i  =  0 ; i <  l ; i ++ )
 				{
-					canvas = t.gameObject.GetComponent<UICanvas>() ;
-					if( canvas != null )
+					if( t.gameObject.TryGetComponent<UICanvas>( out canvas ) == true )
 					{
 						break ;
 					}
@@ -4570,7 +4490,7 @@ namespace uGUIHelper
 		/// <returns></returns>
 		public T AddView<T>() where T : UIView
 		{
-			return AddView<T>( "" ) ;
+			return AddView<T>( string.Empty ) ;
 		}
 
 		/// <summary>
@@ -4592,17 +4512,17 @@ namespace uGUIHelper
 				i = viewName.IndexOf( "." ) ;
 				if( i >= 0 )
 				{
-					viewName = viewName.Substring( i ) ;
+					viewName = viewName[ i.. ] ;
 				}
 
 				i = viewName.IndexOf( "UI" ) ;
 				if( i >= 0 )
 				{
-					viewName = viewName.Substring( i + 2, viewName.Length - ( i + 2 ) ) ;
+					viewName = viewName[ ( i + 2 ).. ] ;
 				}
 			}
 		
-			GameObject go = new GameObject( viewName, typeof( RectTransform ) ) ;
+			var go = new GameObject( viewName, typeof( RectTransform ) ) ;
 		
 			if( go == null )
 			{
@@ -4640,9 +4560,8 @@ namespace uGUIHelper
 		/// <returns></returns>
 		public GameObject AddObject( string viewName, Transform t = null, int layer = -1 )
 		{
-			GameObject go = new GameObject( viewName ) ;
-			go.transform.localPosition = new Vector3(   0,  0,   0 ) ;
-			go.transform.localRotation = Quaternion.identity ;
+			var go = new GameObject( viewName ) ;
+			go.transform.SetLocalPositionAndRotation( Vector3.zero, Quaternion.identity ) ;
 			go.transform.localScale = Vector3.one ;
 
 			if( t == null )
@@ -4672,9 +4591,8 @@ namespace uGUIHelper
 		/// <returns></returns>
 		public T AddObject<T>( string viewName, Transform t = null, int layer = -1 ) where T : UnityEngine.Component
 		{
-			GameObject go = new GameObject( viewName ) ;
-			go.transform.localPosition = new Vector3(   0,  0,   0 ) ;
-			go.transform.localRotation = Quaternion.identity ;
+			var go = new GameObject( viewName ) ;
+			go.transform.SetLocalPositionAndRotation( Vector3.zero, Quaternion.identity ) ;
 			go.transform.localScale = Vector3.one ;
 
 			if( t == null )
@@ -4706,7 +4624,7 @@ namespace uGUIHelper
 		/// <returns></returns>
 		public GameObject AddPrefab( string path, Transform t = null, int layer = -1 )
 		{
-			GameObject go = Resources.Load( path, typeof( GameObject ) ) as GameObject ;
+			var go = Resources.Load( path, typeof( GameObject ) ) as GameObject ;
 			if( go == null )
 			{
 				return null ;
@@ -4723,8 +4641,8 @@ namespace uGUIHelper
 		/// Prefab を追加する
 		/// </summary>
 		/// <typeparam name="T"></typeparam>
-		/// <param name="tPrefab"></param>
-		/// <param name="tTransform"></param>
+		/// <param name="prefab"></param>
+		/// <param name="transform"></param>
 		/// <returns></returns>
 		public GameObject AddPrefab( GameObject prefab, Transform t = null, int layer = -1 )
 		{
@@ -4738,7 +4656,7 @@ namespace uGUIHelper
 				t = transform ;
 			}
 
-			GameObject go = ( GameObject )GameObject.Instantiate( prefab ) ;
+			var go = ( GameObject )GameObject.Instantiate( prefab ) ;
 			if( go == null )
 			{
 				return null ;
@@ -4762,11 +4680,11 @@ namespace uGUIHelper
 		/// Prefab を追加する
 		/// </summary>
 		/// <typeparam name="T"></typeparam>
-		/// <param name="tPath"></param>
+		/// <param name="path"></param>
 		/// <returns></returns>
 		public T AddPrefab<T>( string path, Transform t = null, int layer = -1 ) where T : UnityEngine.Component
 		{
-			GameObject prefab = Resources.Load( path, typeof( GameObject ) ) as GameObject ;
+			var prefab = Resources.Load( path, typeof( GameObject ) ) as GameObject ;
 			if( prefab == null )
 			{
 				return null ;
@@ -4779,8 +4697,8 @@ namespace uGUIHelper
 		/// プレハブからインスタンスを生成し自身の子とする
 		/// </summary>
 		/// <typeparam name="T"></typeparam>
-		/// <param name="tPrefab"></param>
-		/// <param name="tParentName"></param>
+		/// <param name="prefab"></param>
+		/// <param name="parentName"></param>
 		/// <returns></returns>
 		public T AddPrefabOnChild<T>( GameObject prefab, string parentName = null, int layer = -1 ) where T : UnityEngine.Component
 		{
@@ -4803,7 +4721,7 @@ namespace uGUIHelper
 		/// <summary>
 		/// 自身に含まれる指定した名前のトランスフォームを検索する
 		/// </summary>
-		/// <param name="tName"></param>
+		/// <param name="viewName"></param>
 		/// <returns></returns>
 		public Transform GetTransformByName( string viewName, bool isContains = false )
 		{
@@ -4884,7 +4802,7 @@ namespace uGUIHelper
 				t = transform ;
 			}
 
-			GameObject go = ( GameObject )GameObject.Instantiate( prefab ) ;
+			var go = ( GameObject )GameObject.Instantiate( prefab ) ;
 			if( go == null )
 			{
 				return null ;
@@ -4901,8 +4819,9 @@ namespace uGUIHelper
 				SetLayer( go, layer ) ;
 			}
 
-			T tComponent = go.GetComponent<T>() ;
-			return tComponent ;
+			T component = go.GetComponentInChildren<T>( true ) ;
+
+			return component ;
 		}
 
 		/// <summary>
@@ -4978,31 +4897,29 @@ namespace uGUIHelper
 		/// <summary>
 		/// Camera(ショートカット)
 		/// </summary>
-		virtual public Camera GetCamera()
+		public virtual Camera GetCamera()
 		{
 			if( m_Camera == null )
 			{
-				m_Camera = gameObject.GetComponent<Camera>() ;
+				 TryGetComponent<Camera>( out m_Camera ) ;
 			}
 			return m_Camera ;
 		}
 
 		//----------
 
-		// キャッシュ
-		private RectTransform m_RectTransform ;
-
 		/// <summary>
 		/// RectTransform(ショートカット)
 		/// </summary>
-		virtual public RectTransform GetRectTransform()
+		public virtual RectTransform GetRectTransform()
 		{
-			if( m_RectTransform != null )
+			if( transform is RectTransform rectTransform )
 			{
-				return m_RectTransform ;
+				return rectTransform ;
 			}
-			m_RectTransform = gameObject.GetComponent<RectTransform>() ;
-			return m_RectTransform ;
+
+			// RectTransform ではない
+			return null ;
 		}
 	
 		//----------
@@ -5013,13 +4930,13 @@ namespace uGUIHelper
 		/// <summary>
 		/// Image(ショートカット)
 		/// </summary>
-		virtual public Canvas CCanvas
+		public virtual Canvas CCanvas
 		{
 			get
 			{
 				if( m_Canvas == null )
 				{
-					m_Canvas = gameObject.GetComponent<Canvas>() ;
+					TryGetComponent<Canvas>( out m_Canvas ) ;
 				}
 				return m_Canvas ;
 			}
@@ -5028,11 +4945,11 @@ namespace uGUIHelper
 		/// <summary>
 		/// Canvas(ショートカット)
 		/// </summary>
-		virtual public Canvas GetCanvas()
+		public virtual Canvas GetCanvas()
 		{
 			if( m_Canvas == null )
 			{
-				m_Canvas = gameObject.GetComponent<Canvas>() ;
+				 TryGetComponent<Canvas>( out m_Canvas ) ;
 			}
 			return m_Canvas ;
 		}
@@ -5045,11 +4962,11 @@ namespace uGUIHelper
 		/// <summary>
 		/// CanvasRenderer(ショートカット)
 		/// </summary>
-		virtual public CanvasRenderer GetCanvasRenderer()
+		public virtual CanvasRenderer GetCanvasRenderer()
 		{
 			if( m_CanvasRenderer == null )
 			{
-				m_CanvasRenderer = gameObject.GetComponent<CanvasRenderer>() ;
+				TryGetComponent<CanvasRenderer>( out m_CanvasRenderer ) ;
 			}
 			return m_CanvasRenderer ;
 		}
@@ -5061,14 +4978,7 @@ namespace uGUIHelper
 		{
 			get
 			{
-				if( GetCanvasRenderer() == null )
-				{
-					return false ;
-				}
-				else
-				{
-					return true ;
-				}
+				return ( GetCanvasRenderer() != null ) ;
 			}
 			set
 			{
@@ -5079,7 +4989,6 @@ namespace uGUIHelper
 				else
 				{
 #if UNITY_EDITOR
-
 					if( Application.isPlaying == true )
 					{
 						RemoveCanvasRenderer() ;
@@ -5117,7 +5026,7 @@ namespace uGUIHelper
 		/// </summary>
 		public void RemoveCanvasRenderer()
 		{
-			CanvasRenderer canvasRenderer = GetCanvasRenderer() ;
+			var canvasRenderer = GetCanvasRenderer() ;
 			if( canvasRenderer == null )
 			{
 				return ;
@@ -5143,11 +5052,11 @@ namespace uGUIHelper
 		/// <summary>
 		/// GraphicEmpty(ショートカット)
 		/// </summary>
-		virtual public GraphicEmpty GetGraphicEmpty()
+		public virtual GraphicEmpty GetGraphicEmpty()
 		{
 			if( m_GraphicEmpty == null )
 			{
-				m_GraphicEmpty = gameObject.GetComponent<GraphicEmpty>() ;
+				TryGetComponent<GraphicEmpty>( out m_GraphicEmpty ) ;
 			}
 			return m_GraphicEmpty ;
 		}
@@ -5159,14 +5068,7 @@ namespace uGUIHelper
 		{
 			get
 			{
-				if( GetGraphicEmpty() == null )
-				{
-					return false ;
-				}
-				else
-				{
-					return true ;
-				}
+				return ( GetGraphicEmpty() != null ) ;
 			}
 			set
 			{
@@ -5177,7 +5079,6 @@ namespace uGUIHelper
 				else
 				{
 #if UNITY_EDITOR
-
 					if( Application.isPlaying == true )
 					{
 						RemoveGraphicEmpty() ;
@@ -5216,7 +5117,7 @@ namespace uGUIHelper
 		/// </summary>
 		public void RemoveGraphicEmpty()
 		{
-			GraphicEmpty graphicEmpty = GetGraphicEmpty() ;
+			var graphicEmpty = GetGraphicEmpty() ;
 			if( graphicEmpty == null )
 			{
 				return ;
@@ -5246,7 +5147,7 @@ namespace uGUIHelper
 		{
 			if( m_CanvasScaler == null )
 			{
-				m_CanvasScaler = gameObject.GetComponent<CanvasScaler>() ;
+				TryGetComponent<CanvasScaler>( out m_CanvasScaler ) ;
 			}
 			return m_CanvasScaler ;
 		}
@@ -5259,18 +5160,11 @@ namespace uGUIHelper
 		/// <summary>
 		/// CanvasGroup(ショートカット)
 		/// </summary>
-		virtual public CanvasGroup GetCanvasGroup()
+		public virtual CanvasGroup GetCanvasGroup()
 		{
 			if( m_CanvasGroup == null )
 			{
-				try
-				{
-					m_CanvasGroup = gameObject.GetComponent<CanvasGroup>() ;
-				}
-				catch( Exception e )
-				{
-					Debug.LogError( "Error:" + e.Message + " " + transform.parent.name ) ;
-				}
+				TryGetComponent<CanvasGroup>( out m_CanvasGroup ) ;
 			}
 			return m_CanvasGroup ;
 		}
@@ -5282,14 +5176,7 @@ namespace uGUIHelper
 		{
 			get
 			{
-				if( GetCanvasGroup() == null )
-				{
-					return false ;
-				}
-				else
-				{
-					return true ;
-				}
+				return ( GetCanvasGroup() != null ) ;
 			}
 			set
 			{
@@ -5300,7 +5187,6 @@ namespace uGUIHelper
 				else
 				{
 #if UNITY_EDITOR
-
 					if( Application.isPlaying == true )
 					{
 						RemoveCanvasGroup() ;
@@ -5309,11 +5195,8 @@ namespace uGUIHelper
 					{
 						m_RemoveCanvasGroup = true ;
 					}
-
 #else
-
 					RemoveCanvasGroup() ;
-
 #endif
 				}
 			}
@@ -5344,7 +5227,7 @@ namespace uGUIHelper
 		/// </summary>
 		public void RemoveCanvasGroup()
 		{
-			CanvasGroup canvasGroup = GetCanvasGroup() ;
+			var canvasGroup = GetCanvasGroup() ;
 			if( canvasGroup == null )
 			{
 				return ;
@@ -5370,11 +5253,11 @@ namespace uGUIHelper
 		/// <summary>
 		/// GraphicRaycaster(ショートカット)
 		/// </summary>
-		virtual public GraphicRaycasterWrapper GetGraphicRaycaster()
+		public virtual GraphicRaycasterWrapper GetGraphicRaycaster()
 		{
 			if( m_GraphicRaycaster == null )
 			{
-				m_GraphicRaycaster = gameObject.GetComponent<GraphicRaycasterWrapper>() ;
+				 TryGetComponent<GraphicRaycasterWrapper>( out m_GraphicRaycaster ) ;
 			}
 			return m_GraphicRaycaster ;
 		}
@@ -5391,7 +5274,7 @@ namespace uGUIHelper
 		{
 			if( m_Graphic == null )
 			{
-				m_Graphic = gameObject.GetComponent<Graphic>() ;
+				 TryGetComponent<Graphic>( out m_Graphic ) ;
 			}
 			return m_Graphic ;
 		}
@@ -5404,13 +5287,13 @@ namespace uGUIHelper
 		/// <summary>
 		/// EventTrigger(ショートカット)
 		/// </summary>
-		virtual public EventTrigger CEventTrigger
+		public virtual EventTrigger CEventTrigger
 		{
 			get
 			{
 				if( m_EventTrigger == null )
 				{
-					m_EventTrigger = gameObject.GetComponent<EventTrigger>() ;
+					 TryGetComponent<EventTrigger>( out m_EventTrigger ) ;
 				}
 				return m_EventTrigger ;
 			}
@@ -5423,14 +5306,7 @@ namespace uGUIHelper
 		{
 			get
 			{
-				if( CEventTrigger == null )
-				{
-					return false ;
-				}
-				else
-				{
-					return true ;
-				}
+				return ( CEventTrigger != null ) ;
 			}
 			set
 			{
@@ -5441,7 +5317,6 @@ namespace uGUIHelper
 				else
 				{
 #if UNITY_EDITOR
-
 					if( Application.isPlaying == true )
 					{
 						RemoveEventTrigger() ;
@@ -5479,7 +5354,7 @@ namespace uGUIHelper
 		/// </summary>
 		public void RemoveEventTrigger()
 		{
-			EventTrigger eventTrigger = CEventTrigger ;
+			var eventTrigger = CEventTrigger ;
 			if( eventTrigger == null )
 			{
 				return ;
@@ -5505,13 +5380,13 @@ namespace uGUIHelper
 		/// <summary>
 		/// Interaction(ショートカット)
 		/// </summary>
-		virtual public UIInteraction CInteraction
+		public virtual UIInteraction CInteraction
 		{
 			get
 			{
 				if( m_Interaction == null )
 				{
-					m_Interaction = gameObject.GetComponent<UIInteraction>() ;
+					TryGetComponent<UIInteraction>( out m_Interaction ) ;
 				}
 				return m_Interaction ;
 			}
@@ -5524,14 +5399,7 @@ namespace uGUIHelper
 		{
 			get
 			{
-				if( CInteraction == null )
-				{
-					return false ;
-				}
-				else
-				{
-					return true ;
-				}
+				return ( CInteraction != null ) ;
 			}
 			set
 			{
@@ -5548,7 +5416,6 @@ namespace uGUIHelper
 				else
 				{
 #if UNITY_EDITOR
-
 					if( Application.isPlaying == true )
 					{
 						RemoveInteraction() ;
@@ -5573,6 +5440,7 @@ namespace uGUIHelper
 			{
 				return ;
 			}
+
 			m_Interaction = gameObject.AddComponent<UIInteraction>() ;
 			AddInteractionCallback() ;
 		}
@@ -5586,7 +5454,7 @@ namespace uGUIHelper
 		/// </summary>
 		public void RemoveInteraction()
 		{
-			UIInteraction interaction = CInteraction ;
+			var interaction = CInteraction ;
 			if( interaction == null )
 			{
 				return ;
@@ -5616,13 +5484,13 @@ namespace uGUIHelper
 		/// <summary>
 		/// Interaction(ショートカット)
 		/// </summary>
-		virtual public UIInteractionForScrollView CInteractionForScrollView
+		public virtual UIInteractionForScrollView CInteractionForScrollView
 		{
 			get
 			{
 				if( m_InteractionForScrollView == null )
 				{
-					m_InteractionForScrollView = gameObject.GetComponent<UIInteractionForScrollView>() ;
+					TryGetComponent<UIInteractionForScrollView>( out m_InteractionForScrollView ) ;
 				}
 				return m_InteractionForScrollView ;
 			}
@@ -5635,14 +5503,7 @@ namespace uGUIHelper
 		{
 			get
 			{
-				if( CInteractionForScrollView == null )
-				{
-					return false ;
-				}
-				else
-				{
-					return true ;
-				}
+				return ( CInteractionForScrollView != null ) ;
 			}
 			set
 			{
@@ -5659,7 +5520,6 @@ namespace uGUIHelper
 				else
 				{
 #if UNITY_EDITOR
-
 					if( Application.isPlaying == true )
 					{
 						RemoveInteractionForScrollView() ;
@@ -5684,6 +5544,7 @@ namespace uGUIHelper
 			{
 				return ;
 			}
+
 			m_InteractionForScrollView = gameObject.AddComponent<UIInteractionForScrollView>() ;
 			AddInteractionForScrollViewCallback() ;
 		}
@@ -5697,7 +5558,7 @@ namespace uGUIHelper
 		/// </summary>
 		public void RemoveInteractionForScrollView()
 		{
-			UIInteractionForScrollView interactionForScrollView = CInteractionForScrollView ;
+			var interactionForScrollView = CInteractionForScrollView ;
 			if( interactionForScrollView == null )
 			{
 				return ;
@@ -5727,13 +5588,13 @@ namespace uGUIHelper
 		/// <summary>
 		/// Transition(ショートカット)
 		/// </summary>
-		virtual public UITransition CTransition
+		public virtual UITransition CTransition
 		{
 			get
 			{
 				if( m_Transition == null )
 				{
-					m_Transition = gameObject.GetComponent<UITransition>() ;
+					 TryGetComponent<UITransition>( out m_Transition ) ;
 				}
 				return m_Transition ;
 			}
@@ -5746,14 +5607,7 @@ namespace uGUIHelper
 		{
 			get
 			{
-				if( CTransition == null )
-				{
-					return false ;
-				}
-				else
-				{
-					return true ;
-				}
+				return ( CTransition != null ) ;
 			}
 			set
 			{
@@ -5764,7 +5618,6 @@ namespace uGUIHelper
 				else
 				{
 #if UNITY_EDITOR
-
 					if( Application.isPlaying == true )
 					{
 						RemoveTransition() ;
@@ -5802,7 +5655,7 @@ namespace uGUIHelper
 		/// </summary>
 		public void RemoveTransition()
 		{
-			UITransition transition = CTransition ;
+			var transition = CTransition ;
 			if( transition == null )
 			{
 				return ;
@@ -5828,13 +5681,13 @@ namespace uGUIHelper
 		/// <summary>
 		/// RawImage(ショートカット)
 		/// </summary>
-		virtual public RawImage CRawImage
+		public virtual RawImage CRawImage
 		{
 			get
 			{
 				if( m_RawImage == null )
 				{
-					m_RawImage = gameObject.GetComponent<RawImage>() ;
+					TryGetComponent<RawImage>( out m_RawImage ) ;
 				}
 				return m_RawImage ;
 			}
@@ -5848,13 +5701,13 @@ namespace uGUIHelper
 		/// <summary>
 		/// Image(ショートカット)
 		/// </summary>
-		virtual public Image CImage
+		public virtual Image CImage
 		{
 			get
 			{
 				if( m_Image == null )
 				{
-					m_Image = gameObject.GetComponent<Image>() ;
+					TryGetComponent<Image>( out m_Image ) ;
 				}
 				return m_Image ;
 			}
@@ -5868,13 +5721,13 @@ namespace uGUIHelper
 		/// <summary>
 		/// Button(ショートカット)
 		/// </summary>
-		virtual public Button CButton
+		public virtual Button CButton
 		{
 			get
 			{
 				if( m_Button == null )
 				{
-					m_Button = gameObject.GetComponent<Button>() ;
+					TryGetComponent<Button>( out m_Button ) ;
 				}
 				return m_Button ;
 			}
@@ -5888,13 +5741,13 @@ namespace uGUIHelper
 		/// <summary>
 		/// ButtonGroup(ショートカット)
 		/// </summary>
-		virtual public UIButtonGroup CButtonGroup
+		public virtual UIButtonGroup CButtonGroup
 		{
 			get
 			{
 				if( m_ButtonGroup == null )
 				{
-					m_ButtonGroup = gameObject.GetComponent<UIButtonGroup>() ;
+					TryGetComponent<UIButtonGroup>( out m_ButtonGroup ) ;
 				}
 				return m_ButtonGroup ;
 			}
@@ -5907,14 +5760,7 @@ namespace uGUIHelper
 		{
 			get
 			{
-				if( CButtonGroup == null )
-				{
-					return false ;
-				}
-				else
-				{
-					return true ;
-				}
+				return ( CButtonGroup != null ) ;
 			}
 			set
 			{
@@ -5965,7 +5811,7 @@ namespace uGUIHelper
 		/// </summary>
 		public void RemoveButtonGroup()
 		{
-			UIButtonGroup buttonGroup = CButtonGroup ;
+			var buttonGroup = CButtonGroup ;
 			if( buttonGroup == null )
 			{
 				return ;
@@ -5991,13 +5837,13 @@ namespace uGUIHelper
 		/// <summary>
 		/// Toggle(ショートカット)
 		/// </summary>
-		virtual public Toggle CToggle
+		public virtual Toggle CToggle
 		{
 			get
 			{
 				if( m_Toggle == null )
 				{
-					m_Toggle = gameObject.GetComponent<Toggle>() ;
+					TryGetComponent<Toggle>( out m_Toggle ) ;
 				}
 				return m_Toggle ;
 			}
@@ -6012,13 +5858,13 @@ namespace uGUIHelper
 		/// <summary>
 		/// ToggleGroup(ショートカット)
 		/// </summary>
-		virtual public ToggleGroup CToggleGroup
+		public virtual ToggleGroup CToggleGroup
 		{
 			get
 			{
 				if( m_ToggleGroup == null )
 				{
-					m_ToggleGroup = gameObject.GetComponent<ToggleGroup>() ;
+					TryGetComponent<ToggleGroup>( out m_ToggleGroup ) ;
 				}
 				return m_ToggleGroup ;
 			}
@@ -6031,14 +5877,7 @@ namespace uGUIHelper
 		{
 			get
 			{
-				if( CToggleGroup == null )
-				{
-					return false ;
-				}
-				else
-				{
-					return true ;
-				}
+				return ( CToggleGroup != null ) ;
 			}
 			set
 			{
@@ -6049,7 +5888,6 @@ namespace uGUIHelper
 				else
 				{
 #if UNITY_EDITOR
-
 					if( Application.isPlaying == true )
 					{
 						RemoveToggleGroup() ;
@@ -6058,11 +5896,8 @@ namespace uGUIHelper
 					{
 						m_RemoveToggleGroup = true ;
 					}
-
 #else
-
 					RemoveToggleGroup() ;
-
 #endif
 				}
 			}
@@ -6095,7 +5930,7 @@ namespace uGUIHelper
 		/// </summary>
 		public void RemoveToggleGroup()
 		{
-			ToggleGroup toggleGroup = CToggleGroup ;
+			var toggleGroup = CToggleGroup ;
 			if( toggleGroup == null )
 			{
 				return ;
@@ -6137,13 +5972,13 @@ namespace uGUIHelper
 		/// <summary>
 		/// Slider(ショートカット)
 		/// </summary>
-		virtual public Slider CSlider
+		public virtual Slider CSlider
 		{
 			get
 			{
 				if( m_Slider == null )
 				{
-					m_Slider = gameObject.GetComponent<Slider>() ;
+					TryGetComponent<Slider>( out m_Slider ) ;
 				}
 				return m_Slider ;
 			}
@@ -6157,13 +5992,13 @@ namespace uGUIHelper
 		/// <summary>
 		/// ScrollRect(ショートカット)
 		/// </summary>
-		virtual public ScrollRectWrapper CScrollRect
+		public virtual ScrollRectWrapper CScrollRect
 		{
 			get
 			{
 				if( m_ScrollRect == null )
 				{
-					m_ScrollRect = gameObject.GetComponent<ScrollRectWrapper>() ;
+					TryGetComponent<ScrollRectWrapper>( out m_ScrollRect ) ;
 				}
 				return m_ScrollRect ;
 			}
@@ -6177,13 +6012,13 @@ namespace uGUIHelper
 		/// <summary>
 		/// Scrollbar(ショートカット)
 		/// </summary>
-		virtual public Scrollbar CScrollbar
+		public virtual Scrollbar CScrollbar
 		{
 			get
 			{
 				if( m_Scrollbar == null )
 				{
-					m_Scrollbar = gameObject.GetComponent<ScrollbarWrapper>() ;
+					TryGetComponent<ScrollbarWrapper>( out m_Scrollbar ) ;
 				}
 				return m_Scrollbar ;
 			}
@@ -6197,13 +6032,13 @@ namespace uGUIHelper
 		/// <summary>
 		/// Dropdown(ショートカット)
 		/// </summary>
-		virtual public Dropdown CDropdown
+		public virtual Dropdown CDropdown
 		{
 			get
 			{
 				if( m_Dropdown == null )
 				{
-					m_Dropdown = gameObject.GetComponent<Dropdown>() ;
+					TryGetComponent<Dropdown>( out m_Dropdown ) ;
 				}
 				return m_Dropdown ;
 			}
@@ -6217,18 +6052,18 @@ namespace uGUIHelper
 		/// <summary>
 		/// TMP_Dropdown(ショートカット)
 		/// </summary>
-		virtual public TMP_Dropdown CTMP_Dropdown
+		public virtual TMP_Dropdown CTMP_Dropdown
 		{
 			get
 			{
 				if( m_TMP_Dropdown == null )
 				{
-					m_TMP_Dropdown = gameObject.GetComponent<TMP_Dropdown>() ;
+					TryGetComponent<TMP_Dropdown>( out m_TMP_Dropdown ) ;
 				}
 				return m_TMP_Dropdown ;
 			}
 		}
-		
+
 		//----------
 		
 		// キャッシュ
@@ -6237,18 +6072,18 @@ namespace uGUIHelper
 		/// <summary>
 		/// Text(ショートカット)
 		/// </summary>
-		virtual public Text CText
+		public virtual Text CText
 		{
 			get
 			{
 				if( m_Text == null )
 				{
-					m_Text = gameObject.GetComponent<Text>() ;
+					TryGetComponent<Text>( out m_Text ) ;
 				}
 				return m_Text ;
 			}
 		}
-	
+		 
 		//----------
 		
 		// キャッシュ
@@ -6257,13 +6092,13 @@ namespace uGUIHelper
 		/// <summary>
 		/// RichText(ショートカット)
 		/// </summary>
-		virtual public RichText CRichText
+		public virtual RichText CRichText
 		{
 			get
 			{
 				if( m_RichText == null )
 				{
-					m_RichText = gameObject.GetComponent<RichText>() ;
+					 TryGetComponent<RichText>( out m_RichText ) ;
 				}
 				return m_RichText ;
 			}
@@ -6277,13 +6112,13 @@ namespace uGUIHelper
 		/// <summary>
 		/// Text(ショートカット)
 		/// </summary>
-		virtual public TextMeshProUGUI CTextMesh
+		public virtual TextMeshProUGUI CTextMesh
 		{
 			get
 			{
 				if( m_TextMesh == null )
 				{
-					m_TextMesh = gameObject.GetComponent<TextMeshProUGUI>() ;
+					TryGetComponent<TextMeshProUGUI>( out m_TextMesh ) ;
 				}
 				return m_TextMesh ;
 			}
@@ -6297,13 +6132,13 @@ namespace uGUIHelper
 		/// <summary>
 		/// HorizontalLayoutGroup(ショートカット)
 		/// </summary>
-		virtual public HorizontalLayoutGroup CHorizontalLayoutGroup
+		public virtual HorizontalLayoutGroup CHorizontalLayoutGroup
 		{
 			get
 			{
 				if( m_HorizontalLayoutGroup == null )
 				{
-					m_HorizontalLayoutGroup = gameObject.GetComponent<HorizontalLayoutGroup>() ;
+					 TryGetComponent<HorizontalLayoutGroup>( out m_HorizontalLayoutGroup ) ;
 				}
 				return m_HorizontalLayoutGroup ;
 			}
@@ -6316,14 +6151,7 @@ namespace uGUIHelper
 		{
 			get
 			{
-				if( CHorizontalLayoutGroup == null )
-				{
-					return false ;
-				}
-				else
-				{
-					return true ;
-				}
+				return ( CHorizontalLayoutGroup != null ) ;
 			}
 			set
 			{
@@ -6380,7 +6208,7 @@ namespace uGUIHelper
 		/// </summary>
 		public void RemoveHorizontalLayoutGroup()
 		{
-			HorizontalLayoutGroup horizontalLayoutGroup = CHorizontalLayoutGroup ;
+			var horizontalLayoutGroup = CHorizontalLayoutGroup ;
 			if( horizontalLayoutGroup == null )
 			{
 				return ;
@@ -6406,13 +6234,13 @@ namespace uGUIHelper
 		/// <summary>
 		/// VerticalLayoutGroup(ショートカット)
 		/// </summary>
-		virtual public VerticalLayoutGroup CVerticalLayoutGroup
+		public virtual VerticalLayoutGroup CVerticalLayoutGroup
 		{
 			get
 			{
 				if( m_VerticalLayoutGroup == null )
 				{
-					m_VerticalLayoutGroup = gameObject.GetComponent<VerticalLayoutGroup>() ;
+					TryGetComponent<VerticalLayoutGroup>( out m_VerticalLayoutGroup ) ;
 				}
 				return m_VerticalLayoutGroup ;
 			}
@@ -6425,14 +6253,7 @@ namespace uGUIHelper
 		{
 			get
 			{
-				if( CVerticalLayoutGroup == null )
-				{
-					return false ;
-				}
-				else
-				{
-					return true ;
-				}
+				return ( CVerticalLayoutGroup != null ) ;
 			}
 			set
 			{
@@ -6489,7 +6310,7 @@ namespace uGUIHelper
 		/// </summary>
 		public void RemoveVerticalLayoutGroup()
 		{
-			VerticalLayoutGroup verticalLayoutGroup = CVerticalLayoutGroup ;
+			var verticalLayoutGroup = CVerticalLayoutGroup ;
 			if( verticalLayoutGroup == null )
 			{
 				return ;
@@ -6515,13 +6336,13 @@ namespace uGUIHelper
 		/// <summary>
 		/// GridLayoutGroup(ショートカット)
 		/// </summary>
-		virtual public GridLayoutGroup CGridLayoutGroup
+		public virtual GridLayoutGroup CGridLayoutGroup
 		{
 			get
 			{
 				if( m_GridLayoutGroup == null )
 				{
-					m_GridLayoutGroup = gameObject.GetComponent<GridLayoutGroup>() ;
+					 TryGetComponent<GridLayoutGroup>( out m_GridLayoutGroup ) ;
 				}
 				return m_GridLayoutGroup ;
 			}
@@ -6534,14 +6355,7 @@ namespace uGUIHelper
 		{
 			get
 			{
-				if( CGridLayoutGroup == null )
-				{
-					return false ;
-				}
-				else
-				{
-					return true ;
-				}
+				return ( CGridLayoutGroup != null ) ;
 			}
 			set
 			{
@@ -6552,7 +6366,6 @@ namespace uGUIHelper
 				else
 				{
 #if UNITY_EDITOR
-
 					if( Application.isPlaying == true )
 					{
 						RemoveGridLayoutGroup() ;
@@ -6593,7 +6406,7 @@ namespace uGUIHelper
 		/// </summary>
 		public void RemoveGridLayoutGroup()
 		{
-			GridLayoutGroup gridLayoutGroup = CGridLayoutGroup ;
+			var gridLayoutGroup = CGridLayoutGroup ;
 			if( gridLayoutGroup == null )
 			{
 				return ;
@@ -6619,13 +6432,13 @@ namespace uGUIHelper
 		/// <summary>
 		/// ContentSizeFitter(ショートカット)
 		/// </summary>
-		virtual public ContentSizeFitter CContentSizeFitter
+		public virtual ContentSizeFitter CContentSizeFitter
 		{
 			get
 			{
 				if( m_ContentSizeFitter == null )
 				{
-					m_ContentSizeFitter = gameObject.GetComponent<ContentSizeFitter>() ;
+					TryGetComponent<ContentSizeFitter>( out m_ContentSizeFitter ) ;
 				}
 				return m_ContentSizeFitter ;
 			}
@@ -6638,14 +6451,7 @@ namespace uGUIHelper
 		{
 			get
 			{
-				if( CContentSizeFitter == null )
-				{
-					return false ;
-				}
-				else
-				{
-					return true ;
-				}
+				return ( CContentSizeFitter != null ) ;
 			}
 			set
 			{
@@ -6697,7 +6503,7 @@ namespace uGUIHelper
 		/// </summary>
 		public void RemoveContentSizeFitter()
 		{
-			ContentSizeFitter contentSizeFitter = CContentSizeFitter ;
+			var contentSizeFitter = CContentSizeFitter ;
 			if( contentSizeFitter == null )
 			{
 				return ;
@@ -6723,13 +6529,13 @@ namespace uGUIHelper
 		/// <summary>
 		/// LayoutElement(ショートカット)
 		/// </summary>
-		virtual public LayoutElement CLayoutElement
+		public virtual LayoutElement CLayoutElement
 		{
 			get
 			{
 				if( m_LayoutElement == null )
 				{
-					m_LayoutElement = gameObject.GetComponent<LayoutElement>() ;
+					 TryGetComponent<LayoutElement>( out m_LayoutElement ) ;
 				}
 				return m_LayoutElement ;
 			}
@@ -6742,14 +6548,7 @@ namespace uGUIHelper
 		{
 			get
 			{
-				if( CLayoutElement == null )
-				{
-					return false ;
-				}
-				else
-				{
-					return true ;
-				}
+				return ( CLayoutElement != null ) ;
 			}
 			set
 			{
@@ -6760,7 +6559,6 @@ namespace uGUIHelper
 				else
 				{
 #if UNITY_EDITOR
-
 					if( Application.isPlaying == true )
 					{
 						RemoveLayoutElement() ;
@@ -6808,7 +6606,7 @@ namespace uGUIHelper
 		/// </summary>
 		public void RemoveLayoutElement()
 		{
-			LayoutElement layoutElement = CLayoutElement ;
+			var layoutElement = CLayoutElement ;
 			if( layoutElement == null )
 			{
 				return ;
@@ -6834,13 +6632,13 @@ namespace uGUIHelper
 		/// <summary>
 		/// Mask(ショートカット)
 		/// </summary>
-		virtual public Mask CMask
+		public virtual Mask CMask
 		{
 			get
 			{
 				if( m_Mask == null )
 				{
-					m_Mask = gameObject.GetComponent<Mask>() ;
+					 TryGetComponent<Mask>( out m_Mask ) ;
 				}
 				return m_Mask ;
 			}
@@ -6853,14 +6651,7 @@ namespace uGUIHelper
 		{
 			get
 			{
-				if( CMask == null )
-				{
-					return false ;
-				}
-				else
-				{
-					return true ;
-				}
+				return ( CMask != null ) ;
 			}
 			set
 			{
@@ -6871,7 +6662,6 @@ namespace uGUIHelper
 				else
 				{
 #if UNITY_EDITOR
-
 					if( Application.isPlaying == true )
 					{
 						RemoveMask() ;
@@ -6880,11 +6670,8 @@ namespace uGUIHelper
 					{
 						m_RemoveMask = true ;
 					}
-
 #else
-
 					RemoveMask() ;
-
 #endif
 				}
 			}
@@ -6915,7 +6702,7 @@ namespace uGUIHelper
 		/// </summary>
 		public void RemoveMask()
 		{
-			Mask mask = CMask ;
+			var mask = CMask ;
 			if( mask == null )
 			{
 				return ;
@@ -6939,13 +6726,13 @@ namespace uGUIHelper
 		/// <summary>
 		/// RectMask2D(ショートカット)
 		/// </summary>
-		virtual public RectMask2D CRectMask2D
+		public virtual RectMask2D CRectMask2D
 		{
 			get
 			{
 				if( m_RectMask2D == null )
 				{
-					m_RectMask2D = gameObject.GetComponent<RectMask2D>() ;
+					TryGetComponent<RectMask2D>( out m_RectMask2D ) ;
 				}
 				return m_RectMask2D ;
 			}
@@ -6958,14 +6745,7 @@ namespace uGUIHelper
 		{
 			get
 			{
-				if( CRectMask2D == null )
-				{
-					return false ;
-				}
-				else
-				{
-					return true ;
-				}
+				return ( CRectMask2D != null ) ;
 			}
 			set
 			{
@@ -6976,7 +6756,6 @@ namespace uGUIHelper
 				else
 				{
 #if UNITY_EDITOR
-
 					if( Application.isPlaying == true )
 					{
 						RemoveRectMask2D() ;
@@ -6985,11 +6764,8 @@ namespace uGUIHelper
 					{
 						m_RemoveRectMask2D = true ;
 					}
-
 #else
-
 					RemoveRectMask2D() ;
-
 #endif
 				}
 			}
@@ -7022,7 +6798,7 @@ namespace uGUIHelper
 		/// </summary>
 		public void RemoveRectMask2D()
 		{
-			RectMask2D rectMask2D = CRectMask2D ;
+			var rectMask2D = CRectMask2D ;
 			if( rectMask2D == null )
 			{
 				return ;
@@ -7046,13 +6822,13 @@ namespace uGUIHelper
 		/// <summary>
 		/// AlphaMaskWindow(ショートカット)
 		/// </summary>
-		virtual public UIAlphaMaskWindow CAlphaMaskWindow
+		public virtual UIAlphaMaskWindow CAlphaMaskWindow
 		{
 			get
 			{
 				if( m_AlphaMaskWindow == null )
 				{
-					m_AlphaMaskWindow = gameObject.GetComponent<UIAlphaMaskWindow>() ;
+					TryGetComponent<UIAlphaMaskWindow>( out m_AlphaMaskWindow ) ;
 				}
 				return m_AlphaMaskWindow ;
 			}
@@ -7065,14 +6841,7 @@ namespace uGUIHelper
 		{
 			get
 			{
-				if( CAlphaMaskWindow == null )
-				{
-					return false ;
-				}
-				else
-				{
-					return true ;
-				}
+				return ( CAlphaMaskWindow != null ) ;
 			}
 			set
 			{
@@ -7083,7 +6852,6 @@ namespace uGUIHelper
 				else
 				{
 #if UNITY_EDITOR
-
 					if( Application.isPlaying == true )
 					{
 						RemoveAlphaMaskWindow() ;
@@ -7092,11 +6860,8 @@ namespace uGUIHelper
 					{
 						m_RemoveAlphaMaskWindow = true ;
 					}
-
 #else
-
 					RemoveAlphaMaskWindow() ;
-
 #endif
 				}
 			}
@@ -7127,7 +6892,7 @@ namespace uGUIHelper
 		/// </summary>
 		public void RemoveAlphaMaskWindow()
 		{
-			UIAlphaMaskWindow alphaMaskWindow = CAlphaMaskWindow ;
+			var alphaMaskWindow = CAlphaMaskWindow ;
 			if( alphaMaskWindow == null )
 			{
 				return ;
@@ -7151,13 +6916,13 @@ namespace uGUIHelper
 		/// <summary>
 		/// AlphaMaskTarget(ショートカット)
 		/// </summary>
-		virtual public UIAlphaMaskTarget CAlphaMaskTarget
+		public virtual UIAlphaMaskTarget CAlphaMaskTarget
 		{
 			get
 			{
 				if( m_AlphaMaskTarget == null )
 				{
-					m_AlphaMaskTarget = gameObject.GetComponent<UIAlphaMaskTarget>() ;
+					TryGetComponent<UIAlphaMaskTarget>( out m_AlphaMaskTarget ) ;
 				}
 				return m_AlphaMaskTarget ;
 			}
@@ -7170,14 +6935,7 @@ namespace uGUIHelper
 		{
 			get
 			{
-				if( CAlphaMaskTarget == null )
-				{
-					return false ;
-				}
-				else
-				{
-					return true ;
-				}
+				return ( CAlphaMaskTarget != null ) ;
 			}
 			set
 			{
@@ -7188,7 +6946,6 @@ namespace uGUIHelper
 				else
 				{
 #if UNITY_EDITOR
-
 					if( Application.isPlaying == true )
 					{
 						RemoveAlphaMaskTarget() ;
@@ -7197,11 +6954,8 @@ namespace uGUIHelper
 					{
 						m_RemoveAlphaMaskTarget = true ;
 					}
-
 #else
-
 					RemoveAlphaMaskTarget() ;
-
 #endif
 				}
 			}
@@ -7217,10 +6971,9 @@ namespace uGUIHelper
 				return ;
 			}
 		
-//			UIAlphaMaskTarget tAlphaMaskTarget ;
-		
-//			alphaMaskTarget = gameObject.AddComponent<UIAlphaMaskTarget>() ;
 			gameObject.AddComponent<UIAlphaMaskTarget>() ;
+//			var alphaMaskTarget = gameObject.AddComponent<UIAlphaMaskTarget>() ;
+//			alphaMaskTarget.RefreshAlphaMask() ;
 		}
 
 #if UNITY_EDITOR
@@ -7232,7 +6985,7 @@ namespace uGUIHelper
 		/// </summary>
 		public void RemoveAlphaMaskTarget()
 		{
-			UIAlphaMaskTarget alphaMaskTarget = CAlphaMaskTarget ;
+			var alphaMaskTarget = CAlphaMaskTarget ;
 			if( alphaMaskTarget == null )
 			{
 				return ;
@@ -7257,12 +7010,7 @@ namespace uGUIHelper
 		{
 			get
 			{
-				if( GetComponent<Graphic>() == null )
-				{
-					return false ;
-				}
-
-				return true ;
+				return TryGetComponent<Graphic>( out _ ) ;
 			}
 		}
 
@@ -7274,13 +7022,13 @@ namespace uGUIHelper
 		/// <summary>
 		/// InputField(ショートカット)
 		/// </summary>
-		virtual public InputFieldPlus CInputField
+		public virtual InputFieldPlus CInputField
 		{
 			get
 			{
 				if( m_InputField == null )
 				{
-					m_InputField = gameObject.GetComponent<InputFieldPlus>() ;
+					TryGetComponent<InputFieldPlus>( out m_InputField ) ;
 				}
 				return m_InputField ;
 			}
@@ -7294,13 +7042,13 @@ namespace uGUIHelper
 		/// <summary>
 		/// InputField(ショートカット)
 		/// </summary>
-		virtual public TMP_InputFieldPlus CTMP_InputField
+		public virtual TMP_InputFieldPlus CTMP_InputField
 		{
 			get
 			{
 				if( m_TMP_InputField == null )
 				{
-					m_TMP_InputField = gameObject.GetComponent<TMP_InputFieldPlus>() ;
+					TryGetComponent<TMP_InputFieldPlus>( out m_TMP_InputField ) ;
 				}
 				return m_TMP_InputField ;
 			}
@@ -7314,13 +7062,13 @@ namespace uGUIHelper
 		/// <summary>
 		/// Shadow(ショートカット)
 		/// </summary>
-		virtual public Shadow CShadow
+		public virtual Shadow CShadow
 		{
 			get
 			{
 				if( m_Shadow == null )
 				{
-					m_Shadow = gameObject.GetComponent<Shadow>() ;
+					TryGetComponent<Shadow>( out m_Shadow ) ;
 				}
 				return m_Shadow ;
 			}
@@ -7334,20 +7082,13 @@ namespace uGUIHelper
 			get
 			{
 				Shadow shadow = CShadow ;
-				if( shadow == null )
+				if( shadow != null == true && shadow is Outline == false )
 				{
-					return false ;
+					return true ;
 				}
 				else
 				{
-					if( shadow is Shadow == true && shadow is Outline == false )
-					{
-						return true ;
-					}
-					else
-					{
-						return false ;
-					}
+					return false ;
 				}
 			}
 			set
@@ -7359,7 +7100,6 @@ namespace uGUIHelper
 				else
 				{
 #if UNITY_EDITOR
-
 					if( Application.isPlaying == true )
 					{
 						RemoveShadow() ;
@@ -7368,11 +7108,8 @@ namespace uGUIHelper
 					{
 						m_RemoveShadow = true ;
 					}
-
 #else
-
 					RemoveShadow() ;
-
 #endif
 				}
 			}
@@ -7405,7 +7142,7 @@ namespace uGUIHelper
 		/// </summary>
 		public void RemoveShadow()
 		{
-			Shadow shadow = CShadow ;
+			var shadow = CShadow ;
 			if( shadow == null )
 			{
 				return ;
@@ -7431,13 +7168,13 @@ namespace uGUIHelper
 		/// <summary>
 		/// Outline(ショートカット)
 		/// </summary>
-		virtual public Outline COutline
+		public virtual Outline COutline
 		{
 			get
 			{
 				if( m_Outline == null )
 				{
-					m_Outline = gameObject.GetComponent<Outline>() ;
+					TryGetComponent<Outline>( out m_Outline ) ;
 				}
 				return m_Outline ;
 			}
@@ -7450,14 +7187,7 @@ namespace uGUIHelper
 		{
 			get
 			{
-				if( COutline == null )
-				{
-					return false ;
-				}
-				else
-				{
-					return true ;
-				}
+				return ( COutline != null ) ;
 			}
 			set
 			{
@@ -7510,7 +7240,7 @@ namespace uGUIHelper
 		/// </summary>
 		public void RemoveOutline()
 		{
-			Outline outline = COutline ;
+			var outline = COutline ;
 			if( outline == null )
 			{
 				return ;
@@ -7536,13 +7266,13 @@ namespace uGUIHelper
 		/// <summary>
 		/// Gradient(ショートカット)
 		/// </summary>
-		virtual public UIGradient CGradient
+		public virtual UIGradient CGradient
 		{
 			get
 			{
 				if( m_Gradient == null )
 				{
-					m_Gradient = gameObject.GetComponent<UIGradient>() ;
+					TryGetComponent<UIGradient>( out m_Gradient ) ;
 				}
 				return m_Gradient ;
 			}
@@ -7555,14 +7285,7 @@ namespace uGUIHelper
 		{
 			get
 			{
-				if( CGradient == null )
-				{
-					return false ;
-				}
-				else
-				{
-					return true ;
-				}
+				return ( CGradient != null ) ;
 			}
 			set
 			{
@@ -7573,7 +7296,6 @@ namespace uGUIHelper
 				else
 				{
 #if UNITY_EDITOR
-
 					if( Application.isPlaying == true )
 					{
 						RemoveGradient() ;
@@ -7616,7 +7338,7 @@ namespace uGUIHelper
 		/// </summary>
 		public void RemoveGradient()
 		{
-			UIGradient gradient = CGradient ;
+			var gradient = CGradient ;
 			if( gradient == null )
 			{
 				return ;
@@ -7640,13 +7362,13 @@ namespace uGUIHelper
 		/// <summary>
 		/// Inversion(ショートカット)
 		/// </summary>
-		virtual public UIInversion CInversion
+		public virtual UIInversion CInversion
 		{
 			get
 			{
 				if( m_Inversion == null )
 				{
-					m_Inversion = gameObject.GetComponent<UIInversion>() ;
+					TryGetComponent<UIInversion>( out m_Inversion ) ;
 				}
 				return m_Inversion ;
 			}
@@ -7659,14 +7381,7 @@ namespace uGUIHelper
 		{
 			get
 			{
-				if( CInversion == null )
-				{
-					return false ;
-				}
-				else
-				{
-					return true ;
-				}
+				return ( CInversion != null ) ;
 			}
 			set
 			{
@@ -7677,7 +7392,6 @@ namespace uGUIHelper
 				else
 				{
 #if UNITY_EDITOR
-
 					if( Application.isPlaying == true )
 					{
 						RemoveInversion() ;
@@ -7718,7 +7432,7 @@ namespace uGUIHelper
 		/// </summary>
 		public void RemoveInversion()
 		{
-			UIInversion inversion = CInversion ;
+			var inversion = CInversion ;
 			if( inversion == null )
 			{
 				return ;
@@ -7742,13 +7456,13 @@ namespace uGUIHelper
 		/// <summary>
 		/// ImageNumber(ショートカット)
 		/// </summary>
-		virtual public ImageNumber CImageNumber
+		public virtual ImageNumber CImageNumber
 		{
 			get
 			{
 				if( m_ImageNumber == null )
 				{
-					m_ImageNumber = gameObject.GetComponent<ImageNumber>() ;
+					TryGetComponent<ImageNumber>( out m_ImageNumber ) ;
 				}
 				return m_ImageNumber ;
 			}
@@ -7762,13 +7476,13 @@ namespace uGUIHelper
 		/// <summary>
 		/// GridMap(ショートカット)
 		/// </summary>
-		virtual public GridMap CGridMap
+		public virtual GridMap CGridMap
 		{
 			get
 			{
 				if( m_GridMap == null )
 				{
-					m_GridMap = gameObject.GetComponent<GridMap>() ;
+					TryGetComponent<GridMap>( out m_GridMap ) ;
 				}
 				return m_GridMap ;
 			}
@@ -7782,13 +7496,13 @@ namespace uGUIHelper
 		/// <summary>
 		/// ComplexRectangle(ショートカット)
 		/// </summary>
-		virtual public ComplexRectangle CComplexRectangle
+		public virtual ComplexRectangle CComplexRectangle
 		{
 			get
 			{
 				if( m_ComplexRectangle == null )
 				{
-					m_ComplexRectangle = gameObject.GetComponent<ComplexRectangle>() ;
+					TryGetComponent<ComplexRectangle>( out m_ComplexRectangle ) ;
 				}
 				return m_ComplexRectangle ;
 			}
@@ -7802,13 +7516,13 @@ namespace uGUIHelper
 		/// <summary>
 		/// Line(ショートカット)
 		/// </summary>
-		virtual public Line CLine
+		public virtual Line CLine
 		{
 			get
 			{
 				if( m_Line == null )
 				{
-					m_Line = gameObject.GetComponent<Line>() ;
+					TryGetComponent<Line>( out m_Line ) ;
 				}
 				return m_Line ;
 			}
@@ -7822,13 +7536,13 @@ namespace uGUIHelper
 		/// <summary>
 		/// Circle(ショートカット)
 		/// </summary>
-		virtual public Circle CCircle
+		public virtual Circle CCircle
 		{
 			get
 			{
 				if( m_Circle == null )
 				{
-					m_Circle = gameObject.GetComponent<Circle>() ;
+					TryGetComponent<Circle>( out m_Circle ) ;
 				}
 				return m_Circle ;
 			}
@@ -7842,15 +7556,109 @@ namespace uGUIHelper
 		/// <summary>
 		/// Arc(ショートカット)
 		/// </summary>
-		virtual public Arc CArc
+		public virtual Arc CArc
 		{
 			get
 			{
 				if( m_Arc == null )
 				{
-					m_Arc = gameObject.GetComponent<Arc>() ;
+					TryGetComponent<Arc>( out m_Arc ) ;
 				}
 				return m_Arc ;
+			}
+		}
+
+		//----------
+		
+		// キャッシュ
+		private UIPadAdapter m_PadAdapter = null ;
+
+		/// <summary>
+		/// Animator(ショートカット)
+		/// </summary>
+		public virtual UIPadAdapter CPadAdapter
+		{
+			get
+			{
+				if( m_PadAdapter == null )
+				{
+					TryGetComponent<UIPadAdapter>( out m_PadAdapter ) ;
+				}
+				return m_PadAdapter ;
+			}
+		}
+		
+		/// <summary>
+		/// PadAdapter の有無
+		/// </summary>
+		public bool IsPadAdapter
+		{
+			get
+			{
+				return ( CPadAdapter != null ) ;
+			}
+			set
+			{
+				if( value == true )
+				{
+					AddPadAdapter() ;
+				}
+				else
+				{
+#if UNITY_EDITOR
+					if( Application.isPlaying == true )
+					{
+						RemovePadAdapter() ;
+					}
+					else
+					{
+						m_RemovePadAdapter = true ;
+					}
+#else
+					RemovePadAdapter() ;
+#endif
+				}
+			}
+		}
+		
+		/// <summary>
+		/// PadAdapter の追加
+		/// </summary>
+		public void AddPadAdapter()
+		{
+			if( CPadAdapter != null )
+			{
+				return ;
+			}
+		
+			UIPadAdapter padAdapter ;
+		
+			padAdapter = gameObject.AddComponent<UIPadAdapter>() ;
+			padAdapter.Focus = true ;
+		}
+
+#if UNITY_EDITOR
+		private bool m_RemovePadAdapter = false ;
+#endif
+
+		/// <summary>
+		/// PadAdapter の削除
+		/// </summary>
+		public void RemovePadAdapter()
+		{
+			var padAdapter = CPadAdapter ;
+			if( padAdapter == null )
+			{
+				return ;
+			}
+		
+			if( Application.isPlaying == false )
+			{
+				DestroyImmediate( padAdapter ) ;
+			}
+			else
+			{
+				Destroy( padAdapter ) ;
 			}
 		}
 
@@ -7862,13 +7670,13 @@ namespace uGUIHelper
 		/// <summary>
 		/// Animator(ショートカット)
 		/// </summary>
-		virtual public Animator CAnimator
+		public virtual Animator CAnimator
 		{
 			get
 			{
 				if( m_Animator == null )
 				{
-					m_Animator = gameObject.GetComponent<Animator>() ;
+					TryGetComponent<Animator>( out m_Animator ) ;
 				}
 				return m_Animator ;
 			}
@@ -7881,14 +7689,7 @@ namespace uGUIHelper
 		{
 			get
 			{
-				if( CAnimator == null )
-				{
-					return false ;
-				}
-				else
-				{
-					return true ;
-				}
+				return ( CAnimator != null ) ;
 			}
 			set
 			{
@@ -7899,7 +7700,6 @@ namespace uGUIHelper
 				else
 				{
 #if UNITY_EDITOR
-
 					if( Application.isPlaying == true )
 					{
 						RemoveAnimator() ;
@@ -7940,7 +7740,7 @@ namespace uGUIHelper
 		/// </summary>
 		public void RemoveAnimator()
 		{
-			Animator animator = CAnimator ;
+			var animator = CAnimator ;
 			if( animator == null )
 			{
 				return ;
@@ -7982,8 +7782,7 @@ namespace uGUIHelper
 		
 			for( i  = 0 ; i <  c ; i ++ )
 			{
-				view = go.transform.GetChild( i ).gameObject.GetComponent<UIView>() ;
-				if( view != null )
+				if( go.transform.GetChild( i ).gameObject.TryGetComponent<UIView>( out view ) == true )
 				{
 					if( view.Identity == identity )
 					{
@@ -8021,7 +7820,7 @@ namespace uGUIHelper
 			if( Identity == identity )
 			{
 				// 自身がそうだった
-				component = gameObject.GetComponent<T>() ;
+				TryGetComponent<T>( out component ) ;
 				return component ;
 			}
 		
@@ -8034,19 +7833,17 @@ namespace uGUIHelper
 			T component ;
 		
 			// 直の子供を確認する
-			UIView view ;
 			int i, c = go.transform.childCount ;
 		
 			for( i  = 0 ; i <  c ; i ++ )
 			{
-				view = go.transform.GetChild( i ).gameObject.GetComponent<UIView>() ;
-				if( view != null )
+				if( go.transform.GetChild( i ).gameObject.TryGetComponent<UIView>( out var view ) == true )
 				{
 					if( view.Identity == identity )
 					{
 						// 発見
-						component = view.gameObject.GetComponent<T>() ;
-						return component ;
+						view.gameObject.TryGetComponent<T>( out component ) ;
+						return component ;	// null でもとりあえず良し
 					}
 				}
 			}
@@ -8143,13 +7940,10 @@ namespace uGUIHelper
 		/// <typeparam name="T">The 1st type parameter.</typeparam>
 		public T FindNode<T>( string nodeName, bool isContain = false ) where T : UnityEngine.Component
 		{
-			T component ;
-		
 			if( name == nodeName )
 			{
 				// 自身がそうだった
-				component = gameObject.GetComponent<T>() ;
-				if( component != null )
+				if( gameObject.TryGetComponent<T>( out var component ) == true )
 				{
 					return component ;
 				}
@@ -8190,8 +7984,7 @@ namespace uGUIHelper
 				if( result == true )
 				{
 					// 発見
-					component = childNode.GetComponent<T>() ;
-					if( component != null )
+					if( childNode.TryGetComponent<T>( out component ) == true )
 					{
 						return component ;
 					}
@@ -8302,7 +8095,8 @@ namespace uGUIHelper
 
 		//--------------------------------------------------------------------
 
-		private bool m_HoverAtFirst = false ;
+		private bool	m_HoverAtFirst = false ;
+		private Vector2	m_HoverPosition ;
 
 		/// <summary>
 		/// ホバー状態
@@ -8311,7 +8105,7 @@ namespace uGUIHelper
 		{
 			get
 			{
-				return UIEventSystem.IsHovering( gameObject ) ;
+				return InputAdapter.UIEventSystem.IsHovering( gameObject ) ;
 			}
 		}
 
@@ -8322,7 +8116,10 @@ namespace uGUIHelper
 		{
 			get
 			{
-				bool isPress = UIEventSystem.IsPressing( gameObject ) ;
+				bool isPress = InputAdapter.UIEventSystem.IsPressing( gameObject ) ;
+
+				//---------------------------------------------------------
+				// 同じＵＩに対するプレスの連続入力を禁止する対応が入っている場合の処理
 
 				if( isPress == true && m_PressInvalidTime >  0 )
 				{
@@ -8334,9 +8131,12 @@ namespace uGUIHelper
 					else
 					if( ( Time.realtimeSinceStartup - m_PressStartTime ) <  m_PressInvalidTime )
 					{
+						// 指定時間経過までは無効扱いとする
 						return false ;
 					}
 				}
+
+				//---------------------------------------------------------
 
 				return isPress ;
 			}
@@ -8385,22 +8185,40 @@ namespace uGUIHelper
 		protected float			m_SmartClickSecondPressLimitTime	= 0.25f ;	// シングルクリック終了後にこの時間以内に新しいクリックが開始されたらダブルクリック判定が始まる
 		protected float			m_SmartClickLimitDistance			= 30.0f ;
 
-		protected float			m_LongPressStartTime				= 0 ;
 		protected float			m_LongPressDecisionTime				= 0.75f ;	// 長押しと判定する時間
-		protected bool			m_LongPressEnabled					= false ;
+		protected bool			m_LongPressExecuted					= false ;
+		protected float			m_LongPressTimer					= 0 ;
 
-		protected int			m_RepeatPressCount					= 0 ;
-		protected float			m_RepeatPressStartTime				= 0 ;
-		protected float			m_RepeatPressDecisionTime			= 0.75f ;
+		protected float			m_RepeatPressStartingTime			= 0.75f ;
 		protected float			m_RepeatPressIntervalTime			= 0.25f ;
+		protected bool			m_RepeatPressState					= false ;
+		protected int			m_RepeatPressCount					= 0 ;
+		protected float			m_RepeatPressTimer					= 0 ;
 
-
+		/// <summary>
+		/// ドラッグ状態
+		/// </summary>
 		public enum PointerState
 		{
-			None = 0,
-			Start = 1,
-			Moving = 2,
-			End = 3,
+			/// <summary>
+			/// 無し
+			/// </summary>
+			None		= 0,
+
+			/// <summary>
+			/// 開始
+			/// </summary>
+			Start		= 1,
+
+			/// <summary>
+			/// 移動
+			/// </summary>
+			Moving		= 2,
+
+			/// <summary>
+			/// 終了
+			/// </summary>
+			End			= 3,
 		}
 
 		/// <summary>
@@ -8445,7 +8263,7 @@ namespace uGUIHelper
 		}
 
 		protected TouchState[]		m_TouchState			= new TouchState[ 10 ] ;
-		protected List<TouchState>	m_TouchStateExchange	= new List<TouchState>() ;
+		protected List<TouchState>	m_TouchStateExchange	= new () ;
 
 		protected bool		m_FromScrollView = false ;
 		protected float		m_InteractionLimit = 8.0f ;
@@ -8455,7 +8273,7 @@ namespace uGUIHelper
 
 		// Enter
 		// 他の処理が無効化されてしまうため、メソッド内で return を使ってはダメ。本当は処理をメソッド単位に分離した方が良いのだが。
-		virtual protected void OnPointerEnterBasic( PointerEventData pointer, bool fromScrollView )
+		protected virtual void OnPointerEnterBasic( PointerEventData pointer, bool fromScrollView )
 		{
 //			Debug.Log( "<color=#FF7F7F>OnPointerEnterBasic:" + name + "</color>" ) ;
 
@@ -8467,7 +8285,9 @@ namespace uGUIHelper
 			if( m_HoverAtFirst == false )
 			{
 				// 初めて入った
-				m_HoverAtFirst = true ;
+				m_HoverAtFirst	= true ;
+				m_HoverPosition	= position ;
+
 				OnHoverInner( PointerState.Start, position ) ;
 
 				// クリック処理
@@ -8480,16 +8300,21 @@ namespace uGUIHelper
 			else
 			{
 				// ２回目以降
-				if( UIEventSystem.IsPressing( gameObject ) == false && m_DragState == PointerState.None && UIEventSystem.ProcessType == StandaloneInputModuleWrapper.ProcessType.Custom )
+				if( InputAdapter.UIEventSystem.IsPressing( gameObject ) == false && m_DragState == PointerState.None )
 				{
-					OnHoverInner( PointerState.Moving, position ) ;
+					if( m_HoverPosition.Equals( position ) == false )
+					{
+						m_HoverPosition = position ;
+
+						OnHoverInner( PointerState.Moving, position ) ;
+					}
 				}
 			}
 		}
 
 		// Exit
 		// 他の処理が無効化されてしまうため、メソッド内で return を使ってはダメ。本当は処理をメソッド単位に分離した方が良いのだが。
-		virtual protected void OnPointerExitBasic( PointerEventData pointer, bool fromScrollView )
+		protected virtual void OnPointerExitBasic( PointerEventData pointer, bool fromScrollView )
 		{
 //			Debug.Log( "<color=#7FFFFF>OnPointerExitBasic:" + name + "</color>" ) ;
 
@@ -8527,12 +8352,18 @@ namespace uGUIHelper
 
 		// Down
 		// 他の処理が無効化されてしまうため、メソッド内で return を使ってはダメ。本当は処理をメソッド単位に分離した方が良いのだが。
-		virtual protected void OnPointerDownBasic( PointerEventData pointer, bool fromScrollView )
+		protected virtual void OnPointerDownBasic( PointerEventData pointer, bool fromScrollView )
 		{
 //			Debug.Log( "<color=#FF7F00>OnPointerDownBasic:" + name + "</color>" ) ;
 
 			int identity = pointer.pointerId ;
 			Vector2 position = GetLocalPosition( pointer ) ;
+
+			// 円形であった場合の範囲内チェック
+			if( CheckCollisionRadius( position ) == false )
+			{
+				return ;	// 不可
+			}
 
 			m_FromScrollView = fromScrollView ;
 			if( m_FromScrollView == true )
@@ -8546,16 +8377,17 @@ namespace uGUIHelper
 
 			//----------------------------------------------------------
 
-			// ロングプレス確認
-			if( ( OnLongPressAction != null || OnLongPressDelegate != null ) && m_LongPressStartTime == 0 )
-			{
-				m_LongPressStartTime = Time.realtimeSinceStartup ;
-			}
-
 			// リピートプレス確認
 			if( ( OnRepeatPressAction != null || OnRepeatPressDelegate != null ) && m_RepeatPressCount == 0 )
 			{
-				OnRepeatPressInner( 0 ) ;
+				m_RepeatPressState = true ;
+				ProcessRepeatPress() ;
+			}
+
+			// ロングプレス確認
+			if( ( OnLongPressAction != null || OnLongPressDelegate != null ) && m_LongPressTimer == 0 )
+			{
+				m_LongPressTimer = Time.realtimeSinceStartup ;
 			}
 
 			//------------------------------------------------------------------------------------------
@@ -8656,7 +8488,7 @@ namespace uGUIHelper
 
 		// Up
 		// 他の処理が無効化されてしまうため、メソッド内で return を使ってはダメ。本当は処理をメソッド単位に分離した方が良いのだが。
-		virtual protected void OnPointerUpBasic( PointerEventData pointer, bool fromScrollView )
+		protected virtual void OnPointerUpBasic( PointerEventData pointer, bool fromScrollView )
 		{
 //			Debug.Log( "<color=#00FFFF>OnPointerUpBasic:" + name + "</color>" ) ;
 
@@ -8687,7 +8519,7 @@ namespace uGUIHelper
 				{
 					if( m_ClickInsideFlag == true )
 					{
-						if( m_LongPressEnabled == false )
+						if( m_LongPressExecuted == false )
 						{
 							// クリックとみなす
 							OnClickInner() ;
@@ -8715,7 +8547,7 @@ namespace uGUIHelper
 								if( m_SmartClickReleaseLimitTime <= 0 )
 								{
 									// 常にシングルクリック
-									if( m_LongPressEnabled == false )
+									if( m_LongPressExecuted == false )
 									{
 										OnSmartClickInner( 1, m_SmartClickBasePosition, position ) ;
 									}
@@ -8729,7 +8561,7 @@ namespace uGUIHelper
 									if( m_SmartClickSecondPressLimitTime <= 0 )
 									{
 										// シングルクリック決定
-										if( m_LongPressEnabled == false )
+										if( m_LongPressExecuted == false )
 										{
 											OnSmartClickInner( 1, m_SmartClickBasePosition, position ) ;
 										}
@@ -8739,7 +8571,7 @@ namespace uGUIHelper
 									else
 									{
 										// シングルクリックかダブルクリックかを判定するルーチンを起動する
-										if( m_LongPressEnabled == false )
+										if( m_LongPressExecuted == false )
 										{
 											SingleClickCheck( position, pointer.position ) ;
 										}
@@ -8761,7 +8593,7 @@ namespace uGUIHelper
 	
 									// ダブルクリック決定
 									
-									if( m_LongPressEnabled == false )
+									if( m_LongPressExecuted == false )
 									{
 										OnSmartClickInner( 2, m_SmartClickBasePosition, position ) ;
 									}
@@ -8835,7 +8667,7 @@ namespace uGUIHelper
 		}
 
 		// スクロールビュー用のクリック判定(通常のクリック判定には使用していない)
-		virtual protected void OnPointerClickBasic( PointerEventData pointer, bool fromScrollView )
+		protected virtual void OnPointerClickBasic( PointerEventData pointer, bool fromScrollView )
 		{
 //			Debug.Log( "<color=#FFFF00>OnPointerClickBasic:" + name + "</color>" ) ;
 
@@ -8857,6 +8689,12 @@ namespace uGUIHelper
 			int identity = pointer.pointerId ;
 			Vector2 position = GetLocalPosition( pointer ) ;
 
+			// 円形であった場合の範囲内チェック
+			if( CheckCollisionRadius( position ) == false )
+			{
+				return ;	// 不可
+			}
+
 			m_FromScrollView = fromScrollView ;
 
 			//----------------------------------------------------------
@@ -8866,7 +8704,7 @@ namespace uGUIHelper
 			{
 				if( m_ClickInsideFlag == true )
 				{
-					if( m_LongPressEnabled == false )
+					if( m_LongPressExecuted == false )
 					{
 						// クリックとみなす
 						OnClickInner() ;
@@ -8894,7 +8732,7 @@ namespace uGUIHelper
 							{
 								// 常にシングルクリック
 									
-								if( m_LongPressEnabled == false )
+								if( m_LongPressExecuted == false )
 								{
 									OnSmartClickInner( 1, m_SmartClickBasePosition, position ) ;
 								}
@@ -8909,7 +8747,7 @@ namespace uGUIHelper
 								{
 									// シングルクリック決定
 
-									if( m_LongPressEnabled == false )
+									if( m_LongPressExecuted == false )
 									{
 										OnSmartClickInner( 1, m_SmartClickBasePosition, position ) ;
 									}
@@ -8919,7 +8757,7 @@ namespace uGUIHelper
 								else
 								{
 									// シングルクリックかダブルクリックかを判定するルーチンを起動する
-									if( m_LongPressEnabled == false )
+									if( m_LongPressExecuted == false )
 									{
 										SingleClickCheck( position, pointer.position ) ;
 									}
@@ -8941,7 +8779,7 @@ namespace uGUIHelper
 	
 								// ダブルクリック決定
 									
-								if( m_LongPressEnabled == false )
+								if( m_LongPressExecuted == false )
 								{
 									OnSmartClickInner( 2, m_SmartClickBasePosition, position ) ;
 								}
@@ -8972,15 +8810,24 @@ namespace uGUIHelper
 			CancelPress() ;
 		}
 
+		// パッドボタンが有効である場合無制限ドラッグが可能になる
+		protected bool m_IsPadButtonEnabled = false ;
+
 		// Drag
 		// 他の処理が無効化されてしまうため、メソッド内で return を使ってはダメ。本当は処理をメソッド単位に分離した方が良いのだが。
-		virtual protected void OnDragBasic( PointerEventData pointer, bool fromScrollView )
+		protected virtual void OnDragBasic( PointerEventData pointer, bool fromScrollView )
 		{
 //			Debug.Log( "<color=#FFFF00>OnPointerDragBasic:" + name + "</color>" ) ;
 
 			int identity = pointer.pointerId ;
 			Vector2 position = GetLocalPosition( pointer ) ;
-			
+
+			// 円形であった場合の範囲内チェック
+			if( CheckCollisionRadius( position ) == false )
+			{
+				return ;	// 不可
+			}
+
 			m_FromScrollView = fromScrollView ;
 			if( ( m_FromScrollView == true && Vector2.Distance( m_InteractionLimit_StartPoint, pointer.position ) >= m_InteractionLimit ) )
 			{
@@ -8998,9 +8845,51 @@ namespace uGUIHelper
 			{
 				if( m_DragPointerId == identity )
 				{
-					if( m_DragState == PointerState.Start || m_DragState == PointerState.Moving )
+					if( m_IsPadButtonEnabled == false )
 					{
-						if( Input.touchCount == 1 || Input.touchCount == 0 )
+						// パッドボタンでは無いためシングルドラッグのみ許可される
+
+						if( m_DragState == PointerState.Start || m_DragState == PointerState.Moving )
+						{
+							if( Input.touchCount == 1 || Input.touchCount == 0 )
+							{
+								// touchCount == 0  の場合は完全に PC(マウス) 環境
+								m_DragState = PointerState.Moving ;
+		
+								OnDragInner( PointerState.Moving, m_DragBasePosition, position ) ;
+							}
+							else
+							if( Input.touchCount >= 2 )
+							{
+								// ２点以上タッチされていたら一旦解除する
+								m_DragState = PointerState.None ;
+		
+								OnDragInner( PointerState.End, m_DragBasePosition, position ) ;
+							}
+						}
+						else
+						if( m_DragState == PointerState.None )
+						{
+							// 最初が None 状態でこのメソッドが呼ばれる事は基本的に無い(ここは保険)
+
+							if( Input.touchCount == 1 || Input.touchCount == 0 )
+							{
+								// touchCount == 0 の場合は完全に PC(マウス) 環境
+
+								// １点タッチに戻ったので開始扱いとする
+								m_DragBasePosition = position ;
+	
+								m_DragState = PointerState.Start ;
+
+								OnDragInner( PointerState.Start, m_DragBasePosition, m_DragBasePosition ) ;
+							}
+						}
+					}
+					else
+					{
+						// パッドボタンであるため無宣言ドラッグを可能とする
+
+						if( m_DragState == PointerState.Start || m_DragState == PointerState.Moving )
 						{
 							// touchCount == 0  の場合は完全に PC(マウス) 環境
 							m_DragState = PointerState.Moving ;
@@ -9008,20 +8897,9 @@ namespace uGUIHelper
 							OnDragInner( PointerState.Moving, m_DragBasePosition, position ) ;
 						}
 						else
-						if( Input.touchCount >= 2 )
+						if( m_DragState == PointerState.None )
 						{
-							// ２点以上タッチされていたら一旦解除する
-							m_DragState = PointerState.None ;
-		
-							OnDragInner( PointerState.End, m_DragBasePosition, position ) ;
-						}
-					}
-					else
-					if( m_DragState == PointerState.None )
-					{
-						if( Input.touchCount == 1 | Input.touchCount == 0 )
-						{
-							// touchCount == 0  の場合は完全に PC(マウス) 環境
+							// 最初が None 状態でこのメソッドが呼ばれる事は基本的に無い(ここは保険)
 
 							// １点タッチに戻ったので開始扱いとする
 							m_DragBasePosition = position ;
@@ -9068,14 +8946,46 @@ namespace uGUIHelper
 			}
 		}
 
-		// 長押しをキャンセルする
+		// プレス終了処理
 		private void CancelPress()
 		{
-			m_LongPressEnabled = false ;
-			m_LongPressStartTime = 0 ;
+			m_RepeatPressState			= false ;
+			m_RepeatPressCount			= 0 ;
+			m_RepeatPressTimer			= 0 ;
 
-			m_RepeatPressCount = 0 ;
-			m_RepeatPressStartTime = 0 ;
+			m_LongPressExecuted			= false ;
+			m_LongPressTimer			= 0 ;
+		}
+
+		//-------------------------------------------------------------------------------------------
+
+		protected float m_CollisionRadiusRatio = 0 ;
+
+		private bool CheckCollisionRadius( Vector2 position )
+		{
+			if( m_CollisionRadiusRatio <= 0 )
+			{
+				// 円形指定ではない
+				return true ;
+			}
+
+			float sx = Width ;
+			float sy = Height ;
+
+			float px = Pivot.x ;
+			float py = Pivot.y ;
+
+			// 中心を基準として座標になるように補正
+			float x = position.x + ( sx * ( px - 0.5f ) ) ;
+			float y = position.y + ( sy * ( py - 0.5f ) ) ;
+
+			float hx = sx * 0.5f ;
+			float hy = sy * 0.5f ;
+
+			var p = new Vector2( x / hx, y / hy ) ;
+			float d = p.magnitude ;
+
+			return ( d <  m_CollisionRadiusRatio ) ;
 		}
 
 		//-----------------------------------
@@ -9116,7 +9026,7 @@ namespace uGUIHelper
 			//----------------------------------------------------------
 			// ダブルクリックと判定するまでに押さなければならない時間をオーバーした
 
-			if( m_LongPressEnabled == false )
+			if( m_LongPressExecuted == false )
 			{
 				if( m_FromScrollView == false || ( m_FromScrollView == true && Vector2.Distance( m_InteractionLimit_StartPoint, m_SingleClickCheck_GlobalPosition ) <  m_InteractionLimit ) )
 				{
@@ -9139,7 +9049,7 @@ namespace uGUIHelper
 		/// </summary>
 		private void ProcessMultiTouch()
 		{
-			( int states, Vector2[] pointers ) = GetMultiPointer() ;
+			( int states, Vector2[] pointers ) = GetMultiPointer( true ) ;	// レイキャストのチェックを有効にする
 
 			if( OnPinchAction != null || OnPinchDelegate != null )
 			{
@@ -9177,10 +9087,31 @@ namespace uGUIHelper
 		/// </summary>
 		public OnHover OnHoverDelegate ;
 
+		// 内部プロセス
+		private void ProcessHover()
+		{
+			if( m_HoverAtFirst == true )
+			{
+				// ホバー中である場合に位置が変わったらコールバックを呼ぶ
+
+//				if( InputAdapter.UIEventSystem.IsPressing( gameObject ) == false && m_DragState == PointerState.None )
+//				{
+					Vector2 position = GetLocalPosition( InputAdapter.UIEventSystem.MousePosition ) ;
+
+					if( m_HoverPosition.Equals( position ) == false )
+					{
+						m_HoverPosition = position ;
+
+						OnHoverInner( PointerState.Moving, position ) ;
+					}
+//				}
+			}
+		}
+
 		// 内部リスナー
 		private void OnHoverInner( PointerState state, Vector2 movePosition )
 		{
-			if( OnHoverAction != null || OnHoverDelegate != null) 
+			if( OnHoverAction != null || OnHoverDelegate != null || OnSimpleHoverAction != null || OnSimpleHoverDelegate != null ) 
 			{
 				string identity = Identity ;
 				if( string.IsNullOrEmpty( identity ) == true )
@@ -9190,6 +9121,14 @@ namespace uGUIHelper
 
 				OnHoverAction?.Invoke( identity, this, state, movePosition ) ;
 				OnHoverDelegate?.Invoke( identity, this, state, movePosition ) ;
+
+				if( state != PointerState.None && state != PointerState.Moving )
+				{
+					bool isHover = ( state != PointerState.End ) ;
+
+					OnSimpleHoverAction?.Invoke( isHover ) ;
+					OnSimpleHoverDelegate?.Invoke( isHover ) ;
+				}
 			}
 		}
 		
@@ -9220,8 +9159,50 @@ namespace uGUIHelper
 			OnHoverDelegate -= onHoverDelegate ;
 		}
 
-		//----------------------
+		//-----------
 
+		/// <summary>
+		/// ビューをホバーした際に呼び出されるアクション
+		/// </summary>
+		public Action<bool> OnSimpleHoverAction ;
+		
+		/// <summary>
+		/// ビューをホバーした際に呼び出されるデリゲートの定義
+		/// </summary>
+		public delegate void OnSimpleHover( bool state ) ;
+
+		/// <summary>
+		/// ビューをホバーした際に呼び出されるデリゲート
+		/// </summary>
+		public OnSimpleHover OnSimpleHoverDelegate ;
+
+		/// <summary>
+		/// ビューをホバーした際に呼び出されるアクションを設定する → OnHover( bool state )
+		/// </summary>
+		public void SetOnSimpleHover( Action<bool> onSimpleHoverAction )
+		{
+			OnSimpleHoverAction = onSimpleHoverAction ;
+		}
+
+		/// <summary>
+		/// ビューをホバーした際に呼び出されるデリゲートを追加する → OnPress( bool state )
+		/// </summary>
+		/// <param name="onPressDelegate">デリゲートメソッド</param>
+		public void AddOnSimpleHover( OnSimpleHover onSimpleHoverDelegate )
+		{
+			OnSimpleHoverDelegate += onSimpleHoverDelegate ;
+		}
+
+		/// <summary>
+		/// ビューをホバーした際に呼び出されるデリゲートを削除する
+		/// </summary>
+		/// <param name="onPressDelegate">デリゲートメソッド</param>
+		public void RemoveOnSimpleHover( OnSimpleHover onSimpleHoverDelegate )
+		{
+			OnSimpleHoverDelegate -= onSimpleHoverDelegate ;
+		}
+
+		//----------------------
 		// Press
 
 		/// <summary>
@@ -9241,6 +9222,14 @@ namespace uGUIHelper
 		/// ビューを押したまたは離した際に呼び出されるデリゲート
 		/// </summary>
 		public OnPress OnPressDelegate ;
+
+		/// <summary>
+		/// プレスを強制的に実行する
+		/// </summary>
+		public void ExecutePress( bool state )
+		{
+			OnPressInner( state ) ;
+		}
 
 		// 内部リスナー
 		private void OnPressInner( bool state )
@@ -9334,7 +9323,245 @@ namespace uGUIHelper
 		}
 
 		//----------------------
+		// RepeatPress
 
+		/// <summary>
+		/// ビューを長押しした際に呼び出されるアクション
+		/// </summary>
+		public Action<string, UIView, int> OnRepeatPressAction ;
+		
+		/// <summary>
+		/// ビューを長押しした際に呼び出されるデリゲートの定義
+		/// </summary>
+		/// <param name="identity">ビューの識別名(未設定の場合はゲームオブジェクト名)</param>
+		/// <param name="view">ビューのインスタンス</param>
+		public delegate void OnRepeatPress( string identity, UIView view, int repeatCount ) ;
+
+		/// <summary>
+		/// ビューを長押しした際に呼び出されるデリゲート
+		/// </summary>
+		public OnRepeatPress OnRepeatPressDelegate ;
+
+		// 内部プロセス
+		private void ProcessRepeatPress()
+		{
+			if( m_RepeatPressState == false )
+			{
+				return ;
+			}
+
+			//----------------------------------------------------------
+
+			if( m_RepeatPressCount == 0 )
+			{
+				m_RepeatPressTimer = Time.realtimeSinceStartup ;
+
+				OnRepeatPressInner( m_RepeatPressCount ) ;
+
+				m_RepeatPressCount ++ ;	// リピート回数
+			}
+			else
+			if( m_RepeatPressCount == 1 )
+			{
+				float deltaTime = Time.realtimeSinceStartup - m_RepeatPressTimer ;
+
+				if( deltaTime >= m_RepeatPressStartingTime )
+				{
+					m_RepeatPressTimer = Time.realtimeSinceStartup ;
+
+					OnRepeatPressInner( m_RepeatPressCount ) ;
+
+					m_RepeatPressCount ++ ;	// リピート回数
+				}
+			}
+			else
+			if( m_RepeatPressCount >= 2 )
+			{
+				float deltaTime = Time.realtimeSinceStartup - m_RepeatPressTimer ;
+
+				if( deltaTime >= m_RepeatPressIntervalTime )
+				{
+					m_RepeatPressTimer = Time.realtimeSinceStartup ;
+
+					OnRepeatPressInner( m_RepeatPressCount ) ;
+
+					m_RepeatPressCount ++ ;	// リピート回数
+				}
+			}
+		}
+
+		/// <summary>
+		/// プレスを強制的に実行する
+		/// </summary>
+		public void ExecuteRepeatPress( int count )
+		{
+			OnRepeatPressInner( count ) ;
+		}
+
+		// 内部リスナー
+		private void OnRepeatPressInner( int count )
+		{
+			// 識別子
+			string identity = Identity ;
+			if( string.IsNullOrEmpty( identity ) == true )
+			{
+				identity = name ;
+			}
+
+			// 最初のコールバック
+			OnRepeatPressAction?.Invoke( identity, this, count ) ;
+			OnRepeatPressDelegate?.Invoke( identity, this, count ) ;
+		}
+		
+		/// <summary>
+		/// ビューを押し続けた際に呼び出されるアクションを設定する → OnRepeatPress( string identity, UIView view )
+		/// </summary>
+		/// <param name="onRepeatPress">アクションメソッド</param>
+		public void SetOnRepeatPress( Action<string, UIView, int> onRepeatPressAction, float repeatPressStartingTime = 0.75f, float repeatPressIntervalTime = 0.25f )
+		{
+			OnRepeatPressAction = onRepeatPressAction ;
+			if( repeatPressStartingTime >  0 )
+			{
+				m_RepeatPressStartingTime = repeatPressStartingTime ;
+				m_RepeatPressIntervalTime = repeatPressIntervalTime ;
+			}
+		}
+
+		/// <summary>
+		/// ビューを長押しした際に呼び出されるデリゲートを追加する → OnLongPress( string identity, UIView view )
+		/// </summary>
+		/// <param name="onRepeatPressDelegate">デリゲートメソッド</param>
+		public void AddOnRepeatPress( OnRepeatPress onRepeatPressDelegate, float repeatPressStartingTime = 0.75f, float repeatPressIntervalTime = 0.25f )
+		{
+			OnRepeatPressDelegate += onRepeatPressDelegate ;
+			if( repeatPressStartingTime >  0 )
+			{
+				m_RepeatPressStartingTime = repeatPressStartingTime ;
+				m_RepeatPressIntervalTime = repeatPressIntervalTime ;
+			}
+		}
+
+		/// <summary>
+		/// ビューを長押しした際に呼び出されるデリゲートを削除する
+		/// </summary>
+		/// <param name="onRepeatPressDelegate">デリゲートメソッド</param>
+		public void RemoveOnRepeatPress( OnRepeatPress onRepeatPressDelegate )
+		{
+			OnRepeatPressDelegate -= onRepeatPressDelegate ;
+		}
+
+		/// <summary>
+		/// リピートの間隔時間を設定する
+		/// </summary>
+		/// <param name="repeatPressIntervalTime"></param>
+		public void SetRepeatPressIntervalTime( float repeatPressIntervalTime )
+		{
+			if( repeatPressIntervalTime >  0 )
+			{
+				m_RepeatPressIntervalTime = repeatPressIntervalTime ;
+			}
+		}
+
+		//----------------------
+		// LongPress		
+
+		/// <summary>
+		/// ビューを長押しした際に呼び出されるアクション
+		/// </summary>
+		public Action<string, UIView> OnLongPressAction ;
+		
+		/// <summary>
+		/// ビューを長押しした際に呼び出されるデリゲートの定義
+		/// </summary>
+		/// <param name="identity">ビューの識別名(未設定の場合はゲームオブジェクト名)</param>
+		/// <param name="view">ビューのインスタンス</param>
+		public delegate void OnLongPress( string identity, UIView view ) ;
+
+		/// <summary>
+		/// ビューを長押しした際に呼び出されるデリゲート
+		/// </summary>
+		public OnLongPress OnLongPressDelegate ;
+
+		// 内部リスナー
+		private void ProcessLongPress()
+		{
+			if( m_LongPressExecuted == false && m_LongPressTimer >  0 )
+			{
+				float deltaTime = Time.realtimeSinceStartup - m_LongPressTimer ;
+
+				if( deltaTime >= m_LongPressDecisionTime )
+				{
+					m_LongPressExecuted = true ;	// 押し続けている扱いとする
+					m_LongPressTimer	= 0 ;
+
+					OnLongPressInner() ;
+				}
+			}
+		}
+
+		/// <summary>
+		/// プレスを強制的に実行する
+		/// </summary>
+		public void ExecuteLongPress()
+		{
+			OnLongPressInner() ;
+		}
+
+		// 内部リスナー
+		private void OnLongPressInner()
+		{
+			string identity = Identity ;
+			if( string.IsNullOrEmpty( identity ) == true )
+			{
+				identity = name ;
+			}
+
+			// 最初に長押しと判定された時だけコールバックを呼ぶ
+			OnLongPressAction?.Invoke( identity, this ) ;
+			OnLongPressDelegate?.Invoke( identity, this ) ;
+
+			if( TryGetComponent<UITransition>( out var transition ) == true )
+			{
+				transition.OnPointerUp( null ) ;
+			}
+		}
+		
+		/// <summary>
+		/// ビューを長押しした際に呼び出されるアクションを設定する → OnLongPress( string identity, UIView view )
+		/// </summary>
+		/// <param name="onLongPress">アクションメソッド</param>
+		public void SetOnLongPress( Action<string, UIView> onLongPressAction, float longPressDecisionTime = 0.75f )
+		{
+			OnLongPressAction = onLongPressAction ;
+			if( longPressDecisionTime >  0 )
+			{
+				m_LongPressDecisionTime = longPressDecisionTime ;
+			}
+		}
+
+		/// <summary>
+		/// ビューを長押しした際に呼び出されるデリゲートを追加する → OnLongPress( string identity, UIView view )
+		/// </summary>
+		/// <param name="onLongPressDelegate">デリゲートメソッド</param>
+		public void AddOnLongPress( OnLongPress onLongPressDelegate, float longPressDecisionTime = 0.75f )
+		{
+			OnLongPressDelegate += onLongPressDelegate ;
+			if( longPressDecisionTime >  0 )
+			{
+				m_LongPressDecisionTime = longPressDecisionTime ;
+			}
+		}
+
+		/// <summary>
+		/// ビューを長押しした際に呼び出されるデリゲートを削除する
+		/// </summary>
+		/// <param name="onLongPressDelegate">デリゲートメソッド</param>
+		public void RemoveOnLongPress( OnLongPress onLongPressDelegate )
+		{
+			OnLongPressDelegate -= onLongPressDelegate ;
+		}
+
+		//----------------------
 		// Click
 
 		/// <summary>
@@ -9481,7 +9708,6 @@ namespace uGUIHelper
 		}
 		
 		//----------------------
-
 		// SmartClick
 
 		/// <summary>
@@ -9575,223 +9801,6 @@ namespace uGUIHelper
 		}
 		
 		//----------------------
-
-		// LongPress		
-
-		/// <summary>
-		/// ビューを長押しした際に呼び出されるアクション
-		/// </summary>
-		public Action<string, UIView> OnLongPressAction ;
-		
-		/// <summary>
-		/// ビューを長押しした際に呼び出されるデリゲートの定義
-		/// </summary>
-		/// <param name="identity">ビューの識別名(未設定の場合はゲームオブジェクト名)</param>
-		/// <param name="view">ビューのインスタンス</param>
-		public delegate void OnLongPress( string identity, UIView view ) ;
-
-		/// <summary>
-		/// ビューを長押しした際に呼び出されるデリゲート
-		/// </summary>
-		public OnLongPress OnLongPressDelegate ;
-
-		// 内部リスナー
-		private void OnLongPressInner()
-		{
-			if( m_LongPressEnabled == false && m_LongPressStartTime >  0 )
-			{
-				float time = Time.realtimeSinceStartup - m_LongPressStartTime ;
-
-				string identity = Identity ;
-				if( string.IsNullOrEmpty( identity ) == true )
-				{
-					identity = name ;
-				}
-
-				if( time >= m_LongPressDecisionTime )
-				{
-					m_LongPressEnabled = true ;	// 押し続けている扱いとする
-					m_LongPressStartTime = 0 ;
-
-					// 最初に長押しと判定された時だけコールバックを呼ぶ
-					OnLongPressAction?.Invoke( identity, this ) ;
-					OnLongPressDelegate?.Invoke( identity, this ) ;
-
-					UITransition transition = GetComponent<UITransition>() ;
-					if( transition != null )
-					{
-						transition.OnPointerUp( null ) ;
-					}
-				}
-			}
-		}
-		
-		/// <summary>
-		/// ビューを長押しした際に呼び出されるアクションを設定する → OnLongPress( string identity, UIView view )
-		/// </summary>
-		/// <param name="onLongPress">アクションメソッド</param>
-		public void SetOnLongPress( Action<string, UIView> onLongPressAction, float longPressDecisionTime = 0.75f )
-		{
-			OnLongPressAction = onLongPressAction ;
-			if( longPressDecisionTime >  0 )
-			{
-				m_LongPressDecisionTime = longPressDecisionTime ;
-			}
-		}
-
-		/// <summary>
-		/// ビューを長押しした際に呼び出されるデリゲートを追加する → OnLongPress( string identity, UIView view )
-		/// </summary>
-		/// <param name="onLongPressDelegate">デリゲートメソッド</param>
-		public void AddOnLongPress( OnLongPress onLongPressDelegate, float longPressDecisionTime = 0.75f )
-		{
-			OnLongPressDelegate += onLongPressDelegate ;
-			if( longPressDecisionTime >  0 )
-			{
-				m_LongPressDecisionTime = longPressDecisionTime ;
-			}
-		}
-
-		/// <summary>
-		/// ビューを長押しした際に呼び出されるデリゲートを削除する
-		/// </summary>
-		/// <param name="onLongPressDelegate">デリゲートメソッド</param>
-		public void RemoveOnLongPress( OnLongPress onLongPressDelegate )
-		{
-			OnLongPressDelegate -= onLongPressDelegate ;
-		}
-
-		//----------------------
-
-		// Repeat		
-
-		/// <summary>
-		/// ビューを長押しした際に呼び出されるアクション
-		/// </summary>
-		public Action<string, UIView, int> OnRepeatPressAction ;
-		
-		/// <summary>
-		/// ビューを長押しした際に呼び出されるデリゲートの定義
-		/// </summary>
-		/// <param name="identity">ビューの識別名(未設定の場合はゲームオブジェクト名)</param>
-		/// <param name="view">ビューのインスタンス</param>
-		public delegate void OnRepeatPress( string identity, UIView view, int repeatCount ) ;
-
-		/// <summary>
-		/// ビューを長押しした際に呼び出されるデリゲート
-		/// </summary>
-		public OnRepeatPress OnRepeatPressDelegate ;
-
-		// 内部リスナー
-		private void OnRepeatPressInner( int state )
-		{
-			// 識別子
-			string identity = Identity ;
-			if( string.IsNullOrEmpty( identity ) == true )
-			{
-				identity = name ;
-			}
-
-			if( state == 0 )
-			{
-				m_RepeatPressStartTime = Time.realtimeSinceStartup ;
-
-				// 最初のコールバック
-				OnRepeatPressAction?.Invoke( identity, this, m_RepeatPressCount ) ;
-				OnRepeatPressDelegate?.Invoke( identity, this, m_RepeatPressCount ) ;
-
-				m_RepeatPressCount ++ ;	// リピート回数
-			}
-			else
-			{
-				// それ以降のコールバック
-				if( m_RepeatPressCount == 1 )
-				{
-					float startTime = Time.realtimeSinceStartup ;
-					float deltaTime = startTime - m_RepeatPressStartTime ;
-
-					if( deltaTime >= m_RepeatPressDecisionTime )
-					{
-						m_RepeatPressStartTime = startTime ;	// リピートへ
-
-						// 最初に長押しと判定された時だけコールバックを呼ぶ
-						OnRepeatPressAction?.Invoke( identity, this, m_RepeatPressCount ) ;
-						OnRepeatPressDelegate?.Invoke( identity, this, m_RepeatPressCount ) ;
-
-						m_RepeatPressCount ++ ;	// リピート回数
-					}
-				}
-				else
-				if( m_RepeatPressCount >= 2 )
-				{
-					float startTime = Time.realtimeSinceStartup ;
-					float deltaTime = startTime - m_RepeatPressStartTime ;
-
-					if( deltaTime >= m_RepeatPressIntervalTime )
-					{
-						m_RepeatPressStartTime = startTime ;	// リピートへ
-
-						// 最初に長押しと判定された時だけコールバックを呼ぶ
-						OnRepeatPressAction?.Invoke( identity, this, m_RepeatPressCount ) ;
-						OnRepeatPressDelegate?.Invoke( identity, this, m_RepeatPressCount ) ;
-
-						m_RepeatPressCount ++ ;	// リピート回数
-					}
-				}
-			}
-		}
-		
-		/// <summary>
-		/// ビューを長押しした際に呼び出されるアクションを設定する → OnLongPress( string identity, UIView view )
-		/// </summary>
-		/// <param name="onRepeatPress">アクションメソッド</param>
-		public void SetOnRepeatPress( Action<string, UIView, int> onRepeatPressAction, float repeatPressDecisionTime = 0.75f, float repeatPressIntervalTime = 0.25f )
-		{
-			OnRepeatPressAction = onRepeatPressAction ;
-			if( repeatPressDecisionTime >  0 )
-			{
-				m_RepeatPressDecisionTime = repeatPressDecisionTime ;
-				m_RepeatPressIntervalTime = repeatPressIntervalTime ;
-			}
-		}
-
-		/// <summary>
-		/// ビューを長押しした際に呼び出されるデリゲートを追加する → OnLongPress( string identity, UIView view )
-		/// </summary>
-		/// <param name="onRepeatPressDelegate">デリゲートメソッド</param>
-		public void AddOnRepeatPress( OnRepeatPress onRepeatPressDelegate, float repeatPressDecisionTime = 0.75f, float repeatPressIntervalTime = 0.25f )
-		{
-			OnRepeatPressDelegate += onRepeatPressDelegate ;
-			if( repeatPressDecisionTime >  0 )
-			{
-				m_RepeatPressDecisionTime = repeatPressDecisionTime ;
-				m_RepeatPressIntervalTime = repeatPressIntervalTime ;
-			}
-		}
-
-		/// <summary>
-		/// ビューを長押しした際に呼び出されるデリゲートを削除する
-		/// </summary>
-		/// <param name="onRepeatPressDelegate">デリゲートメソッド</param>
-		public void RemoveOnRepeatPress( OnRepeatPress onRepeatPressDelegate )
-		{
-			OnRepeatPressDelegate -= onRepeatPressDelegate ;
-		}
-
-		/// <summary>
-		/// リピートの間隔時間を設定する
-		/// </summary>
-		/// <param name="repeatPressIntervalTime"></param>
-		public void SetRepeatPressIntervalTime( float repeatPressIntervalTime )
-		{
-			if( repeatPressIntervalTime >  0 )
-			{
-				m_RepeatPressIntervalTime = repeatPressIntervalTime ;
-			}
-		}
-
-		//----------------------
-
 		// Drag
 
 		/// <summary>
@@ -9858,7 +9867,6 @@ namespace uGUIHelper
 		}
 
 		//----------------------
-
 		// Flick
 
 		/// <summary>
@@ -9940,7 +9948,6 @@ namespace uGUIHelper
 		}
 
 		//----------------------
-
 		// Pinch
 
 		/// <summary>
@@ -10114,7 +10121,6 @@ namespace uGUIHelper
 		}
 
 		//----------------------
-
 		// Touch
 
 		/// <summary>
@@ -10242,10 +10248,78 @@ namespace uGUIHelper
 			OnTouchDelegate -= onTouchDelegate ;
 		}
 
+		//-------------------------------------------------------------------
+		// Wheel
+
+		/// <summary>
+		/// ホイールの状態に変化があった際に呼び出されるアクション
+		/// </summary>
+		public Action<string,UIView,float> OnWheelAction ;
+		
+		/// <summary>
+		/// ホイールの状態に変化があった際に呼び出されるデリゲートの定義
+		/// </summary>
+		/// <param name="identity">ビューの識別名(未設定の場合はゲームオブジェクト名)</param>
+		/// <param name="view">ビューのインスタンス</param>
+		public delegate void OnWheel( string identity, UIView view, float value ) ;
+
+		/// <summary>
+		/// ホイールの状態に変化があった際に呼び出されるデリゲートの定義
+		/// </summary>
+		public OnWheel OnWheelDelegate ;
+
+		// 内部処理
+		private void ProcessWheel()
+		{
+			if( IsHover == true )
+			{
+				var wheelValue = InputAdapter.UIEventSystem.MouseScrollDelta.y ;
+
+				if( wheelValue != 0 )
+				{
+					string identity = Identity ;
+					if( string.IsNullOrEmpty( identity ) == true )
+					{
+						identity = name ;
+					}
+
+					OnWheelAction?.Invoke( identity, this, wheelValue ) ;
+					OnWheelDelegate?.Invoke( identity, this, wheelValue ) ;
+				}
+			}
+		}
+		
+		/// <summary>
+		/// ホイールの状態に変化があった際に呼び出されるアクションを設定する → OnPinchDelegate( string identity, UIView view, PointerState state, float ratio, float distance, Vector2 p0, Vector2 p1 )
+		/// </summary>
+		/// <param name="onWheelAction">アクションメソッド</param>
+		public void SetOnWheel( Action<string, UIView, float> onWheelAction )
+		{
+			OnWheelAction = onWheelAction ;
+		}
+
+		/// <summary>
+		/// ホイールの状態に変化があった際に呼び出されるデリゲートを追加する → OnTouchDelegate( string tIdentity, UIView tView, TouchState[] tTouchState )
+		/// </summary>
+		/// <param name="onWheelDelegate">デリゲートメソッド</param>
+		public void AddOnWheel( OnWheel onWheelDelegate )
+		{
+			OnWheelDelegate += onWheelDelegate ;
+		}
+
+		/// <summary>
+		/// ホイールの状態に変化があった際に呼び出されるデリゲートを削除する
+		/// </summary>
+		/// <param name="onWheelDelegate">デリゲートメソッド</param>
+		public void RemoveOnWheel( OnWheel onWheelDelegate )
+		{
+			OnWheelDelegate -= onWheelDelegate ;
+		}
+
 		//--------------------------------------------------------------------
 
-		private readonly Dictionary<EventTriggerType, Action<string,UIView,EventTriggerType>> m_EventTriggerCallbackList = new Dictionary<EventTriggerType, Action<string, UIView, EventTriggerType>>() ;
-		private readonly Dictionary<EventTriggerType, EventTrigger.Entry>                     m_EventTriggerEntryList    = new Dictionary<EventTriggerType, EventTrigger.Entry>() ;
+		private readonly Dictionary<EventTriggerType, Action<string,UIView,EventTriggerType>> m_EventTriggerCallbackList = new () ;
+		private readonly Dictionary<EventTriggerType, EventTrigger.Entry>                     m_EventTriggerEntryList    = new () ;
 
 		/// <summary>
 		/// EventTrigger のコールバックメソッドを登録する
@@ -10264,6 +10338,7 @@ namespace uGUIHelper
 				return false ;
 			}
 
+			
 			EventTrigger eventTrigger = CEventTrigger ;
 			if( eventTrigger == null )
 			{
@@ -10272,10 +10347,7 @@ namespace uGUIHelper
 				return false ;
 			}
 
-			if( eventTrigger.triggers == null )
-			{
-				eventTrigger.triggers = new List<EventTrigger.Entry>() ;
-			}
+			eventTrigger.triggers ??= new List<EventTrigger.Entry>() ;
 		
 			int i ;
 			EventTriggerType type ;
@@ -10285,6 +10357,7 @@ namespace uGUIHelper
 			{
 				// 既に登録されている場合は上書きになる
 				type = typeArray[ i ] ;
+
 				if( m_EventTriggerCallbackList.ContainsKey( type ) == false )
 				{
 					// 新規登録
@@ -10295,6 +10368,10 @@ namespace uGUIHelper
 					// 上書登録
 					m_EventTriggerCallbackList[ type ] = callback ;
 				}
+
+				//-------------
+
+				entry = null ;
 
 				// エントリーが既に登録されているかを確認する
 				if( m_EventTriggerEntryList.ContainsKey( type ) == true )
@@ -10311,42 +10388,47 @@ namespace uGUIHelper
 				else
 				{
 					// 登録されていないので新規にエントリーを生成する
-					entry = new EventTrigger.Entry()
+					UnityAction<BaseEventData> action = type switch
 					{
-						eventID = type
+						EventTriggerType.PointerEnter				=> OnPointerEnterInner,
+						EventTriggerType.PointerExit				=> OnPointerExitInner,
+						EventTriggerType.PointerDown				=> OnPointerDownInner,
+						EventTriggerType.PointerUp					=> OnPointerUpInner,
+						EventTriggerType.PointerClick				=> OnPointerClickInner,
+						EventTriggerType.Drag						=> OnDragInner,
+						EventTriggerType.Drop						=> OnDropInner,
+						EventTriggerType.Scroll						=> OnScrollInner,
+						EventTriggerType.UpdateSelected				=> OnUpdateSelectedInner,
+						EventTriggerType.Select						=> OnSelectInner,
+						EventTriggerType.Deselect					=> OnDeselectInner,
+						EventTriggerType.Move						=> OnMoveInner,
+						EventTriggerType.InitializePotentialDrag	=> OnInitializePotentialDragInner,
+						EventTriggerType.BeginDrag					=> OnBeginDragInner,
+						EventTriggerType.EndDrag					=> OnEndDragInner,
+						EventTriggerType.Submit						=> OnSubmitInner,
+						EventTriggerType.Cancel						=> OnCancelInner,
+						_ => null,
 					} ;
-					UnityAction<BaseEventData> action  = null ;
 
-					switch( type )
+					if( action != null )
 					{
-						case EventTriggerType.PointerEnter				: action = OnPointerEnterInner				; break ;
-						case EventTriggerType.PointerExit				: action = OnPointerExitInner				; break ;
-						case EventTriggerType.PointerDown				: action = OnPointerDownInner				; break ;
-						case EventTriggerType.PointerUp					: action = OnPointerUpInner					; break ;
-						case EventTriggerType.PointerClick				: action = OnPointerClickInner				; break ;
-						case EventTriggerType.Drag						: action = OnDragInner						; break ;
-						case EventTriggerType.Drop						: action = OnDropInner						; break ;
-						case EventTriggerType.Scroll					: action = OnScrollInner					; break ;
-						case EventTriggerType.UpdateSelected			: action = OnUpdateSelectedInner			; break ;
-						case EventTriggerType.Select					: action = OnSelectInner					; break ;
-						case EventTriggerType.Deselect					: action = OnDeselectInner					; break ;
-						case EventTriggerType.Move						: action = OnMoveInner						; break ;
-						case EventTriggerType.InitializePotentialDrag	: action = OnInitializePotentialDragInner	; break ;
-						case EventTriggerType.BeginDrag					: action = OnBeginDragInner					; break ;
-						case EventTriggerType.EndDrag					: action = OnEndDragInner					; break ;
-						case EventTriggerType.Submit					: action = OnSubmitInner					; break ;
-						case EventTriggerType.Cancel					: action = OnCancelInner					; break ;
+						entry = new EventTrigger.Entry()
+						{
+							eventID = type
+						} ;
+						entry.callback.AddListener( action ) ;
+
+						m_EventTriggerEntryList.Add( type, entry ) ;
 					}
-
-					entry.callback.AddListener( action ) ;
-
-					m_EventTriggerEntryList.Add( type, entry ) ;
 				}
 
-				// 改めてエントリーを登録する
-				eventTrigger.triggers.Add( entry ) ;
+				if( entry != null )
+				{
+					// 改めてエントリーを登録する
+					eventTrigger.triggers.Add( entry ) ;
+				}
 			}
-
+			
 			return true ;
 		}
 
@@ -10471,10 +10553,9 @@ namespace uGUIHelper
 			{
 				Vector3 position ;
 
-
 				if( m_PointerId == -1 )
 				{
-					position = Input.mousePosition ;
+					position = InputAdapter.UIEventSystem.MousePosition ;
 					position = GetLocalPosition( position ) ;
 				}
 				else
@@ -10527,7 +10608,7 @@ namespace uGUIHelper
 				int i ;
 				for( i  = 0 ; i <= 2 ; i ++ )
 				{
-					if( Input.GetMouseButton( i ) == true )
+					if( InputAdapter.UIEventSystem.GetMouseButton( i ) == true )
 					{
 						count = 1 ;
 					}
@@ -10608,10 +10689,10 @@ namespace uGUIHelper
 				// 注意:タッチするとエミュレーション的に Input.GetMouseButton() が反応してしまう
 				for( i  = 0 ; i <= 2 ; i ++ )
 				{
-					if( Input.GetMouseButton( i ) == true )
+					if( InputAdapter.UIEventSystem.GetMouseButton( i ) == true )
 					{
 						state |= ( 1 << i ) ;
-						pointer = GetLocalPosition( Input.mousePosition ) ;
+						pointer = GetLocalPosition( InputAdapter.UIEventSystem.MousePosition ) ;
 					}
 				}
 			}
@@ -10629,7 +10710,7 @@ namespace uGUIHelper
 		/// </summary>
 		/// <param name="rPointer"></param>
 		/// <returns></returns>
-		public ( int, Vector2[] ) GetMultiPointer()
+		public ( int, Vector2[] ) GetMultiPointer( bool isRaycastCheck = false )
 		{
 			int i, l ;
 			int states = 0 ;
@@ -10652,39 +10733,52 @@ namespace uGUIHelper
 					int fingerId = touch.fingerId ;
 					Vector2 position = touch.position ;
 
-					e = -1 ;
-					for( j  = 0 ; j <  l ; j ++ )
+					bool isHit = true ;
+					if( isRaycastCheck == true )
 					{
-						if( m_MultiTouchState[ j ] == true )
+						// このビューにレイキャストヒットしなければ無効
+						if( IsRaycastHit( position ) == false )
 						{
-							if( m_MultiTouchFingerId[ j ] == fingerId )
-							{
-								// 既に登録済み
-								entries[ j ] = true ;
-								pointers[ j ] = position ;
-								states |= ( 1 << j ) ;
-								break ;
-							}
+							isHit = false ;
 						}
-						else
-						{
-							// 空いているスロットを発見した
-							if( e <  0 )
-							{
-								e  = j ;
-							}
-						}	
 					}
 
-					if( j >= l && e <  l )
+					if( isHit == true )
 					{
-						// 新規登録
-						m_MultiTouchState[ e ] = true ;
-						m_MultiTouchFingerId[ e ] = fingerId ;
+						e = -1 ;
+						for( j  = 0 ; j <  l ; j ++ )
+						{
+							if( m_MultiTouchState[ j ] == true )
+							{
+								if( m_MultiTouchFingerId[ j ] == fingerId )
+								{
+									// 既に登録済み
+									entries[ j ] = true ;
+									pointers[ j ] = position ;
+									states |= ( 1 << j ) ;
+									break ;
+								}
+							}
+							else
+							{
+								// 空いているスロットを発見した
+								if( e <  0 )
+								{
+									e  = j ;
+								}
+							}	
+						}
 
-						entries[ e ] = true ;
-						pointers[ e ] = position ;
-						states |= ( 1 << e ) ;
+						if( j >= l && e <  l )
+						{
+							// 新規登録
+							m_MultiTouchState[ e ] = true ;
+							m_MultiTouchFingerId[ e ] = fingerId ;
+
+							entries[ e ] = true ;
+							pointers[ e ] = position ;
+							states |= ( 1 << e ) ;
+						}
 					}
 				}
 			}
@@ -10705,6 +10799,7 @@ namespace uGUIHelper
 				{
 					if( entries[ i ] == true )
 					{
+						// 登録があったスロットのみローカル座標に変換する
 						pointers[ i ] = GetLocalPosition( pointers[ i ] ) ;
 					}
 				}
@@ -10720,42 +10815,78 @@ namespace uGUIHelper
 				c = 0 ; j = -1 ;
 				for( i  = 0 ; i <= 2 ; i ++ )
 				{
-					if( Input.GetMouseButton( i ) == true )
+					if( InputAdapter.UIEventSystem.GetMouseButton( i ) == true )
 					{
-						states |= ( 1 << i ) ;
-						entries[ i ] = true ;
-						pointers[ i ] = GetLocalPosition( Input.mousePosition ) ;
+						Vector2 position = InputAdapter.UIEventSystem.MousePosition ;
 
-						c ++ ;
-						j = i ;
+						bool isHit = true ;
+						if( isRaycastCheck == true )
+						{
+							// このビューにレイキャストヒットしなければ無効
+							if( IsRaycastHit( position ) == false )
+							{
+								isHit = false ;
+							}
+						}
+
+						if( isHit == true )
+						{
+							states |= ( 1 << i ) ;
+							entries[ i ] = true ;
+							pointers[ i ] = GetLocalPosition( position ) ;
+
+							c ++ ;
+							j = i ;
+						}
 					}
 				}
 
+
+				//-----------------------------------------------------------------------------------------
+				// ピンチ動作のエミュレート(強制的に２点タッチに変える)
+
 				// 注意:Unity Remote 5 を起動しているとキーボードの押下が取れない
 
+#if UNITY_EDITOR
 				if( c == 1 )
 				{
-#if UNITY_EDITOR
-					if( ( Input.GetKey( KeyCode.LeftControl ) == true || Input.GetKey( KeyCode.RightControl ) == true ) && Input.GetKey( KeyCode.X ) == true )
+					if( InputAdapter.UIEventSystem.GetKey( InputAdapter.KeyCodes.LeftControl ) == true || InputAdapter.UIEventSystem.GetKey( InputAdapter.KeyCodes.RightControl ) == true )
+					{
+						if( m_PinchEmulateMessage == false )
+						{
+							m_PinchEmulateMessage  = true ;
+							Debug.Log( "<color=#00FF00>[UIView] CTRL + X => Pinch X | CTRL + Y => Pinch Y</color>" ) ;
+						}
+					}
+
+					if( ( InputAdapter.UIEventSystem.GetKey( InputAdapter.KeyCodes.LeftControl ) == true || InputAdapter.UIEventSystem.GetKey( InputAdapter.KeyCodes.RightControl ) == true ) && InputAdapter.UIEventSystem.GetKey( InputAdapter.KeyCodes.X ) == true )
 					{
 						j ++ ;
 						states |= ( 1 << j ) ;
 						pointers[ j ] = new Vector2( - pointers[ j - 1 ].x, pointers[ j - 1 ].y ) ;
 					}
-					if( ( Input.GetKey( KeyCode.LeftControl ) == true || Input.GetKey( KeyCode.RightControl ) == true ) && Input.GetKey( KeyCode.Y ) == true )
+					if( ( InputAdapter.UIEventSystem.GetKey( InputAdapter.KeyCodes.LeftControl ) == true || InputAdapter.UIEventSystem.GetKey( InputAdapter.KeyCodes.RightControl ) == true ) && InputAdapter.UIEventSystem.GetKey( InputAdapter.KeyCodes.Y ) == true )
 					{
 						j ++ ;
 						states |= ( 1 << j ) ;
 						pointers[ j ] = new Vector2( pointers[ j - 1 ].x, - pointers[ j - 1 ].y ) ;
 					}
-#endif
 				}
+				else
+				{
+					m_PinchEmulateMessage = false ;
+				}
+#endif
 			}
 
 			//----------------------------------------------------------
 
 			return ( states, pointers ) ;
 		}
+
+#if UNITY_EDITOR
+		private bool m_PinchEmulateMessage = false ;
+#endif
 
 		/// <summary>
 		/// スクリーン座標に該当するビュー上の座標を取得する
@@ -10831,9 +10962,8 @@ namespace uGUIHelper
 		/// <returns></returns>
 		public float GetWheelDistance()
 		{
-			 return Input.GetAxis( "Mouse ScrollWheel" ) ;
+			 return InputAdapter.UIEventSystem.MouseScrollDelta.y ;
 		}
-
 
 		/// <summary>
 		/// ピンチの距離を取得する
@@ -10866,22 +10996,249 @@ namespace uGUIHelper
 			}
 			set
 			{
-				if( m_BackKeyEnabled != value )
-				{
-					m_BackKeyEnabled = value ;
+				m_BackKeyEnabled = value ;
+			}
+		}
 
-					// バックキーの対応処理
-					if( m_BackKeyEnabled == true )
+		/// <summary>
+		/// バックキー連携でレイキャストヒットを無視して反応するようにするかどうか
+		/// </summary>
+		[SerializeField]
+		protected bool			m_IsBackKeyIgnoreRaycastTarget = false ;
+		public    bool			  IsBackKeyIgnoreRaycastTarget
+		{
+			get
+			{
+				return m_IsBackKeyIgnoreRaycastTarget ;
+			}
+			set
+			{
+				m_IsBackKeyIgnoreRaycastTarget  = value ;
+			}
+		}
+
+		// バックキーを処理する
+		private void ProcessBackKey()
+		{
+			if( ActiveInHierarchy == true && IsAnyTweenPlayingInParents == false && ( ( IsBackKeyIgnoreRaycastTarget == false && Alpha >  0 ) || IsBackKeyIgnoreRaycastTarget == true ) && IsBackKeyAvailable() == true )
+			{
+				// バックキーは有効
+				if( this is UIButton button )
+				{
+					if( button.Interactable == true )
 					{
-						UIEventSystem.RemoveBackKeyTarget( this ) ;
-						UIEventSystem.AddBackKeyTarget( this ) ;
+						button.ExecuteButtonClick() ;
 					}
-					else
+				}
+				else
+				if( this is UIImage image )
+				{
+					if( image.IsInteraction == true )
 					{
-						UIEventSystem.RemoveBackKeyTarget( this ) ;
+						image.ExecuteClick() ;
 					}
 				}
 			}
+		}
+
+		// バックキーが押せるか確認する
+		private readonly PointerEventData		m_BK_EventDataCurrentPosition = new ( EventSystem.current ) ;
+		private readonly List<RaycastResult>	m_BK_Results = new () ;
+
+		// バックキーが現在有効な状態か確認する
+		private bool IsBackKeyAvailable()
+		{
+			// バックキー対象のスクリーン座標を計算する
+			( var backKeyPoints, var backKeyCenter ) = GetScreenArea( gameObject ) ;
+
+			//----------------------------------
+
+			// 一時的にレイキャストターゲットを有効化する(よって Graphic コンポーネント必須)
+			bool raycastTarget = true ;
+			if( IsBackKeyIgnoreRaycastTarget == true && RaycastTarget == false )
+			{
+				raycastTarget = RaycastTarget ;
+				RaycastTarget = true ;
+			}
+
+			//----------------------------------------------------------
+
+			bool isAvailable = false ;
+
+			// レイキャストを実行しヒットする対象を検出する
+			m_BK_EventDataCurrentPosition.position = backKeyCenter ;
+			m_BK_Results.Clear() ;
+			EventSystem.current.RaycastAll( m_BK_EventDataCurrentPosition, m_BK_Results ) ;
+
+			// ヒットしない事は基本的にありえない
+			foreach( var result in m_BK_Results )
+			{
+				if( result.gameObject == gameObject )
+				{
+					// 有効
+					isAvailable = true ;
+					break ;
+				}
+				else
+				{
+					// レイキャストヒット対象がバックキーそのものでなくても親にバックキーが含まれていたらスルーする
+					if( IsContainParent( gameObject, result.gameObject ) == false )
+					{
+						// 親では無い
+						( var blockerPoints, var blockerCenter ) = GetScreenArea( result.gameObject ) ;
+						if( IsCompleteBlocking( backKeyPoints, blockerPoints ) == true )
+						{
+							// 無効
+							isAvailable = false ;
+							break ;
+						}
+					}
+				}
+			}
+
+			//----------------------------------------------------------
+
+			// レイキャスト無効でもヒット判定を有効にしていた場合は設定を元に戻す
+			if( IsBackKeyIgnoreRaycastTarget == true && raycastTarget == false )
+			{
+				RaycastTarget = raycastTarget ;
+			}
+
+			//----------------------------------
+
+			// バックキーが有効か無効か返す
+			return isAvailable ;
+		}
+
+		// スクリーン上の矩形範囲を取得する
+		private ( Vector2[], Vector2 ) GetScreenArea( GameObject go )
+		{
+			if( ( go.transform is RectTransform rt ) == false )
+			{
+				// 取得出来ない
+				throw new Exception( "Not foud rectTransform." ) ;
+			}
+
+			//----------------------------------
+
+			// 横幅・縦幅
+			float tw = rt.rect.width ;
+			float th = rt.rect.height ;
+
+			// レイキャストパディング
+			Vector4 raycastPadding = Vector4.zero ;
+
+			if( go.TryGetComponent<UnityEngine.UI.Image>( out var image ) == true )
+			{
+				raycastPadding = image.raycastPadding ;
+			}
+
+			float tx0 = ( tw * ( 0 - rt.pivot.x ) ) + raycastPadding.x ;	// x = left
+			float ty0 = ( th * ( 0 - rt.pivot.y ) ) + raycastPadding.y ;	// y = bottom
+			float tx1 = ( tw * ( 1 - rt.pivot.x ) ) - raycastPadding.z ;	// z = right
+			float ty1 = ( th * ( 1 - rt.pivot.y ) ) - raycastPadding.w ;	// w = top
+
+			// 角の座標(まだローカルの２次元)	※順番は右回りである事に注意(Ｚ型ではない)
+			Vector2[] points = new Vector2[ 4 ]
+			{
+				new ( tx0, ty0 ),
+				new ( tx1, ty0 ),
+				new ( tx1, ty1 ),
+				new ( tx0, ty1 ),
+			} ;
+
+			// ローカル座標をワールド座標に変換(ローカルのローテーションとスケールも反映)
+			int i, l = points.Length ;
+			for( i  = 0 ; i <  l ; i ++ )
+			{
+				// ローテーションとスケールも考慮するため個別に分ける
+				points[ i ] = rt.TransformPoint( points[ i ] ) ;
+			}
+
+			//----------------------------------
+
+			Camera targetCamera ;
+
+			var parentCanvas = rt.transform.GetComponentInParent<Canvas>() ;
+			if( parentCanvas != null )
+			{
+				if( parentCanvas.worldCamera != null )
+				{
+					// Screen Space - Camera
+					targetCamera = parentCanvas.worldCamera ;
+				}
+				else
+				{
+					// Screen Space - Overlay
+					targetCamera = Camera.main ;
+				}
+			}
+			else
+			{
+				throw new Exception( "Not foud canvas." ) ;
+			}
+
+			// スクリーン座標に変換する
+			Vector2 center = Vector2.zero ;
+			for( i  = 0 ; i <  l ; i ++ )
+			{
+				points[ i ] = RectTransformUtility.WorldToScreenPoint( targetCamera, points[ i ] ) ;
+				center += points[ i ] ;
+			}
+
+			center /= l ;
+
+			return ( points, center ) ;
+		}
+
+		// ブロッカーの親にバックキーが踏まれているかどうか
+		private bool IsContainParent( GameObject backKey, GameObject blocker )
+		{
+			while( blocker.transform.parent != null )
+			{
+				blocker = blocker.transform.parent.gameObject ;
+
+				if( blocker == backKey )
+				{
+					// 含まれている
+					return true ;
+				}
+			}
+
+			// 含まれていない
+			return false ;
+		}
+
+		// バックキーがブロッカーの内側に完全に隠されているか確認する
+		private bool IsCompleteBlocking( Vector2[] backKeyPoints, Vector2[] blockerPoints )
+		{
+			int oi, ol = blockerPoints.Length ;
+			int ii, il = backKeyPoints.Length ;
+
+			for( oi = 0 ; oi <  ol ; oi ++ )
+			{
+				var op0 = blockerPoints[ oi ] ;
+				var op1 = blockerPoints[ ( oi + 1 ) % ol ] ;
+
+				for( ii = 0 ; ii <  il ; ii ++ )
+				{
+					var ip = backKeyPoints[ ii ] ;
+
+					// 外積を用いて表裏判定を行う(Cross)
+					var v0 = op1 - op0 ;
+					var v1 = ip  - op0 ;
+					var cross = ( v0.x * v1.y ) - ( v0.y * v1.x ) ;
+
+					if( cross <  0 )
+					{
+						// 外側にある
+						return false ;
+					}
+				}
+			}
+
+			// 全て内側にある
+			return true ;
 		}
 
 		//--------------------------------------------------------------------
@@ -11127,10 +11484,10 @@ namespace uGUIHelper
 			{
 				string path = name ;
 
-				Transform t = transform.parent ;
+				var t = transform.parent ;
 				while( t != null )
 				{
-					path = t.name + "/" + path ;
+					path = $"{t.name}/{path}" ;
 					t = t.parent ;
 				}
 				return path ;
@@ -11150,7 +11507,7 @@ namespace uGUIHelper
 			}
 
 			m_WaitForPress = false ;
-			AsyncState state = new AsyncState( this ) ;
+			var state = new AsyncState( this ) ;
 			StartCoroutine( WaitForPress_Private( state ) ) ;
 
 			return state ;
@@ -11177,7 +11534,7 @@ namespace uGUIHelper
 			}
 
 			m_WaitForClick = false ;
-			AsyncState state = new AsyncState( this ) ;
+			var state = new AsyncState( this ) ;
 			StartCoroutine( WaitForClick_Private( state ) ) ;
 
 			return state ;
@@ -11247,7 +11604,7 @@ namespace uGUIHelper
 		{
 			if( CAnimator == null )
 			{
-				Debug.LogWarning( "Not found Animator Component" ) ;
+				Debug.LogWarning( "Not found Animator Component : " + Path ) ;
 				return false ;
 			}
 
@@ -11295,7 +11652,7 @@ namespace uGUIHelper
 		{
 			if( CAnimator == null )
 			{
-				Debug.LogWarning( "Not found Animator Component" ) ;
+				Debug.LogWarning( "Not found Animator Component : Path " + Path ) ;
 				return false ;
 			}
 
@@ -11343,7 +11700,7 @@ namespace uGUIHelper
 
 			var animation = m_ActiveAnimations[ layer ] ;
 
-			ActiveAnimatorState state = new ActiveAnimatorState()
+			var state = new ActiveAnimatorState()
 			{
 				Name		= animation.Name,
 				Duration	= animation.Duration,
@@ -11395,7 +11752,7 @@ namespace uGUIHelper
 		{
 			if( CAnimator == null )
 			{
-				Debug.LogWarning( "Not found Animator Component : [PlayAnimator] StateName = " + stateName + " Path = " + Path ) ;
+				Debug.LogWarning( "Not found Animator Component : [PlayAnimator] StateName = " + stateName + " Path = " + Path, this ) ;
 				return null ;
 			}
 
@@ -11428,18 +11785,16 @@ namespace uGUIHelper
 
 			if( gameObject.activeInHierarchy == false )
 			{
+				Debug.LogWarning( "activeInHierarchy is false : [PlayAnimator] " + stateName + " offset = " + offset ) ;
 				return null ;
 			}
 
-			if( m_ActiveAnimations == null )
-			{
-				m_ActiveAnimations  = new Dictionary<int, ActiveAnimation>() ;
-			}
+			m_ActiveAnimations ??= new Dictionary<int, ActiveAnimation>() ;
 
 			//----------------------------------------------------------
 			// １フレーム目からアニメーションの状態を反映させるため０フレームでアニメーションを実行する
 
-			AsyncState state = new AsyncState( this ) ;
+			var state = new AsyncState( this ) ;
 			StartCoroutine( PlayAnimator_Private( stateName, layer, offset, waitForFinish, onEvent, onStarted, onFinished, state ) ) ;
 			return state ;
 		}
@@ -11675,7 +12030,7 @@ namespace uGUIHelper
 		private List<RaycastResult>	m_VRH_Results		= null ;
 
 		/// <summary>
-		/// ポインターが上にあるリストビュー内のアイテムのインデックスを取得する
+		/// ポインターがこのビューにヒットするか判定する
 		/// </summary>
 		/// <returns></returns>
 		public bool IsRaycastHit()
@@ -11692,9 +12047,9 @@ namespace uGUIHelper
 
 #if UNITY_EDITOR || UNITY_STANDALONE
 
-			position = Input.mousePosition ;
+			position = InputAdapter.UIEventSystem.MousePosition ;
 
-#elif !UNITY_EDITOR && ( UNITY_ANDROID || UNITY_IOS )
+#elif !UNITY_EDITOR && (UNITY_ANDROID || UNITY_IOS)
 
 			if( Input.touchCount == 1 )
 			{
@@ -11708,18 +12063,38 @@ namespace uGUIHelper
 #else
 			return false ;
 #endif
+			return IsRaycastHit( position ) ;
+		}
+
+		/// <summary>
+		/// 指定したスクリーン座標がこのビューにヒットするか判定する
+		/// </summary>
+		/// <returns></returns>
+		public bool IsRaycastHit( float screenPositionX, float screenPositionY )
+		{
+			return IsRaycastHit( new Vector2( screenPositionX, screenPositionY ) ) ;
+		}
+
+		/// <summary>
+		/// 指定したスクリーン座標がこのビューにヒットするか判定する
+		/// </summary>
+		/// <returns></returns>
+		public bool IsRaycastHit( Vector2 screenPosition )
+		{
+			if( EventSystem.current == null )
+			{
+				// まだ準備が整っていない
+				return false ;
+			}
+
+			//----------------------------------------------------------
+
+			Vector2 position = screenPosition ;
 
 			// スクリーン座標からRayを飛ばす
 
-			if( m_VRH_EventData == null )
-			{
-				m_VRH_EventData		= new PointerEventData( EventSystem.current ) ;
-			}
-
-			if( m_VRH_Results == null )
-			{
-				m_VRH_Results		= new List<RaycastResult>() ;
-			}
+			m_VRH_EventData	??= new PointerEventData( EventSystem.current ) ;
+			m_VRH_Results ??= new List<RaycastResult>() ;
 
 			m_VRH_EventData.position = position ;
 			m_VRH_Results.Clear() ;
@@ -11729,7 +12104,7 @@ namespace uGUIHelper
 
 			if( m_VRH_Results.Count >= 1 )
 			{
-				GameObject target = m_VRH_Results[ 0 ].gameObject ;
+				var target = m_VRH_Results[ 0 ].gameObject ;
 
 				while( true )
 				{
@@ -11752,7 +12127,6 @@ namespace uGUIHelper
 
 			return false ;
 		}
-
 
 		//-------------------------------------------------------------------------------------------
 
@@ -11810,8 +12184,310 @@ namespace uGUIHelper
 			// 現在実行されるクリックは無効
 			return false ;
 		}
+
+		//===================================================================================================================
+		// ゲームパッド関係
+
+		//-----------------------------------------------------------
+		// Down 時の詳細な状態
+
+		/// <summary>
+		/// どのモードで動作した際に発せられたコールバックか
+		/// </summary>
+		public enum PressActionTypes
+		{
+			/// <summary>
+			/// 通常
+			/// </summary>
+			NormalPress,
+
+			/// <summary>
+			/// 繰り返し
+			/// </summary>
+			RepeatPress,
+
+			/// <summary>
+			/// 長押し
+			/// </summary>
+			LongPress,
+		}
+
+		/// <summary>
+		/// パッドのオートフォーカス処理の有効無効
+		/// </summary>
+		public bool PadAutoFocusEnabled
+		{
+			get
+			{
+				return m_PadAutoFocusEnabled ;
+			}
+			set
+			{
+				m_PadAutoFocusEnabled = value ;
+			}
+		}
+
+		[SerializeField]
+		protected bool m_PadAutoFocusEnabled = true ;
+
+		//-----------------------------------------------------------
+		// Down と Up を個別に分けたもの
+
+		// ゲームパッドのボタン・アクシスが押された際に呼び出されるコールバック
+		protected Action<int,Vector2[],Vector2> m_OnPadDown ;
+
+		/// <summary>
+		/// ゲームパッドのボタン・アクシスが押された際に呼び出されるコールバックを設定する
+		/// </summary>
+		/// <param name="onPadDown"></param>
+		public void SetOnPadDown( Action<int,Vector2[],Vector2> onPadDown )
+		{
+			m_OnPadDown = onPadDown ;
+		}
+
+		/// <summary>
+		/// UIPadAdapter からの呼び出し専用
+		/// </summary>
+		/// <param name="state"></param>
+		/// <param name="buttonFlags"></param>
+		/// <param name="axisFlags"></param>
+		/// <param name="margedAxisFlag"></param>
+		public void CallOnPadDown( int buttonFlags, Vector2[] axisFlags, Vector2 margedAxisFlag )
+		{
+			m_OnPadDown?.Invoke( buttonFlags, axisFlags, margedAxisFlag ) ;
+		}
+
+		//---------------
+
+		// ゲームパッドのボタン・アクシスが離された際に呼び出されるコールバック
+		protected Action m_OnPadUp ;
+
+		/// <summary>
+		/// ゲームパッドのボタン・アクシスが離された際に呼び出されるコールバックを設定する
+		/// </summary>
+		/// <param name="onPadUp"></param>
+		public void SetOnPadUp( Action onPadUp )
+		{
+			m_OnPadUp = onPadUp ;
+		}
+
+		/// <summary>
+		/// UIPadAdapter からの呼び出し専用
+		/// </summary>
+		/// <param name="state"></param>
+		/// <param name="buttonFlags"></param>
+		/// <param name="axisFlags"></param>
+		/// <param name="margedAxisFlag"></param>
+		public void CallOnPadUp()
+		{
+			m_OnPadUp?.Invoke() ;
+		}
+
+		//-----------------------------------
+
+		// ゲームパッドのボタンが押された際に呼び出されるコールバック
+		protected Action<int> m_OnPadButtonDown ;
+
+		/// <summary>
+		/// ゲームパッドのボタンが押された際に呼び出されるコールバックを設定する
+		/// </summary>
+		/// <param name="onPadButtonDown"></param>
+		public void SetOnPadButtonDown( Action<int> onPadButtonDown )
+		{
+			m_OnPadButtonDown = onPadButtonDown ;
+		}
+
+		/// <summary>
+		/// UIPadAdapter からの呼び出し専用
+		/// </summary>
+		/// <param name="state"></param>
+		/// <param name="buttonFlags"></param>
+		public void CallOnPadButtonDown( int buttonFlags )
+		{
+			m_OnPadButtonDown?.Invoke( buttonFlags ) ;
+		}
+
+		//---------------
+
+		// ゲームパッドのボタンが離された際に呼び出されるコールバック
+		protected Action m_OnPadButtonUp ;
+
+		/// <summary>
+		/// ゲームパッドのボタンが離された際に呼び出されるコールバックを設定する
+		/// </summary>
+		/// <param name="onPadButtonUp"></param>
+		public void SetOnPadButtonUp( Action onPadButtonUp )
+		{
+			m_OnPadButtonUp = onPadButtonUp ;
+		}
+
+		/// <summary>
+		/// UIPadAdapter からの呼び出し専用
+		/// </summary>
+		/// <param name="state"></param>
+		/// <param name="buttonFlags"></param>
+		public void CallOnPadButtonUp()
+		{
+			m_OnPadButtonUp?.Invoke() ;
+		}
+
+		//-----------------------------------
+
+		// ゲームパッドのアクシスが押された際に呼び出されるコールバック
+		protected Action<Vector2[],Vector2> m_OnPadAxisDown ;
+
+		/// <summary>
+		/// ゲームパッドのアクシスが押された際に呼び出されるコールバックを設定する
+		/// </summary>
+		/// <param name="onPadAxisDown"></param>
+		public void SetOnPadAxisDown( Action<Vector2[],Vector2> onPadAxisDown )
+		{
+			m_OnPadAxisDown = onPadAxisDown ;
+		}
+
+		/// <summary>
+		/// UIPadAdapter からの呼び出し専用
+		/// </summary>
+		/// <param name="state"></param>
+		/// <param name="axisFlags"></param>
+		/// <param name="margedAxisFlag"></param>
+		public void CallOnPadAxisDown( Vector2[] axisFlags, Vector2 margedAxisFlag )
+		{
+			m_OnPadAxisDown?.Invoke( axisFlags, margedAxisFlag ) ;
+		}
+
+		//---------------
+
+		// ゲームパッドのアクシスが離された際に呼び出されるコールバック
+		protected Action m_OnPadAxisUp ;
+
+		/// <summary>
+		/// ゲームパッドのアクシスが離された際に呼び出されるコールバックを設定する
+		/// </summary>
+		public void SetOnPadAxisUp( Action onPadAxisUp )
+		{
+			m_OnPadAxisUp = onPadAxisUp ;
+		}
+
+		/// <summary>
+		/// UIPadAdapter からの呼び出し専用
+		/// </summary>
+		public void CallOnPadAxisUp()
+		{
+			m_OnPadAxisUp?.Invoke() ;
+		}
+
+		//---------------------------------------------------------------------------
+		// LongPress
+
+		// ゲームパッドのボタン・アクシスが押された際に呼び出されるコールバック
+		protected Action<int,Vector2[],Vector2> m_OnPadLongPress ;
+
+		/// <summary>
+		/// ゲームパッドのボタン・アクシスが押された際に呼び出されるコールバックを設定する
+		/// </summary>
+		/// <param name="onPadDown"></param>
+		public void SetOnPadLongPress( Action<int,Vector2[],Vector2> onPadLongPress )
+		{
+			m_OnPadLongPress = onPadLongPress ;
+		}
+
+		/// <summary>
+		/// UIPadAdapter からの呼び出し専用
+		/// </summary>
+		/// <param name="state"></param>
+		/// <param name="buttonFlags"></param>
+		/// <param name="axisFlags"></param>
+		/// <param name="margedAxisFlag"></param>
+		public void CallOnPadLongPress( int buttonFlags, Vector2[] axisFlags, Vector2 margedAxisFlag )
+		{
+			m_OnPadLongPress?.Invoke( buttonFlags, axisFlags, margedAxisFlag ) ;
+		}
+
+		//---------------
+
+		// ゲームパッドのボタンが押された際に呼び出されるコールバック
+		protected Action<int> m_OnPadButtonLongPress ;
+
+		/// <summary>
+		/// ゲームパッドのボタンが押された際に呼び出されるコールバックを設定する
+		/// </summary>
+		/// <param name="onPadButtonDown"></param>
+		public void SetOnPadButtonLongPress( Action<int> onPadButtonLongPress )
+		{
+			m_OnPadButtonLongPress = onPadButtonLongPress ;
+		}
+
+		/// <summary>
+		/// UIPadAdapter からの呼び出し専用
+		/// </summary>
+		/// <param name="state"></param>
+		/// <param name="buttonFlags"></param>
+		public void CallOnPadButtonLongPress( int buttonFlags )
+		{
+			m_OnPadButtonLongPress?.Invoke( buttonFlags ) ;
+		}
+
+		//-----
+
+		// ゲームパッドのアクシスが押された際に呼び出されるコールバック
+		protected Action<Vector2[],Vector2> m_OnPadAxisLongPress ;
+
+		/// <summary>
+		/// ゲームパッドのアクシスが押された際に呼び出されるコールバックを設定する
+		/// </summary>
+		/// <param name="onPadAxisLongPress"></param>
+		public void SetOnPadAxisLongPress( Action<Vector2[],Vector2> onPadAxisLongPress )
+		{
+			m_OnPadAxisLongPress = onPadAxisLongPress ;
+		}
+
+		/// <summary>
+		/// UIPadAdapter からの呼び出し専用
+		/// </summary>
+		/// <param name="state"></param>
+		/// <param name="axisFlags"></param>
+		/// <param name="margedAxisFlag"></param>
+		public void CallOnPadAxisLongPress( Vector2[] axisFlags, Vector2 margedAxisFlag )
+		{
+			m_OnPadAxisLongPress?.Invoke( axisFlags, margedAxisFlag ) ;
+		}
+
+		//---------------------------------------------------------------------------
+
+		// ゲームパッドの入力の有効・無効が切り替わった際に呼び出されるコールバック
+		protected Action<bool> m_OnPadInputStateChanged ;
+
+		/// <summary>
+		/// ゲームパッドの入力の有効・無効が切り替わった際に呼び出されるコールバックを登録する
+		/// </summary>
+		/// <param name="onPadInputStateChanged"></param>
+		public void SetOnPadInputStateChanged( Action<bool> onPadInputStateChanged )
+		{
+			m_OnPadInputStateChanged = onPadInputStateChanged ;
+		}
+
+		/// <summary>
+		/// UIPadAdapter からの呼び出し専用
+		/// </summary>
+		/// <param name="state"></param>
+		public void CallOnPadInputStateChanged( bool state )
+		{
+			if( m_PadAutoFocusEnabled == true )
+			{
+				if( this is UIListView listView )
+				{
+					listView.SetPadFocus( state ) ;
+				}
+			}
+
+			//----------------------------------
+
+			m_OnPadInputStateChanged?.Invoke( state ) ;
+		}
 	}
 }
+
 
 // メモ
 // iTween でわかりやすい

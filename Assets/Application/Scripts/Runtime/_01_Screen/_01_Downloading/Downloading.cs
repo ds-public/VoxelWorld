@@ -10,11 +10,11 @@ using UnityEngine ;
 using uGUIHelper ;
 using AssetBundleHelper ;
 
-using DBS.Screens.DownloadingClasses.UI ;
+using DSW.Screens.DownloadingClasses.UI ;
 
-using DBS.World ;
+using DSW.World ;
 
-namespace DBS.Screens
+namespace DSW.Screens
 {
 	/// <summary>
 	/// 起動直後のダウンロード処理(マスターデータ・アセットバンドルの更新) Version 2022/10/01
@@ -101,19 +101,19 @@ namespace DBS.Screens
 				//---------------------------------------------------------
 
 				// マスターデータのダウンロード(CheckVersion があるのでアセットバンドルのセットアップより前に行う必要がある)
-				bool result = await MasterDataManager.DownloadAsync( false, ( float progress ) =>
-				{
+//				bool result = await MasterDataManager.DownloadAsync( false, ( float progress ) =>
+//				{
 //					SetProgress( progressMin, progressMax, progress ) ;
-				} ) ;
+//				} ) ;
 
-				if( result == false )
-				{
-					// 失敗
-					return ;
-				}
+//				if( result == false )
+//				{
+//					// 失敗
+//					return ;
+//				}
 
 				// マスターデータをメモリに展開する
-				await MasterDataManager.LoadAsync() ;
+//				await MasterDataManager.LoadAsync() ;
 
 				//---------------------------------------------------------
 
@@ -279,7 +279,7 @@ namespace DBS.Screens
 
 			string manifestName = "Default" ;
 
-			if( AssetBundleManager.IsManifest( manifestName ) <  0 )
+			if( AssetBundleManager.HasManifest( manifestName ) == false )
 			{
 				// 登録されていない
 				Progress.On( "データ確認中" ) ;
@@ -289,7 +289,7 @@ namespace DBS.Screens
 
 				await Progress.OffAsync() ;
 
-				if( AssetBundleManager.IsManifest( manifestName ) <  0 )
+				if( AssetBundleManager.HasManifest( manifestName ) == false )
 				{
 					// ロード出来なかった
 					Debug.Log( "Can not load Manifest = " + manifestName ) ;

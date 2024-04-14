@@ -7,9 +7,9 @@ using UnityEngine ;
 
 using Cysharp.Threading.Tasks ;
 
-using DBS.World ;
+using DSW.World ;
 
-namespace DBS.Screens
+namespace DSW.Screens
 {
 	/// <summary>
 	/// ワールドの制御処理
@@ -24,6 +24,8 @@ namespace DBS.Screens
 		/// <returns></returns>
 		private async UniTask<State> State_ActionSelecting( State previous )
 		{
+			ClientResponder clientResponder = null ;
+
 			//----------------------------------------------------------
 			// ワールドサーバーを起動する
 
@@ -43,6 +45,14 @@ namespace DBS.Screens
 				}
 
 				Debug.Log( "<color=#00FF00>[CLIENT] サーバーを起動しました(localhost)</color>" ) ;
+
+				//---------------------------------
+				// レスポンダーも起動する
+
+				Debug.Log( "<color=#00FF00>[CLIENT] レスポンダーを起動します" + 55555 + " " + PlayerData.ServerPortNumber + "</color>" ) ;
+
+				clientResponder = new ClientResponder( 55555, PlayerData.ServerPortNumber ) ;
+				clientResponder.Run() ;
 			}
 
 			//----------------------------------------------------------
@@ -53,6 +63,10 @@ namespace DBS.Screens
 			// クライアントの準備を整える
 			if( await m_Client.Prepare() == false )
 			{
+				clientResponder?.Dispose() ;	// レスポンダーも停止
+
+				//-------------
+
 				// ロビーに戻る
 				Scene.LoadWithFade( Scene.Screen.Lobby, blockingFadeIn:true ).Forget() ;
 				return  State.Unknown ;
@@ -98,6 +112,8 @@ namespace DBS.Screens
 			if( PlayerData.PlayMode == PlayerData.PlayModes.Single )
 			{
 				// シングルプレイモードのみサーバーを停止する
+
+				clientResponder?.Dispose() ;	// レスポンダーも停止
 
 				// 少し待つ
 				await WaitForSeconds( 0.5f ) ;

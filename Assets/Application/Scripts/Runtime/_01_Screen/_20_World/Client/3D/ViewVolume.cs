@@ -5,7 +5,7 @@ using UnityEngine ;
 using uGUIHelper ;
 using TransformHelper ;
 
-namespace DBS.World
+namespace DSW.World
 {
 	public class ViewVolume
 	{

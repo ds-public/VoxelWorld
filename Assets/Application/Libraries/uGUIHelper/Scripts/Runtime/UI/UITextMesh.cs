@@ -325,9 +325,60 @@ namespace uGUIHelper
 					return ;
 				}
 
-				if( textMesh.fontMaterial != value )
+				if( m_SharedMaterial != value )
 				{
+					if( m_BasisMaterial != null )
+					{
+						textMesh.fontMaterial = m_BasisMaterial ;
+						m_BasisMaterial = null ;
+					}
+
+					if( m_CloneMaterial != null )
+					{
+#if UNITY_EDITOR
+						if( Application.isPlaying == false )
+						{
+							DestroyImmediate( m_CloneMaterial ) ;
+						}
+						else
+#endif
+						{
+							Destroy( m_CloneMaterial ) ;
+						}
+						m_CloneMaterial = null ;
+					}
+
+					// fontMaterialは初回呼び出し時のみインスタンスが生成されてしまうため、変更前に必ず破棄する
+					if( textMesh.fontSharedMaterial != null )
+					{
+						var material = textMesh.fontMaterial ;
+#if UNITY_EDITOR
+						if( Application.isPlaying == false )
+						{
+							DestroyImmediate( material ) ;
+						}
+						else
+#endif
+						{
+							Destroy( material ) ;
+						}
+					}
+
+					//--------------------------------
+
 					textMesh.fontMaterial = value ;
+
+					// 一度でもfontMaterialが呼ばれると、fontSharedMaterialが生成したmaterialに置き換わってしまうためあらかじめ保持しておく
+					m_SharedMaterial = textMesh.fontSharedMaterial ;
+
+					// フォントマテリアルを複製する
+					CloneFontMaterial() ;
+
+					if( m_CloneMaterial != null )
+					{
+						// アウトラインカラーの色を反映させる
+						ApplyOutlineColor() ;
+					}
 				}
 			}
 		}
@@ -946,7 +997,8 @@ namespace uGUIHelper
 		/// アウトラインの色(実行時にのみ反映)
 		/// </summary>
 		public Color	OutlineColor = Color.black ;
-
+		
+		private Material	m_SharedMaterial = null ;
 		private Material	m_BasisMaterial = null ;
 		private Material	m_CloneMaterial = null ;
 
@@ -1003,7 +1055,7 @@ namespace uGUIHelper
 			{
 				// 単色
 
-				VertexGradient vg =	new VertexGradient()
+				var vg =	new VertexGradient()
 				{
 					topLeft		= colors[ 0 ],
 					topRight	= colors[ 0 ],
@@ -1017,7 +1069,7 @@ namespace uGUIHelper
 			if( l == 2 || l == 3 )
 			{
 				// 上下
-				VertexGradient vg =	new VertexGradient()
+				var vg =	new VertexGradient()
 				{
 					topLeft		= colors[ 0 ],
 					topRight	= colors[ 0 ],
@@ -1031,7 +1083,7 @@ namespace uGUIHelper
 			if( l >= 4 )
 			{
 				// 全体
-				VertexGradient vg =	new VertexGradient()
+				var vg =	new VertexGradient()
 				{
 					topLeft		= colors[ 0 ],
 					topRight	= colors[ 1 ],
@@ -1109,11 +1161,11 @@ namespace uGUIHelper
 			else
 			{
 				textMesh.font = defaultFontAsset ;
-			}
 
-			if( defaultFontMaterial != null )
-			{
-				textMesh.fontMaterial = defaultFontMaterial ; 
+				if( defaultFontMaterial != null )
+				{
+					textMesh.fontMaterial = defaultFontMaterial ; 
+				}
 			}
 
 			if( defaultFontSize <= 0 )
@@ -1166,30 +1218,9 @@ namespace uGUIHelper
 
 				if( textMesh != null )
 				{
-					// 共有マテリアルのチェックを行う(null になっているケースが存在する)
-					if( textMesh.fontSharedMaterial == null )
-					{
-						Debug.LogWarning( "fontSharedMaterial is null - " + Path ) ;
+					// フォントマテリアルを複製する
+					CloneFontMaterial() ;
 
-						if( Font != null && Font.material != null )
-						{
-							textMesh.fontSharedMaterial  = Font.material ;
-						}
-					}
-
-					CheckUsingOutlineColor() ;
-
-					if( textMesh.fontMaterial != null )
-					{
-						if( IsCustomized == true || m_IsUsingOutline == true )
-						{
-							// カラーカスタマズ有効またはアウトライン使用でマテリアルを複製する(動的に色を変化させるため)
-							m_BasisMaterial = textMesh.fontMaterial ;
-							m_CloneMaterial = GameObject.Instantiate<Material>( textMesh.fontMaterial ) ;
-							textMesh.fontMaterial = m_CloneMaterial ;
-						}
-					}
-					
 					if( m_CloneMaterial != null )
 					{
 						// アウトラインカラーの色を反映させる
@@ -1213,6 +1244,40 @@ namespace uGUIHelper
 					{
 						// 強制全角化
 						ToLargeForTextMesh() ;
+					}
+				}
+			}
+		}
+
+		// フォントマテリアルを複製する
+		private void CloneFontMaterial()
+		{
+			TextMeshProUGUI textMesh = CTextMesh ;
+
+			if( textMesh != null )
+			{
+				// 共有マテリアルのチェックを行う(null になっているケースが存在する)
+				if( textMesh.fontSharedMaterial == null )
+				{
+					Debug.LogWarning( "fontSharedMaterial is null - " + Path ) ;
+
+					if( Font != null && Font.material != null )
+					{
+						textMesh.fontSharedMaterial  = Font.material ;
+					}
+				}
+
+				// アウトラインの存在をチェックする
+				CheckUsingOutlineColor() ;
+
+				if( textMesh.fontMaterial != null )
+				{
+					if( IsCustomized == true || m_IsUsingOutline == true )
+					{
+						// カラーカスタマズ有効またはアウトライン使用でマテリアルを複製する(動的に色を変化させるため)
+						m_BasisMaterial = textMesh.fontMaterial ;
+						m_CloneMaterial = GameObject.Instantiate<Material>( textMesh.fontMaterial ) ;
+						textMesh.fontMaterial = m_CloneMaterial ;
 					}
 				}
 			}
@@ -2072,7 +2137,7 @@ namespace uGUIHelper
 			//----------------------------------------------------------
 
 			// 文字単位にバラす
-			List<List<CodeData>>	lineCodes = new List<List<CodeData>>() ;
+			List<List<CodeData>>	lineCodes = new () ;
 			List<CodeData> codes ;
 
 			bool isControl ;
@@ -2464,7 +2529,7 @@ namespace uGUIHelper
 							if( t >  o )
 							{
 								// ルビなしのワードがある
-								word = s.Substring( o, t - o ) ;
+								word = s[ o..t ] ;
 								units.Add( new UnitData(){ Word = word, Ruby = null } ) ;
 							}
 
@@ -2481,7 +2546,7 @@ namespace uGUIHelper
 							if( t >  o )
 							{
 								// ルビ対象のワードが存在する場合のみ有効
-								word = s.Substring( o, t - o ) ;
+								word = s[ o..t ] ;
 								units.Add( new UnitData(){ Word = word, Ruby = ruby } ) ;
 							}
 
@@ -2498,7 +2563,7 @@ namespace uGUIHelper
 				if( t >  o )
 				{
 					// 最後のワードがある
-					word = s.Substring( o, t - o ) ;
+					word = s[ o..t ] ;
 					units.Add( new UnitData(){ Word = word, Ruby = null } ) ;
 				}
 			}
@@ -2524,8 +2589,7 @@ namespace uGUIHelper
 			//---------------------------------------------------------
 			// 再び文字列を生成する
 
-			StringBuilder sb = new StringBuilder() ;
-
+			var sb = new StringBuilder() ;
 
 			float s0, s1 ;
 			string rubyScale = ( ( int )( m_RubyScale * 100.0f ) ).ToString() + "%" ;
@@ -2620,7 +2684,7 @@ namespace uGUIHelper
 						{
 							// 決定
 							o = i ;
-							value = s.Substring( p, i - p ) ;
+							value = s[ p..i ] ;
 
 							if( string.IsNullOrEmpty( value ) == false )
 							{
@@ -2638,7 +2702,7 @@ namespace uGUIHelper
 							{
 								// 決定
 								o = i + 1 ;
-								value = s.Substring( p, i - p ) ;
+								value = s[ p..i ] ;
 
 								if( string.IsNullOrEmpty( value ) == false )
 								{
@@ -2648,7 +2712,6 @@ namespace uGUIHelper
 								{
 									return string.Empty ;	// 値が空文字
 								}
-
 							}
 						}
 					}

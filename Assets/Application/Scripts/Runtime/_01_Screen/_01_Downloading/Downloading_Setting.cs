@@ -10,7 +10,7 @@ using UnityEngine ;
 using uGUIHelper ;
 using AssetBundleHelper ;
 
-namespace DBS.Screens
+namespace DSW.Screens
 {
 	/// <summary>
 	/// 起動直後のダウンロード処理(マスターデータ・アセットバンドルの更新)
@@ -86,6 +86,50 @@ namespace DBS.Screens
 
 			AssetBundleManager.RemoveAllHeaders() ;
 //			AssetBundleManager.AddHeader( Define.AssetBundle_AccessKey, Define.AssetBundle_AccessValue ) ;
+			//------------------------------------------------------------------------------------------
+#if UNITY_EDITOR
+			if( settings.UseLocalAssets == true )
+			{
+				// 初期状態でもローカルアセットが読み出せるようダミーの Default マニフェスト を登録する
+
+				string manifestName = "Default" ;
+
+				// 最初に情報を破棄しておく(古いものを破棄)
+				AssetBundleManager.RemoveManifest( manifestName ) ;
+
+				// アセットバンドルのプラットフォーム名を設定する
+				string platformName = "Unknown" ;
+
+				string	streamingAssetsRootPath				= string.Empty ;
+				bool	streamingAssetsDirectAccessEnabled	= false ;
+				string	remoteAssetBundleRootPath			= "Unknown" ;	// ワーニングを出さないためのダミー値
+				string	localAssetBundleRootPath			= string.Empty ;
+
+				string	localAssetsRootPath = "/Assets/Application/AssetBundle/" ;
+
+				var		locationType		= AssetBundleManager.LocationTypes.Storage ;
+				long	cacheSize			= 5L * 1024 * 1024 * 1024 ;
+
+				//---------------------------------
+
+				// マニフェストを登録 - Default
+				AssetBundleManager.AddManifest
+				(
+					manifestName,						// マニフェストファイル名(拡張子込み)
+					false,								// 通常のマニフェストファイル
+					platformName,						// ストレージキャッシュのルートパス
+					streamingAssetsRootPath, 			// StreamingAssetsのルートパス
+					streamingAssetsDirectAccessEnabled,	// StreamingAssetsにダイレクトアクセスを許可するかどうか
+					remoteAssetBundleRootPath,			// Remoteのアセットバンドルのルートパス
+					localAssetBundleRootPath,			// localのアセットバンドルのルートパス
+					localAssetsRootPath,				// localアセットのルートパス
+					locationType,						// 外部アセットバンドルをどこから取得するか
+					cacheSize,							// キャッシュサイズ
+					true,								// 一部同期ロードを行いロードを高速化する
+					true								// ダウンロードと同時にストレージに保存する
+				) ;
+			}
+#endif
 		}
 
 		//-----------------------------------------------------------
@@ -123,7 +167,7 @@ namespace DBS.Screens
 			//------------------------------------------------------------------------------------------
 
 			// 設定情報を取得する
-			Settings settings = ApplicationManager.LoadSettings() ;
+			var settings = ApplicationManager.LoadSettings() ;
 
 			//------------------------------------------------------------------------------------------
 			// Comon - Internal ※使用しない
@@ -158,7 +202,7 @@ namespace DBS.Screens
 #if !UNITY_EDITOR && UNITY_ANDROID
 			streamingAssetsDirectAccessEnabled = false ;
 #else
-			streamingAssetsDirectAccessEnabled = true ;
+			streamingAssetsDirectAccessEnabled = settings.StreamingAssetsDirectAccessEnabled ;
 #endif
 			//---------------------------------
 			// RemoteAssetBundle - Internal
@@ -260,7 +304,7 @@ namespace DBS.Screens
 			AssetBundleManager.RemoveManifest( manifestName ) ;
 
 			// アセットバンドルのプラットフォーム名を取得する
-			platformName = Define.PlatformName ;
+			platformName = Define.AssetBundlePlatformName ;
 
 			//----------------------------------------------------------
 			// StreamingAssets - Platform - Internal
@@ -283,7 +327,7 @@ namespace DBS.Screens
 #if !UNITY_EDITOR && UNITY_ANDROID
 			streamingAssetsDirectAccessEnabled = false ;
 #else
-			streamingAssetsDirectAccessEnabled = true ;
+			streamingAssetsDirectAccessEnabled = settings.StreamingAssetsDirectAccessEnabled ;
 #endif
 			//---------------------------------
 			// RemoteAssetBundle - Internal
@@ -420,7 +464,7 @@ namespace DBS.Screens
 			//------------------------------------------------------------------------------------------
 
 			// 設定情報を取得する
-			Settings settings = ApplicationManager.LoadSettings() ;
+			var settings = ApplicationManager.LoadSettings() ;
 
 			//------------------------------------------------------------------------------------------
 			// Remote - Default
@@ -432,7 +476,7 @@ namespace DBS.Screens
 			AssetBundleManager.RemoveManifest( manifestName ) ;
 
 			// アセットバンドルのプラットフォーム名を取得する
-			platformName = Define.PlatformName ;
+			platformName = Define.AssetBundlePlatformName ;
 
 #if UNITY_EDITOR
 			if( settings.AssetBundlePlatformType != Settings.AssetBundlePlatformTypes.BuildPlatform )
@@ -452,7 +496,7 @@ namespace DBS.Screens
 #if !UNITY_EDITOR && UNITY_ANDROID
 			streamingAssetsDirectAccessEnabled = false ;
 #else
-			streamingAssetsDirectAccessEnabled = true ;
+			streamingAssetsDirectAccessEnabled = settings.StreamingAssetsDirectAccessEnabled ;
 #endif
 			//----------------------------------------------------------
 			// RemoteAssetBundle - Default
@@ -562,7 +606,7 @@ namespace DBS.Screens
 
 //			Debug.Log( "----- Remote -----" ) ;
 //			Debug.Log( "[AssetBundlePlatformName  ] " + assetBundlePlatformName ) ;
-//			Debug.Log( "[LocalAssetBundleRootPath ] " + localAssetBundleRootPath ) ;
+			Debug.Log( "[LocalAssetBundleRootPath ] " + localAssetBundleRootPath ) ;
 //			Debug.Log( "[StreamingAssetsRootPath  ] " + streamingAssetsRootPath ) ;
 			Debug.Log( "[RemoteAssetBundleRootPath] " + remoteAssetBundleRootPath ) ;
 

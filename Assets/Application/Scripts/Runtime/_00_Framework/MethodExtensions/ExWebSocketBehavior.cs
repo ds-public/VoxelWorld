@@ -11,7 +11,7 @@ using Cysharp.Threading.Tasks ;
 
 using UnityEngine ;
 
-namespace DBS
+namespace DSW
 {
 	/// <summary>
 	/// WebSocket まのサーバー側のクライアント管理用クラスのラッパー Version 2022/09/27

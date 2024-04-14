@@ -2,7 +2,7 @@ using UnityEngine ;
 using System;
 using System.Collections ;
 
-// Last Update 2020/04/25
+// Last Update 2024/03/07
 
 /// <summary>
 /// 乱数生成のパッケージ
@@ -71,12 +71,22 @@ namespace MathHelper
 
 		public static int Get( int max, bool limit = true )
 		{
-			return m_XorShift.Get( max, limit ) ;
+			return ( int )m_XorShift.Get( ( ulong )max, limit ) ;
 		}
 
 		public static int Get( int min, int max, bool limit = true, bool swap = false )
 		{
 			return m_XorShift.Get( min, max, limit, swap ) ;
+		}
+
+		public static long Get( long max, bool limit = true )
+		{
+			return ( long )m_XorShift.Get( ( ulong )max, limit ) ;
+		}
+
+		public static ulong Get( ulong max, bool limit = true )
+		{
+			return m_XorShift.Get( max, limit ) ;
 		}
 
 		public static float Get( float min, float max, bool swap = false )
@@ -145,6 +155,21 @@ namespace MathHelper
 			}
 
 			return ( int )( Get() % ( ulong )( max + ( limit ? 1 : 0 ) ) ) ;
+		}
+
+		/// <summary>
+		/// ０から最大値の範囲の整数型乱数値を返す
+		/// </summary>
+		/// <param name="max"></param>
+		/// <returns></returns>
+		public ulong Get( ulong max, bool limit = true )
+		{
+			if( max <  0 )
+			{
+				return 0 ; // 値が不正
+			}
+
+			return ( ulong )( Get() % ( ulong )( max + ( ulong )( limit ? 1 : 0 ) ) ) ;
 		}
 
 		/// <summary>

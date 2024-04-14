@@ -1111,7 +1111,7 @@ namespace uGUIHelper
 				OnEndEditDelegate?.Invoke( identity, this, value ) ;
 			}
 
-			if( Input.GetKey( KeyCode.Return ) == true )
+			if( InputAdapter.UIEventSystem.GetKey( InputAdapter.KeyCodes.Return ) == true )
 			{
 				if( OnEnterKeyPressedAction != null || OnEnterKeyPressedDelegate != null )
 				{

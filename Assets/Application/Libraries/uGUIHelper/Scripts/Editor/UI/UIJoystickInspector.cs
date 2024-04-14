@@ -1,15 +1,16 @@
 #if UNITY_EDITOR
 
+using System ;
+using System.Collections.Generic ;
 using UnityEngine ;
 using UnityEditor ;
-using System.Collections.Generic ;
 
 namespace uGUIHelper
 {
 	/// <summary>
 	/// UIJoystick のインスペクタークラス
 	/// </summary>
-	[ CustomEditor( typeof( UIJoystick ) ) ]
+	[Obsolete( "Not Use" )][CustomEditor( typeof( UIJoystick ) ) ]
 	public class UIJoystickInspector : UIViewInspector
 	{
 		override protected void DrawInspectorGUI()

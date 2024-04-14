@@ -3,7 +3,7 @@ using System.Collections ;
 using System.Collections.Generic ;
 using UnityEngine ;
 
-namespace DBS
+namespace DSW
 {
 	/// <summary>
 	/// 非同期処理の表示管理クラス

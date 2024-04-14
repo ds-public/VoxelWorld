@@ -1,0 +1,20 @@
+ManifestFileVersion: 0
+CRC: 1381272015
+Hashes:
+  AssetFileHash:
+    serializedVersion: 2
+    Hash: fe3aba3f9f4cb0c022e226a5e5b7460a
+  TypeTreeHash:
+    serializedVersion: 2
+    Hash: 9a2ca7bdbd1871f7131daf57de908e0c
+  IncrementalBuildHash:
+    serializedVersion: 2
+    Hash: 7ee2f54961fd6cbd10475d2f53109212
+HashAppended: 0
+ClassTypes:
+- Class: 83
+  Script: {instanceID: 0}
+SerializeReferenceClassIdentifiers: []
+Assets:
+- Assets/Application/AssetBundle/Sounds/BGM/008_Lobby.wav
+Dependencies: []

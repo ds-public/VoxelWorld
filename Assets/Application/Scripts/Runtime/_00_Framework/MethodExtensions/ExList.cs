@@ -3,10 +3,10 @@ using System.Collections ;
 using System.Collections.Generic ;
 using UnityEngine ;
 
-namespace DBS
+namespace DSW
 {
 	/// <summary>
-	/// List 型のメソッド拡張 Version 2022/06/09
+	/// List 型のメソッド拡張 Version 2023/02/13
 	/// </summary>
 	public static class ExList
 	{
@@ -495,7 +495,6 @@ namespace DBS
 				list.Add( collection[ offset + i ] ) ;
 			}
 		}
-
 	}
 }
 

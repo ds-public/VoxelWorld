@@ -9,10 +9,10 @@ using UnityEngine ;
 
 using EaseHelper ;
 
-namespace DBS
+namespace DSW
 {
 	/// <summary>
-	/// MonoBehaviour のメソッド拡張 Version 2022/07/12
+	/// MonoBehaviour のメソッド拡張 Version 2023/07/03
 	/// </summary>
 	public class ExMonoBehaviour : MonoBehaviour
 	{
@@ -23,76 +23,8 @@ namespace DBS
 
 		//-----------------------------------------------------------
 
-		private CancellationTokenSource	m_ActiveCancellationTokenSource = null ;
-		private bool m_IsRegistedDestroyCallback = false ;
-
-		private CancellationTokenSource	m_DeactiveCancellationTokenSource = null ;
-
-
-		// 既に GameObject が削除されてしまったか
-		private	bool					m_GameObjectWasDestroyed = false ;
-
-		// キャンセルトークンを取得する
-		private CancellationToken GetActiveCancellationToken( CancellationToken cancellationToken )
-		{
-			if( m_DisableTaskCancellation == true ){ return cancellationToken ; }
-
-			CancellationToken ownerCancellationToken = this.GetCancellationTokenOnDestroy() ;
-			if( m_IsRegistedDestroyCallback == false )
-			{
-				ownerCancellationToken.Register( () =>
-				{
-					if( m_ActiveCancellationTokenSource != null )
-					{
-						// ExMonoBehaviour 用
-						m_ActiveCancellationTokenSource.Dispose() ;
-						m_ActiveCancellationTokenSource = null ;
-					}
-
-					if( m_DeactiveCancellationTokenSource != null )
-					{
-						// CancelableTask 用
-						m_DeactiveCancellationTokenSource.Dispose() ;
-						m_DeactiveCancellationTokenSource = null ;
-					}
-
-					m_GameObjectWasDestroyed = true ;	// GameObject が削除された状態になっている
-				} ) ;
-				m_IsRegistedDestroyCallback  = true ; 
-			}
-
-			if( cancellationToken == default || cancellationToken.CanBeCanceled == false )
-			{
-				// 基本のキャンセルトークン生成
-
-				if( m_ActiveCancellationTokenSource != null && m_ActiveCancellationTokenSource.IsCancellationRequested == true )
-				{
-					// 既にキャンセル済みのトークンが使われていたら作り直す
-					m_ActiveCancellationTokenSource.Dispose() ;
-					m_ActiveCancellationTokenSource = null ;
-				}
-
-				if( m_ActiveCancellationTokenSource == null )
-				{
-					m_ActiveCancellationTokenSource = CancellationTokenSource.CreateLinkedTokenSource( ownerCancellationToken ) ;
-				}
-			}
-			else
-			{
-				// 独自のキャンセルトークン生成
-
-				if( m_ActiveCancellationTokenSource != null )
-				{
-					// 使用の有無に関わらずトークンは作り直す
-					m_ActiveCancellationTokenSource.Dispose() ;
-					m_ActiveCancellationTokenSource = null ;
-				}
-
-				m_ActiveCancellationTokenSource = CancellationTokenSource.CreateLinkedTokenSource( cancellationToken, ownerCancellationToken ) ;
-			}
-
-			return m_ActiveCancellationTokenSource.Token ;
-		}
+		// CancelableTask 用のトークンソース
+		private CancellationTokenSource	m_CancellationTokenSourceDeactive = null ;
 
 		/// <summary>
 		/// CancelableTask 用のトークンソースの生成取得を行う
@@ -100,50 +32,123 @@ namespace DBS
 		/// <returns></returns>
 		public CancellationToken GetCancellationTokenDeactive()
 		{
-			if( m_DeactiveCancellationTokenSource == null )
+			if( m_CancellationTokenSourceDeactive == null )
 			{
-				m_DeactiveCancellationTokenSource = new CancellationTokenSource() ;
+				m_CancellationTokenSourceDeactive = new CancellationTokenSource() ;
+				m_CancellationTokenSourceDeactive.Token.Register( () =>
+				{
+					// 明示的な中断が行われた際にコールバックを呼び出す
+					OnTasksCanceled() ;
+				} ) ;
 			}
 
-			return m_DeactiveCancellationTokenSource.Token ;
+			return m_CancellationTokenSourceDeactive.Token ;
 		}
 
+		//-----------------------------------------------------------
+
+		private bool					m_IsRegistedDestroyCallback = false ;
+
+		// ExMonoBehaviour が破棄された際にタスクをキャンセルするトークンを取得する
+		private CancellationToken		GetCancellationTokenOnDestroy_Private()
+		{
+			var cancellationTokenOnDestroy = this.GetCancellationTokenOnDestroy() ;
+
+			if( m_IsRegistedDestroyCallback == false )
+			{
+				cancellationTokenOnDestroy.Register( () =>
+				{
+					// MonoBehaviour が破棄されるタイミングで必ず Cancel が実行されるため、
+					// このコールバックは、必ず呼び出される。
+
+					if( m_CancellationTokenSourceDeactive != null )
+					{
+						// CancelableTask 用
+						m_CancellationTokenSourceDeactive.Dispose() ;
+						m_CancellationTokenSourceDeactive = null ;
+					}
+
+					// MonoBehaviuor の破棄は、全てのタスクを中断する事と同義なので、コールバックを呼ぶ。
+					OnTasksCanceled() ;
+
+					m_GameObjectWasDestroyed = true ;	// GameObject が削除された状態になっている
+				} ) ;
+
+				m_IsRegistedDestroyCallback = true ;
+			}
+
+			return cancellationTokenOnDestroy ;
+		}
+
+		//-----------------------------------
+
+		// 既に GameObject が削除されてしまったか
+		private	bool					m_GameObjectWasDestroyed = false ;
+
+		//-----------------------------------------------------------
+
+		// キャンセルトークンを取得する
+		private ( CancellationTokenSource, CancellationToken ) GetActiveCancellation( CancellationToken cancellationToken )
+		{
+			// ExMonoBehaviour の UniTask ラップ処理が無効指定になっている場合は、通常の UniTask 動作を行う。
+			if( m_DisableTaskCancellation == true ){ return ( null, cancellationToken ) ; }
+
+			//----------------------------------------------------------
+
+			// 目地的なタスク中断用のトークンを取得する
+			CancellationToken cancellationTokenDeactive		= GetCancellationTokenDeactive() ;
+
+			// MonoBehaviour が破棄されるタイミングでキャンセルが実行されるトークンを取得する。
+			CancellationToken cancellationTokenOnDestroy	= GetCancellationTokenOnDestroy_Private() ;
+
+			//----------------------------------------------------------
+
+			CancellationTokenSource		resultCancellationTokenSource ;
+			CancellationToken			resultCancellationToken ;
+
+			if( cancellationToken == default || cancellationToken.CanBeCanceled == false )
+			{
+				// 基本のキャンセルトークン生成
+
+				resultCancellationTokenSource	= CancellationTokenSource.CreateLinkedTokenSource( cancellationTokenDeactive, cancellationTokenOnDestroy ) ;
+				resultCancellationToken			= resultCancellationTokenSource.Token ;
+			}
+			else
+			{
+				// 独自のキャンセルトークン生成
+
+				resultCancellationTokenSource	= CancellationTokenSource.CreateLinkedTokenSource( cancellationToken, cancellationTokenDeactive, cancellationTokenOnDestroy ) ;
+				resultCancellationToken			= resultCancellationTokenSource.Token ;
+			}
+
+			return ( resultCancellationTokenSource, resultCancellationToken ) ;
+		}
 
 		/// <summary>
-		/// 実行中のタスクを中断する
+		/// 実行中のタスク群を中断する
 		/// </summary>
 		/// <returns></returns>
-		public bool CancelTask()
+		public void CancelTasks()
 		{
-			if( m_ActiveCancellationTokenSource != null )
+			if( m_CancellationTokenSourceDeactive != null )
 			{
-				// ExMonoBehaviour 用
-				if( m_ActiveCancellationTokenSource.Token.CanBeCanceled == true )
+				// 明示的なタスク群の中断を実行する
+				if( m_CancellationTokenSourceDeactive.IsCancellationRequested == false )
 				{
-					m_ActiveCancellationTokenSource.Cancel() ;
+					m_CancellationTokenSourceDeactive.Cancel() ;
 				}
 
-				m_ActiveCancellationTokenSource.Dispose() ;
-				m_ActiveCancellationTokenSource = null ;
+				m_CancellationTokenSourceDeactive.Dispose() ;
+				m_CancellationTokenSourceDeactive = null ;
 			}
+		}
 
-			//-------------------------------
-
-			if( m_DeactiveCancellationTokenSource != null )
-			{
-				// CancelableTask 用
-				if( m_DeactiveCancellationTokenSource.Token.CanBeCanceled == true )
-				{
-					m_DeactiveCancellationTokenSource.Cancel() ;
-				}
-
-				m_DeactiveCancellationTokenSource.Dispose() ;
-				m_DeactiveCancellationTokenSource = null ;
-			}
-
-			//-------------------------------
-
-			return true ;		// 実行中のタスクは中断されたはず
+		/// <summary>
+		/// タスクがキャンセルされた際に呼び出されるコールバック
+		/// </summary>
+		virtual protected void OnTasksCanceled()
+		{
+//			Debug.Log( "タスク群が中断されました:" + name ) ;
 		}
 
 		//-------------------------------------------------------------------------------------------
@@ -155,7 +160,7 @@ namespace DBS
 		/// <param name="timing"></param>
 		/// <param name="cancellationToken"></param>
 		/// <returns></returns>
-		public UniTask Yield( PlayerLoopTiming timing = PlayerLoopTiming.Update, CancellationToken cancellationToken = default )
+		public async UniTask Yield( PlayerLoopTiming timing = PlayerLoopTiming.Update, CancellationToken cancellationToken = default )
 		{
 			if( m_GameObjectWasDestroyed == true )
 			{
@@ -167,7 +172,33 @@ namespace DBS
 
 			//----------------------------------------------------------
 
-			return UniTask.Yield( timing, GetActiveCancellationToken( cancellationToken ) ) ;
+			( var tokenSource, var token ) = GetActiveCancellation( cancellationToken ) ;
+
+			bool isCanceled = false ;
+			try
+			{
+				await UniTask.Yield( timing, token ) ;
+			}
+			catch( Exception e )
+			{
+				if( e is OperationCanceledException )
+				{
+					isCanceled = true ;
+				}
+				else
+				{
+					Debug.LogError( e.Message ) ;
+				}
+			}
+			finally
+			{
+				tokenSource?.Dispose() ;
+			}
+
+			if( isCanceled == true )
+			{
+				throw new OperationCanceledException() ;
+			}
 		}
 
 		/// <summary>
@@ -178,7 +209,7 @@ namespace DBS
 		/// <param name="delayTiming"></param>
 		/// <param name="cancellationToken"></param>
 		/// <returns></returns>
-		public UniTask Delay( int millisecondsDelay, bool ignoreTimeScale = false, PlayerLoopTiming delayTiming = PlayerLoopTiming.Update, CancellationToken cancellationToken = default )
+		public async UniTask Delay( int millisecondsDelay, bool ignoreTimeScale = false, PlayerLoopTiming delayTiming = PlayerLoopTiming.Update, CancellationToken cancellationToken = default )
 		{
 			if( m_GameObjectWasDestroyed == true )
 			{
@@ -190,8 +221,34 @@ namespace DBS
 
 			//----------------------------------------------------------
 
-			var delayTimeSpan = TimeSpan.FromMilliseconds( millisecondsDelay ) ;
-			return UniTask.Delay( delayTimeSpan, ignoreTimeScale, delayTiming, GetActiveCancellationToken( cancellationToken ) ) ;
+			( var tokenSource, var token ) = GetActiveCancellation( cancellationToken ) ;
+
+			bool isCanceled = false ;
+			try
+			{
+				var delayTimeSpan = TimeSpan.FromMilliseconds( millisecondsDelay ) ;
+				await UniTask.Delay( delayTimeSpan, ignoreTimeScale, delayTiming, token ) ;
+			}
+			catch( Exception e )
+			{
+				if( e is OperationCanceledException )
+				{
+					isCanceled = true ;
+				}
+				else
+				{
+					Debug.LogError( e.Message ) ;
+				}
+			}
+			finally
+			{
+				tokenSource?.Dispose() ;
+			}
+
+			if( isCanceled == true )
+			{
+				throw new OperationCanceledException() ;
+			}
 		}
 
 		/// <summary>
@@ -202,7 +259,7 @@ namespace DBS
 		/// <param name="delayTiming"></param>
 		/// <param name="cancellationToken"></param>
 		/// <returns></returns>
-		public UniTask DelayFrame( int delayFrameCount, PlayerLoopTiming delayTiming = PlayerLoopTiming.Update, CancellationToken cancellationToken = default )
+		public async UniTask DelayFrame( int delayFrameCount, PlayerLoopTiming delayTiming = PlayerLoopTiming.Update, CancellationToken cancellationToken = default )
 		{
 			if( m_GameObjectWasDestroyed == true )
 			{
@@ -214,7 +271,33 @@ namespace DBS
 
 			//----------------------------------------------------------
 
-			return UniTask.DelayFrame( delayFrameCount, delayTiming, GetActiveCancellationToken( cancellationToken ) ) ;
+			( var tokenSource, var token ) = GetActiveCancellation( cancellationToken ) ;
+
+			bool isCanceled = false ;
+			try
+			{
+				await UniTask.DelayFrame( delayFrameCount, delayTiming, token ) ;
+			}
+			catch( Exception e )
+			{
+				if( e is OperationCanceledException )
+				{
+					isCanceled = true ;
+				}
+				else
+				{
+					Debug.LogError( e.Message ) ;
+				}
+			}
+			finally
+			{
+				tokenSource?.Dispose() ;
+			}
+
+			if( isCanceled == true )
+			{
+				throw new OperationCanceledException() ;
+			}
 		}
 
 		/// <summary>
@@ -222,7 +305,7 @@ namespace DBS
 		/// </summary>
 		/// <param name="cancellationToken"></param>
 		/// <returns></returns>
-		public UniTask WaitForFixedUpdate( CancellationToken cancellationToken = default )
+		public async UniTask WaitForFixedUpdate( CancellationToken cancellationToken = default )
 		{
 			if( m_GameObjectWasDestroyed == true )
 			{
@@ -234,7 +317,33 @@ namespace DBS
 
 			//----------------------------------------------------------
 
-			return UniTask.WaitForFixedUpdate( GetActiveCancellationToken( cancellationToken ) ) ;
+			( var tokenSource, var token ) = GetActiveCancellation( cancellationToken ) ;
+
+			bool isCanceled = false ;
+			try
+			{
+				await UniTask.WaitForFixedUpdate( token ) ;
+			}
+			catch( Exception e )
+			{
+				if( e is OperationCanceledException )
+				{
+					isCanceled = true ;
+				}
+				else
+				{
+					Debug.LogError( e.Message ) ;
+				}
+			}
+			finally
+			{
+				tokenSource?.Dispose() ;
+			}
+
+			if( isCanceled == true )
+			{
+				throw new OperationCanceledException() ;
+			}
 		}
 
 		/// <summary>
@@ -245,7 +354,7 @@ namespace DBS
 		/// <param name="delayTiming"></param>
 		/// <param name="cancellationToken"></param>
 		/// <returns></returns>
-		public UniTask WaitForSeconds( float time, bool ignoreTimeScale = false, PlayerLoopTiming delayTiming = PlayerLoopTiming.Update, CancellationToken cancellationToken = default )
+		public async UniTask WaitForSeconds( float time, bool ignoreTimeScale = false, PlayerLoopTiming delayTiming = PlayerLoopTiming.Update, CancellationToken cancellationToken = default )
 		{
 			if( m_GameObjectWasDestroyed == true )
 			{
@@ -257,8 +366,34 @@ namespace DBS
 
 			//----------------------------------------------------------
 
-			var delayTimeSpan = TimeSpan.FromMilliseconds( time * 1000 ) ;
-			return UniTask.Delay( delayTimeSpan, ignoreTimeScale, delayTiming, GetActiveCancellationToken( cancellationToken ) ) ;
+			( var tokenSource, var token ) = GetActiveCancellation( cancellationToken ) ;
+
+			bool isCanceled = false ;
+			try
+			{
+				var delayTimeSpan = TimeSpan.FromMilliseconds( time * 1000 ) ;
+				await UniTask.Delay( delayTimeSpan, ignoreTimeScale, delayTiming, token ) ;
+			}
+			catch( Exception e )
+			{
+				if( e is OperationCanceledException )
+				{
+					isCanceled = true ;
+				}
+				else
+				{
+					Debug.LogError( e.Message ) ;
+				}
+			}
+			finally
+			{
+				tokenSource?.Dispose() ;
+			}
+
+			if( isCanceled == true )
+			{
+				throw new OperationCanceledException() ;
+			}
 		}
 
 		/// <summary>
@@ -266,7 +401,7 @@ namespace DBS
 		/// </summary>
 		/// <param name="cancellationToken"></param>
 		/// <returns></returns>
-		public UniTask WaitWhile( Func<bool> predicate, PlayerLoopTiming timing = PlayerLoopTiming.Update, CancellationToken cancellationToken = default )
+		public async UniTask WaitWhile( Func<bool> predicate, PlayerLoopTiming timing = PlayerLoopTiming.Update, CancellationToken cancellationToken = default )
 		{
 			if( m_GameObjectWasDestroyed == true )
 			{
@@ -278,7 +413,33 @@ namespace DBS
 
 			//----------------------------------------------------------
 
-			return UniTask.WaitWhile( predicate, timing, GetActiveCancellationToken( cancellationToken ) ) ;
+			( var tokenSource, var token ) = GetActiveCancellation( cancellationToken ) ;
+
+			bool isCanceled = false ;
+			try
+			{
+				await UniTask.WaitWhile( predicate, timing, token ) ;
+			}
+			catch( Exception e )
+			{
+				if( e is OperationCanceledException )
+				{
+					isCanceled = true ;
+				}
+				else
+				{
+					Debug.LogError( e.Message ) ;
+				}
+			}
+			finally
+			{
+				tokenSource?.Dispose() ;
+			}
+
+			if( isCanceled == true )
+			{
+				throw new OperationCanceledException() ;
+			}
 		}
 
 		/// <summary>
@@ -286,7 +447,7 @@ namespace DBS
 		/// </summary>
 		/// <param name="cancellationToken"></param>
 		/// <returns></returns>
-		public UniTask WaitUntil( Func<bool> predicate, PlayerLoopTiming timing = PlayerLoopTiming.Update, CancellationToken cancellationToken = default )
+		public async UniTask WaitUntil( Func<bool> predicate, PlayerLoopTiming timing = PlayerLoopTiming.Update, CancellationToken cancellationToken = default )
 		{
 			if( m_GameObjectWasDestroyed == true )
 			{
@@ -298,7 +459,33 @@ namespace DBS
 
 			//----------------------------------------------------------
 
-			return UniTask.WaitUntil( predicate, timing, GetActiveCancellationToken( cancellationToken ) ) ;
+			( var tokenSource, var token ) = GetActiveCancellation( cancellationToken ) ;
+
+			bool isCanceled = false ;
+			try
+			{
+				await UniTask.WaitUntil( predicate, timing, token ) ;
+			}
+			catch( Exception e )
+			{
+				if( e is OperationCanceledException )
+				{
+					isCanceled = true ;
+				}
+				else
+				{
+					Debug.LogError( e.Message ) ;
+				}
+			}
+			finally
+			{
+				tokenSource?.Dispose() ;
+			}
+
+			if( isCanceled == true )
+			{
+				throw new OperationCanceledException() ;
+			}
 		}
 
 		//-------------------------------------------------------------------------------------------
@@ -377,10 +564,16 @@ namespace DBS
 				throw new OperationCanceledException() ;
 			}
 
+			if( tasks == null || tasks.Length == 0 )
+			{
+				// 待機する意味が無い
+				return ;
+			}
+
 			//----------------------------------------------------------
 
 			// OnDestroy() 実行後の場合はリーク対策として強制的にキャンセルをかける
-			cancellationToken = GetActiveCancellationToken( cancellationToken ) ;
+			( var tokenSource, var token ) = GetActiveCancellation( cancellationToken ) ;
 
 			//----------------------------------
 
@@ -390,6 +583,8 @@ namespace DBS
 
 			int countMax ;
 			int countNow ;
+
+			bool isCanceled	= false ;
 
 			while( true )
 			{
@@ -551,13 +746,41 @@ namespace DBS
 					}
 				}
 
-				await UniTask.Yield( PlayerLoopTiming.Update, cancellationToken ) ;
-
 				if( countMax == 0 || countNow >  0 )
 				{
 					// 実行されているタスクは無いか１つ以上終了した
 					break ;
 				}
+
+				//---------------------------------
+
+				try
+				{
+					await UniTask.Yield( PlayerLoopTiming.Update, token ) ;
+				}
+				catch( Exception e )
+				{
+					if( e is OperationCanceledException )
+					{
+						isCanceled = true ;
+					}
+					else
+					{
+						Debug.LogError( e.Message ) ;
+					}
+					break ;
+				}
+			}
+
+			//----------------------------------------------------------
+			// ループ終了後
+
+			tokenSource?.Dispose() ;
+
+			if( isCanceled == true )
+			{
+				// 中断された場合は例外を投げる
+				throw new OperationCanceledException() ;
 			}
 		}
 
@@ -596,10 +819,16 @@ namespace DBS
 				throw new OperationCanceledException() ;
 			}
 
+			if( funcs == null || funcs.Length == 0 )
+			{
+				// 待機する意味が無い
+				return ;
+			}
+
 			//----------------------------------------------------------
 
 			// OnDestroy() 実行後の場合はリーク対策として強制的にキャンセルをかける
-			cancellationToken = GetActiveCancellationToken( cancellationToken ) ;
+			( var tokenSource, var token ) = GetActiveCancellation( cancellationToken ) ;
 
 			//----------------------------------
 
@@ -609,6 +838,8 @@ namespace DBS
 
 			int countMax ;
 			int countNow ;
+
+			bool isCanceled	= false ;
 
 			while( true )
 			{
@@ -631,13 +862,41 @@ namespace DBS
 					}
 				}
 
-				await UniTask.Yield( PlayerLoopTiming.Update, cancellationToken ) ;
-
 				if( countMax == 0 || countNow >  0 )
 				{
 					// 実行されているタスクは無いか１つ以上終了した
 					break ;
 				}
+
+				//---------------------------------
+
+				try
+				{
+					await UniTask.Yield( PlayerLoopTiming.Update, token ) ;
+				}
+				catch( Exception e )
+				{
+					if( e is OperationCanceledException )
+					{
+						isCanceled = true ;
+					}
+					else
+					{
+						Debug.LogError( e.Message ) ;
+					}
+					break ;
+				}
+			}
+
+			//----------------------------------------------------------
+			// ループ終了後
+
+			tokenSource?.Dispose() ;
+
+			if( isCanceled == true )
+			{
+				// 中断された場合は例外を投げる
+				throw new OperationCanceledException() ;
 			}
 		}
 
@@ -696,10 +955,16 @@ namespace DBS
 				throw new OperationCanceledException() ;
 			}
 
+			if( tasks == null || tasks.Length == 0 )
+			{
+				// 待機する意味が無い
+				return ;
+			}
+
 			//----------------------------------------------------------
 
 			// OnDestroy() 実行後の場合はリーク対策として強制的にキャンセルをかける
-			cancellationToken = GetActiveCancellationToken( cancellationToken ) ;
+			( var tokenSource, var token ) = GetActiveCancellation( cancellationToken ) ;
 
 			//----------------------------------
 
@@ -708,6 +973,8 @@ namespace DBS
 			// よって判定対象のタスクが中断された場合のオーナータスクを含めた一括中断は行われない
 
 			int count ;
+
+			bool isCanceled	= false ;
 
 			while( true )
 			{
@@ -846,13 +1113,41 @@ namespace DBS
 					}
 				}
 
-				await UniTask.Yield( PlayerLoopTiming.Update, cancellationToken ) ;
-
 				if( count == 0 )
 				{
 					// 全て終了
 					break ;
 				}
+
+				//---------------------------------------------------------
+
+				try
+				{
+					await UniTask.Yield( PlayerLoopTiming.Update, token ) ;
+				}
+				catch( Exception e )
+				{
+					if( e is OperationCanceledException )
+					{
+						isCanceled = true ;
+					}
+					else
+					{
+						Debug.LogError( e.Message ) ;
+					}
+					break ;
+				}
+			}
+
+			//----------------------------------------------------------
+			// ループ終了後
+
+			tokenSource?.Dispose() ;
+
+			if( isCanceled == true )
+			{
+				// 中断された場合は例外を投げる
+				throw new OperationCanceledException() ;
 			}
 		}
 
@@ -891,10 +1186,16 @@ namespace DBS
 				throw new OperationCanceledException() ;
 			}
 
+			if( funcs == null || funcs.Length == 0 )
+			{
+				// 待機する意味が無い
+				return ;
+			}
+
 			//----------------------------------------------------------
 
 			// OnDestroy() 実行後の場合はリーク対策として強制的にキャンセルをかける
-			cancellationToken = GetActiveCancellationToken( cancellationToken ) ;
+			( var tokenSource, var token ) = GetActiveCancellation( cancellationToken ) ;
 
 			//----------------------------------
 
@@ -903,6 +1204,8 @@ namespace DBS
 			// よって判定対象のタスクが中断された場合のオーナータスクを含めた一括中断は行われない
 
 			int count ;
+
+			bool isCanceled	= false ;
 
 			while( true )
 			{
@@ -923,15 +1226,42 @@ namespace DBS
 					}
 				}
 
-				await UniTask.Yield( PlayerLoopTiming.Update, cancellationToken ) ;
-
 				if( count == 0 )
 				{
 					break ;
 				}
+
+				//---------------------------------------------------------
+
+				try
+				{
+					await UniTask.Yield( PlayerLoopTiming.Update, token ) ;
+				}
+				catch( Exception e )
+				{
+					if( e is OperationCanceledException )
+					{
+						isCanceled = true ;
+					}
+					else
+					{
+						Debug.LogError( e.Message ) ;
+					}
+					break ;
+				}
+			}
+
+			//----------------------------------------------------------
+			// ループ終了後
+
+			tokenSource?.Dispose() ;
+
+			if( isCanceled == true )
+			{
+				// 中断された場合は例外を投げる
+				throw new OperationCanceledException() ;
 			}
 		}
-
 
 		/// <summary>
 		/// １つのタスクを待ちつつその結果を取得する
@@ -951,13 +1281,15 @@ namespace DBS
 			//----------------------------------------------------------
 
 			// OnDestroy() 実行後の場合はリーク対策として強制的にキャンセルをかける
-			cancellationToken = GetActiveCancellationToken( cancellationToken ) ;
+			( var tokenSource, var token ) = GetActiveCancellation( cancellationToken ) ;
 
 			//----------------------------------
 
 			// 重要
 			// 判定対象のタスクは実行中以外(失敗・中断・終了)は全て終了扱いとする
 			// よって判定対象のタスクが中断された場合のオーナータスクを含めた一括中断は行われない
+
+			bool isCanceled	= false ;
 
 			while( true )
 			{
@@ -966,8 +1298,39 @@ namespace DBS
 					break ;	// 終了
 				}
 
-				await UniTask.Yield( PlayerLoopTiming.Update, cancellationToken ) ;
+				//---------------------------------
+				// 直接呼び出し元タスクのキャンセル対応
+
+				try
+				{
+					await UniTask.Yield( PlayerLoopTiming.Update, token ) ;
+				}
+				catch( Exception e )
+				{
+					if( e is OperationCanceledException )
+					{
+						isCanceled = true ;
+					}
+					else
+					{
+						Debug.LogError( e.Message ) ;
+					}
+					break ;
+				}
 			}
+
+			//----------------------------------------------------------
+			// ループ終了後
+
+			tokenSource?.Dispose() ;
+
+			if( isCanceled == true )
+			{
+				// 中断された場合は例外を投げる
+				throw new OperationCanceledException() ;
+			}
+
+			//------------------------------------------------------------------------------------------
 
 			if( task.Status == UniTaskStatus.Faulted )
 			{
@@ -983,6 +1346,8 @@ namespace DBS
 				return default ;
 			}
 
+			// 待機対象のタスクは主に常駐インスタンスにあるものであるためキャンセルがあっても直接の呼び出しタスクはキャンセルさせない
+			// 結果値を返す
 			return task.GetAwaiter().GetResult() ;
 		}
 
@@ -993,6 +1358,8 @@ namespace DBS
 		/// <returns></returns>
 		public async UniTask When( System.Object task, CancellationToken cancellationToken = default )
 		{
+			//----------------------------------
+
 			if( m_GameObjectWasDestroyed == true )
 			{
 				// 既に GameObject が破棄されている
@@ -1001,16 +1368,25 @@ namespace DBS
 				throw new OperationCanceledException() ;
 			}
 
+			if( task == null )
+			{
+				// 待機する意味が無い
+				return ;
+			}
+
 			//----------------------------------------------------------
 
 			// OnDestroy() 実行後の場合はリーク対策として強制的にキャンセルをかける
-			cancellationToken = GetActiveCancellationToken( cancellationToken ) ;
+			( var tokenSource, var token ) = GetActiveCancellation( cancellationToken ) ;
 
 			//----------------------------------
 
 			// 重要
 			// 判定対象のタスクは実行中以外(失敗・中断・終了)は全て終了扱いとする
 			// よって判定対象のタスクが中断された場合のオーナータスクを含めた一括中断は行われない
+			int count ;
+
+			bool isCanceled	= false ;
 
 			while( true )
 			{
@@ -1060,11 +1436,160 @@ namespace DBS
 					}
 				}
 				else
+				//---------------------------------------------------------
+				// 以下、誤って配列系を入力してしまった場合の保険
+				if( task is List<Task> )
 				{
+					// List<Task>
+					count = 0 ;
+					List<Task> s_tasks = task as List<Task> ;
+					foreach( var s_task in s_tasks )
+					{
+						if( s_task != null && s_task.Status == TaskStatus.Running )
+						{
+							count ++ ;	// 実行中
+						}
+					}
+
+					if( count == 0 )
+					{
+						return ;
+					}
+				}
+				else
+				if( task is List<UniTask> )
+				{
+					// List<UniTask>
+					count = 0 ;
+					List<UniTask> s_tasks = task as List<UniTask> ;
+					foreach( var s_task in s_tasks )
+					{
+						if( s_task.Status == UniTaskStatus.Pending )
+						{
+							count ++ ;	// 実行中(未実行は Succeeded)
+						}
+					}
+
+					if( count == 0 )
+					{
+						return ;
+					}
+				}
+				else
+				if( task is List<CustomYieldInstruction> )
+				{
+					// List<CustomYieldInstruction>
+					count = 0 ;
+					List<CustomYieldInstruction> s_tasks = task as List<CustomYieldInstruction> ;
+					foreach( var s_task in s_tasks )
+					{
+						if( s_task != null && s_task.keepWaiting == true )
+						{
+							count ++ ;	// 実行中
+						}
+					}
+
+					if( count == 0 )
+					{
+						return ;
+					}
+				}
+				else
+				if( task is Task[] )
+				{
+					// Task[]
+					count = 0 ;
+					Task[] s_tasks = task as Task[] ;
+					foreach( var s_task in s_tasks )
+					{
+						if( s_task != null && s_task.Status == TaskStatus.Running )
+						{
+							count ++ ;	// 実行中
+						}
+					}
+
+					if( count == 0 )
+					{
+						return ;
+					}
+				}
+				else
+				if( task is UniTask[] )
+				{
+					// UniTask[]
+					count = 0 ;
+					UniTask[] s_tasks = task as UniTask[] ;
+					foreach( var s_task in s_tasks )
+					{
+						if( s_task.Status == UniTaskStatus.Pending )
+						{
+							count ++ ;	// 実行中(未実行は Succeeded)
+						}
+					}
+
+					if( count == 0 )
+					{
+						return ;
+					}
+				}
+				else
+				if( task is CustomYieldInstruction[] )
+				{
+					// CustomYieldInstruction[]
+					count = 0 ;
+					CustomYieldInstruction[] s_tasks = task as CustomYieldInstruction[] ;
+					foreach( var s_task in s_tasks )
+					{
+						if( s_task != null && s_task.keepWaiting == true )
+						{
+							count ++ ;	// 実行中
+						}
+					}
+
+					if( count == 0 )
+					{
+						return ;
+					}
+				}
+				else
+				{
+					if( task != null )
+					{
+						Debug.LogWarning( "[ExMonoBehaviour]:When() Can not wait for task finish. because input object type is bad = " + task.GetType() ) ;
+					}
+					// task が null の場合は無視する
 					return ;
 				}
 
-				await UniTask.Yield( PlayerLoopTiming.Update, cancellationToken ) ;
+				//---------------------------------
+
+				try
+				{
+					await UniTask.Yield( PlayerLoopTiming.Update, token ) ;
+				}
+				catch( Exception e )
+				{
+					if( e is OperationCanceledException )
+					{
+						isCanceled = true ;
+					}
+					else
+					{
+						Debug.LogError( e.Message ) ;
+					}
+					break ;
+				}
+			}
+
+			//----------------------------------------------------------
+			// ループ終了後
+
+			tokenSource?.Dispose() ;
+
+			if( isCanceled == true )
+			{
+				// 中断された場合は例外を投げる
+				throw new OperationCanceledException() ;
 			}
 		}
 
@@ -1072,146 +1597,45 @@ namespace DBS
 		// ユーティリティ
 
 		/// <summary>
-		/// トゥイーンのヘルパー
+		/// Updateで動作するトゥイーンのヘルパー
 		/// </summary>
 		/// <param name="duration"></param>
 		/// <param name="easeType"></param>
 		/// <returns></returns>
-		protected async UniTask Tween( Action<float> onFrameUpdate, float duration, EaseTypes easeType = EaseTypes.Linear, float timeScale = 1 )
+		protected async UniTask Tween( Action<float> onFrameUpdate, float duration, EaseTypes easeType = EaseTypes.Linear, float timeScale = 1, Func<bool> onCancel = null )
 		{
-			if( m_GameObjectWasDestroyed == true )
-			{
-				// 既に GameObject が破棄されている
-
-				// タスクをまとめてキャンセルする
-				throw new OperationCanceledException() ;
-			}
-
-			//----------------------------------------------------------
-
-			if( onFrameUpdate == null )
-			{
-				return ;
-			}
-
-			if( duration <= 0 )
-			{
-				onFrameUpdate( 1 ) ;
-				return ;
-			}
-
-			float timer = 0 ;
-			while( timer <  duration )
-			{
-				timer += ( Time.deltaTime * timeScale ) ;
-				if( timer >  duration )
-				{
-					timer  = duration ;
-				}
-
-				onFrameUpdate( Ease.GetValue( timer / duration, easeType ) ) ;
-
-				await Yield() ;
-			}
+			await Tween( progress => { onFrameUpdate( progress ) ; return ( timeScale, false ) ; }, duration, easeType, timeScale, onCancel ) ;
 		}
 
 		/// <summary>
-		/// トゥイーンのヘルパー(動的なタイムスケール変更に対応)
+		/// Updateで動作するトゥイーンのヘルパー(動的なタイムスケール変更に対応)
 		/// </summary>
 		/// <param name="duration"></param>
 		/// <param name="easeType"></param>
 		/// <returns></returns>
-		protected async UniTask Tween( Func<float,float> onFrameUpdate, float duration, EaseTypes easeType = EaseTypes.Linear, float timeScale = 1 )
+		protected async UniTask Tween( Func<float, float> onFrameUpdate, float duration, EaseTypes easeType = EaseTypes.Linear, float timeScale = 1, Func<bool> onCancel = null )
 		{
-			if( m_GameObjectWasDestroyed == true )
-			{
-				// 既に GameObject が破棄されている
-
-				// タスクをまとめてキャンセルする
-				throw new OperationCanceledException() ;
-			}
-
-			//----------------------------------------------------------
-
-			if( onFrameUpdate == null )
-			{
-				return ;
-			}
-
-			if( duration <= 0 )
-			{
-				onFrameUpdate( 1 ) ;
-				return ;
-			}
-
-			float timer = 0 ;
-			while( timer <  duration )
-			{
-				timer += ( Time.deltaTime * timeScale ) ;
-				if( timer >  duration )
-				{
-					timer  = duration ;
-				}
-
-				timeScale = onFrameUpdate( Ease.GetValue( timer / duration, easeType ) ) ;
-
-				await Yield() ;
-			}
+			await Tween( progress => { return ( onFrameUpdate( progress ), false ) ; }, duration, easeType, timeScale, onCancel ) ;
 		}
 
 		/// <summary>
-		/// トゥイーンのヘルパー(途中中断に対応)
+		/// Updateで動作するトゥイーンのヘルパー(途中中断に対応)
 		/// </summary>
 		/// <param name="duration"></param>
 		/// <param name="easeType"></param>
 		/// <returns></returns>
-		protected async UniTask Tween( Func<float,bool> onFrameUpdate, float duration, EaseTypes easeType = EaseTypes.Linear, float timeScale = 1 )
+		protected async UniTask Tween( Func<float, bool> onFrameUpdate, float duration, EaseTypes easeType = EaseTypes.Linear, float timeScale = 1, Func<bool> onCancel = null )
 		{
-			if( m_GameObjectWasDestroyed == true )
-			{
-				// 既に GameObject が破棄されている
-
-				// タスクをまとめてキャンセルする
-				throw new OperationCanceledException() ;
-			}
-
-			//----------------------------------------------------------
-
-			if( onFrameUpdate == null )
-			{
-				return ;
-			}
-
-			if( duration <= 0 )
-			{
-				return ;
-			}
-
-			float timer = 0 ;
-			while( timer <  duration )
-			{
-				timer += ( Time.deltaTime * timeScale ) ;
-				if( timer >  duration )
-				{
-					timer  = duration ;
-				}
-
-				if( onFrameUpdate( Ease.GetValue( timer / duration, easeType ) ) == true )
-				{
-					break ;
-				}
-
-				await Yield() ;
-			}
+			await Tween( progress => { return ( timeScale, onFrameUpdate( progress ) ) ; }, duration, easeType, timeScale, onCancel ) ;
 		}
 
 		/// <summary>
-		/// トゥイーンのヘルパー(動的なタイムスケール変更と中断に対応)
+		/// Updateで動作するトゥイーンのヘルパー(動的なタイムスケール変更と中断に対応)
 		/// </summary>
 		/// <param name="duration"></param>
 		/// <param name="easeType"></param>
 		/// <returns></returns>
-		protected async UniTask Tween( Func<float,( float, bool )> onFrameUpdate, float duration, EaseTypes easeType = EaseTypes.Linear, float timeScale = 1 )
+		protected async UniTask Tween( Func<float,( float, bool )> onFrameUpdate, float duration, EaseTypes easeType = EaseTypes.Linear, float timeScale = 1, Func<bool> onCancel = null )
 		{
 			if( m_GameObjectWasDestroyed == true )
 			{
@@ -1238,6 +1662,15 @@ namespace DBS
 			bool stop ;
 			while( timer <  duration )
 			{
+				if( onCancel != null )
+				{
+					if( onCancel() == true )
+					{
+						// 中断
+						break ;
+					}
+				}
+
 				timer += ( Time.deltaTime * timeScale ) ;
 				if( timer >  duration )
 				{
@@ -1252,6 +1685,100 @@ namespace DBS
 				}
 
 				await Yield() ;
+			}
+		}
+
+		//-----------------------------------
+
+		/// <summary>
+		/// FixedUpdateで動作するトゥイーンのヘルパー
+		/// </summary>
+		/// <param name="duration"></param>
+		/// <param name="easeType"></param>
+		/// <returns></returns>
+		protected async UniTask FixedTween( Action<float> onFrameUpdate, float duration, EaseTypes easeType = EaseTypes.Linear, float timeScale = 1, Func<bool> onCancel = null )
+		{
+			await FixedTween( progress => { onFrameUpdate( progress ) ; return ( timeScale, false ) ; }, duration, easeType, timeScale, onCancel ) ;
+		}
+
+		/// <summary>
+		/// FixedUpdateで動作するトゥイーンのヘルパー(動的なタイムスケール変更に対応)
+		/// </summary>
+		/// <param name="duration"></param>
+		/// <param name="easeType"></param>
+		/// <returns></returns>
+		protected async UniTask FixedTween( Func<float, float> onFrameUpdate, float duration, EaseTypes easeType = EaseTypes.Linear, float timeScale = 1, Func<bool> onCancel = null )
+		{
+			await FixedTween( progress => { return ( onFrameUpdate( progress ), false ) ; }, duration, easeType, timeScale, onCancel ) ;
+		}
+
+		/// <summary>
+		///  FixedUpdateで動作するトゥイーンのヘルパー(途中中断に対応)
+		/// </summary>
+		/// <param name="duration"></param>
+		/// <param name="easeType"></param>
+		/// <returns></returns>
+		protected async UniTask FixedTween( Func<float, bool> onFrameUpdate, float duration, EaseTypes easeType = EaseTypes.Linear, float timeScale = 1, Func<bool> onCancel = null )
+		{
+			await FixedTween( progress => { return ( timeScale, onFrameUpdate( progress ) ) ; }, duration, easeType, timeScale, onCancel ) ;
+		}
+
+		/// <summary>
+		/// FixedUpdateで動作するトゥイーンのヘルパー(動的なタイムスケール変更と中断に対応)
+		/// </summary>
+		/// <param name="duration"></param>
+		/// <param name="easeType"></param>
+		/// <returns></returns>
+		protected async UniTask FixedTween( Func<float, ( float, bool )> onFrameUpdate, float duration, EaseTypes easeType = EaseTypes.Linear, float timeScale = 1, Func<bool> onCancel = null )
+		{
+			if( m_GameObjectWasDestroyed == true )
+			{
+				// 既に GameObject が破棄されている
+
+				// タスクをまとめてキャンセルする
+				throw new OperationCanceledException() ;
+			}
+
+			//----------------------------------------------------------
+
+			if( onFrameUpdate == null )
+			{
+				return;
+			}
+
+			if( duration <= 0 )
+			{
+				onFrameUpdate( 1 ) ;
+				return ;
+			}
+
+			float timer = 0 ;
+			bool stop ;
+			while( timer <  duration )
+			{
+				if( onCancel != null )
+				{
+					if( onCancel() == true )
+					{
+						// 中断
+						break ;
+					}
+				}
+
+				timer += ( Time.fixedDeltaTime * timeScale ) ;
+				if( timer >  duration )
+				{
+					timer  = duration ;
+				}
+
+				( timeScale, stop ) = onFrameUpdate( Ease.GetValue( timer / duration, easeType ) ) ;
+
+				if( stop == true )
+				{
+					break ;
+				}
+
+				await Yield( PlayerLoopTiming.FixedUpdate ) ;
 			}
 		}
 

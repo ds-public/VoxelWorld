@@ -7,10 +7,11 @@ using UnityEditor.Build.Reporting ;
 
 using UnityEngine ;
 
-using DBS ;
+using DSW ;
+
 
 /// <summary>
-/// アプリケーションのバッチビルド用クラス Version 2022/09/19
+/// アプリケーションのバッチビルド用クラス Version 2024/03/31
 /// </summary>
 public partial class Build_Application
 {
@@ -26,45 +27,97 @@ public partial class Build_Application
 	//------------------------------------
 
 	// MessagePack の IL2CPP 用の自動生成コード(リゾルバ)のパス
-	private const string	m_MessagePack_Resolver_Path		= "Assets/Application/Scripts/Runtime/_00_Framework/MessagePackHelper/Generated/MessagePack_Resolvers_GeneratedResolver.cs" ;
+//	private const string	m_MessagePack_Resolver_Path		= "Assets/Application/Scripts/Runtime/_00_Framework/MessagePackHelper/Generated/MessagePack_Resolvers_GeneratedResolver.cs" ;
 
 	//----------------------------------------------------------------------------
 
-	public enum PlatformTypes
+	/// <summary>
+	/// ランタイムのプラットフォームタイプ
+	/// </summary>
+	public enum RuntimePlatformTypes
 	{
 		Windows64,
 		OSX,
 		Android,
 		iOS,
+		Linux64,
+	}
+
+	/// <summary>
+	/// デディケーティッドサーバーのプラットフォームタイプ
+	/// </summary>
+	public enum DedicatedServerPlatformTypes
+	{
+		Windows64,
+		OSX,
+		Android,
+		iOS,
+		Linux64,
 	}
 
 	/// <summary>
 	/// バージョン値を取得する
 	/// </summary>
 	/// <returns></returns>
-	private static ( string, int ) GetVersion( PlatformTypes platformType )
+	private static ( string, int ) GetRuntimeVersion( RuntimePlatformTypes platformType )
 	{
 		string versionName = "0.0.0" ;
 		int    versionCode = 0 ;
 
-		Settings settings = Resources.Load<Settings>( m_SettingsPath ) ;
+		var settings = Resources.Load<Settings>( m_SettingsPath ) ;
 		if( settings != null )
 		{
-			if( platformType == PlatformTypes.Android )
+			if( platformType == RuntimePlatformTypes.Android )
 			{
 				// Android
 				versionName = settings.ClientVersionName ;
 				versionCode = settings.ClientVersionCode ;
 			}
 			else
-			if( platformType == PlatformTypes.iOS )
+			if( platformType == RuntimePlatformTypes.iOS )
 			{
 				// iOS
-				versionName = settings.SystemVersionName ;
-				versionCode = settings.Revision_iOS ;
+				versionName = settings.ClientVersionName ;
+				versionCode = settings.ClientVersionCode ;
 			}
 			else
 			{
+				// Other
+				versionName = settings.SystemVersionName ;
+			}
+		}
+
+		return ( versionName, versionCode ) ;
+	}
+
+	/// <summary>
+	/// バージョン値を取得する
+	/// </summary>
+	/// <returns></returns>
+	private static ( string, int ) GetDedicatedServerVersion( DedicatedServerPlatformTypes platformType )
+	{
+		string versionName = "0.0.0" ;
+		int    versionCode = 0 ;
+
+		var settings = Resources.Load<Settings>( m_SettingsPath ) ;
+		if( settings != null )
+		{
+			if( platformType == DedicatedServerPlatformTypes.Android )
+			{
+				// Android
+				versionName = settings.ClientVersionName ;
+				versionCode = settings.ClientVersionCode ;
+			}
+			else
+			if( platformType == DedicatedServerPlatformTypes.iOS )
+			{
+				// iOS
+				versionName = settings.ClientVersionName ;
+				versionCode = settings.ClientVersionCode ;
+			}
+			else
+			{
+				// Other
 				versionName = settings.SystemVersionName ;
 			}
 		}
@@ -87,10 +140,10 @@ public partial class Build_Application
 		m_PlayerSettings_productName	= PlayerSettings.productName ;
 		m_PlayerSettings_bundleVersion	= PlayerSettings.bundleVersion ;
 
-		Settings settings = Resources.Load<Settings>( m_SettingsPath ) ;
+		var settings = Resources.Load<Settings>( m_SettingsPath ) ;
 		if( settings != null )
 		{
-			m_EndPoint				= settings.WebAPI_DefaultEndPoint ;
+			m_EndPoint				= settings.EndPoint ;
 			m_DevelopmentMode		= settings.DevelopmentMode ;
 			m_BuildVersion			= settings.BuildVersion ;
 		}
@@ -99,10 +152,10 @@ public partial class Build_Application
 	// デフォルトのエンドポイントを設定する
 	private static void SetDefaultEndPoint( Settings.EndPointNames endPointName )
 	{
-		Settings settings = Resources.Load<Settings>( m_SettingsPath ) ;
+		var settings = Resources.Load<Settings>( m_SettingsPath ) ;
 		if( settings != null )
 		{
-			settings.WebAPI_DefaultEndPoint = endPointName ;
+			settings.EndPoint = endPointName ;
 
 			EditorUtility.SetDirty( settings ) ;	// 重要
 
@@ -110,14 +163,14 @@ public partial class Build_Application
 			AssetDatabase.SaveAssets() ;
 
 			settings = Resources.Load<Settings>( m_SettingsPath ) ;
-			Debug.Log( "[デフォルトのエンドポイント] " + settings.WebAPI_DefaultEndPoint ) ;
+			Debug.Log( "[デフォルトのエンドポイント] " + settings.EndPoint ) ;
 		}
 	}
 
 	// 各種デバッグ用の機能を有効にするかを設定する
 	private static void SetDevelopmentMode( bool developmentMode )
 	{
-		Settings settings = Resources.Load<Settings>( m_SettingsPath ) ;
+		var settings = Resources.Load<Settings>( m_SettingsPath ) ;
 		if( settings != null )
 		{
 			settings.DevelopmentMode = developmentMode ;
@@ -138,7 +191,7 @@ public partial class Build_Application
 			return ;
 		}
 
-		Settings settings = Resources.Load<Settings>( m_SettingsPath ) ;
+		var settings = Resources.Load<Settings>( m_SettingsPath ) ;
 		if( settings != null )
 		{
 			settings.BuildVersion = buildVersion ;
@@ -159,10 +212,10 @@ public partial class Build_Application
 		PlayerSettings.productName		= m_PlayerSettings_productName ;
 		PlayerSettings.bundleVersion	= m_PlayerSettings_bundleVersion ;
 
-		Settings settings = Resources.Load<Settings>( m_SettingsPath ) ;
+		var settings = Resources.Load<Settings>( m_SettingsPath ) ;
 		if( settings != null )
 		{
-			settings.WebAPI_DefaultEndPoint	= m_EndPoint ;
+			settings.EndPoint				= m_EndPoint ;
 			settings.DevelopmentMode		= m_DevelopmentMode ;
 			settings.BuildVersion			= m_BuildVersion ;
 
@@ -227,6 +280,12 @@ public partial class Build_Application
 					platform	= BuildTarget.iOS ;
 				break ;
 
+				// Linux用
+				case "--platform-linux64" :
+				case "--platform-linux" :
+					platform	= BuildTarget.StandaloneLinux64 ;
+				break ;
+
 				//---------------------------------
 
 				// Release版
@@ -268,42 +327,53 @@ public partial class Build_Application
 			case BuildTarget.StandaloneWindows64	:
 				switch( build )
 				{
-					case BuildTypes.Release		: result = Execute_Windows64_Release_BuildOnly()		; break ;
-					case BuildTypes.Staging		: result = Execute_Windows64_Staging_BuildOnly()		; break ;
-					case BuildTypes.Development	: result = Execute_Windows64_Development_BuildOnly()	; break ;
-					case BuildTypes.Profiler	: result = Execute_Windows64_Profiler_BuildOnly()		; break ;
+					case BuildTypes.Release		: result = Execute_Runtime_Windows64_Mono_Release_BuildOnly()		; break ;
+					case BuildTypes.Staging		: result = Execute_Runtime_Windows64_Mono_Staging_BuildOnly()		; break ;
+					case BuildTypes.Development	: result = Execute_Runtime_Windows64_Mono_Development_BuildOnly()	; break ;
+					case BuildTypes.Profiler	: result = Execute_Runtime_Windows64_Mono_Profiler_BuildOnly()		; break ;
 				}
 			break ;
 
 			case BuildTarget.StandaloneOSX			:
 				switch( build )
 				{
-					case BuildTypes.Release		: result = Execute_OSX_Release_BuildOnly()				; break ;
-					case BuildTypes.Staging		: result = Execute_OSX_Staging_BuildOnly()				; break ;
-					case BuildTypes.Development	: result = Execute_OSX_Development_BuildOnly()			; break ;
-					case BuildTypes.Profiler	: result = Execute_OSX_Profiler_BuildOnly()				; break ;
+					case BuildTypes.Release		: result = Execute_Runtime_OSX_Mono_Release_BuildOnly()				; break ;
+					case BuildTypes.Staging		: result = Execute_Runtime_OSX_Mono_Staging_BuildOnly()				; break ;
+					case BuildTypes.Development	: result = Execute_Runtime_OSX_Mono_Development_BuildOnly()			; break ;
+					case BuildTypes.Profiler	: result = Execute_Runtime_OSX_Mono_Profiler_BuildOnly()			; break ;
 				}
 			break ;
 
 			case BuildTarget.Android				:
 				switch( build )
 				{
-					case BuildTypes.Release		: result = Execute_Android_Release_BuildOnly()			; break ;
-					case BuildTypes.Staging		: result = Execute_Android_Staging_BuildOnly()			; break ;
-					case BuildTypes.Development : result = Execute_Android_Development_BuildOnly()		; break ;
-					case BuildTypes.Profiler	: result = Execute_Android_Profiler_BuildOnly()			; break ;
+					case BuildTypes.Release		: result = Execute_Runtime_Android_Mono_Release_BuildOnly()			; break ;
+					case BuildTypes.Staging		: result = Execute_Runtime_Android_Mono_Staging_BuildOnly()			; break ;
+					case BuildTypes.Development : result = Execute_Runtime_Android_Mono_Development_BuildOnly()		; break ;
+					case BuildTypes.Profiler	: result = Execute_Runtime_Android_Mono_Profiler_BuildOnly()		; break ;
 				}
 			break ;
 
 			case BuildTarget.iOS					:
 				switch( build )
 				{
-					case BuildTypes.Release		: result = Execute_iOS_Release_BuildOnly()				; break ;
-					case BuildTypes.Staging		: result = Execute_iOS_Staging_BuildOnly()				; break ;
-					case BuildTypes.Development : result = Execute_iOS_Development_BuildOnly()			; break ;
-					case BuildTypes.Profiler	: result = Execute_iOS_Profiler_BuildOnly()				; break ;
+					case BuildTypes.Release		: result = Execute_Runtime_iOS_IL2CPP_Release_BuildOnly()			; break ;
+					case BuildTypes.Staging		: result = Execute_Runtime_iOS_IL2CPP_Staging_BuildOnly()			; break ;
+					case BuildTypes.Development : result = Execute_Runtime_iOS_IL2CPP_Development_BuildOnly()		; break ;
+					case BuildTypes.Profiler	: result = Execute_Runtime_iOS_IL2CPP_Profiler_BuildOnly()			; break ;
 				}
 			break ;
+
+			case BuildTarget.StandaloneLinux64	:
+				switch( build )
+				{
+					case BuildTypes.Release		: result = Execute_Runtime_Linux64_Mono_Release_BuildOnly()			; break ;
+					case BuildTypes.Staging		: result = Execute_Runtime_Linux64_Mono_Staging_BuildOnly()			; break ;
+					case BuildTypes.Development	: result = Execute_Runtime_Linux64_Mono_Development_BuildOnly()		; break ;
+					case BuildTypes.Profiler	: result = Execute_Runtime_Linux64_Mono_Profiler_BuildOnly()		; break ;
+				}
+			break ;
+
 		}
 
 		//-----------------------------------------------------------
@@ -323,7 +393,7 @@ public partial class Build_Application
 	//--------------------------------------------------------------------------------------------
 
 	// ビルドターゲットとビルドターゲットグループの関係
-	private static readonly Dictionary<BuildTarget,BuildTargetGroup> m_BuildTargetGroups = new Dictionary<BuildTarget, BuildTargetGroup>()
+	private static readonly Dictionary<BuildTarget,BuildTargetGroup> m_BuildTargetGroups = new ()
 	{
 		{ BuildTarget.StandaloneWindows,		BuildTargetGroup.Standalone	},
 		{ BuildTarget.StandaloneWindows64,		BuildTargetGroup.Standalone	},
@@ -397,8 +467,7 @@ public partial class Build_Application
 	(
 		string			path,
 		BuildTarget		target,
-		BuildOptions	options,
-		bool liappOff
+		BuildOptions	options
 	)
 	{
 		//-----------------------------------------------------------
@@ -451,7 +520,7 @@ public partial class Build_Application
 			}
 			else
 			{
-				FileInfo fi = new FileInfo( path ) ;
+				var fi = new FileInfo( path ) ;
 				if( fi != null )
 				{
 					size = ( ulong )fi.Length ;
@@ -472,9 +541,9 @@ public partial class Build_Application
 	// 有効なシーンのパスのみ取得する
 	private static string[] GetAvailableScenes()
 	{
-		EditorBuildSettingsScene[] scenes = EditorBuildSettings.scenes ;
+		var scenes = EditorBuildSettings.scenes ;
 
-		List<string> targetScenePaths = new List<string>() ;
+		var targetScenePaths = new List<string>() ;
 
 		// 実際に存在するシーンファイルのみ対象とする
 		string path ;
@@ -576,23 +645,23 @@ public partial class Build_Application
 	//   Editor モードでの時間計測には DateTime を使用する必要がある。
 
 	// 1970年01月01日 00時00分00秒 からの経過秒数を計算するためのエポック時間
-	private static readonly DateTime m_UNIX_EPOCH = new DateTime( 1970, 1, 1, 0, 0, 0, 0 ) ;
+	private static readonly DateTime m_UNIX_EPOCH = new ( 1970, 1, 1, 0, 0, 0, 0 ) ;
 
 	private static long m_ProcessingTime ;
 
 	// 時間計測を開始する
 	private static void StartClock()
 	{
-		DateTime dt = DateTime.Now ;
-		TimeSpan time = dt.ToUniversalTime() - m_UNIX_EPOCH ;
+		var dt = DateTime.Now ;
+		var time = dt.ToUniversalTime() - m_UNIX_EPOCH ;
 		m_ProcessingTime = ( long )time.TotalSeconds ;
 	}
 
 	// 時間計測を終了する
 	private static void StopClock()
 	{
-		DateTime dt = DateTime.Now ;
-		TimeSpan time = dt.ToUniversalTime() - m_UNIX_EPOCH ;
+		var dt = DateTime.Now ;
+		var time = dt.ToUniversalTime() - m_UNIX_EPOCH ;
 		long processtingTime = ( long )time.TotalSeconds - m_ProcessingTime ;
 
 		long hour   = ( processtingTime / 3600L ) ;
@@ -612,10 +681,9 @@ public partial class Build_Application
 	/// Android用(Release) - Mono
 	/// </summary>
 	/// <returns></returns>
-	[MenuItem("Build/Application/GitInfo", priority = 20)]
+	[MenuItem( "Build/Application/GitInfo", priority = 20 )]
 	internal static string Execute_GitInfo()
 	{
-
 		string activeBranchName = string.Empty ;
 		string lastCommitCode = string.Empty ;
 
@@ -858,7 +926,7 @@ public partial class Build_Application
 
 		if( string.IsNullOrEmpty( activeBranchName ) == false && string.IsNullOrEmpty( lastCommitCode ) == false )
 		{
-			result = lastCommitCode + "[" + activeBranchName.Substring( 0, 1 ) + "]" ;
+			result = lastCommitCode + "[" + activeBranchName[ 0..2 ] + "]" ;
 		}
 		else
 		{
@@ -891,7 +959,7 @@ public partial class Build_Application
 		}
 
 		// 1970/01/01 を加算する
-		DateTime dateTime = m_UNIX_EPOCH.AddSeconds( tickTime ) ;
+		var dateTime = m_UNIX_EPOCH.AddSeconds( tickTime ) ;
 
 		// タイムゾーンの補正を加算する(一旦不要)
 //		TimeZone zone = TimeZone.CurrentTimeZone ;

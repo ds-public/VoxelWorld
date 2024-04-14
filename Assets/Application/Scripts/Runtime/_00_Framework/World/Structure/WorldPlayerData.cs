@@ -11,7 +11,7 @@ using MessagePack ;	// 1.7.3.5 は Api Compatibility Lavel を .Net 4.x にし�
 using StorageHelper ;
 
 
-namespace DBS.World
+namespace DSW.World
 {
 	/// <summary>
 	/// プレイヤーデータ

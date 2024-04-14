@@ -10,7 +10,7 @@ using UnityEngine ;
 using uGUIHelper ;
 using AudioHelper ;
 
-namespace DBS.Screens
+namespace DSW.Screens
 {
 	/// <summary>
 	/// 起動画面の制御クラス Version 2022/09/19 0

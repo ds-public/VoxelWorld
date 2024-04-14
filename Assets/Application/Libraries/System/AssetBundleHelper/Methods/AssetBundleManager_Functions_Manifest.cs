@@ -58,7 +58,7 @@ namespace AssetBundleHelper
 		/// <summary>
 		/// 全マニフェスト情報の高速アクセス用のハッシュリスト
 		/// </summary>
-		internal protected Dictionary<string,ManifestInfo> m_ManifestHash = new Dictionary<string, ManifestInfo>() ;
+		internal protected Dictionary<string,ManifestInfo> m_ManifestHash = new () ;
 
 		// マニフェストハッシュを更新する
 		private void UpdateManifestHash()
@@ -113,13 +113,13 @@ namespace AssetBundleHelper
 		/// </summary>
 		/// <param name="manifestName">マニフェスト名</param>
 		/// <returns>マニフェストの登録リスト上でのインデックス番号(-1で未登録)</returns>
-		public static int IsManifest( string manifestName )
+		public static int GetManifestIndex( string manifestName )
 		{
-			return m_Instance == null ? -1 : m_Instance.IsManifest_Private( manifestName ) ;
+			return m_Instance == null ? -1 : m_Instance.GetManifestIndex_Private( manifestName ) ;
 		}
 
 		// 指定のマニフェストが登録されているか確認する
-		private int IsManifest_Private( string manifestName )
+		private int GetManifestIndex_Private( string manifestName )
 		{
 			if( m_ManifestInfo == null || string.IsNullOrEmpty( manifestName ) == true )
 			{
@@ -127,6 +127,16 @@ namespace AssetBundleHelper
 			}
 
 			return m_ManifestInfo.FindIndex( _ => _.ManifestName == manifestName ) ;
+		}
+
+		/// <summary>
+		/// 指定のマニフェストが登録されているか確認する
+		/// </summary>
+		/// <param name="manifestName">マニフェスト名</param>
+		/// <returns>マニフェストの登録リスト上でのインデックス番号(-1で未登録)</returns>
+		public static bool HasManifest( string manifestName )
+		{
+			return m_Instance == null ? false : ( m_Instance.GetManifestIndex_Private( manifestName ) >= 0 ) ;
 		}
 
 		/// <summary>
@@ -365,7 +375,7 @@ namespace AssetBundleHelper
 				return null ;
 			}
 
-			Request request = new Request( m_Instance ) ;
+			var request = new Request( m_Instance ) ;
 			m_Instance.StartCoroutine( m_Instance.LoadAllManifestsAsync_Private( request ) ) ;
 			return request ;
 		}
@@ -377,7 +387,7 @@ namespace AssetBundleHelper
 
 			foreach( var manifestInfo in m_ManifestInfo )
 			{
-				Request subRequest = new Request( this ) ;
+				var subRequest = new Request( this ) ;
 				yield return StartCoroutine( LoadManifestAsync_Private( manifestInfo, subRequest, true ) ) ;
 				if( string.IsNullOrEmpty( subRequest.Error ) == false )
 				{
@@ -420,7 +430,7 @@ namespace AssetBundleHelper
 				return null ;
 			}
 
-			Request request = new Request( m_Instance ) ;
+			var request = new Request( m_Instance ) ;
 			m_Instance.StartCoroutine( m_Instance.LoadManifestAsync_Private
 			(
 				manifestName, crcOnly, storageCacheRootPath,
@@ -496,7 +506,7 @@ namespace AssetBundleHelper
 				return null ;
 			}
 
-			Request request = new Request( m_Instance ) ;
+			var request = new Request( m_Instance ) ;
 			m_Instance.StartCoroutine( m_Instance.LoadManifestAsync_Private( mainfestInfo, request, false ) ) ;
 			return request ;
 		}

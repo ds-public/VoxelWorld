@@ -107,12 +107,15 @@ namespace AssetBundleHelper
 
 				// リモートからのダウンロードの際にストレージにダイレクトに保存するかどうか
 				bool directSave				= false ;
-				if( DirectSaveEnabled == true && assetBundleInfo.Size >  0 && assetBundleInfo.Size >  instance.m_ReceiveBufferSize )
+				if( instance.m_DirectSaveEnabled == true && DirectSaveEnabled == true && assetBundleInfo.Size >  0 && assetBundleInfo.Size >  instance.m_LargeReceiveBufferSize )
+//				if( DirectSaveEnabled == true && assetBundleInfo.Size >  0 )
 				{
-					// 一定のサイズを超えるものはダウンロードと同時にストレージに直接保存にする
-					directSave = true ;
+					// 一定のサイズ(受信バッファサイズ)を超えるものはダウンロードと同時にストレージに直接保存にする
+					// そうでないもの(受信バッファサイズより小さいサイズのファイル)はダウンロードしきった後に保存する
+					directSave = true ;		// ダウンロードしながら保存する
 				}
 
+				// ダイレクトセーブが行われたかどうか
 				bool directSaveSuccessful	= false ;
 
 				string path ;
@@ -227,10 +230,12 @@ namespace AssetBundleHelper
 #endif
 					//----------------------------------------------------------------------------------------
 
-					if( directSave == true && assetBundleInfo.Size >  0 && CacheSize >  0 )
+					long fileSize = assetBundleInfo.Size ;
+
+					if( directSave == true && fileSize >  0 && CacheSize >  0 )
 					{
 						// キャッシュサイズ制限があるので足りなければ破棄可能で古いアセットバンドルを破棄する
-						if( Cleanup( assetBundleInfo.Size ) == false )
+						if( Cleanup( fileSize ) == false )
 						{
 							// 空き領域が確保出来ない
 							DownloadingCount -- ;	// ダウンロード中の数を減少させる
@@ -255,8 +260,9 @@ namespace AssetBundleHelper
 						DownloadFromRemote
 						(
 							path,
-							directSave == false ? null : storagePath,	// ダウンロードから直接保存
-							directSave == false ? 0 : assetBundleInfo.Crc,
+							fileSize,											// 基本的にサイズはわかっている
+							directSave == false ? null	: storagePath,			// ダウンロードから直接保存
+							directSave == false ? 0		: assetBundleInfo.Crc,	// ダウンロードから直接保存でなければＣＲＣのチェックも不要
 							( DownloadStates state, byte[] downloadedData, float progress, long downloadedSize, string errorMessage, int version ) =>
 							{
 								Progress = progress ;
@@ -264,7 +270,7 @@ namespace AssetBundleHelper
 
 								if( request != null )
 								{
-									request.StoredDataSize	= ( int )downloadedSize ;
+									request.StoredDataSize	= downloadedSize ;
 									request.Progress		= Progress ;
 								}
 
@@ -303,7 +309,7 @@ namespace AssetBundleHelper
 
 					//----------------------------------------------------------------------------------------
 
-					if( directSave == true && assetBundleInfo.Size >  0 && CacheSize >  0 )
+					if( directSave == true && fileSize >  0 && CacheSize >  0 )
 					{
 						// ダウンロード中のフラグをクリアする
 						assetBundleInfo.IsDownloading = false ;
@@ -311,14 +317,31 @@ namespace AssetBundleHelper
 
 					//----------------------------------------------------------------------------------------
 
-					if( directSave == true )
+					if( directSave == false )
 					{
+						// 直接保存ではない
+
+						if( string.IsNullOrEmpty( Error ) == false )
+						{
+							// 失敗
+
+							DownloadingCount -- ;	// ダウンロード中の数を減少させる
+
+							onResult?.Invoke( Error ) ;    // 失敗
+
+							yield break ;
+						}
+					}
+					else
+					{
+						// 直接保存である
+
 						if( string.IsNullOrEmpty( Error ) == false )
 						{
 							// 失敗
 
 							// 中途半端にファイルが保存されていたら削除する(おそらく不要だが保険)
-							if( StorageAccessor_Exists( storagePath ) == StorageAccessor.Target.File )
+							if( StorageAccessor_Exists( storagePath ) == StorageAccessor.TargetTypes.File )
 							{
 								StorageAccessor_Remove( storagePath ) ;
 							}
@@ -338,7 +361,7 @@ namespace AssetBundleHelper
 						if( assetBundleInfo.Size == 0 )
 						{
 							// 基本的にここに来る事は無い
-							assetBundleInfo.Size	= ( int )size ;		// ＣＲＣファイルが存在しない場合はここで初めてサイズが書き込まれる
+							assetBundleInfo.Size	= size ;		// ＣＲＣファイルが存在しない場合はここで初めてサイズが書き込まれる
 						}
 
 						// 直接保存に成功した

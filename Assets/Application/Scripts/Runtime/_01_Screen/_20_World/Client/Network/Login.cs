@@ -18,9 +18,9 @@ using TransformHelper ;
 using MathHelper ;
 using StorageHelper ;
 
-using DBS.World.Packet ;
+using DSW.World.Packet ;
 
-namespace DBS.World
+namespace DSW.World
 {
 	/// <summary>
 	/// クライアント(ウェブソケット)
@@ -132,6 +132,9 @@ namespace DBS.World
 
 			// 終了ボタンを押せるようにする
 			m_EndButton.Interactable = true ;
+
+			// ポーズ中のＵＩを表示する
+			ShowPausingUI() ;
 
 			AddLog( "ログインしました(PID=" + m_PlayerId + ")" ) ;
 		}

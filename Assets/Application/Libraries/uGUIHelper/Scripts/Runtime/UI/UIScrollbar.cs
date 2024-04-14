@@ -1,18 +1,18 @@
+using System ;
 using UnityEngine ;
 using UnityEngine.UI ;
-using UnityEngine.Events ;
 using UnityEngine.EventSystems ;
-using System ;
-using System.Collections ;
+
 
 namespace uGUIHelper
 {
 	/// <summary>
 	/// uGUI:Scrollbar クラスの機能拡張コンポーネントクラス(複合)
 	/// </summary>
-	[ RequireComponent(typeof(ScrollbarWrapper))]
+	[RequireComponent(typeof( ScrollbarWrapper ))]
 	public class UIScrollbar : UIImage
 	{
+		// 位置
 		public float Offset
 		{
 			get
@@ -33,6 +33,9 @@ namespace uGUIHelper
 			}
 		}
 
+		/// <summary>
+		/// 長さ
+		/// </summary>
 		public float Length
 		{
 			get
@@ -53,6 +56,7 @@ namespace uGUIHelper
 			}
 		}
 
+		// 段階
 		public int Step
 		{
 			get
@@ -109,18 +113,30 @@ namespace uGUIHelper
 			Horizontal = 1,
 			Vertical   = 2,
 		}
-		
+
+		//-----------------------------------
+
+		/// <summary>
+		/// 基本の方向タイプ
+		/// </summary>
+		public Scrollbar.Direction BaseDirectionType
+		{
+			get
+			{
+				if( CScrollbar == null )
+				{
+					return Scrollbar.Direction.LeftToRight ;
+				}
+				return CScrollbar.direction ;
+			}
+		}
+
 		//-----------------------------------------------------------
 
 		// 各派生クラスでの初期化処理を行う（メニューまたは AddView から生成される場合のみ実行れる）
-		override protected void OnBuild( string option = "" )
+		protected override void OnBuild( string option = "" )
 		{
-			Scrollbar scrollbar = CScrollbar ;
-
-			if( scrollbar == null )
-			{
-				scrollbar = gameObject.AddComponent<Scrollbar>() ;
-			}
+			var scrollbar = CScrollbar != null ? CScrollbar : gameObject.AddComponent<Scrollbar>() ;
 			if( scrollbar == null )
 			{
 				// 異常
@@ -174,16 +190,7 @@ namespace uGUIHelper
 			image.sprite = Resources.Load<Sprite>( "uGUIHelper/Textures/UIDefaultFrame" ) ;
 			image.color = Color.white ;
 			image.type = Image.Type.Sliced ;
-				
-			
-//			UIImage tFrame = AddView<UIImage>( "Frame" ) ;
-//			tFrame.SetAnchorToStretch() ;
-//			tFrame.SetMargin(  0,  0,  0,  0 ) ;
-//			tFrame.sprite = Resources.Load<Sprite>( "uGUIHelper/Textures/UIDefaultFrame" ) ;
-//			tFrame.color = Color.white ;
-//			tFrame.type = Image.Type.Sliced ;
-
-				
+								
 			UIView slidingArea = AddView<UIView>( "Sliding Area" ) ;
 			slidingArea.SetAnchorToStretch() ;
 			slidingArea.SetMargin( 10, 10, 10, 10 ) ;
@@ -206,12 +213,15 @@ namespace uGUIHelper
 				
 			scrollbar.targetGraphic = handle.CImage ;
 			scrollbar.handleRect = handle.GetRectTransform() ;
+
+			// 最低幅の比率
+			scrollbar.size = 0.05f ;
 			
 			ResetRectTransform() ;
 		}
 		
 		// 派生クラスの Start
-		override protected void OnStart()
+		protected override void OnStart()
 		{
 			base.OnStart() ;
 		
@@ -229,7 +239,7 @@ namespace uGUIHelper
 		//---------------------------------------------
 	
 		// Down
-		override protected void OnPointerDownBasic( PointerEventData pointer, bool fromScrollView )
+		protected override void OnPointerDownBasic( PointerEventData pointer, bool fromScrollView )
 		{
 			base.OnPointerDownBasic( pointer, fromScrollView ) ;
 
@@ -238,17 +248,17 @@ namespace uGUIHelper
 				if( CScrollbar.direction == Scrollbar.Direction.LeftToRight || CScrollbar.direction == Scrollbar.Direction.RightToLeft )
 				{
 					// 横
-					m_ScrollViewElastic.SetPositionFromScrollbar( UIScrollView.DirectionTypes.Horizontal, Offset ) ;
+					m_ScrollViewElastic.SetPositionFromScrollbar( UIScrollView.DirectionTypes.Horizontal, Offset, CScrollbar.direction ) ;
 				}
 				if( CScrollbar.direction == Scrollbar.Direction.TopToBottom || CScrollbar.direction == Scrollbar.Direction.BottomToTop )
 				{
 					// 縦
-					m_ScrollViewElastic.SetPositionFromScrollbar( UIScrollView.DirectionTypes.Vertical,   Offset ) ;
+					m_ScrollViewElastic.SetPositionFromScrollbar( UIScrollView.DirectionTypes.Vertical,   Offset, CScrollbar.direction ) ;
 				}
 			}
 		}
 
-		override protected void OnDragBasic( PointerEventData pointer, bool fromScrollView )
+		protected override void OnDragBasic( PointerEventData pointer, bool fromScrollView )
 		{
 			base.OnPointerDownBasic( pointer, fromScrollView ) ;
 
@@ -257,12 +267,12 @@ namespace uGUIHelper
 				if( CScrollbar.direction == Scrollbar.Direction.LeftToRight || CScrollbar.direction == Scrollbar.Direction.RightToLeft )
 				{
 					// 横
-					m_ScrollViewElastic.SetPositionFromScrollbar( UIScrollView.DirectionTypes.Horizontal, Offset ) ;
+					m_ScrollViewElastic.SetPositionFromScrollbar( UIScrollView.DirectionTypes.Horizontal, Offset, CScrollbar.direction ) ;
 				}
 				if( CScrollbar.direction == Scrollbar.Direction.TopToBottom || CScrollbar.direction == Scrollbar.Direction.BottomToTop )
 				{
 					// 縦
-					m_ScrollViewElastic.SetPositionFromScrollbar( UIScrollView.DirectionTypes.Vertical,   Offset ) ;
+					m_ScrollViewElastic.SetPositionFromScrollbar( UIScrollView.DirectionTypes.Vertical,   Offset, CScrollbar.direction ) ;
 				}
 			}
 		}
@@ -291,9 +301,9 @@ namespace uGUIHelper
 		/// <summary>
 		/// 状態が変化した際に呼び出されるデリゲートの定義
 		/// </summary>
-		/// <param name="tIdentity">ビューの識別名(未設定の場合はゲームオブジェクト名)</param>
-		/// <param name="tView">ビューのインスタンス</param>
-		/// <param name="tValue">変化後の値</param>
+		/// <param name="identity">ビューの識別名(未設定の場合はゲームオブジェクト名)</param>
+		/// <param name="view">ビューのインスタンス</param>
+		/// <param name="value">変化後の値</param>
 		public delegate void OnValueChanged( string identity, UIScrollbar view, float value ) ;
 
 		/// <summary>
@@ -304,7 +314,7 @@ namespace uGUIHelper
 		/// <summary>
 		/// 状態が変化した際に呼び出されるアクションを設定する
 		/// </summary>
-		/// <param name="tOnValueChangedAction">アクションメソッド</param>
+		/// <param name="onValueChangedAction">アクションメソッド</param>
 		public void SetOnValueChanged( Action<string, UIScrollbar, float> onValueChangedAction )
 		{
 			OnValueChangedAction = onValueChangedAction ;
@@ -313,7 +323,7 @@ namespace uGUIHelper
 		/// <summary>
 		/// 状態が変化した際に呼び出されるデリゲートを追加する
 		/// </summary>
-		/// <param name="tOnValueChangedDelegate">デリゲートメソッド</param>
+		/// <param name="onValueChangedDelegate">デリゲートメソッド</param>
 		public void AddOnValueChanged( OnValueChanged onValueChangedDelegate )
 		{
 			OnValueChangedDelegate += onValueChangedDelegate ;
@@ -322,7 +332,7 @@ namespace uGUIHelper
 		/// <summary>
 		/// 状態が変化した際に呼び出されるデリゲートを削除する
 		/// </summary>
-		/// <param name="tOnValueChangedDelegate">デリゲートメソッド</param>
+		/// <param name="onValueChangedDelegate">デリゲートメソッド</param>
 		public void RemoveOnValueChanged( OnValueChanged onValueChangedDelegate )
 		{
 			OnValueChangedDelegate -= onValueChangedDelegate ;
@@ -349,7 +359,7 @@ namespace uGUIHelper
 		/// <summary>
 		/// 状態が変化した際に呼び出されるリスナーを追加する
 		/// </summary>
-		/// <param name="tOnValueChanged">リスナーメソッド</param>
+		/// <param name="onValueChanged">リスナーメソッド</param>
 		public void AddOnValueChangedListener( UnityEngine.Events.UnityAction<float> onValueChanged )
 		{
 			Scrollbar scrollbar = CScrollbar ;
@@ -362,7 +372,7 @@ namespace uGUIHelper
 		/// <summary>
 		/// 状態が変化した際に呼び出されるリスナーを削除する
 		/// </summary>
-		/// <param name="tOnValueChanged">リスナーメソッド</param>
+		/// <param name="onValueChanged">リスナーメソッド</param>
 		public void RemoveOnValueChangedListener( UnityEngine.Events.UnityAction<float> onValueChanged )
 		{
 			Scrollbar scrollbar = CScrollbar ;

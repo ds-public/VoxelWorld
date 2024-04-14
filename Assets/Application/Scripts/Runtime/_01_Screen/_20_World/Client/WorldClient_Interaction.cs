@@ -9,7 +9,7 @@ using InputHelper ;
 
 using MathHelper ;
 
-namespace DBS.World
+namespace DSW.World
 {
 	/// <summary>
 	/// クライアント(ムーブ)
@@ -125,6 +125,27 @@ namespace DBS.World
 		// 入力を処理する
 		private void ProcessInteraction()
 		{
+			if( Input.GetKeyDown( KeyCode.F5 ) == true )
+			{
+				// プレイヤーの視点の種別を切り替える
+				switch( m_PlayerViewType )
+				{
+					case PlayerViewTypes.FirstPerson		: m_PlayerViewType = PlayerViewTypes.ThirdPerson_Normal	; break ;
+					case PlayerViewTypes.ThirdPerson_Normal	: m_PlayerViewType = PlayerViewTypes.ThirdPerson_Invert	; break ;
+					case PlayerViewTypes.ThirdPerson_Invert	: m_PlayerViewType = PlayerViewTypes.FirstPerson		; break ;
+				}
+			}
+
+			m_IsPlayerSneaking = false ;
+			if( Input.GetKey( KeyCode.LeftShift ) == true )
+			{
+				// スニーク有効
+				m_IsPlayerSneaking = true ;
+			}
+
+			// プレイヤーアクターの状態を視点の種別に応じて切り替える
+			UpdatePlayerActor() ;
+
 			//-------------------------
 			// フォーカスに関係なくエンターキーでログを表示する
 
@@ -133,7 +154,6 @@ namespace DBS.World
 				m_LogDisplayKeepTime = 10 ;	// 表示を維持する時間
 				m_Log.Alpha = 1 ;
 			}
-
 
 			//-------------------------
 			// カメラの回転(移動方向設定)
@@ -145,20 +165,8 @@ namespace DBS.World
 				{
 					if( Input.GetMouseButtonDown( 0 ) == true || Input.GetKeyDown( KeyCode.Return ) == true )
 					{
-						// フォーカス取得
-						m_Focus = true ;
-	
-						Cursor.visible = false ;
-						Cursor.lockState = CursorLockMode.Locked ;
-
-						// プレイングレイヤー表示
-						m_PlayingLayer.SetActive( true ) ;
-
-						// ポージングレイヤー隠蔽
-						m_PausingLayer.SetActive( false ) ;
-						m_GuideMessage.StopAndResetAllTweens() ;
-
-						m_IgnoreTouch = true ;	// 一度だけ入力を無効化する
+						// プレイ中のＵＩを表示する
+						ShowPlayingUI() ;
 
 						// フォーカスを得たフレームではプレイヤーインタラクションを処理しない
 						return ;
@@ -176,7 +184,7 @@ namespace DBS.World
 
 //				Quaternion q0 = m_Camera.transform.localRotation ;
 				Quaternion q1 = Quaternion.AngleAxis( - deltaPosition.y * m_RotationSpeed, Vector3.right ) *
-					m_Camera.transform.localRotation ;
+					m_PlayerActor.Eye.localRotation ;
 
 //				Vector3 u0 = q0 * Vector3.up ;
 				Vector3 u1 = q1 * Vector3.up ;
@@ -184,16 +192,16 @@ namespace DBS.World
 				if( u1.y >= 0 )
 				{
 					// 限界以下までの回転
-					m_Camera.transform.localRotation =
+					m_PlayerActor.Eye.localRotation =
 						Quaternion.AngleAxis( - deltaPosition.y * m_RotationSpeed, Vector3.right ) *
-						m_Camera.transform.localRotation ;
+						m_PlayerActor.Eye.localRotation ;
 				}
 				else
 				{
 					// 回転量を限界までの量に抑える
 
 					// 現在の方向ベクトル
-					Vector3 f0 = m_Camera.transform.localRotation * Vector3.forward ;
+					Vector3 f0 = m_PlayerActor.Eye.localRotation * Vector3.forward ;
 
 					Vector3 f1 = q1 * Vector3.forward ;
 					if( f1.y >  0 )
@@ -209,36 +217,23 @@ namespace DBS.World
 
 					q1 = Quaternion.FromToRotation( f0, f1 ) ;
 
-					m_Camera.transform.localRotation =
+					m_PlayerActor.Eye.localRotation =
 						q1 *
-						m_Camera.transform.localRotation ;
+						m_PlayerActor.Eye.transform.localRotation ;
 				}
 
 				// 横回転
 				m_PlayerActor.Rotation =
 					Quaternion.AngleAxis( deltaPosition.x * m_RotationSpeed, Vector3.up ) *
-					m_PlayerActor.transform.rotation ;
+					m_PlayerActor.Rotation ;
 
 				// コンパスの表示を更新する
 				UpdateCompas() ;
 
 				if( Input.GetKeyDown( KeyCode.Escape ) == true )
 				{
-					// フォーカス解除
-					Cursor.visible = true ;
-					Cursor.lockState = CursorLockMode.None ;
-
-					m_Focus = false ;
-
-					// プレイングレイヤー隠蔽
-					m_PlayingLayer.SetActive( false ) ;
-
-					// ポージングレイヤー表示
-					m_PausingLayer.SetActive( true ) ;
-					_ = m_GuideMessage.PlayTween( "Move" ) ;
-
-					// タッチエフェクト無効化
-					Ripple.Off() ;
+					// ポーズ中のＵＩを表示する
+					ShowPausingUI() ;
 				}
 			}
 
@@ -265,12 +260,11 @@ namespace DBS.World
 			BlockPosition exist ;
 			BlockPosition empty ;
 
-			if( GetRaycastTargetBlock( 4.0f, out exist, out empty ) == true )
+			if( GetRaycastTargetBlock( 5.0f, out exist, out empty ) == true )
 			{
 				m_CrossHairPointer.Color = Color.yellow ;
 
-				Vector3 p = m_Camera.transform.position ;
-
+//				Vector3 p = m_PlayerActor.Eye.position ;
 //				m_Log.text = "ヒット:" + exist.ToString() + " px = " + ( int )p.x + " pz = " + ( int )p.z + " py = " + ( int )p.y ;
 
 				if( Input.GetMouseButtonDown( 0 ) == true )
@@ -370,32 +364,12 @@ namespace DBS.World
 			int slice = ( int )( 60.0f / Application.targetFrameRate ) ;
 
 			int times ;
-
-			bool isSneak = false ;
-			if( Input.GetKey( KeyCode.LeftShift ) == true )
-			{
-				// スニーク有効
-				isSneak = true ;
-			}
-
-			// カメラ(目)の位置を設定
-			if( isSneak == false )
-			{
-				// ノーマル状態
-				m_Camera.transform.localPosition = new Vector3( 0, 1.2f, 0 ) ;
-			}
-			else
-			{
-				// スニーク状態
-				m_Camera.transform.localPosition = new Vector3( 0, 0.9f, 0.1f ) ;
-			}
-
 			if( Input.GetKey( KeyCode.W ) == true )
 			{
 				// 前進
 				for( times  = 0 ; times <  slice ; times ++ )
 				{
-					if( ProcessMoving_Slice(   ( velocity * ahead ), isSneak ) == false )
+					if( ProcessMoving_Slice(   ( velocity * ahead ), m_IsPlayerSneaking ) == false )
 					{
 						break ;
 					}
@@ -407,7 +381,7 @@ namespace DBS.World
 				// 後退
 				for( times  = 0 ; times <  slice ; times ++ )
 				{
-					if( ProcessMoving_Slice( - ( velocity * ahead ), isSneak ) == false )
+					if( ProcessMoving_Slice( - ( velocity * ahead ), m_IsPlayerSneaking ) == false )
 					{
 						break ;
 					}
@@ -419,7 +393,7 @@ namespace DBS.World
 				// 左移動
 				for( times  = 0 ; times <  slice ; times ++ )
 				{
-					if( ProcessMoving_Slice( - ( velocity * shift ), isSneak ) == false )
+					if( ProcessMoving_Slice( - ( velocity * shift ), m_IsPlayerSneaking ) == false )
 					{
 						break ;
 					}
@@ -431,7 +405,7 @@ namespace DBS.World
 				// 右移動
 				for( times  = 0 ; times <  slice ; times ++ )
 				{
-					if( ProcessMoving_Slice(   ( velocity * shift ), isSneak ) == false )
+					if( ProcessMoving_Slice(   ( velocity * shift ), m_IsPlayerSneaking ) == false )
 					{
 						break ;
 					}
@@ -454,6 +428,45 @@ namespace DBS.World
 					Vector3.up * deltaTime * TranslationSpeed ;
 			}*/
 
+		}
+
+		// プレイ中のＵＩの状態にする
+		private void ShowPlayingUI()
+		{
+			// フォーカス取得
+			m_Focus = true ;
+	
+			Cursor.visible = false ;
+			Cursor.lockState = CursorLockMode.Locked ;
+
+			// プレイングレイヤー表示
+			m_PlayingLayer.SetActive( true ) ;
+
+			// ポージングレイヤー隠蔽
+			m_PausingLayer.SetActive( false ) ;
+			m_GuideMessage.StopAndResetAllTweens() ;
+
+			m_IgnoreTouch = true ;	// 一度だけ入力を無効化する
+		}
+
+		// ポーズ中のＵＩの状態にする
+		private void ShowPausingUI()
+		{
+			// フォーカス解除
+			Cursor.visible = true ;
+			Cursor.lockState = CursorLockMode.None ;
+
+			m_Focus = false ;
+
+			// プレイングレイヤー隠蔽
+			m_PlayingLayer.SetActive( false ) ;
+
+			// ポージングレイヤー表示
+			m_PausingLayer.SetActive( true ) ;
+			_ = m_GuideMessage.PlayTween( "Move" ) ;
+
+			// タッチエフェクト無効化
+			Ripple.Off() ;
 		}
 
 	}

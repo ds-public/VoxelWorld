@@ -15,6 +15,7 @@ using UnityEditor ;
 
 namespace uGUIHelper
 {
+	[DefaultExecutionOrder( 5 )]
 	public class UIAlphaMaskWindow : MonoBehaviour
 	{
 /*
@@ -85,8 +86,7 @@ namespace uGUIHelper
 				float softnessX = 0 ;
 				float softnessY = 0 ;
 
-				RectMask2D rectMask2D = GetComponent<RectMask2D>() ;
-				if( rectMask2D != null )
+				if( TryGetComponent<RectMask2D>( out var rectMask2D ) == true )
 				{
 					softnessX = rectMask2D.softness.x ;
 					softnessY = rectMask2D.softness.y ;
@@ -128,7 +128,7 @@ namespace uGUIHelper
 					int i, l = elements.Length ;
 					for( i  = 0 ; i <  l ; i ++ )
 					{
-						if( m_AlphaMaskEffectToMyself == false && gameObject != elements[ i ].gameObject )
+						if( m_AlphaMaskEffectToMyself == true || m_AlphaMaskEffectToMyself == false && gameObject != elements[ i ].gameObject )
 						{
 							if( elements[ i ].IsGraphic == true && elements[ i ].IsMask == false && elements[ i ].IsRectMask2D == false && elements[ i ].IsAlphaMaskTarget == false )
 							{

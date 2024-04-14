@@ -1,0 +1,33 @@
+ManifestFileVersion: 0
+CRC: 3126020072
+Hashes:
+  AssetFileHash:
+    serializedVersion: 2
+    Hash: 63bc4d7fa90c2c7ec39852874ed8cc1a
+  TypeTreeHash:
+    serializedVersion: 2
+    Hash: 9a2ca7bdbd1871f7131daf57de908e0c
+  IncrementalBuildHash:
+    serializedVersion: 2
+    Hash: 07c0268b8c803fd74a8b9a88daff86cd
+HashAppended: 0
+ClassTypes:
+- Class: 83
+  Script: {instanceID: 0}
+SerializeReferenceClassIdentifiers: []
+Assets:
+- Assets/Application/AssetBundle/Sounds/SE/System/005_Hit.wav
+- Assets/Application/AssetBundle/Sounds/SE/System/006_Parry.wav
+- Assets/Application/AssetBundle/Sounds/SE/System/002_Click.wav
+- Assets/Application/AssetBundle/Sounds/SE/System/007_Move.wav
+- Assets/Application/AssetBundle/Sounds/SE/System/001_Start.wav
+- Assets/Application/AssetBundle/Sounds/SE/System/012_Recover.wav
+- Assets/Application/AssetBundle/Sounds/SE/System/024_Tap.wav
+- Assets/Application/AssetBundle/Sounds/SE/System/025_Select.wav
+- Assets/Application/AssetBundle/Sounds/SE/System/011_Bomb.wav
+- Assets/Application/AssetBundle/Sounds/SE/System/009_Magic.wav
+- Assets/Application/AssetBundle/Sounds/SE/System/008_Broken.wav
+- Assets/Application/AssetBundle/Sounds/SE/System/013_Healing.wav
+- Assets/Application/AssetBundle/Sounds/SE/System/003_Cancel.wav
+- Assets/Application/AssetBundle/Sounds/SE/System/030_Encount.wav
+Dependencies: []

@@ -15,7 +15,7 @@ namespace AssetBundleHelper
 	/// </summary>
 	public partial class AssetBundleManager
 	{
-		private static readonly DateTime UNIX_EPOCH = new DateTime( 1970, 1, 1, 0, 0, 0, 0 ) ;
+		private static readonly DateTime UNIX_EPOCH = new ( 1970, 1, 1, 0, 0, 0, 0 ) ;
 
 		/// <summary>
 		/// 1970年1月1日0時0分0秒からの経過秒を取得する
@@ -56,10 +56,10 @@ namespace AssetBundleHelper
 		/// <param name="crc"></param>
 		/// <param name="data"></param>
 		/// <returns></returns>
-		internal protected static uint GetCRC32( uint crc, byte[] data, int length )
+		internal protected static uint GetCRC32( uint crc, byte[] data, long length )
 		{
 			byte code ;
-			int offset ;
+			long offset ;
 
 			for( offset  = 0 ; offset <  length ; offset ++ )
 			{

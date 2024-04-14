@@ -7,10 +7,13 @@ using System.Collections.Generic ;
 
 using UnityEditorInternal ;
 
+using uGUIHelper.InputAdapter ;
+
+
 namespace uGUIHelper
 {
 	/// <summary>
-	/// メニューに生成機能追加 Version 2021/04/09
+	/// メニューに生成機能追加 Version 2023/12/09
 	/// </summary>
 	public static class MenuExtension
 	{
@@ -127,6 +130,8 @@ namespace uGUIHelper
 			UnityEditor.SceneManagement.EditorSceneManager.MarkSceneDirty( UnityEditor.SceneManagement.EditorSceneManager.GetActiveScene() ) ;
 		}
 
+		// Obsolete
+#if false
 		/// <summary>
 		/// Text 生成
 		/// </summary>
@@ -200,6 +205,7 @@ namespace uGUIHelper
 
 			UnityEditor.SceneManagement.EditorSceneManager.MarkSceneDirty( UnityEditor.SceneManagement.EditorSceneManager.GetActiveScene() ) ;
 		}
+#endif
 
 		/// <summary>
 		/// TextMesh 生成
@@ -238,6 +244,8 @@ namespace uGUIHelper
 			UnityEditor.SceneManagement.EditorSceneManager.MarkSceneDirty( UnityEditor.SceneManagement.EditorSceneManager.GetActiveScene() ) ;
 		}
 
+		// Obsolete
+#if false
 		/// <summary>
 		/// Number 生成
 		/// </summary>
@@ -274,6 +282,7 @@ namespace uGUIHelper
 
 			UnityEditor.SceneManagement.EditorSceneManager.MarkSceneDirty( UnityEditor.SceneManagement.EditorSceneManager.GetActiveScene() ) ;
 		}
+#endif
 
 		/// <summary>
 		/// Number 生成
@@ -1077,39 +1086,38 @@ namespace uGUIHelper
 			AddScrollView( "SV" ) ;
 		}
 
-		private static void AddScrollView( string tType )
+		private static void AddScrollView( string variationType )
 		{
-			GameObject tGameObject = Selection.activeGameObject ;
-			if( tGameObject == null )
+			var go = Selection.activeGameObject ;
+			if( go == null )
 			{
 				return ;
 			}
 
-			if( WillLosePrefab( tGameObject ) == false )
+			if( WillLosePrefab( go ) == false )
 			{
 				return ;
 			}
 
-			Undo.RecordObject( tGameObject, "Add a child UI ScrollView" ) ;	// アンドウバッファに登録
+			Undo.RecordObject( go, "Add a child UI ScrollView" ) ;	// アンドウバッファに登録
 
-			string tName = GetName<UIScrollView>() ;
-			if( string.IsNullOrEmpty( tType ) == false )
+			var baseName = GetName<UIScrollView>() ;
+			if( string.IsNullOrEmpty( variationType ) == false )
 			{
-				tName = tName + "(" + tType + ")" ;
+				baseName = $"{baseName}({variationType})" ;
 			}
 
-			GameObject tChild = new GameObject( tName, typeof( RectTransform ) ) ;
+			var child = new GameObject( baseName, typeof( RectTransform ) ) ;
 
-			Transform tTransform = tChild.transform ;
-			tTransform.SetParent( tGameObject.transform, false ) ;
-			tTransform.localPosition = Vector3.zero ;
-			tTransform.localRotation = Quaternion.identity ;
-			tTransform.localScale = Vector3.one ;
+			Transform t = child.transform ;
+			t.SetParent( go.transform, false ) ;
+			t.SetLocalPositionAndRotation( Vector3.zero, Quaternion.identity ) ;
+			t.localScale = Vector3.one ;
 
-			UIScrollView tScrollView = tChild.AddComponent<UIScrollView>() ;
-			tScrollView.SetDefault( tType ) ;
+			var scrollView = child.AddComponent<UIScrollView>() ;
+			scrollView.SetDefault( variationType ) ;
 
-			Selection.activeGameObject = tChild ;
+			Selection.activeGameObject = child ;
 
 			UnityEditor.SceneManagement.EditorSceneManager.MarkSceneDirty( UnityEditor.SceneManagement.EditorSceneManager.GetActiveScene() ) ;
 		}
@@ -1135,47 +1143,43 @@ namespace uGUIHelper
 		}
 
 
-		private static void AddListView( string tType )
+		private static void AddListView( string variationType )
 		{
-			GameObject tGameObject = Selection.activeGameObject ;
-			if( tGameObject == null )
+			var go = Selection.activeGameObject ;
+			if( go == null )
 			{
 				return ;
 			}
 
-			if( WillLosePrefab( tGameObject ) == false )
+			if( WillLosePrefab( go ) == false )
 			{
 				return ;
 			}
 
-			Undo.RecordObject( tGameObject, "Add a child UI ListView" ) ;	// アンドウバッファに登録
+			Undo.RecordObject( go, "Add a child UI ListView" ) ;	// アンドウバッファに登録
 
-			string tName = GetName<UIListView>() ;
-			if( string.IsNullOrEmpty( tType ) == false )
+			var baseName = GetName<UIListView>() ;
+			if( string.IsNullOrEmpty( variationType ) == false )
 			{
-				tName = tName + "(" + tType + ")" ;
+				baseName = $"{baseName}({variationType})" ;
 			}
 
-			GameObject tChild = new GameObject( tName, typeof( RectTransform ) ) ;
+			var child = new GameObject( baseName, typeof( RectTransform ) ) ;
 
-			Transform tTransform = tChild.transform ;
-			tTransform.SetParent( tGameObject.transform, false ) ;
-			tTransform.localPosition = Vector3.zero ;
-			tTransform.localRotation = Quaternion.identity ;
-			tTransform.localScale = Vector3.one ;
+			Transform t = child.transform ;
+			t.SetParent( go.transform, false ) ;
+			t.SetLocalPositionAndRotation( Vector3.zero, Quaternion.identity ) ;
+			t.localScale = Vector3.one ;
 
-			UIListView tScrollView = tChild.AddComponent<UIListView>() ;
-			tScrollView.SetDefault( tType ) ;
+			var listView = child.AddComponent<UIListView>() ;
+			listView.SetDefault( variationType ) ;
 
-			Selection.activeGameObject = tChild ;
+			Selection.activeGameObject = child ;
 
 			UnityEditor.SceneManagement.EditorSceneManager.MarkSceneDirty( UnityEditor.SceneManagement.EditorSceneManager.GetActiveScene() ) ;
 		}
 
-
-
-
-
+#if false
 		/// <summary>
 		/// Joystick を生成
 		/// </summary>
@@ -1211,6 +1215,80 @@ namespace uGUIHelper
 
 			UnityEditor.SceneManagement.EditorSceneManager.MarkSceneDirty( UnityEditor.SceneManagement.EditorSceneManager.GetActiveScene() ) ;
 		}
+#endif
+		//-------------------------------------------------------------------------------------------
+
+		/// <summary>
+		/// PadButton を生成
+		/// </summary>
+		[ MenuItem( "uGUIHelper/Add a PadButton" ) ]
+		[ MenuItem( "GameObject/uGUIHelper/PadButton", false, 22 ) ]
+		public static void AddPadButton()
+		{
+			var go = Selection.activeGameObject ;
+			if( go == null )
+			{
+				return ;
+			}
+
+			if( WillLosePrefab( go ) == false )
+			{
+				return ;
+			}
+
+			Undo.RecordObject( go, "Add a child UI PadButton" ) ;	// アンドウバッファに登録
+
+			var child = new GameObject( GetName<UIPadButton>(), typeof( RectTransform ) ) ;
+
+			Transform t = child.transform ;
+			t.SetParent( go.transform, false ) ;
+			t.SetLocalPositionAndRotation( Vector3.zero, Quaternion.identity ) ;
+			t.localScale = Vector3.one ;
+
+			UIPadButton padButton = child.AddComponent<UIPadButton>() ;
+			padButton.SetDefault() ;
+
+			Selection.activeGameObject = child ;
+
+			UnityEditor.SceneManagement.EditorSceneManager.MarkSceneDirty( UnityEditor.SceneManagement.EditorSceneManager.GetActiveScene() ) ;
+		}
+
+		/// <summary>
+		/// PadAxis を生成
+		/// </summary>
+		[ MenuItem( "uGUIHelper/Add a PadAxis" ) ]
+		[ MenuItem( "GameObject/uGUIHelper/PadAxis", false, 22 ) ]
+		public static void AddPadAxis()
+		{
+			var go = Selection.activeGameObject ;
+			if( go == null )
+			{
+				return ;
+			}
+
+			if( WillLosePrefab( go ) == false )
+			{
+				return ;
+			}
+
+			Undo.RecordObject( go, "Add a child UI PadAxis" ) ;	// アンドウバッファに登録
+
+			var child = new GameObject( GetName<UIPadAxis>(), typeof( RectTransform ) ) ;
+
+			Transform t = child.transform ;
+			t.SetParent( go.transform, false ) ;
+			t.SetLocalPositionAndRotation( Vector3.zero, Quaternion.identity ) ;
+			t.localScale = Vector3.one ;
+
+			UIPadAxis padAxis = child.AddComponent<UIPadAxis>() ;
+			padAxis.SetDefault() ;
+
+			Selection.activeGameObject = child ;
+
+			UnityEditor.SceneManagement.EditorSceneManager.MarkSceneDirty( UnityEditor.SceneManagement.EditorSceneManager.GetActiveScene() ) ;
+		}
+
+		//-------------------------------------------------------------------------------------------
 
 		/// <summary>
 		/// EventSyetem を生成

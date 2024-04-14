@@ -14,7 +14,6 @@ using UnityEditor ;
 #endif
 
 
-
 // シングルトンはエディタモードに対応させてはダメ
 // なぜならシングルトンを判定するスタティックなインスタンス変数がシリアライズ化出来ないため
 
@@ -25,7 +24,7 @@ using UnityEditor ;
 namespace AudioHelper
 {
 	/// <summary>
-	/// オーディオ全般の管理クラス Version 2022/10/04 0
+	/// オーディオ全般の管理クラス Version 2024/03/20 0
 	/// </summary>
 	public class AudioManager : MonoBehaviour
 	{
@@ -33,15 +32,14 @@ namespace AudioHelper
 		/// <summary>
 		/// AudioManager を生成
 		/// </summary>
-		[MenuItem("GameObject/Helper/AudioHelper/AudioManager", false, 24)]
+		[MenuItem( "GameObject/Helper/AudioHelper/AudioManager", false, 24 )]
 		public static void CreateAudioManager()
 		{
-			GameObject go = new GameObject( "AudioManager" ) ;
-		
+			var go = new GameObject( "AudioManager" ) ;
+			
 			Transform t = go.transform ;
 			t.SetParent( null ) ;
-			t.localPosition = Vector3.zero ;
-			t.localRotation = Quaternion.identity ;
+			t.SetLocalPositionAndRotation( Vector3.zero, Quaternion.identity ) ;
 			t.localScale = Vector3.one ;
 		
 			go.AddComponent<AudioManager>() ;
@@ -115,7 +113,7 @@ namespace AudioHelper
 		/// <summary>
 		/// チャンネル情報
 		/// </summary>
-		public List<AudioChannel> Channels = new List<AudioChannel>() ;
+		public List<AudioChannel> Channels = new () ;
 
 		/// <summary>
 		/// 最大チャンネル数
@@ -134,44 +132,93 @@ namespace AudioHelper
 			return m_PlayId ;
 		}
 
-		// タグごとのベースボリューム
-		private Dictionary<string,float> m_BaseVolumes = new Dictionary<string, float>() ;
+		//---------------
+
+		/// <summary>
+		/// タグ情報
+		/// </summary>
+		public class TagData
+		{
+			public float	BaseVolume ;
+			public int		MaxChannels ;
+		}
+
+		// タグ情報群
+		private readonly Dictionary<string, TagData> m_Tags = new () ;
 
 		// ベースボリュームを追加する
-		private void AddBaseVolume( string tag, float baseVolume )
+		private void AddBaseVolume_Private( string tag, float baseVolume )
 		{
 			if( string.IsNullOrEmpty( tag ) == true )
 			{
 				return ;
 			}
 
-			if( m_BaseVolumes.ContainsKey( tag ) == false )
+			if( m_Tags.ContainsKey( tag ) == false )
 			{
-				m_BaseVolumes.Add( tag, baseVolume ) ;
+				m_Tags.Add( tag, new TagData(){ BaseVolume = baseVolume, MaxChannels = 0 } ) ;
 			}
 			else
 			{
-				m_BaseVolumes[ tag ] = baseVolume ;
+				m_Tags[ tag ].BaseVolume = baseVolume ;
 			}
 		}
 
 		// ベースボリュームを取得する
-		private float GetBaseVolume( string tag )
+		private float GetBaseVolume_Private( string tag )
 		{
 			if( string.IsNullOrEmpty( tag ) == true )
 			{
 				return 1.0f ;
 			}
 
-			if( m_BaseVolumes.ContainsKey( tag ) == false )
+			if( m_Tags.ContainsKey( tag ) == false )
 			{
 				return 1.0f ;
 			}
 			else
 			{
-				return m_BaseVolumes[ tag ] ;
+				return m_Tags[ tag ].BaseVolume ;
 			}
 		}
+
+		// 最大チャンネル数を追加する
+		private void AddMaxChannels_Private( string tag, int maxChannels )
+		{
+			if( string.IsNullOrEmpty( tag ) == true )
+			{
+				return ;
+			}
+
+			if( m_Tags.ContainsKey( tag ) == false )
+			{
+				m_Tags.Add( tag, new TagData(){ BaseVolume = 1, MaxChannels = maxChannels } ) ;
+			}
+			else
+			{
+				m_Tags[ tag ].MaxChannels = maxChannels ;
+			}
+		}
+
+		// タグごとの最大チャンネル数を取得する
+		private int GetMaxChannels_Private( string tag )
+		{
+			if( string.IsNullOrEmpty( tag ) == true )
+			{
+				return 0 ;
+			}
+
+			if( m_Tags.ContainsKey( tag ) == false )
+			{
+				return 0 ;
+			}
+			else
+			{
+				return m_Tags[ tag ].MaxChannels ;
+			}
+		}
+
+		//---------------
 
 		/// <summary>
 		/// スタートフェードとストップフェードのエフェクト
@@ -201,8 +248,8 @@ namespace AudioHelper
 	
 	
 		// プレイフェード用
-		private readonly Dictionary<AudioChannel,FadeEffect> m_FadePlayList = new Dictionary<AudioChannel, FadeEffect>() ;
-		private readonly Dictionary<AudioChannel,FadeEffect> m_FadeStopList = new Dictionary<AudioChannel, FadeEffect>() ;
+		private readonly Dictionary<AudioChannel,FadeEffect> m_FadePlayList = new () ;
+		private readonly Dictionary<AudioChannel,FadeEffect> m_FadeStopList = new () ;
 	
 		/// <summary>
 		/// マスターボリューム
@@ -213,7 +260,7 @@ namespace AudioHelper
 		private bool m_Mute = false ;
 	
 		// ミュートリスト
-		private readonly List<string> m_MuteList = new List<string>() ;
+		private readonly List<string> m_MuteList = new () ;
 	
 		/// <summary>
 		/// バックグラウンド再生を有効にするかどうか
@@ -334,10 +381,10 @@ namespace AudioHelper
 		
 			// オブジェクトが非アクティブだと検出されないのでオブジェクトを非アクティブにしてはならない
 			// この判定は必須で mInstance は static であるためシーンの最初はオブジェクトが存在しても null になっている
-			m_Instance = GameObject.FindObjectOfType( typeof( AudioManager ) ) as AudioManager ;
+			m_Instance = GameObject.FindAnyObjectByType( typeof( AudioManager ) ) as AudioManager ;
 			if( m_Instance == null )
 			{
-				GameObject go = new GameObject( "AudioManager" ) ;
+				var go = new GameObject( "AudioManager" ) ;
 				if( parent != null )
 				{
 					go.transform.SetParent( parent, false ) ;
@@ -385,7 +432,7 @@ namespace AudioHelper
 				return ;
 			}
 		
-			AudioManager instanceOther = GameObject.FindObjectOfType( typeof( AudioManager ) ) as AudioManager ;
+			AudioManager instanceOther = GameObject.FindAnyObjectByType( typeof( AudioManager ) ) as AudioManager ;
 			if( instanceOther != null )
 			{
 				if( instanceOther != this )
@@ -411,9 +458,8 @@ namespace AudioHelper
 			//-----------------------------
 		
 			// 原点じゃないと気持ち悪い
-			gameObject.transform.localPosition = Vector3.zero ;
-			gameObject.transform.localRotation = Quaternion.identity ;
-			gameObject.transform.localScale = Vector3.one ;
+			gameObject.transform.SetLocalPositionAndRotation( Vector3.zero, Quaternion.identity ) ;
+			gameObject.transform.localScale		= Vector3.one ;
 		
 			//----------------------------------
 		
@@ -457,11 +503,11 @@ namespace AudioHelper
 				return true ;	// 既に自身のオーディオリスナーを生成済みになっている
 			}
 
-			AudioListener listener = GameObject.FindObjectOfType( typeof( AudioListener ) ) as AudioListener ;
+			var listener = GameObject.FindAnyObjectByType( typeof( AudioListener ) ) as AudioListener ;
 
 			//----------------------------------
 
-			GameObject go = new GameObject( "Listener" ) ;
+			var go = new GameObject( "Listener" ) ;
 			go.transform.SetParent( transform, false ) ;
 
 			// 存在しない(自身のオーディオリスナーを生成する)
@@ -513,7 +559,7 @@ namespace AudioHelper
 				return null ;
 			}
 
-			Request request = new Request( m_Instance ) ;
+			var request = new Request( m_Instance ) ;
 			m_Instance.StartCoroutine( m_Instance.WaitForInitialization_Private( request ) ) ;
 			return request ;
 		}
@@ -812,11 +858,11 @@ namespace AudioHelper
 				return null ;
 			}
 		
-			return m_Instance.GetChannel_Private() ;
+			return m_Instance.GetChannel_Private( null, null ) ;
 		}
 		
 		// いずれかの空いているオーディオチャンネルを１つ取得する
-		private AudioChannel GetChannel_Private()
+		private AudioChannel GetChannel_Private( string tag, string path )
 		{
 			AudioChannel audioChannel ;
 
@@ -858,6 +904,30 @@ namespace AudioHelper
 #endif
 			//----------------------------------
 
+			if( string.IsNullOrEmpty( tag ) == false && m_Tags.ContainsKey( tag ) == true && m_Tags[ tag ].MaxChannels >  0 )
+			{
+				// タグごとのチャンネル数の制限が有る
+
+				int count = 0 ;
+
+				// 現在再生中のチャンネルで指定のタグに該当するものをカウントする
+				for( i  = 0 ; i <  l ; i ++ )
+				{
+					audioChannel = Channels[ i ] ;
+					if( audioChannel != null && audioChannel.IsPlaying == true && audioChannel.Tag == tag )
+					{
+						count ++ ;
+					}
+				}
+
+				if( count >= m_Tags[ tag ].MaxChannels )
+				{
+					// 既に最大数までチャンネルを使用している
+					Debug.Log( $"<color=#FFFF00>このタグの最大チャンネルまで使用済み: {count} /  {m_Tags[ tag ].MaxChannels} 再生出来なかったソース: {path}</color>" ) ;
+					return null ;	// 最大チャンネルまで使用済み
+				}
+			}
+
 			for( i  = 0 ; i <  l ; i ++ )
 			{
 				audioChannel = Channels[ i ] ;
@@ -874,16 +944,16 @@ namespace AudioHelper
 
 			if( l >= Max )
 			{
-				Debug.LogWarning( "最大チャンネルまで使用済み: " + l + " / " + Max ) ;
+				Debug.LogWarning( $"<color=#FF7F00>最大チャンネルまで使用済み: {l} / {Max} 再生出来なかったソース: {path}</color>" ) ;
 				return null ;	// 最大チャンネルまで使用済み
 			}
 		
 			// 空いているソースが無いので追加する
 
-			GameObject audioChannelObject = new GameObject( "Source - " + Channels.Count.ToString( "D02" ) ) ;
+			var audioChannelObject = new GameObject( "Source - " + Channels.Count.ToString( "D02" ) ) ;
 			audioChannelObject.transform.SetParent( transform, false ) ;
 
-			audioChannel = new AudioChannel( gameObject.AddComponent<AudioSource>() ) ;
+			audioChannel = new AudioChannel( audioChannelObject.AddComponent<AudioSource>() ) ;
 			Channels.Add( audioChannel ) ;
 		
 			return audioChannel ;
@@ -906,7 +976,7 @@ namespace AudioHelper
 		// 使用中の全てのチャンネルの名前(再生中のオーディオクリップ名)を取得する
 		private string[] GetUsedChannel_Private()
 		{
-			List<string> list = new List<string>() ;
+			var list = new List<string>() ;
 		
 			int i, l = Channels.Count ;
 			for( i  = 0 ; i <  l ; i ++ )
@@ -979,10 +1049,15 @@ namespace AudioHelper
 		// サウンドを再生する(オーディオクリップから)
 		private int Play_Private( AudioClip audioClip, bool loop, float volume, float pan, float pitch, string tag )
 		{
-			AudioChannel audioChannel = GetChannel_Private() ;
+			string audioClipName = string.Empty ;
+			if( audioClip != null )
+			{
+				audioClipName = audioClip.name ;
+			}
+
+			AudioChannel audioChannel = GetChannel_Private( tag, audioClipName ) ;
 			if( audioChannel == null )
 			{
-				Debug.LogWarning( "<color=#FF7F00>[AudioManager] チャンネルに空きがありません" + audioClip.name + "</color>" ) ;
 				// 空きがありません（古いやつから停止させるようにするかどうか）
 				return -1 ;
 			}
@@ -1000,14 +1075,14 @@ namespace AudioHelper
 			else
 			{
 				// その他のものを使用する
-				AudioListener listener = GameObject.FindObjectOfType( typeof( AudioListener ) ) as AudioListener ;
+				var listener = GameObject.FindAnyObjectByType( typeof( AudioListener ) ) as AudioListener ;
 				if( listener != null )
 				{
 					position = listener.transform.position ;
 				}
 			}
 
-			audioChannel.Play( playId, audioClip, loop, GetBaseVolume( tag ), volume, pan, position, pitch, tag ) ;
+			audioChannel.Play( playId, audioClip, loop, GetBaseVolume_Private( tag ), volume, pan, position, pitch, tag ) ;
 		
 			if( string.IsNullOrEmpty( tag ) == false && m_MuteList.Contains( tag ) == true )
 			{
@@ -1047,7 +1122,13 @@ namespace AudioHelper
 		// フェード付きでサウンドを再生する(オーディオクリップから)
 		private int PlayFade_Private( AudioClip audioClip, float duration, bool loop, float volume, float pan, float pitch, string tag )
 		{
-			AudioChannel audioChannel = GetChannel_Private() ;
+			string audioClipName = string.Empty ;
+			if( audioClip != null )
+			{
+				audioClipName = audioClip.name ;
+			}
+
+			AudioChannel audioChannel = GetChannel_Private( tag, audioClipName ) ;
 			if( audioChannel == null )
 			{
 				// 空きがありません（古いやつから停止させるようにするかどうか）
@@ -1061,7 +1142,7 @@ namespace AudioHelper
 			// 一旦破棄
 			RemoveFadeList( audioChannel ) ;
 		
-			FadeEffect effect = new FadeEffect()
+			var effect = new FadeEffect()
 			{
 				Duration	= duration,
 				StartTime   = Time.realtimeSinceStartup,
@@ -1087,7 +1168,7 @@ namespace AudioHelper
 			else
 			{
 				// その他のものを使用する
-				AudioListener listener = GameObject.FindObjectOfType( typeof( AudioListener ) ) as AudioListener ;
+				var listener = GameObject.FindAnyObjectByType( typeof( AudioListener ) ) as AudioListener ;
 				if( listener != null )
 				{
 					position = listener.transform.position ;
@@ -1095,7 +1176,7 @@ namespace AudioHelper
 			}
 
 			// 再生する
-			audioChannel.Play( playId, audioClip, loop, GetBaseVolume( tag ), volume, pan, position, pitch, tag ) ;
+			audioChannel.Play( playId, audioClip, loop, GetBaseVolume_Private( tag ), volume, pan, position, pitch, tag ) ;
 		
 			if( string.IsNullOrEmpty( tag ) == false && m_MuteList.Contains( tag ) == true )
 			{
@@ -1117,57 +1198,86 @@ namespace AudioHelper
 		/// <param name="scale">距離の係数</param>
 		/// <param name="volume">ボリューム(0～1)</param>
 		/// <returns>結果(true=成功・false=失敗)</returns>
-		public static int Play3D( AudioClip audioClip, Vector3 position, Transform listenerTransform = null, float scale = 1, float volume = 1.0f, string tag = "" )
+		public static int Play3D( AudioClip audioClip, Vector3 position, Transform listenerTransform = null, float scale = 1, bool loop = false, float volume = 1.0f, float pitch = 0.0f, string tag = "" )
 		{
 			if( m_Instance == null )
 			{
 				return -1 ;
 			}
 		
-			return m_Instance.Play3D_Private( audioClip, position, listenerTransform, scale, volume, tag ) ;
+			return m_Instance.Play3D_Private( audioClip, position, listenerTransform, scale, loop, volume, pitch, tag ) ;
 		}
 
 		// ３Ｄ空間想定でサウンドをワンショット再生する(オーディオクリップから)　※３Ｄ効果音用
-		private int Play3D_Private( AudioClip audioClip, Vector3 position, Transform listenerTransform, float scale, float volume, string tag )
+		private int Play3D_Private( AudioClip audioClip, Vector3 audioSourcePosition, Transform listenerTransform, float distanceScale, bool loop, float volume, float pitch, string tag )
 		{
-			AudioChannel audioChannel = GetChannel_Private() ;
+			string audioClipName = string.Empty ;
+			if( audioClip != null )
+			{
+				audioClipName = audioClip.name ;
+			}
+
+			AudioChannel audioChannel = GetChannel_Private( tag, audioClipName ) ;
 			if( audioChannel == null )
 			{
 				// 空きがありません（古いやつから停止させるようにするかどうか）
 				return -1 ;
 			}
 
-			//-----------------------------------------------------
-
-			position *= scale ;
+			//----------------------------------------------------------
 
 			int playId = GetPlayId() ;
 
-			if( m_Listener != null && m_Listener.enabled == true )
+			//----------------------------------------------------------
+			// 音源位置の設定
+
+			AudioListener trueListener ;
+
+			if( m_Listener != null )
 			{
-				// マネージャのものが有効化されている
-//				position = m_Listener.transform.position ;
+				trueListener = m_Listener ;
 			}
 			else
 			{
-				// その他のものを使用する
-				if( listenerTransform == null )
-				{
-					AudioListener listener = GameObject.FindObjectOfType( typeof( AudioListener ) ) as AudioListener ;
-					if( listener != null )
-					{
-						// リスナーからの相対座標系に変換する
-						position = listener.transform.InverseTransformPoint( position ) ;
-					}
-				}
-				else
-				{
-					// リスナーからの相対座標系に変換する(検索を省けるので処理が早い)
-					position = listenerTransform.InverseTransformPoint( position ) ;
-				}
+				trueListener = GameObject.FindAnyObjectByType( typeof( AudioListener ) ) as AudioListener ;
 			}
 
-			audioChannel.Play( playId, audioClip, false, GetBaseVolume( tag ), volume, 0, position, 0, tag ) ;
+			if( trueListener == null )
+			{
+				Debug.LogWarning( "[AudioManager] Not found listener." ) ;
+				return -1 ;
+			}
+
+			//----------------------------------
+
+			// その他のものを使用する
+			if( listenerTransform != null )
+			{
+				// 音源の座標を指定されたリスナーからのローカル座標系に変換する
+				audioSourcePosition = listenerTransform.InverseTransformPoint( audioSourcePosition ) ;
+
+				// スケール調整を行う
+				audioSourcePosition *= distanceScale ;
+
+				// 音源の座標を真のリスナーのワールド座標系に変換する
+				audioSourcePosition = trueListener.transform.TransformPoint( audioSourcePosition ) ;
+			}
+			else
+			{
+				// 音源の座標を真のリスナーのローカル座標系に変換する
+				audioSourcePosition = trueListener.transform.InverseTransformPoint( audioSourcePosition ) ;
+
+				// スケール調整を行う
+				audioSourcePosition *= distanceScale ;
+
+				// 音源の座標を真のリスナーのワールド座標系に変換する
+				audioSourcePosition = trueListener.transform.TransformPoint( audioSourcePosition ) ;
+			}
+
+			//------------------------------------------------------------------------------------------
+
+			// 再生する
+			audioChannel.Play( playId, audioClip, loop, GetBaseVolume_Private( tag ), volume, 0, audioSourcePosition, pitch, tag ) ;
 
 			if( string.IsNullOrEmpty( tag ) == false && m_MuteList.Contains( tag ) == true )
 			{
@@ -1178,10 +1288,6 @@ namespace AudioHelper
 			// 成功したらソースのインスタンスを返す
 			return playId ;
 		}
-
-		//-----------------------------------------------------------
-
-
 
 		//-------------------------------------------------------------------------------------------
 
@@ -1470,7 +1576,7 @@ namespace AudioHelper
 				// 一旦破棄
 				RemoveFadeList( audioChannel ) ;	// 多重実行は禁止したが保険
 					
-				FadeEffect effect = new FadeEffect()
+				var effect = new FadeEffect()
 				{
 					Duration	= duration,
 					StartTime	= Time.realtimeSinceStartup,
@@ -2180,10 +2286,7 @@ namespace AudioHelper
 			int i, l = Channels.Count ;
 			for( i  = l - 1 ; i >= 0 ; i -- )
 			{
-				if( Channels[ i ] != null )
-				{
-					Channels[ i ].Destroy() ;
-				}
+				Channels[ i ]?.Destroy() ;
 			}
 		
 			m_FadeStopList.Clear() ;
@@ -2338,29 +2441,18 @@ namespace AudioHelper
 		/// <returns></returns>
 		public static bool SetBaseVolume( string tag, float baseVolume )
 		{
-			return SetAllBaseVolumes( tag, baseVolume ) ;
-		}
-
-		/// <summary>
-		/// タグで指定されたオーディオチャンネルのボリュームを設定する
-		/// </summary>
-		/// <param name="volume">ボリューム(0～1)</param>
-		/// <param name="tag">タグ名</param>
-		/// <returns>結果(true=成功・false=失敗)</returns>
-		public static bool SetAllBaseVolumes( string tag, float baseVolume )
-		{
 			if( m_Instance == null )
 			{
 				return false ;
 			}
 
-			return m_Instance.SetAllBaseVolumes_Private( tag, baseVolume ) ;
+			return m_Instance.SetBaseVolume_Private( tag, baseVolume ) ;
 		}
 
-		// タグで指定されたオーディオチャンネルのベースボリュームを設定する
-		private bool SetAllBaseVolumes_Private( string tag, float baseVolume )
+		// タグで指定されたベースボリュームを設定する
+		private bool SetBaseVolume_Private( string tag, float baseVolume )
 		{
-			AddBaseVolume( tag, baseVolume ) ;
+			AddBaseVolume_Private( tag, baseVolume ) ;
 
 			int i, l = Channels.Count ;
 			for( i  = 0 ; i <  l ; i ++ )
@@ -2369,13 +2461,68 @@ namespace AudioHelper
 				{
 					if( string.IsNullOrEmpty( tag ) == true || ( string.IsNullOrEmpty( tag ) == false && Channels[ i ].Tag == tag ) )
 					{
-						// ポーズ状態になるのでベースタイムとベースボリュームを更新する
-						Channels[ i ].BaseVolume = baseVolume ;	// 一時停止
+						Channels[ i ].BaseVolume = baseVolume ;
 					}
 				}
 			}
 
 			return true ;
+		}
+
+		/// <summary>
+		/// ダグで指定されたベースボリュームを取得する
+		/// </summary>
+		/// <param name="tag"></param>
+		/// <returns></returns>
+		public static float GetBaseVolume( string tag )
+		{
+			if( m_Instance == null )
+			{
+				return 1 ;
+			}
+
+			return m_Instance.GetBaseVolume_Private( tag ) ;
+		}
+
+		//-----
+
+		/// <summary>
+		/// タグごとの最大チャンネル数を設定する
+		/// </summary>
+		/// <param name="tag"></param>
+		/// <param name="maxChannels"></param>
+		/// <returns></returns>
+		public static bool SetMaxChannels( string tag, int maxChannels )
+		{
+			if( m_Instance == null )
+			{
+				return false ;
+			}
+
+			return m_Instance.SetMaxChannels_Private( tag, maxChannels ) ;
+		}
+
+		// タグごとの最大チャンネル数を設定する
+		private bool SetMaxChannels_Private( string tag, int maxChannels )
+		{
+			AddMaxChannels_Private( tag, maxChannels ) ;
+
+			return true ;
+		}
+
+		/// <summary>
+		/// タグごとの最大チャンネル数を取得する
+		/// </summary>
+		/// <param name="tag"></param>
+		/// <returns></returns>
+		public static int GetMaxChannels( string tag )
+		{
+			if( m_Instance == null )
+			{
+				return 0 ;
+			}
+
+			return m_Instance.GetMaxChannels_Private( tag ) ;
 		}
 
 		//---------------------------------------------------------
@@ -2686,7 +2833,7 @@ namespace AudioHelper
 		/// <summary>
 		/// ミュート
 		/// </summary>
-//		private bool			m_Mute = false ;
+		private bool			m_Mute = false ;
 
 		//-----------------------------------
 
@@ -2749,21 +2896,15 @@ namespace AudioHelper
 		{
 			get
 			{
-				if( m_AudioSource == null )
-				{
-					return false ;
-				}
-			
-				return m_AudioSource.mute ;
+				return m_Mute ;
 			}
 			set
 			{
-				if( m_AudioSource == null )
+				if( m_Mute != value )
 				{
-					return ;
+					m_Mute = value ;
+					UpdateVolume() ;
 				}
-			
-				m_AudioSource.mute = value ;
 			}
 		}
 
@@ -2801,23 +2942,16 @@ namespace AudioHelper
 		{
 			get
 			{
-				if( m_AudioSource == null )
-				{
-					return 0 ;
-				}
-
-				return m_Volume ;
+				return m_BaseVolume ;
 			}
 			set
 			{
-				if( m_AudioSource == null )
+				if( m_BaseVolume != value )
 				{
-					return ;
+					m_BaseVolume = value ;
+					m_FadeVolume = 1 ;
+					UpdateVolume() ;
 				}
-
-				m_BaseVolume = value ;
-				m_FadeVolume = 1 ;
-				m_AudioSource.volume = m_BaseVolume * m_Volume * m_FadeVolume ;
 			}
 		}
 
@@ -2828,23 +2962,16 @@ namespace AudioHelper
 		{
 			get
 			{
-				if( m_AudioSource == null )
-				{
-					return 0 ;
-				}
-				
 				return m_Volume ;
 			}
 			set
 			{
-				if( m_AudioSource == null )
+				if( m_Volume != value )
 				{
-					return ;
+					m_Volume = value ;
+					m_FadeVolume = 1 ;
+					UpdateVolume() ;
 				}
-				
-				m_Volume = value ;
-				m_FadeVolume = 1 ;
-				m_AudioSource.volume = m_BaseVolume * m_Volume * m_FadeVolume ;
 			}
 		}
 
@@ -2859,15 +2986,45 @@ namespace AudioHelper
 			}
 			set
 			{
-				if( m_AudioSource == null )
+				if( m_FadeVolume != value )
 				{
-					return ;
+					m_FadeVolume  = value ;
+					UpdateVolume() ;
 				}
-				
-				m_FadeVolume = value ;
-				m_AudioSource.volume = m_BaseVolume * m_Volume * m_FadeVolume ;
 			}
 		}
+
+#if CONVERT_VOLUME_DB
+		//-------------------------------------------------------------------------------------------
+		// Volume( 0.0 ～ 1.0 ) と dB( -80 ～ 0 ) の相互変換式
+		//
+		// Volume → dB
+		private static float ConvertVolumeToDB( float volume ) => Mathf.Clamp( 20f * MathF.Log10( Mathf.Clamp( volume, 0f, 1f ) ), -80f, 0f ) ; 
+		//
+		// dB → Volume
+		private static float ConvertDBToVolume( float db ) => Mathf.Clamp( Mathf.Pow( 10, Mathf.Clamp( db, -80, 0 ) / 20f ), 0, 1 ) ;
+		//
+		//-------------------------------------------------------------------------------------------
+#endif
+		// ボリュームを更新する
+		private void UpdateVolume()
+		{
+			if( m_AudioSource == null )
+			{
+				return ;
+			}
+
+			if( m_Mute == false )
+			{
+				m_AudioSource.volume = m_BaseVolume * m_Volume * m_FadeVolume ;
+			}
+			else
+			{
+				m_AudioSource.volume = 0 ;
+			}
+		}
+
+		//-----------------------------------
 
 		/// <summary>
 		/// 再生位置(秒)
@@ -2913,7 +3070,7 @@ namespace AudioHelper
 		/// <param name="pan">パン(-1=左～0=中～+1=右)</param>
 		/// <param name="pitch">ピッチ(-1=1オクターブ下～0=通常～+1=1オクターブ上)</param>
 		/// <param name="tag">タグ名</param>
-		internal protected void Play( int playId, AudioClip audioClip, bool loop, float baseVolume, float volume, float pan, Vector3 position, float pitch, string tag )
+		internal protected void Play( int playId, AudioClip audioClip, bool loop, float baseVolume, float volume, float pan, Vector3 audioSourcePosition, float pitch, string tag )
 		{
 			if( m_AudioSource == null || audioClip == null )
 			{
@@ -2931,7 +3088,7 @@ namespace AudioHelper
 
 			Tag = tag ;
 
-			m_AudioSource.spatialBlend = 0 ;	// 2D
+			m_AudioSource.spatialBlend = ( audioSourcePosition.x != 0 || audioSourcePosition.y != 0 || audioSourcePosition.z != 0 ) ? 1.0f : 0.0f ;	// 2D
 
 			m_AudioSource.pitch		= Mathf.Pow( 2.0f, pitch ) ;
 		
@@ -2940,22 +3097,18 @@ namespace AudioHelper
 			m_AudioSource.clip		= null ;
 			m_AudioSource.clip		= m_Clip ;
 
-			// 再生
-			m_AudioSource.Play() ;
-
-			// 念のため再生後にも再度設定しておく
-			m_AudioSource.volume = baseVolume * volume ;
+			UpdateVolume() ;
 
 			//--------------
 
 			// ベースボリューム
-			m_BaseVolume	= baseVolume ;
+			m_BaseVolume			= baseVolume ;
 
 			// ボリューム
-			m_Volume		= volume ;
+			m_Volume				= volume ;
 
 			// フェードボリューム
-			m_FadeVolume	= 1 ;
+			m_FadeVolume			= 1 ;
 
 			if( pan >   1 )
 			{
@@ -2971,12 +3124,18 @@ namespace AudioHelper
 			m_AudioSource.panStereo = pan ;
 
 			// 位置
-			m_AudioSource.gameObject.transform.position = position ;
+			m_AudioSource.gameObject.transform.position = audioSourcePosition ;
 
 	//		mAudioSource.bypassEffects = true ;
 	//		mAudioSource.bypassListenerEffects = true ;
 		
 			//-----------------------------------------------------
+
+			// 再生
+			m_AudioSource.Play() ;
+
+			// 念のため再生後にも再度設定しておく
+			UpdateVolume() ;
 
 			m_IsPlaying = true ;
 			m_IsPausing = false ;

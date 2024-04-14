@@ -1,14 +1,16 @@
-using UnityEngine ;
-using UnityEngine.UI ;
-using UnityEngine.Events ;
-using UnityEngine.EventSystems ;
 using System ;
 using System.Collections ;
 using System.Collections.Generic ;
 
+using UnityEngine ;
+using UnityEngine.UI ;
+using UnityEngine.Events ;
+using UnityEngine.EventSystems ;
+
 #if UNITY_EDITOR
 using UnityEditor ;
 #endif
+
 
 namespace uGUIHelper
 {
@@ -22,10 +24,29 @@ namespace uGUIHelper
 		/// </summary>
 		public enum StateTypes
 		{
+			/// <summary>
+			/// 通常
+			/// </summary>
 			Normal		= 0,
+
+			/// <summary>
+			/// ホバー
+			/// </summary>
 			Highlighted	= 1,
+
+			/// <summary>
+			/// プレス
+			/// </summary>
 			Pressed		= 2,
+
+			/// <summary>
+			/// 無効
+			/// </summary>
 			Disabled	= 3,
+
+			/// <summary>
+			/// クリック後
+			/// </summary>
 			Clicked		= 4,
 			Finished	= 5,
 		}
@@ -35,7 +56,14 @@ namespace uGUIHelper
 		/// </summary>
 		public enum ProcessTypes
 		{
+			/// <summary>
+			/// イーズ
+			/// </summary>
 			Ease = 0,
+
+			/// <summary>
+			/// アニメーション
+			/// </summary>
 			AnimationCurve = 1,
 		}
 
@@ -82,7 +110,7 @@ namespace uGUIHelper
 		/// <summary>
 		/// トランジョン情報クラス
 		/// </summary>
-		[System.Serializable]
+		[Serializable]
 		public class TransitionData
 		{
 			public Sprite	Sprite = null ;
@@ -131,16 +159,16 @@ namespace uGUIHelper
 
 		// SerializeField 対象は readonly にしてはいけない
 		[SerializeField][HideInInspector]
-		protected List<TransitionData> m_Transitions = new List<TransitionData>()
+		protected List<TransitionData> m_Transitions = new ()
 		{
-			new TransitionData( 0 ),	// Normal
-			new TransitionData( 1 ),	// Hilighted
-			new TransitionData( 2 ),	// Pressed
-			new TransitionData( 3 ),	// Disabled
-			new TransitionData( 4 ),	// Clicked
-			new TransitionData( 5 ),	// Finished
-			new TransitionData( 6 ),
-			new TransitionData( 7 ),
+			new ( 0 ),	// Normal
+			new ( 1 ),	// Hilighted
+			new ( 2 ),	// Pressed
+			new ( 3 ),	// Disabled
+			new ( 4 ),	// Clicked
+			new ( 5 ),	// Finished
+			new ( 6 ),
+			new ( 7 ),
 		} ;
 
 		public List<TransitionData> Transitions
@@ -153,16 +181,16 @@ namespace uGUIHelper
 
 		public void InitializeTransitions()
 		{
-			m_Transitions = new List<TransitionData>()
+			m_Transitions = new ()
 			{
-				new TransitionData( 0 ),	// Normal
-				new TransitionData( 1 ),	// Hilighted
-				new TransitionData( 2 ),	// Pressed
-				new TransitionData( 3 ),	// Disabled
-				new TransitionData( 4 ),	// Clicked
-				new TransitionData( 5 ),	// Finished
-				new TransitionData( 6 ),
-				new TransitionData( 7 ),
+				new ( 0 ),	// Normal
+				new ( 1 ),	// Hilighted
+				new ( 2 ),	// Pressed
+				new ( 3 ),	// Disabled
+				new ( 4 ),	// Clicked
+				new ( 5 ),	// Finished
+				new ( 6 ),
+				new ( 7 ),
 			} ;
 		}
 
@@ -370,9 +398,9 @@ namespace uGUIHelper
 		{
 			get
 			{
-				if( m_RectTransform == null )
+				if( transform is RectTransform )
 				{
-					m_RectTransform = GetComponent<RectTransform>() ;
+					m_RectTransform = transform as RectTransform ;
 				}
 				if( m_RectTransform == null )
 				{
@@ -393,7 +421,7 @@ namespace uGUIHelper
 			{
 				if( m_Button == null )
 				{
-					m_Button = GetComponent<Button>() ;
+					TryGetComponent<Button>( out m_Button ) ;
 				}
 				if( m_Button == null )
 				{
@@ -403,8 +431,10 @@ namespace uGUIHelper
 			}
 		}
 
-		// ボタン
-		private UIButton m_UIButton ;
+		//---------------
+
+		// ビュー
+		private UIView		m_View ;
 
 		//-----------------------------------------------------------------
 
@@ -424,7 +454,7 @@ namespace uGUIHelper
 			if( Application.isPlaying == true )
 			{
 				m_State = StateTypes.Normal ;
-				TransitionData data = m_Transitions[ ( int )m_State ] ;
+				var data = m_Transitions[ ( int )m_State ] ;
 				m_BaseRotation = data.FadeRotation ;
 				m_BaseScale    = data.FadeScale ;
 				m_MoveRotation = data.FadeRotation ;
@@ -433,14 +463,33 @@ namespace uGUIHelper
 
 				if( m_Button == null )
 				{
-					m_Button = GetComponent<Button>() ;
+					TryGetComponent<Button>( out m_Button ) ;
 				}
 
-				if( m_UIButton == null )
+				if( m_View == null )
 				{
-					m_UIButton = GetComponent<UIButton>() ;
+					if( TryGetComponent( out m_View ) == true )
+					{
+						m_View.RemoveOnSimplePress( OnHovered ) ;
+						m_View.AddOnSimplePress( OnHovered ) ;
+
+						m_View.RemoveOnSimplePress( OnPressed ) ;
+						m_View.AddOnSimplePress( OnPressed ) ;
+					}
 				}
 			}
+		}
+
+		internal void OnDestroy()
+		{
+			if( m_View != null )
+			{
+				m_View.RemoveOnSimplePress( OnPressed ) ;
+				m_View.RemoveOnSimpleHover( OnHovered ) ;
+				m_View  = null ;
+			}
+
+			m_Button = null ;
 		}
 
 		// 毎フレーム実行される
@@ -448,93 +497,102 @@ namespace uGUIHelper
 		{
 			if( Application.isPlaying == true )
 			{
-				bool isDisableTransition = false ;
-				if( m_UIButton != null && m_Button != null )
+				//---------------------------------------------------------
+				// 偽無効化状態が有効である場合 Disable 処理はしてはならない
+
+				if( m_View != null && m_View is UIButton uiButton && m_Button != null )
 				{
-					if( m_UIButton.FakeInvalidation == true && m_UIButton.EnableTransitionOfFake == false && m_UIButton.InteractableOfFake == false )
+					if( uiButton.FakeInvalidation == true && uiButton.EnableTransitionOfFake == false && uiButton.InteractableOfFake == false )
 					{
-						isDisableTransition = true ;
+						// 偽無効化状態が有効である場合は常にボタンは有効状態とする必要があるため Disable 系の処理もしてはならない
+						return ;
 					}
 				}
 
 				//---------------------------------------------------------
 
-				if( isDisableTransition == false )
+				// インタラクションの無効状態を
+				if( m_TransitionEnabled == true && m_IsPausing == false )
 				{
-					if( m_TransitionEnabled == true && m_IsPausing == false )
+					if( m_UseAnimator == false )
 					{
-						if( m_UseAnimator == false )
+						// アニメーターを使用しない
+						if( m_State != StateTypes.Clicked && m_State != StateTypes.Finished )
 						{
-							// アニメーターを使用しない
-							if( m_State != StateTypes.Clicked && m_State != StateTypes.Finished )
+							// ＵＩが無効状態指定になっているか確認する
+							bool isDisable = false ;
+							if( m_Button != null && m_Button.IsInteractable() == false )
 							{
-								bool isDisable = false ;
-								if( m_Button != null )
-								{
-									if( m_Button.IsInteractable() == false )
-									{
-										isDisable = true ;
-									}
-								}
-
-								if( m_State != StateTypes.Disabled && isDisable == true )
-								{
-									// 無効状態
-									ChangeTransitionStateForStandard( StateTypes.Disabled, StateTypes.Disabled ) ;
-								}
-								else
-								if( m_State == StateTypes.Disabled && isDisable == false )
-								{
-									// 無効状態
-									ChangeTransitionStateForStandard( StateTypes.Normal, StateTypes.Disabled ) ;
-								}
-
-								if( m_State == StateTypes.Highlighted && m_IsHover == false )
-								{
-									// 無効状態
-									ChangeTransitionStateForStandard( StateTypes.Normal, StateTypes.Highlighted ) ;
-								}
-
-								//--------------------------------------------------------
+								isDisable = true ;
+							}
+							if( m_View != null && m_View is not UIButton && ( m_View.IsInteraction == false && m_View.IsInteractionForScrollView == false ) )
+							{
+								isDisable = true ;
 							}
 
-							// 実行する
-							if( m_Processing == true )
+							//----------
+
+							if( m_State != StateTypes.Disabled && isDisable == true )
 							{
-								ProcessTransition() ;
+								// 無効状態
+								ChangeTransitionStateForStandard( StateTypes.Disabled, StateTypes.Disabled ) ;
 							}
+							else
+							if( m_State == StateTypes.Disabled && isDisable == false )
+							{
+								// 無効状態
+								ChangeTransitionStateForStandard( StateTypes.Normal, StateTypes.Disabled ) ;
+							}
+
+							if( m_State == StateTypes.Highlighted && m_IsHover == false )
+							{
+								// 無効状態
+								ChangeTransitionStateForStandard( StateTypes.Normal, StateTypes.Highlighted ) ;
+							}
+
+							//--------------------------------------------------------
 						}
-						else
+
+						// 実行する
+						if( m_Processing == true )
 						{
-							// アニメーターを使用する
-							if( m_State != StateTypes.Clicked && m_State != StateTypes.Finished )
+							ProcessTransition() ;
+						}
+					}
+					else
+					{
+						// アニメーターを使用する
+						if( m_State != StateTypes.Clicked && m_State != StateTypes.Finished )
+						{
+							// ＵＩが無効状態指定になっているか確認する
+							bool isDisable = false ;
+							if( m_Button != null && m_Button.IsInteractable() == false )
 							{
-								bool isDisable = false ;
-								if( m_Button != null )
-								{
-									if( m_Button.IsInteractable() == false )
-									{
-										isDisable = true ;
-									}
-								}
+								isDisable = true ;
+							}
+							if( m_View != null && m_View is not UIButton && ( m_View.IsInteraction == false && m_View.IsInteractionForScrollView == false ) )
+							{
+								isDisable = true ;
+							}
 
-								if( m_State != StateTypes.Disabled && isDisable == true )
-								{
-									// 無効状態
-									ChangeTransitionStateForAnimator( StateTypes.Disabled, StateTypes.Disabled ) ;
-								}
-								else
-								if( m_State == StateTypes.Disabled && isDisable == false )
-								{
-									// 無効状態
-									ChangeTransitionStateForAnimator( StateTypes.Normal, StateTypes.Disabled ) ;
-								}
+							//----------
 
-								if( m_State == StateTypes.Highlighted && m_IsHover == false )
-								{
-									// 無効状態
-									ChangeTransitionStateForAnimator( StateTypes.Normal, StateTypes.Highlighted ) ;
-								}
+							if( m_State != StateTypes.Disabled && isDisable == true )
+							{
+								// 無効状態
+								ChangeTransitionStateForAnimator( StateTypes.Disabled, StateTypes.Disabled ) ;
+							}
+							else
+							if( m_State == StateTypes.Disabled && isDisable == false )
+							{
+								// 無効状態
+								ChangeTransitionStateForAnimator( StateTypes.Normal, StateTypes.Disabled ) ;
+							}
+
+							if( m_State == StateTypes.Highlighted && m_IsHover == false )
+							{
+								// 無効状態
+								ChangeTransitionStateForAnimator( StateTypes.Normal, StateTypes.Highlighted ) ;
 							}
 						}
 					}
@@ -542,111 +600,141 @@ namespace uGUIHelper
 			}
 		}
 
-		//---------------------------------------------
+		//-------------------------------------------------------------------------------------------
+		// Button UIButton で UIInteraction が付いていない場合は必要になる
 	
 		// Enter
 		public void OnPointerEnter( PointerEventData pointer )
 		{
-			// → Release 状態であれば Highlight へ遷移
-			if( m_State != StateTypes.Clicked && m_State != StateTypes.Finished )
-			{
-				if( m_IsPress == false && m_Processing == false )
-				{
-					if( m_UseAnimator == false )
-					{
-						// スタンダード
-						ChangeTransitionStateForStandard( StateTypes.Highlighted, StateTypes.Highlighted ) ;
-					}
-					else
-					{
-						// アニメーター
-						ChangeTransitionStateForAnimator( StateTypes.Highlighted, StateTypes.Highlighted ) ;
-					}
-				}
-				m_IsHover = true ;
-			}
+			OnHovered( true ) ;
 		}
 
 		// Exit
 		public void OnPointerExit( PointerEventData pointer )
 		{
-			// → Release 状態であれば Normal へ遷移
-			if( m_State != StateTypes.Clicked && m_State != StateTypes.Finished )
+			OnHovered( false ) ;
+		}
+
+		//-----------------------------------------------------------
+
+		private void OnHovered( bool state )
+		{
+			if( state == true )
 			{
-				if( m_IsPress == false && m_Processing == false )
+				// → Release 状態であれば Highlight へ遷移
+				if( m_State != StateTypes.Clicked && m_State != StateTypes.Finished )
 				{
-					if( m_UseAnimator == false )
+					if( m_IsPress == false && m_Processing == false )
 					{
-						// スタンダード
-						ChangeTransitionStateForStandard( StateTypes.Normal, StateTypes.Highlighted ) ;
+						if( m_UseAnimator == false )
+						{
+							// スタンダード
+							ChangeTransitionStateForStandard( StateTypes.Highlighted, StateTypes.Highlighted ) ;
+						}
+						else
+						{
+							// アニメーター
+							ChangeTransitionStateForAnimator( StateTypes.Highlighted, StateTypes.Highlighted ) ;
+						}
 					}
-					else
-					{
-						// アニメーター
-						ChangeTransitionStateForAnimator( StateTypes.Normal, StateTypes.Highlighted ) ;
-					}
+					m_IsHover = true ;
 				}
-				m_IsHover = false ;
+			}
+			else
+			{
+				// → Release 状態であれば Normal へ遷移
+				if( m_State != StateTypes.Clicked && m_State != StateTypes.Finished )
+				{
+					if( m_IsPress == false && m_Processing == false )
+					{
+						if( m_UseAnimator == false )
+						{
+							// スタンダード
+							ChangeTransitionStateForStandard( StateTypes.Normal, StateTypes.Highlighted ) ;
+						}
+						else
+						{
+							// アニメーター
+							ChangeTransitionStateForAnimator( StateTypes.Normal, StateTypes.Highlighted ) ;
+						}
+					}
+					m_IsHover = false ;
+				}
 			}
 		}
+
+		//-------------------------------------------------------------------------------------------
+		// Button UIButton で UIInteraction が付いていない場合は必要になる
 
 		// Down
 		public void OnPointerDown( PointerEventData pointer )
 		{
-			// → Press 状態へ遷移
-			if( m_State != StateTypes.Clicked && m_State != StateTypes.Finished )
-			{
-				if( m_UseAnimator == false )
-				{
-					// スタンダード
-					ChangeTransitionStateForStandard( StateTypes.Pressed, StateTypes.Pressed ) ;
-				}
-				else
-				{
-					// アニメーター
-					ChangeTransitionStateForAnimator( StateTypes.Pressed, StateTypes.Pressed ) ;
-				}
-				m_IsPress = true ;
-			}
+			OnPressed( true ) ;
 		}
 
 		// Up
 		public void OnPointerUp( PointerEventData pointer )
 		{
-			// → Enter 状態であれば Highlight へ遷移
-			// → Exit  状態であれば Normal へ遷移
+			OnPressed( false ) ;
+		}
 
-			if( m_State != StateTypes.Clicked && m_State != StateTypes.Finished )
+		//-----------------------------------------------------------
+
+		private void OnPressed( bool state )
+		{
+			if( state == true )
 			{
-				if( m_IsHover == true )
+				// → Press 状態へ遷移
+				if( m_State != StateTypes.Clicked && m_State != StateTypes.Finished )
 				{
 					if( m_UseAnimator == false )
 					{
 						// スタンダード
-						ChangeTransitionStateForStandard( StateTypes.Highlighted, StateTypes.Normal ) ;
+						ChangeTransitionStateForStandard( StateTypes.Pressed, StateTypes.Pressed ) ;
 					}
 					else
 					{
 						// アニメーター
-						ChangeTransitionStateForAnimator( StateTypes.Highlighted, StateTypes.Normal ) ;
+						ChangeTransitionStateForAnimator( StateTypes.Pressed, StateTypes.Pressed ) ;
 					}
+					m_IsPress = true ;
 				}
-				else
+			}
+			else
+			{
+				if( m_State != StateTypes.Clicked && m_State != StateTypes.Finished )
 				{
-					if( m_UseAnimator == false )
+					if( m_IsHover == true )
 					{
-						// スタンダード
-						ChangeTransitionStateForStandard( StateTypes.Normal, StateTypes.Normal ) ;
+						if( m_UseAnimator == false )
+						{
+							// スタンダード
+							ChangeTransitionStateForStandard( StateTypes.Highlighted, StateTypes.Normal ) ;
+						}
+						else
+						{
+							// アニメーター
+							ChangeTransitionStateForAnimator( StateTypes.Highlighted, StateTypes.Normal ) ;
+						}
 					}
 					else
 					{
-						// アニメーター
-						ChangeTransitionStateForAnimator( StateTypes.Normal, StateTypes.Normal ) ;
+						if( m_UseAnimator == false )
+						{
+							// スタンダード
+							ChangeTransitionStateForStandard( StateTypes.Normal, StateTypes.Normal ) ;
+						}
+						else
+						{
+							// アニメーター
+							ChangeTransitionStateForAnimator( StateTypes.Normal, StateTypes.Normal ) ;
+						}
 					}
-				}
-				m_IsPress = false ;
+					m_IsPress = false ;
+				}			
 			}
 		}
+
 
 		// Clicked(UIButton から呼び出される)
 		internal protected void OnClicked( bool waitForTransition )
@@ -656,14 +744,13 @@ namespace uGUIHelper
 				m_WaitForTransition = waitForTransition ;
 				if( m_WaitForTransition == true )
 				{
-					UIEventSystem.Disable() ;
+					InputAdapter.UIEventSystem.Disable() ;
 				}
 
 				// 押されたボタンを同階層で最も手前に表示する
 				if( transform.parent != null )
 				{
-					UIView parent = transform.parent.GetComponent<UIView>() ;
-					if( parent != null )
+					if( transform.parent.TryGetComponent<UIView>( out var parent ) == true )
 					{
 						Vector3 p =	transform.localPosition ;
 						p.z = 10 ;
@@ -699,43 +786,44 @@ namespace uGUIHelper
 				return true ;
 			}
 
-			if( m_Button != null && m_UIButton != null )
+			if( m_Button != null && m_View != null )
 			{
+				// 色変化
 				if( m_ColorTransmission == true )
 				{
 					ColorBlock cb = m_Button.colors ;
 				
 					if( state == StateTypes.Normal )
 					{
-						m_UIButton.ApplyColorToChidren( cb.normalColor ) ;
+						m_View.ApplyColorToChidren( cb.normalColor ) ;
 					}
 					else
 					if( state == StateTypes.Highlighted )
 					{
-						m_UIButton.ApplyColorToChidren( cb.highlightedColor ) ;
+						m_View.ApplyColorToChidren( cb.highlightedColor ) ;
 					}
 					else
 					if( state == StateTypes.Pressed )
 					{
-						m_UIButton.ApplyColorToChidren( cb.pressedColor ) ;
+						m_View.ApplyColorToChidren( cb.pressedColor ) ;
 					}
 					else
 					if( state == StateTypes.Disabled )
 					{
-						m_UIButton.ApplyColorToChidren( cb.disabledColor ) ;
+						m_View.ApplyColorToChidren( cb.disabledColor ) ;
 					}
 					else
 					{
-						m_UIButton.ApplyColorToChidren( cb.normalColor ) ;
+						m_View.ApplyColorToChidren( cb.normalColor ) ;
 					}
 				}
 			}
 
 			// 現在の RectTransform の状態を退避する
 
-			if( m_RectTransform == null )
+			if( transform is RectTransform )
 			{
-				m_RectTransform = GetComponent<RectTransform>() ;
+				m_RectTransform = transform as RectTransform ;
 			}
 			if( m_RectTransform == null )
 			{
@@ -755,31 +843,15 @@ namespace uGUIHelper
 
 			m_Processing	= true ;	// 処理する
 
-//			if( m_SpriteOverwriteEnabled == true )
-//			{
-//				UIImage image = GetComponent<UIImage>() ;
-//				if( image != null && image.SpriteSet != null )
-//				{
-//					// 画像を変更する
-//					
-//					TransitionData data = m_Transitions[ ( int )m_State ] ;
-//	
-//					if( data.Sprite != null )
-//					{
-//						image.SetSpriteInAtlas( data.Sprite.name ) ;
-//					}
-//				}
-//			}
-
 			return true ;
 		}
 		
 		// トランジションの状態を反映させる
 		private bool ProcessTransition()
 		{
-			if( m_RectTransform == null )
+			if( transform is RectTransform )
 			{
-				m_RectTransform = GetComponent<RectTransform>() ;
+				m_RectTransform = transform as RectTransform ;
 			}
 			if( m_RectTransform == null )
 			{
@@ -801,7 +873,7 @@ namespace uGUIHelper
 						factor  = 1 ;
 						m_Processing = false ;
 					}
-				
+
 					m_MoveRotation = GetValue( m_BaseRotation, data.FadeRotation, factor, easeData.FadeEaseType ) ;
 					m_MoveScale    = GetValue( m_BaseScale,    data.FadeScale,    factor, easeData.FadeEaseType ) ;
 
@@ -863,11 +935,11 @@ namespace uGUIHelper
 					if( m_WaitForTransition == true )
 					{
 //						Debug.LogWarning( "------- クリック後のトランジションが終了した" ) ;
-						UIEventSystem.Enable() ;
+						InputAdapter.UIEventSystem.Enable() ;
 	
-						if( m_UIButton != null )
+						if( m_View != null && m_View is UIButton button )
 						{
-							m_UIButton.OnButtonClickFromTransition() ;
+							button.OnButtonClickFromTransition() ;
 						}
 						m_WaitForTransition = false ;
 					}
@@ -882,75 +954,6 @@ namespace uGUIHelper
 			return true ;
 		}
 
-#if false
-		/// <summary>
-		/// 指定の状態で表示する画像を設定する
-		/// </summary>
-		/// <param name="state"></param>
-		/// <param name="imageName"></param>
-		/// <returns></returns>
-		public bool ReplaceImage( StateTypes state, string imageName )
-		{
-			UIImage image = GetComponent<UIImage>() ;
-			if( image == null || image.SpriteSet == null )
-			{
-				return false ;
-			}
-
-			Sprite sprite = image.GetSpriteInAtlas( imageName ) ;
-			if( sprite == null )
-			{
-				return false ;
-			}
-
-			int i = ( int )state ;
-
-			if( m_Transitions[ i ] != null )
-			{
-				m_Transitions[ i ].Sprite = sprite ;
-			}
-
-			if( m_State == state )
-			{
-				image.SetSpriteInAtlas( imageName ) ;
-			}
-
-			return true ;
-		}
-
-		/// <summary>
-		/// 全ての状態で表示する画像を設定する
-		/// </summary>
-		/// <param name="imageName"></param>
-		public bool ReplaceImage( string imageName )
-		{
-			UIImage image = GetComponent<UIImage>() ;
-			if( image == null || image.SpriteSet == null )
-			{
-				return false ;
-			}
-
-			Sprite sprite = image.GetSpriteInAtlas( imageName ) ;
-			if( sprite == null )
-			{
-				return false ;
-			}
-
-			int i, l = m_Transitions.Count ;
-				
-			for( i  = 0 ; i <  l ; i ++ )
-			{
-				if( m_Transitions[ i ] != null )
-				{
-					m_Transitions[ i ].Sprite = sprite ;
-				}
-			}
-
-			image.SetSpriteInAtlas( imageName ) ;
-
-			return true ;
-		}
-#endif
 		//-------------------------------------------------------------------------------------------
 		// アニメーター用
 
@@ -963,7 +966,7 @@ namespace uGUIHelper
 				return true ;
 			}
 
-			if( m_Button != null && m_UIButton != null )
+			if( m_Button != null && m_View != null )
 			{
 				if( m_ColorTransmission == true )
 				{
@@ -971,35 +974,35 @@ namespace uGUIHelper
 				
 					if( state == StateTypes.Normal )
 					{
-						m_UIButton.ApplyColorToChidren( cb.normalColor ) ;
+						m_View.ApplyColorToChidren( cb.normalColor ) ;
 					}
 					else
 					if( state == StateTypes.Highlighted )
 					{
-						m_UIButton.ApplyColorToChidren( cb.highlightedColor ) ;
+						m_View.ApplyColorToChidren( cb.highlightedColor ) ;
 					}
 					else
 					if( state == StateTypes.Pressed )
 					{
-						m_UIButton.ApplyColorToChidren( cb.pressedColor ) ;
+						m_View.ApplyColorToChidren( cb.pressedColor ) ;
 					}
 					else
 					if( state == StateTypes.Disabled )
 					{
-						m_UIButton.ApplyColorToChidren( cb.disabledColor ) ;
+						m_View.ApplyColorToChidren( cb.disabledColor ) ;
 					}
 					else
 					{
-						m_UIButton.ApplyColorToChidren( cb.normalColor ) ;
+						m_View.ApplyColorToChidren( cb.normalColor ) ;
 					}
 				}
 			}
 
 			// 現在の RectTransform の状態を退避する
 
-			if( m_RectTransform == null )
+			if( transform is RectTransform )
 			{
-				m_RectTransform = GetComponent<RectTransform>() ;
+				m_RectTransform = transform as RectTransform ;
 			}
 			if( m_RectTransform == null )
 			{
@@ -1019,49 +1022,33 @@ namespace uGUIHelper
 
 			m_Processing	= true ;	// 処理する
 
-//			if( m_SpriteOverwriteEnabled == true )
-//			{
-//				UIImage image = GetComponent<UIImage>() ;
-//				if( image != null && image.SpriteSet != null )
-//				{
-//					// 画像を変更する
-//					
-//					TransitionData data = m_Transitions[ ( int )m_State ] ;
-//	
-//					if( data.Sprite != null )
-//					{
-//						image.SetSpriteInAtlas( data.Sprite.name ) ;
-//					}
-//				}
-//			}
-
 			//----------------------------------------------------------
 
-			if( m_UIButton != null )
+			if( m_View != null )
 			{
 				if( m_State == StateTypes.Normal )
 				{
-					m_UIButton.PlayAnimator( "Normal" ) ;
+					m_View.PlayAnimator( "Normal" ) ;
 				}
 				else
 				if( m_State == StateTypes.Highlighted )
 				{
-					m_UIButton.PlayAnimator( "Highlighted" ) ;
+					m_View.PlayAnimator( "Highlighted" ) ;
 				}
 				else
 				if( m_State == StateTypes.Pressed )
 				{
-					m_UIButton.PlayAnimator( "Pressed" ) ;
+					m_View.PlayAnimator( "Pressed" ) ;
 				}
 				else
 				if( m_State == StateTypes.Disabled )
 				{
-					m_UIButton.PlayAnimator( "Disabled" ) ;
+					m_View.PlayAnimator( "Disabled" ) ;
 				}
 				else
 				if( m_State == StateTypes.Clicked )
 				{
-					m_UIButton.PlayAnimator( "Selected" ) ;
+					m_View.PlayAnimator( "Selected" ) ;
 				}
 			}
 
@@ -1091,7 +1078,7 @@ namespace uGUIHelper
 				//---------------------------------
 
 				// レジューム時にボタンの状態を復旧させる
-				if( m_Button != null && m_UIButton != null )
+				if( m_Button != null && m_View != null )
 				{
 					// 色まわり
 					if( m_ColorTransmission == true )
@@ -1100,11 +1087,11 @@ namespace uGUIHelper
 
 						if( m_Button.interactable == true )
 						{
-							m_UIButton.ApplyColorToChidren( cb.normalColor ) ;
+							m_View.ApplyColorToChidren( cb.normalColor ) ;
 						}
 						else
 						{
-							m_UIButton.ApplyColorToChidren( cb.disabledColor ) ;
+							m_View.ApplyColorToChidren( cb.disabledColor ) ;
 						}
 					}
 

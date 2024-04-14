@@ -10,7 +10,7 @@ using Cysharp.Threading.Tasks ;
 
 using uGUIHelper ;
 
-namespace DBS.Screens.DownloadingClasses.UI
+namespace DSW.Screens.DownloadingClasses.UI
 {
 	/// <summary>
 	/// ムービー表示パネル

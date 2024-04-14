@@ -55,10 +55,10 @@ namespace uGUIHelper
 			{
 				if( m_Viewport == null )
 				{
-					ScrollRect scrollRect = CScrollRect ;
+					var scrollRect = CScrollRect ;
 					if( scrollRect != null )
 					{
-						m_Viewport = scrollRect.viewport.GetComponent<UIImage>() ;
+						scrollRect.viewport.TryGetComponent<UIImage>( out m_Viewport ) ;
 					}
 				}
 				return m_Viewport ;
@@ -81,10 +81,10 @@ namespace uGUIHelper
 				if( m_Content == null )
 				{
 					// m_Content が null になっている場合の保険
-					ScrollRect scrollRect = CScrollRect ;
+					var scrollRect = CScrollRect ;
 					if( scrollRect != null && scrollRect.content != null )
 					{
-						m_Content = scrollRect.content.GetComponent<UIView>() ;
+						scrollRect.content.TryGetComponent<UIView>( out m_Content ) ;
 					}
 				}
 #if UNITY_EDITOR
@@ -105,7 +105,7 @@ namespace uGUIHelper
 		{
 			get
 			{
-				ScrollRectWrapper scrollRect = CScrollRect ;
+				var scrollRect = CScrollRect ;
 				if( scrollRect == null )
 				{
 					return false ;
@@ -114,7 +114,7 @@ namespace uGUIHelper
 			}
 			set
 			{
-				ScrollRectWrapper scrollRect = CScrollRect ;
+				var scrollRect = CScrollRect ;
 				if( scrollRect == null )
 				{
 					return ;
@@ -130,7 +130,7 @@ namespace uGUIHelper
 		{
 			get
 			{
-				ScrollRectWrapper scrollRect = CScrollRect ;
+				var scrollRect = CScrollRect ;
 				if( scrollRect == null )
 				{
 					return false ;
@@ -139,7 +139,7 @@ namespace uGUIHelper
 			}
 			set
 			{
-				ScrollRectWrapper scrollRect = CScrollRect ;
+				var scrollRect = CScrollRect ;
 				if( scrollRect == null )
 				{
 					return ;
@@ -155,12 +155,12 @@ namespace uGUIHelper
 		{
 			get
 			{
-				ScrollRectWrapper scrollRect = CScrollRect ;
+				var scrollRect = CScrollRect ;
 				if( scrollRect == null )
 				{
 					return null ;
 				}
-				ScrollbarWrapper scrollbar = ( ScrollbarWrapper )scrollRect.horizontalScrollbar ;
+				var scrollbar = ( ScrollbarWrapper )scrollRect.horizontalScrollbar ;
 				if( scrollbar == null )
 				{
 					if( m_HorizontalScrollbarElastic != null )
@@ -172,7 +172,7 @@ namespace uGUIHelper
 			}
 			set
 			{
-				ScrollRectWrapper scrollRect = CScrollRect ;
+				var scrollRect = CScrollRect ;
 				if( scrollRect == null )
 				{
 					return ;
@@ -188,12 +188,12 @@ namespace uGUIHelper
 		{
 			get
 			{
-				ScrollRectWrapper scrollRect = CScrollRect ;
+				var scrollRect = CScrollRect ;
 				if( scrollRect == null )
 				{
 					return null ;
 				}
-				ScrollbarWrapper scrollbar = ( ScrollbarWrapper )scrollRect.verticalScrollbar ;
+				var scrollbar = ( ScrollbarWrapper )scrollRect.verticalScrollbar ;
 				if( scrollbar == null )
 				{
 					if( m_VerticalScrollbarElastic != null )
@@ -205,7 +205,7 @@ namespace uGUIHelper
 			}
 			set
 			{
-				ScrollRectWrapper scrollRect = CScrollRect ;
+				var scrollRect = CScrollRect ;
 				if( scrollRect == null )
 				{
 					return ;
@@ -479,7 +479,7 @@ namespace uGUIHelper
 			{
 				if( m_DirectionType == DirectionTypes.Unknown )
 				{
-					ScrollRectWrapper scrollView = CScrollRect ;
+					var scrollView = CScrollRect ;
 
 					// 横スクロール
 					if( scrollView.horizontal == true  && scrollView.vertical == false )
@@ -530,21 +530,11 @@ namespace uGUIHelper
 		/// 各派生クラスでの初期化処理を行う（メニューまたは AddView から生成される場合のみ実行れる）
 		/// </summary>
 		/// <param name="option"></param>
-		override protected void OnBuild( string option = "" )
+		protected override void OnBuild( string option = "" )
 		{
-			ScrollRectWrapper scrollRect = CScrollRect ;
+			var scrollRect = CScrollRect != null ? CScrollRect : gameObject.AddComponent<ScrollRectWrapper>() ;
 
-			if( scrollRect == null )
-			{
-				scrollRect = gameObject.AddComponent<ScrollRectWrapper>() ;
-			}
-			if( scrollRect == null )
-			{
-				// 異常
-				return ;
-			}
-			
-			Image image = CImage ;
+			var image = CImage ;
 
 			//-------------------------------------
 
@@ -580,7 +570,7 @@ namespace uGUIHelper
 
 			// 基本的な大きさを設定
 			float s = 100.0f ;
-			Vector2 size = GetCanvasSize() ;
+			var size = GetCanvasSize() ;
 			if( size.x >  0 && size.y >  0 )
 			{
 				if( size.x <= size.y )
@@ -637,7 +627,7 @@ namespace uGUIHelper
 			m_Viewport.CImage.enabled = false ;
 
 			// Content を追加する
-			UIView content = CreateContent( m_Viewport, buildType, directionType ) ;
+			var content = CreateContent( m_Viewport, buildType, directionType ) ;
 			if( content != null )
 			{
 				scrollRect.content = content.GetRectTransform() ;
@@ -757,7 +747,7 @@ namespace uGUIHelper
 		public UIView dropdownItem = null ;
 
 		// テンプレートのアイテムを生成する
-		private void CreateDropdownItem( UIView tParent )
+		private void CreateDropdownItem( UIView parent )
 		{
 			// Dropdown 専用
 
@@ -772,7 +762,7 @@ namespace uGUIHelper
 				return ;
 			}
 
-			UIToggle item = tParent.AddView<UIToggle>( "Item(Template)", "no group" ) ;
+			var item = parent.AddView<UIToggle>( "Item(Template)", "no group" ) ;
 
 			item.SetAnchorToStretchMiddle() ;
 			item.Height = dropdown.Height ;
@@ -803,7 +793,7 @@ namespace uGUIHelper
 		/// <summary>
 		/// 派生クラスの Start
 		/// </summary>
-		override protected void OnStart()
+		protected override void OnStart()
 		{
 			base.OnStart() ;
 
@@ -820,17 +810,15 @@ namespace uGUIHelper
 				if( m_BuildType == BuildTypes.Dropdown )
 				{
 					// ドロップダウン用のスクロールビューの場合にリストの表示位置を設定する
-					UIDropdown dropdown = transform.parent.GetComponent<UIDropdown>() ;
-
-					// ドロップダウン用のスクロールビュー
-					if( dropdown != null )
+					if( transform.parent.TryGetComponent<UIDropdown>( out var dropdown ) == true )
 					{
+						// ドロップダウン用のスクロールビュー
+
 						float itemSize = 0 ;
 
 						if( dropdown.CTMP_Dropdown.itemText != null )
 						{
-							UIView view = dropdown.CTMP_Dropdown.itemText.transform.parent.GetComponent<UIView>() ;
-							if( view != null )
+							if( dropdown.CTMP_Dropdown.itemText.transform.parent.TryGetComponent<UIView>( out var view ) == true )
 							{
 								itemSize = view.Height ;
 							}
@@ -838,8 +826,7 @@ namespace uGUIHelper
 						else
 						if( dropdown.CTMP_Dropdown.itemImage != null )
 						{
-							UIView view = dropdown.CTMP_Dropdown.itemImage.transform.parent.GetComponent<UIView>() ;
-							if( view != null )
+							if( dropdown.CTMP_Dropdown.itemImage.transform.parent.TryGetComponent<UIView>( out var view ) == true )
 							{
 								itemSize = view.Height ;
 							}
@@ -931,6 +918,30 @@ namespace uGUIHelper
 		}
 
 		/// <summary>
+		/// 表示領域の幅を取得する
+		/// </summary>
+		public Vector2 ViewAreaSize
+		{
+			get
+			{
+				if( m_Viewport == null )
+				{
+					if( CScrollRect != null && CScrollRect.viewport != null )
+					{
+						m_Viewport = CScrollRect.viewport.GetComponent<UIImage>() ;
+					}
+				}
+
+				if( m_Viewport == null )
+				{
+					return Vector2.zero ;
+				}
+
+				return new Vector2( m_Viewport.Width, m_Viewport.Height ) ;
+			}
+		}
+
+		/// <summary>
 		/// コンテントの幅を取得する
 		/// </summary>
 		public float ContentSize
@@ -972,9 +983,22 @@ namespace uGUIHelper
 		}
 
 		/// <summary>
+		/// コンテントの幅を取得する
+		/// </summary>
+		public Vector2 ContentAreaSize
+		{
+			get
+			{
+				if( Content == null ){ return Vector2.zero ; }
+
+				return new Vector2( Content.Width, Content.Height ) ;
+			}
+		}
+
+		/// <summary>
 		/// コンテントの現在位置を取得する
 		/// </summary>
-		virtual public float ContentPosition
+		public virtual float ContentPosition
 		{
 			get
 			{
@@ -1060,7 +1084,7 @@ namespace uGUIHelper
 
 			if( Application.isPlaying == true )
 			{
-				ScrollRectWrapper scrollRect = CScrollRect ;
+				var scrollRect = CScrollRect ;
 
 				//---------------------------------------------------------
 
@@ -1071,7 +1095,7 @@ namespace uGUIHelper
 					{
 						if( this is UIListView )
 						{
-							UIListView listView = this as UIListView ;
+							var listView = this as UIListView ;
 							if( DirectionType == DirectionTypes.Horizontal )
 							{
 								if( listView.Infinity == false )
@@ -1088,7 +1112,7 @@ namespace uGUIHelper
 							}
 						}
 						else
-						if( this is UIScrollView )
+						if( this is not null and UIScrollView )
 						{
 							if( Content.Width <= Viewport.Width )
 							{
@@ -1125,7 +1149,7 @@ namespace uGUIHelper
 							}
 						}
 						else
-						if( this is UIScrollView )
+						if( this is not null and UIScrollView )
 						{
 							if( Content.Height <= Viewport.Height )
 							{
@@ -1176,7 +1200,7 @@ namespace uGUIHelper
 						}
 					}
 					else
-					if( this is UIScrollView && m_BuildType != BuildTypes.Dropdown )
+					if( this is not null and UIScrollView && m_BuildType != BuildTypes.Dropdown )
 					{
 						// ※ドロップダウンの場合にはスクロール禁止を無視する
 						if( Content.Width <= Viewport.Width )
@@ -1204,7 +1228,7 @@ namespace uGUIHelper
 
 				ProcessScrollbarElastic() ;
 
-				if( m_ScrollbarFadeEnabled == true && ( IsInteraction == true || IsInteractionForScrollView == true ) )
+				if( m_ScrollbarFadeEnabled == true )
 				{
 					ProcessScrollbarFade() ;
 				}
@@ -1266,7 +1290,7 @@ namespace uGUIHelper
 
 		//--------------------------------------------------------
 
-		virtual protected bool IsSnapping()
+		protected virtual bool IsSnapping()
 		{
 			return false ;
 		}
@@ -1332,9 +1356,7 @@ namespace uGUIHelper
 				return ;
 			}
 		
-			UIScrollbar scrollbar = HorizontalScrollbar.GetComponent<UIScrollbar>() ;
-//			UIScrollbar scrollbar = horizontalScrollbar ;
-			if( scrollbar == null )
+			if( HorizontalScrollbar.TryGetComponent<UIScrollbar>( out var scrollbar ) == false )
 			{
 				return ;
 			}
@@ -1449,9 +1471,7 @@ namespace uGUIHelper
 				return ;
 			}
 		
-			UIScrollbar scrollbar = VerticalScrollbar.GetComponent<UIScrollbar>() ;
-//			UIScrollbar scrollbar = verticalScrollbar ;
-			if( scrollbar == null )
+			if( VerticalScrollbar.TryGetComponent<UIScrollbar>( out var scrollbar ) == false )
 			{
 				return ;
 			}
@@ -1620,7 +1640,7 @@ namespace uGUIHelper
 		/// <param name="identity">ビューの識別名(未設定の場合はゲームオブジェクト名)</param>
 		/// <param name="view">ビューのインスタンス</param>
 		/// <param name="state">変化後の値</param>
-		public delegate void OnContentMove( string identity, UIScrollView view, bool state ) ;
+		public delegate void OnContentMove( string identity, UIScrollView view, bool isMoving ) ;
 
 		/// <summary>
 		/// 状態が変化した際に呼び出されるデリゲート
@@ -1655,7 +1675,7 @@ namespace uGUIHelper
 		}
 
 		// 内部リスナー
-		private void OnContentMoveInner( bool state )
+		private void OnContentMoveInner( bool isMoving )
 		{
 			if( OnContentMoveAction != null || OnContentMoveDelegate != null )
 			{
@@ -1665,8 +1685,8 @@ namespace uGUIHelper
 					identity = name ;
 				}
 
-				OnContentMoveAction?.Invoke( identity, this, state ) ;
-				OnContentMoveDelegate?.Invoke( identity, this, state ) ;
+				OnContentMoveAction?.Invoke( identity, this, isMoving ) ;
+				OnContentMoveDelegate?.Invoke( identity, this, isMoving ) ;
 			}
 		}
 		
@@ -1866,7 +1886,7 @@ namespace uGUIHelper
 		private float m_HorizontalScrollbarElasticLength = 0 ;
 		private float m_VerticalScrollbarElasticLength = 0 ;
 
-		// 移動処理
+		// コンテントの位置からスクロールバーの状態を設定する
 		private void ProcessScrollbarElastic()
 		{
 			if( Content == null )
@@ -1913,7 +1933,20 @@ namespace uGUIHelper
 
 						float w = Viewport.Width ;
 
-						float o = ( - Content.Rx ) / ( Content.Width - w ) ;	// 位置
+						float rx = 0 ;
+						if( Content.AnchorMin.x == 0 && Content.AnchorMax.x == 0 && Content.Pivot.x == 0 )
+						{
+							// Content が左詰め
+							rx = - Content.Rx ;
+						}
+						else
+						if( Content.AnchorMin.x == 1 && Content.AnchorMax.x == 1 && Content.Pivot.x == 1 )
+						{
+							// Content が右詰め
+							rx =   Content.Rx ;
+						}
+
+						float o = rx / ( Content.Width - w ) ;	// 位置
 
 						if( fixedSize == false )
 						{
@@ -1940,7 +1973,34 @@ namespace uGUIHelper
 							}
 						}
 
-						m_HorizontalScrollbarElastic.Offset = o ;
+						if( Content.AnchorMin.x == 0 && Content.AnchorMax.x == 0 && Content.Pivot.x == 0 )
+						{
+							// Content が左詰め
+							if( m_HorizontalScrollbarElastic.BaseDirectionType == Scrollbar.Direction.LeftToRight )
+							{
+								m_HorizontalScrollbarElastic.Offset = o ;
+							}
+							else
+							if( m_HorizontalScrollbarElastic.BaseDirectionType == Scrollbar.Direction.RightToLeft )
+							{
+								m_HorizontalScrollbarElastic.Offset = 1 - o ;
+							}
+						}
+						else
+						if( Content.AnchorMin.x == 1 && Content.AnchorMax.x == 1 && Content.Pivot.x == 1 )
+						{
+							// Content が右詰め
+							if( m_HorizontalScrollbarElastic.BaseDirectionType == Scrollbar.Direction.RightToLeft )
+							{
+								m_HorizontalScrollbarElastic.Offset = o ;
+							}
+							else
+							if( m_HorizontalScrollbarElastic.BaseDirectionType == Scrollbar.Direction.LeftToRight )
+							{
+								m_HorizontalScrollbarElastic.Offset = 1 - o ;
+							}
+						}
+
 						m_HorizontalScrollbarElastic.Length = l ;
 					}
 				}
@@ -1985,18 +2045,31 @@ namespace uGUIHelper
 
 						float h = Viewport.Height ;
 
-						float o = (   Content.Ry ) / ( Content.Height - h ) ;	// 位置
+						float ry = 0 ;
+						if( Content.AnchorMin.y == 0 && Content.AnchorMax.y == 0 && Content.Pivot.y == 0 )
+						{
+							// Content が下詰め
+							ry = - Content.Ry ;
+						}
+						else
+						if( Content.AnchorMin.y == 1 && Content.AnchorMax.y == 1 && Content.Pivot.y == 1 )
+						{
+							// Content が上詰め
+							ry =   Content.Ry ;
+						}
+
+						float o = ry / ( Content.Height - h ) ;	// 位置
 
 						if( fixedSize == false )
 						{
 							if( o <  0 )
 							{
-								l += (   Content.Ry                            / h ) * 1.0f ;
+								l += o ;
 							}
 							else
 							if( o >  1 )
 							{
-								l -= ( ( Content.Ry - ( Content.Height - h ) ) / h ) * 1.0f ;
+								l -= ( o - 1 ) ;
 							}
 						}
 						else
@@ -2011,8 +2084,37 @@ namespace uGUIHelper
 								o  = 1 ;
 							}
 						}
+						
+						if( Content.AnchorMin.y == 0 && Content.AnchorMax.y == 0 && Content.Pivot.y == 0 )
+						{
+							// Content が下詰め
 
-						m_VerticalScrollbarElastic.Offset = 1 - o ;
+							if( m_VerticalScrollbarElastic.BaseDirectionType == Scrollbar.Direction.BottomToTop )
+							{
+								m_VerticalScrollbarElastic.Offset = o ;
+							}
+							else
+							if( m_VerticalScrollbarElastic.BaseDirectionType == Scrollbar.Direction.TopToBottom )
+							{
+								m_VerticalScrollbarElastic.Offset = 1 - o ;
+							}
+						}
+						else
+						if( Content.AnchorMin.y == 1 && Content.AnchorMax.y == 1 && Content.Pivot.y == 1 )
+						{
+							// Content が上詰め
+
+							if( m_VerticalScrollbarElastic.BaseDirectionType == Scrollbar.Direction.TopToBottom )
+							{
+								m_VerticalScrollbarElastic.Offset = o ;
+							}
+							else
+							if( m_VerticalScrollbarElastic.BaseDirectionType == Scrollbar.Direction.BottomToTop )
+							{
+								m_VerticalScrollbarElastic.Offset = 1 - o ;
+							}
+						}
+
 						m_VerticalScrollbarElastic.Length = l ;
 					}
 				}
@@ -2053,7 +2155,10 @@ namespace uGUIHelper
 			{
 				if( m_Drag == false )
 				{
-					if( ContentSize >  ViewSize )
+					var contentSize = ContentAreaSize ;
+					var viewSize	= ViewAreaSize ;
+
+					if( contentSize.x >  viewSize.x || contentSize.y >  viewSize.y )
 					{
 						ChangeScrollbarFadeState( true ) ;
 					}
@@ -2066,7 +2171,10 @@ namespace uGUIHelper
 				{
 					if( m_Drag == false )
 					{
-						if( ContentSize >  ViewSize )
+						var contentSize = ContentAreaSize ;
+						var viewSize	= ViewAreaSize ;
+
+						if( contentSize.x >  viewSize.x || contentSize.y >  viewSize.y )
 						{
 							ChangeScrollbarFadeState( true ) ;
 						}
@@ -2077,7 +2185,10 @@ namespace uGUIHelper
 				{
 					if( m_Drag == true )
 					{
-						if( ContentSize >  ViewSize )
+						var contentSize = ContentAreaSize ;
+						var viewSize	= ViewAreaSize ;
+
+						if( contentSize.x >  viewSize.x || contentSize.y >  viewSize.y )
 						{
 							ChangeScrollbarFadeState( true ) ;
 						}
@@ -2135,7 +2246,7 @@ namespace uGUIHelper
 					scrollbar = true ;
 				}
 
-				if( UIEventSystem.IsPressing( gameObject ) == false && IsMoving == false && scrollbar == false )
+				if( InputAdapter.UIEventSystem.IsPressing( gameObject ) == false && IsMoving == false && scrollbar == false )
 				{
 					// クリックで表示されたケース
 					if( m_ScrollbarFadeHoldDuration >  0 )
@@ -2226,7 +2337,6 @@ namespace uGUIHelper
 
 					m_ScrollbarFadeState = 0 ;	// 非表示状態へ
 				}
-
 			}
 
 			m_ScrollbarFadeAlpha = alpha ;
@@ -2246,8 +2356,8 @@ namespace uGUIHelper
 			}
 		}
 
-		// スクロールバーの位置を設定する
-		virtual internal protected void SetPositionFromScrollbar( DirectionTypes directionType, float value )
+		// スクロールバーからコンテントの位置を設定する
+		internal virtual protected void SetPositionFromScrollbar( DirectionTypes directionType, float value, Scrollbar.Direction baseDirectionType )
 		{
 			if( Content == null )
 			{
@@ -2277,10 +2387,43 @@ namespace uGUIHelper
 					return ;
 				}
 
-				float l = Content.Width - this.Width ;
-				float o = l * value ;
+				float l = Content.Width - this.Width, o = 0 ;
 
-				Content.Px = - o ;
+				if( Content.AnchorMin.x == 0 && Content.AnchorMax.x == 0 && Content.Pivot.x == 0 )
+				{
+					// Content が左詰め
+
+					if( baseDirectionType == Scrollbar.Direction.LeftToRight )
+					{
+						o = - ( l * value ) ;
+					}
+					else
+					if( baseDirectionType == Scrollbar.Direction.RightToLeft )
+					{
+						o = - ( l * ( 1 - value ) ) ;
+					}
+				}
+				else
+				if( Content.AnchorMin.x == 1 && Content.AnchorMax.x == 1 && Content.Pivot.x == 1 )
+				{
+					// Content が右詰め
+
+					if( baseDirectionType == Scrollbar.Direction.RightToLeft )
+					{
+						o =   ( l * value ) ;
+					}
+					else
+					if( baseDirectionType == Scrollbar.Direction.LeftToRight )
+					{
+						o =   ( l * ( 1 - value ) ) ;
+					}
+				}
+				else
+				{
+					Debug.LogWarning( "[ScrollView] Content は Anchor Pivot 共に左詰めか右詰めにしてください : Path = " + Path ) ;
+				}
+
+				Content.Px =   o ;
 			}
 			else
 			if( directionType == DirectionTypes.Vertical )
@@ -2296,8 +2439,41 @@ namespace uGUIHelper
 					return ;
 				}
 
-				float l = Content.Height - this.Height ;
-				float o = l * ( 1 - value ) ;
+				float l = Content.Height - this.Height, o = 0 ;
+
+				if( Content.AnchorMin.y == 0 && Content.AnchorMax.y == 0 && Content.Pivot.y == 0 )
+				{
+					// Content が下詰め
+
+					if( baseDirectionType == Scrollbar.Direction.BottomToTop )
+					{
+						o = - ( l * value ) ;
+					}
+					else
+					if( baseDirectionType == Scrollbar.Direction.TopToBottom )
+					{
+						o = - ( l * ( 1 - value ) ) ;
+					}
+				}
+				else
+				if( Content.AnchorMin.y == 1 && Content.AnchorMax.y == 1 && Content.Pivot.y == 1 )
+				{
+					// Content が上詰め
+
+					if( baseDirectionType == Scrollbar.Direction.TopToBottom )
+					{
+						o =   ( l * value ) ;
+					}
+					else
+					if( baseDirectionType == Scrollbar.Direction.BottomToTop )
+					{
+						o =   ( l * ( 1 - value ) ) ;
+					}
+				}
+				else
+				{
+					Debug.LogWarning( "[ScrollView] Content は Anchor Pivot 共に上詰めか下詰めにしてください : Path = " + Path ) ;
+				}
 
 				Content.Py =   o ;
 			}
@@ -2320,7 +2496,7 @@ namespace uGUIHelper
 				return null ;
 			}
 
-			AsyncState state = new AsyncState( this ) ;
+			var state = new AsyncState( this ) ;
 			StartCoroutine( MoveToPosition_Private( contentPosition, duration, easeType, state ) ) ;
 			return state ;
 		}
@@ -2353,7 +2529,7 @@ namespace uGUIHelper
 				
 				ContentPosition = contentPositionFrom + delta ;
 
-				if( factor >= 1 || m_IsContentDrag == true || UIEventSystem.IsPressing( gameObject ) == true )
+				if( factor >= 1 || m_IsContentDrag == true || InputAdapter.UIEventSystem.IsPressing( gameObject ) == true )
 				{
 					break ;
 				}

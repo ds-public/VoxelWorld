@@ -7,7 +7,8 @@ using UnityEngine ;
 
 using Cysharp.Threading.Tasks ;
 
-namespace DBS.Screens
+
+namespace DSW.Screens
 {
 	/// <summary>
 	/// ロビーの制御処理
@@ -23,7 +24,7 @@ namespace DBS.Screens
 		private async UniTask<State> State_ActionSelecting( State previous )
 		{
 			// 準備
-			m_ModeSettingPanel.Prepare() ;
+			m_ModeSettingPanel.Prepare( this ) ;
 
 			// フェードイン
 			await m_ModeSettingPanel.FadeIn() ;
@@ -44,6 +45,13 @@ namespace DBS.Screens
 			// フェードアウト
 			await m_ModeSettingPanel.FadeOut() ;
 
+			//----------------------------------------------------------
+
+
+
+
+			//----------------------------------------------------------
+			
 			// ワールドへ遷移する
 			ToWorld() ;
 

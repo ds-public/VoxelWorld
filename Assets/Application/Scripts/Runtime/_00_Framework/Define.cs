@@ -2,10 +2,11 @@ using System.Collections ;
 using System.Collections.Generic ;
 using UnityEngine ;
 
-namespace DBS
+
+namespace DSW
 {
 	/// <summary>
-	/// 共通定義クラス Version 2022/09/22 0
+	/// 共通定義クラス Version 2024/04/13 0
 	/// </summary>
 	public class Define
 	{
@@ -56,13 +57,49 @@ namespace DBS
 				// https://docs.unity3d.com/ja/2018.4/Manual/PlatformDependentCompilation.html
 
 #if UNITY_STANDALONE_WIN
-				return "Windows" ;
+				return "Windows";
 #elif UNITY_STANDALONE_OSX
 				return "OSX" ;
-#elif UNITY_ANDROID
+#elif UNITY_STANDALONE_LINUX
+				return "Linux" ;
+#elif UNITY_ANDROID              
 				return "Android" ;
-#elif UNITY_IOS || UNITY_IPHONE
+#elif UNITY_IOS || UNITY_IPHONE                          
 				return "iOS" ;
+#else
+				return "Unknown" ;
+#endif
+			}
+		}
+
+		/// <summary>
+		/// アセットハンドル用のプラッフォーム名を取得する
+		/// </summary>
+		public static string AssetBundlePlatformName
+		{
+			get
+			{
+				// 毎回Google先生に聞くのは面倒なのでリンクを貼っておく
+				// https://docs.unity3d.com/ja/2018.4/Manual/PlatformDependentCompilation.html
+
+#if UNITY_STANDALONE_WIN
+#if UNITY_SERVER
+				return "DedicatedServer/Windows64";
+#else
+				return "Runtime/Windows64" ;
+#endif
+#elif UNITY_STANDALONE_OSX
+				return "Runtime/OSX" ;
+#elif UNITY_STANDALONE_LINUX
+#if UNITY_SERVER
+				return "DedicatedServer/Linux64" ;
+#else
+				return "Runtime/Linux64" ;
+#endif
+#elif UNITY_ANDROID              
+				return "Runtime/Android" ;
+#elif UNITY_IOS || UNITY_IPHONE                          
+				return "Runtime/iOS" ;
 #else
 				return "Unknown" ;
 #endif
@@ -209,7 +246,7 @@ namespace DBS
 				var settings = ApplicationManager.LoadSettings() ;
 				if( settings != null )
 				{
-					var endPoint = settings.WebAPI_DefaultEndPoint ;
+					var endPoint = settings.EndPoint ;
 					if( endPoint != Settings.EndPointNames.Staging && endPoint != Settings.EndPointNames.Release )
 					{
 						developmentMode = settings.DevelopmentMode ;
@@ -234,7 +271,7 @@ namespace DBS
 				{
 					return Settings.EndPointNames.Development ;
 				}
-				return settings.WebAPI_DefaultEndPoint ;
+				return settings.EndPoint ;
 			}
 		}
 

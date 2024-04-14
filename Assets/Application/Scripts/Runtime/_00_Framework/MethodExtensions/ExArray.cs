@@ -1,12 +1,14 @@
 using System ;
 using System.Collections ;
 using System.Collections.Generic ;
+using System.Runtime.CompilerServices ;
+
 using UnityEngine ;
 
-namespace DBS
+namespace DSW
 {
 	/// <summary>
-	/// Array 型のメソッド拡張 Version 2022/07/13
+	/// Array 型のメソッド拡張 Version 2023/01/12
 	/// </summary>
 	public static class ExArray
 	{
@@ -69,7 +71,7 @@ namespace DBS
 		/// <param name="array"></param>
 		/// <param name="pattern"></param>
 		/// <returns></returns>
-		public static bool Contains<T>( this T[] array, T pattern ) where T : class
+		public static bool Contains<T>( this T[] array, T pattern )
 		{
 			if( array == null || array.Length == 0 )
 			{
@@ -78,6 +80,18 @@ namespace DBS
 
 			int i, l = array.Length ;
 
+			if( typeof( T ).IsEnum == true )
+			{
+				// 列挙子は特殊な処理が必要(→数値化して判定する)
+				for( i  = 0 ; i <  l ; i ++ )
+				{
+					if( ( int )( ( object )array[ i ] ) == ( int )( ( object )pattern ) )
+					{
+						return true ;
+					}
+				}
+			}
+			else
 			if( typeof( T ) == typeof( bool ) )
 			{
 				// bool
@@ -237,6 +251,209 @@ namespace DBS
 		}
 
 		/// <summary>
+		/// この配列と入力配列が同一か比較する(注意：nullと[0]は同一と見なされる)
+		/// </summary>
+		/// <typeparam name="T"></typeparam>
+		/// <param name="array"></param>
+		/// <param name="pattern"></param>
+		/// <returns></returns>
+		public static bool Compare<T>( this T[] array, T[] targetArray )
+		{
+			if( targetArray == null || targetArray.Length == 0 )
+			{
+				return ( array == null || array.Length == 0 ) ;
+			}
+
+			if( array == null || array.Length == 0 )
+			{
+				return false ;
+			}
+
+			//----------------------------------
+
+			if( targetArray.Length != array.Length )
+			{
+				return false ;
+			}
+
+			// 要素数は同じ
+
+			int i, l = targetArray.Length ;
+
+			if( typeof( T ).IsEnum == true )
+			{
+				// 列挙子は特殊な処理が必要(→数値化して判定する)
+				for( i  = 0 ; i <  l ; i ++ )
+				{
+					if( ( int )( ( object )array[ i ] ) != ( int )( ( object )targetArray[ i ] ) )
+					{
+						return false ;
+					}
+				}
+			}
+			else
+			if( typeof( T ) == typeof( bool ) )
+			{
+				// bool
+				for( i  = 0 ; i <  l ; i ++ )
+				{
+					if( ( bool )( ( object )array[ i ] ) != ( bool )( ( object )targetArray[ i ] ) )
+					{
+						return false ;
+					}
+				}
+			}
+			else
+			if( typeof( T ) == typeof( byte ) )
+			{
+				// byte
+				for( i  = 0 ; i <  l ; i ++ )
+				{
+					if( ( byte )( ( object )array[ i ] ) != ( byte )( ( object )targetArray[ i ] ) )
+					{
+						return false ;
+					}
+				}
+			}
+			else
+			if( typeof( T ) == typeof( char ) )
+			{
+				// char
+				for( i  = 0 ; i <  l ; i ++ )
+				{
+					if( ( char )( ( object )array[ i ] ) != ( char )( ( object )targetArray[ i ] ) )
+					{
+						return false ;
+					}
+				}
+			}
+			else
+			if( typeof( T ) == typeof( short ) )
+			{
+				// short
+				for( i  = 0 ; i <  l ; i ++ )
+				{
+					if( ( short )( ( object )array[ i ] ) != ( short )( ( object )targetArray[ i ] ) )
+					{
+						return false ;
+					}
+				}
+			}
+			else
+			if( typeof( T ) == typeof( ushort ) )
+			{
+				// ushort
+				for( i  = 0 ; i <  l ; i ++ )
+				{
+					if( ( ushort )( ( object )array[ i ] ) != ( ushort )( ( object )targetArray[ i ] ) )
+					{
+						return false ;
+					}
+				}
+			}
+			else
+			if( typeof( T ) == typeof( int ) )
+			{
+				// int
+				for( i  = 0 ; i <  l ; i ++ )
+				{
+					if( ( int )( ( object )array[ i ] ) != ( int )( ( object )targetArray[ i ] ) )
+					{
+						return false ;
+					}
+				}
+			}
+			else
+			if( typeof( T ) == typeof( uint ) )
+			{
+				// uint
+				for( i  = 0 ; i <  l ; i ++ )
+				{
+					if( ( uint )( ( object )array[ i ] ) != ( uint )( ( object )targetArray[ i ] ) )
+					{
+						return false ;
+					}
+				}
+			}
+			else
+			if( typeof( T ) == typeof( long ) )
+			{
+				// long
+				for( i  = 0 ; i <  l ; i ++ )
+				{
+					if( ( long )( ( object )array[ i ] ) != ( long )( ( object )targetArray[ i ] ) )
+					{
+						return false ;
+					}
+				}
+			}
+			else
+			if( typeof( T ) == typeof( ulong ) )
+			{
+				// ulong
+				for( i  = 0 ; i <  l ; i ++ )
+				{
+					if( ( ulong )( ( object )array[ i ] ) != ( ulong )( ( object )targetArray[ i ] ) )
+					{
+						return false ;
+					}
+				}
+			}
+			else
+			if( typeof( T ) == typeof( float ) )
+			{
+				// float
+				for( i  = 0 ; i <  l ; i ++ )
+				{
+					if( ( float )( ( object )array[ i ] ) != ( float )( ( object )targetArray[ i ] ) )
+					{
+						return false ;
+					}
+				}
+			}
+			else
+			if( typeof( T ) == typeof( double ) )
+			{
+				// double
+				for( i  = 0 ; i <  l ; i ++ )
+				{
+					if( ( double )( ( object )array[ i ] ) != ( double )( ( object )targetArray[ i ] ) )
+					{
+						return false ;
+					}
+				}
+			}
+			else
+			if( typeof( T ) == typeof( string ) )
+			{
+				// string
+				for( i  = 0 ; i <  l ; i ++ )
+				{
+					if( ( string )( ( object )array[ i ] ) != ( string )( ( object )targetArray[ i ] ) )
+					{
+						return false ;
+					}
+				}
+			}
+			else
+			{
+				// object
+				for( i  = 0 ; i <  l ; i ++ )
+				{
+					if( ( object )array[ i ] != ( object )targetArray[ i ] )
+					{
+						return false ;
+					}
+				}
+			}
+
+			return true ;
+		}
+
+
+
+
+		/// <summary>
 		/// そのオブジェクトが含まれる場合のインデックス値を取得する
 		/// </summary>
 		/// <typeparam name="T"></typeparam>
@@ -252,6 +469,18 @@ namespace DBS
 
 			int i, l = array.Length ;
 
+			if( typeof( T ).IsEnum == true )
+			{
+				// 列挙子は特殊な処理が必要(→数値化して判定する)
+				for( i  = 0 ; i <  l ; i ++ )
+				{
+					if( ( int )( ( object )array[ i ] ) == ( int )( ( object )pattern ) )
+					{
+						return i ;
+					}
+				}
+			}
+			else
 			if( typeof( T ) == typeof( bool ) )
 			{
 				// bool
@@ -926,6 +1155,42 @@ namespace DBS
 			}
 
 			return index ;
+		}
+
+		/// <summary>
+		/// 配列の中身が同じ並び、かつ同じ値であるかを確認します
+		/// </summary>
+		/// <param name="array"></param>
+		/// <param name="other"></param>
+		/// <typeparam name="T"></typeparam>
+		/// <returns></returns>
+		[MethodImpl( MethodImplOptions.AggressiveInlining )]
+		public static bool SequenceEqual<T>( this T[] array, T[] other )
+			where T : IEquatable<T>
+		{
+			// どっちかがnullであれば、null同士なのかを確認します
+			if ( ( array == null ) || ( other == null ) )
+			{
+				return array == other ;
+			}
+
+			// 配列の長さが同じなのかを確認します
+			if ( array.Length != other.Length )
+			{
+				return false ;
+			}
+
+			// 配列の中身をチェックします
+			var length = array.Length ;
+			for ( var i = 0 ; i < length ; i++ )
+			{
+				if ( !array[ i ].Equals( other[ i ] ) )
+				{
+					return false ;
+				}
+			}
+
+			return true ;
 		}
 	}
 }

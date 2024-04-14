@@ -3,7 +3,7 @@ using System.Collections ;
 using System.Collections.Generic ;
 using UnityEngine ;
 
-namespace DBS
+namespace DSW
 {
 	/// <summary>
 	/// GameObject 型のメソッド拡張 Version 2021/07/03

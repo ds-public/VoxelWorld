@@ -1,61 +1,264 @@
-using UnityEngine ;
 using System ;
 using System.Collections ;
 using System.Collections.Generic ;
+using System.Text ;
+using UnityEngine ;
 
 using StorageHelper ;
 
-namespace DBS
+
+namespace DSW
 {
 	/// <summary>
-	/// 多目的パラメータ保存用データクラス Version 2022/10/08
+	/// 多目的パラメータ保存用データクラス Version 2023/11/09 0
 	/// </summary>
-	[Serializable]
-	public class Preference : ISerializationCallbackReceiver
+	public class Preference : ExMonoBehaviour
 	{
-		//-------------------------------------------------------------------------------
+		//-------------------------------------------------------------------------------------------
+		// 定義しておきたいキー名の一覧
 
 		/// <summary>
-		/// ショートカットアクセス
+		/// 定義されたキー名の一覧
 		/// </summary>
-		public static Preference Data
+		public static class Keys
 		{
-			get
+			/// <summary>
+			/// マスターデータの解凍ハッシュ値
+			/// </summary>
+			public const string MasterDataHash	= "MasterDataHash" ;
+		}
+
+		//-------------------------------------------------------------------------------------------
+
+		// 時間のかかる処理も行う可能性もあるのでシングルトンコンポーネント化する
+		private static Preference	m_Instance ;
+		internal void Awake()
+		{
+			if( m_Instance == null )
 			{
-				if( PreferenceManager.Instance == null )
+				m_Instance = this ;
+
+				// ここで初期化の処理が行える
+				Initialize() ;
+			}
+		}
+		internal void OnDestroy()
+		{
+			if( m_Instance = this )
+			{
+				// ここで後始末の処理が行える
+				Terminate() ;
+
+				m_Instance = null ;
+			}
+		}
+
+		//-------------------------------------------------------------------------------------------
+
+		/// <summary>
+		/// プリファレンス情報
+		/// </summary>
+		[Serializable]
+		public class PreferencePack : ISerializationCallbackReceiver
+		{
+			[Serializable]
+			public class Record
+			{
+				public string Key ;
+				public string Value ;
+			}
+
+			public DateTime LastUpdate ;
+			public List<Record> Records ;
+
+			/// <summary>
+			/// シリアライズ前に呼び出される
+			/// </summary>
+			public void OnBeforeSerialize()
+			{
+				// ここでシリアライズ前の処理を行う事が出来ます
+//				Debug.Log( "シリアライズ前です" ) ;
+			}
+
+			/// <summary>
+			/// デシリアライズ後に呼び出される
+			/// </summary>
+			public void OnAfterDeserialize()
+			{
+				// ここでデシリアライズ後の処理を行う事が出来ます
+//				Debug.Log( "デシリアライズ後です" ) ;
+			}
+		}
+
+		private Dictionary<string,string>	m_Records ;
+
+		//-----------------------------------
+
+		private const string m_FolderPath	= "System" ;
+		private const string m_FileName		= "Preference.bin" ;
+
+		// 初期化する
+		private void Initialize()
+		{
+			if( StorageAccessor.Exists( m_FolderPath ) != StorageAccessor.TargetTypes.Folder )
+			{
+				StorageAccessor.CreateFolder( m_FolderPath ) ;
+			}
+
+			//----------------------------------
+
+			// 最初に展開を行う
+			Load_Private() ;
+		}
+
+		private void Terminate()
+		{
+			// 最後に保存を行う
+			Save_Private() ;
+
+			m_Records = null ;
+		}
+
+		//-------------------------------------------------------------------------------------------
+
+		/// <summary>
+		/// 明示的なロードを実行する
+		/// </summary>
+		public static void Load()
+		{
+			if( m_Instance == null )
+			{
+				throw new Exception( "Preference is not created." ) ;
+			}
+
+			m_Instance.Load_Private() ;
+		}
+
+		// ロードする
+		private void Load_Private()
+		{
+			m_Records = new Dictionary<string,string>() ;
+
+			//----------------------------------
+
+			string path = GetPreferencePath() ;
+
+			if( StorageAccessor.Exists( path ) == StorageAccessor.TargetTypes.File )
+			{
+				// ファイルが存在する
+
+				// ストレージからロードする
+				var data = StorageAccessor.Load( path ) ;
+				if( data != null && data.Length >  0 )
 				{
-					return null ;
+					( var key, var vector ) = GetCryptoKeyAndVector() ;
+					if( key != null && vector != null )
+					{
+						data = Security.Decrypt( data, key, vector ) ;
+					}
+
+					var text = Encoding.UTF8.GetString( data ) ;
+
+					// デシリアライズする
+					var pack = JsonUtility.FromJson<PreferencePack>( text ) ;
+					if( pack != null && pack.Records != null && pack.Records.Count >  0 )
+					{
+						// ハッシュに展開する
+						foreach( var record in pack.Records )
+						{
+							if( m_Records.ContainsKey( record.Key ) == false )
+							{
+								m_Records.Add( record.Key, record.Value ) ;
+							}
+						}
+					}
 				}
-				return PreferenceManager.Instance.Preference ;
 			}
 		}
 
-		//-------------------------------------------------------------------------------
-
 		/// <summary>
-		/// ストレージにセーブする
+		/// 明示的なセーブを実行する
 		/// </summary>
-		/// <returns></returns>
-		public static bool Save()
+		public static void Save()
 		{
-			if( PreferenceManager.Instance == null )
+			if( m_Instance == null )
 			{
-				return false ;
+				throw new Exception( "Preference is not created." ) ;
 			}
-			return PreferenceManager.Save() ;
+
+			m_Instance.Save_Private() ;
 		}
 
-		/// <summary>
-		/// ストレージからロードする
-		/// </summary>
-		/// <returns></returns>
-		public static bool Load()
+		// セーブする
+		private void Save_Private()
 		{
-			if( PreferenceManager.Instance == null )
+			var pack = new PreferencePack()
 			{
-				return false ;
+				LastUpdate	= DateTime.Now,
+				Records		= new List<PreferencePack.Record>()
+			} ;
+
+			// 値を格納する
+			foreach( var record in m_Records )
+			{
+				pack.Records.Add( new PreferencePack.Record()
+				{
+					Key		= record.Key,
+					Value	= record.Value
+				} ) ;
 			}
-			return PreferenceManager.Load() ;
+
+			//----------------------------------
+
+			// シリアライズする
+			string text = JsonUtility.ToJson( pack ) ;
+			if( string.IsNullOrEmpty( text ) == false )
+			{
+				text = text.Replace( "\x0D\x0A", "\x0A" ) ;	// 念のため改行を LF に統一する
+
+				byte[] data = Encoding.UTF8.GetBytes( text ) ;
+
+				// ストレージにセーブする
+				( var key, var vector ) = GetCryptoKeyAndVector() ;
+				if( key != null && vector != null )
+				{
+					data = Security.Encrypt( data, key, vector ) ;
+				}
+
+				StorageAccessor.Save( GetPreferencePath(), data ) ;
+			}
+		}
+
+		// パスを取得する
+		private static string GetPreferencePath()
+		{
+			string path = m_FileName ;
+
+			// 暗号化
+			if( Define.SecurityEnabled == true )
+			{
+				path = Security.GetHash( path ) ;
+			}
+
+			path = m_FolderPath + path ;
+
+			return path ;
+		}
+
+		// 暗号化のキーとベクターを取得する
+		private static ( byte[], byte[] ) GetCryptoKeyAndVector()
+		{
+			byte[] key		= null ;
+			byte[] vector	= null ;
+
+			// 暗号化
+			if( Define.SecurityEnabled == true )
+			{
+				key		= Encoding.UTF8.GetBytes( Define.CryptoKey ) ;
+				vector	= Encoding.UTF8.GetBytes( Define.CryptoVector ) ;
+			}
+
+			return ( key, vector ) ;
 		}
 
 		//-------------------------------------------------------------------------------
@@ -63,29 +266,30 @@ namespace DBS
 		/// <summary>
 		/// 値を設定する
 		/// </summary>
-		/// <typeparam name="T"></typeparam>
 		/// <param name="key"></param>
-		/// <returns></returns>
-		public static bool SetValue<T>( string key, T value )
+		/// <param name="value"></param>
+		/// <exception cref="Exception"></exception>
+		public static void SetValue<T>( string key, T value )
 		{
-			if( string.IsNullOrEmpty( key ) == true )
+			if( m_Instance == null )
 			{
-				return false ;
+				throw new Exception( "Preference is not created." ) ;
 			}
 
-			if( PreferenceManager.Instance == null )
+			m_Instance.SetValue_Private( key, value ) ;
+		}
+
+		// 値を設定する
+		private void SetValue_Private<T>( string key, T value )
+		{
+			if( m_Records.ContainsKey( key ) == false )
 			{
-				return false ;
+				m_Records.Add( key, value.ToString() ) ;
 			}
-
-			if( PreferenceManager.Instance.Preference == null )
+			else
 			{
-				return false ;
+				m_Records[ key ] = value.ToString() ;
 			}
-
-			PreferenceManager.Instance.Preference[ key, typeof( T ) ] = value ;
-
-			return true ;
 		}
 
 		/// <summary>
@@ -94,378 +298,286 @@ namespace DBS
 		/// <typeparam name="T"></typeparam>
 		/// <param name="key"></param>
 		/// <returns></returns>
+		/// <exception cref="Exception"></exception>
 		public static T GetValue<T>( string key, T defaultValue = default )
 		{
-			if( string.IsNullOrEmpty( key ) == true )
+			if( m_Instance == null )
 			{
-				return defaultValue ;
+				throw new Exception( "Preference is not created." ) ;
 			}
 
-			if( PreferenceManager.Instance == null )
-			{
-				return defaultValue ;
-			}
-
-			if( PreferenceManager.Instance.Preference == null )
-			{
-				return defaultValue ;
-			}
-
-			System.Object value = PreferenceManager.Instance.Preference[ key, typeof( T ) ] ;
-			if( value == null )
-			{
-				return defaultValue ;
-			}
-
-			return ( T )value ;
+			return m_Instance.GetValue_Private<T>( key, defaultValue ) ;
 		}
 
-		/// <summary>
-		/// キーが存在するか確認する
-		/// </summary>
-		/// <param name="key"></param>
-		/// <returns></returns>
-		public static bool HasKey( string key )
+		// 値を取得する
+		private T GetValue_Private<T>( string key, T defaultValue )
 		{
 			if( string.IsNullOrEmpty( key ) == true )
 			{
-				return false ;
+				throw new Exception( "Key is empty." ) ;
 			}
 
-			if( PreferenceManager.Instance == null )
+			if( m_Records.ContainsKey( key ) == false )
 			{
-				return false ;
+				return defaultValue ;
 			}
 
-			if( PreferenceManager.Instance.Preference == null )
+			string value = m_Records[ key ] ;
+
+			var type = typeof( T ) ;
+
+			if( type.IsEnum == false )
 			{
-				return false ;
-			}
-
-			return PreferenceManager.Instance.Preference.m_Hash.ContainsKey( key ) ;
-		}
-
-		/// <summary>
-		/// キーと対応するバリューを削除する
-		/// </summary>
-		/// <param name="key"></param>
-		public static bool Delete( string key )
-		{
-			if( string.IsNullOrEmpty( key ) == true )
-			{
-				return false ;
-			}
-
-			if( PreferenceManager.Instance == null )
-			{
-				return false ;
-			}
-
-			if( PreferenceManager.Instance.Preference == null )
-			{
-				return false ;
-			}
-
-			if( PreferenceManager.Instance.Preference.m_Hash.ContainsKey( key ) == false )
-			{
-				return false ;
-			}
-
-			PreferenceManager.Instance.Preference.m_Hash.Remove( key ) ;
-
-			return true ;
-		}
-
-		/// <summary>
-		/// 全てのキーとバリューを消去する
-		/// </summary>
-		public static bool Clear()
-		{
-			if( PreferenceManager.Instance == null )
-			{
-				return false ;
-			}
-
-			if( PreferenceManager.Instance.Preference == null )
-			{
-				return false ;
-			}
-
-			PreferenceManager.Instance.Preference.m_Hash.Clear() ;
-
-			return true ;
-		}
-
-		//-------------------------------------------------------------------------------
-
-		/// <summary>
-		/// キーとバリュー(直接アクセス) ※インデクサを使う事を推奨
-		/// </summary>
-		private readonly Dictionary<string,string> m_Hash = new Dictionary<string,string>() ;
-
-		[Serializable]
-		public class Element
-		{
-			public string	Key ;
-			public string	Value ;
-		}
-
-		[SerializeField]
-		private Element[]	m_Elements ;
-
-		//-----------------------------------------------------------
-
-		/// <summary>
-		/// インデクサでの直接アクセス(内部的には全て文字列として保存されている)
-		/// </summary>
-		/// <param name="key"></param>
-		/// <returns></returns>
-		public string this[ string key ]
-		{
-			get
-			{
-				if( string.IsNullOrEmpty( key ) == true )
+				if( type == typeof( bool ) )
 				{
-					return null ;
-				}
-
-				if( m_Hash.ContainsKey( key ) == false )
-				{
-					return null ;
-				}
-
-				return m_Hash[ key ] ;
-			}
-			set
-			{
-				if( string.IsNullOrEmpty( key ) == true )
-				{
-					return ;
-				}
-
-				if( m_Hash.ContainsKey( key ) == false )
-				{
-					m_Hash.Add( key, value ) ;
-				}
-				else
-				{
-					m_Hash[ key ] = value ;
-				}
-			}
-		}
-
-		/// <summary>
-		/// インデクサでの直接アクセス(内部的には全て文字列として保存されている)
-		/// </summary>
-		/// <param name="key"></param>
-		/// <param name="type"></param>
-		/// <returns></returns>
-		public System.Object this[ string key, Type type ]
-		{
-			// 読み出し
-			get
-			{
-				if( string.IsNullOrEmpty( key ) == true )
-				{
-					return null ;
-				}
-
-				if( m_Hash.ContainsKey( key ) == false )
-				{
-					return null ;
-				}
-
-				if( type.IsEnum == false )
-				{
-					if( type == typeof( bool ) )
+					if( string.IsNullOrEmpty( value ) == true )
 					{
-						bool.TryParse( m_Hash[ key ], out bool value ) ;
-						return value ;
+						return ( T )( object )false ;
 					}
 					else
-					if( type == typeof( byte ) )
 					{
-						if( byte.TryParse( m_Hash[ key ], out byte value ) == false )
+						value = value.ToLower() ;
+						if( value == "0" || value == "false" )
 						{
-							value = 0 ;
+							return ( T )( object )false ;
 						}
-						return value ;
-					}
-					else
-					if( type == typeof( char ) )
-					{
-						if( char.TryParse( m_Hash[ key ], out char value ) == false )
+						else
 						{
-							value = ( char )0 ;
+							return ( T )( object )true ;
 						}
-						return value ;
-					}
-					else
-					if( type == typeof( short ) )
-					{
-						if( short.TryParse( m_Hash[ key ], out short value ) == false )
-						{
-							value = 0 ;
-						}
-						return value ;
-					}
-					else
-					if( type == typeof( ushort ) )
-					{
-						if( ushort.TryParse( m_Hash[ key ], out ushort value ) == false )
-						{
-							value = 0 ;
-						}
-						return value ;
-					}
-					else
-					if( type == typeof( int ) )
-					{
-						if( int.TryParse( m_Hash[ key ], out int value ) == false )
-						{
-							value = 0 ;
-						}
-						return value ;
-					}
-					else
-					if( type == typeof( uint ) )
-					{
-						if( uint.TryParse( m_Hash[ key ], out uint value ) == false )
-						{
-							value = 0 ;
-						}
-						return value ;
-					}
-					else
-					if( type == typeof( long ) )
-					{
-						if( long.TryParse( m_Hash[ key ], out long value ) == false )
-						{
-							value = 0 ;
-						}
-						return value ;
-					}
-					else
-					if( type == typeof( ulong ) )
-					{
-						if( ulong.TryParse( m_Hash[ key ], out ulong value ) == false )
-						{
-							value = 0 ;
-						}
-						return value ;
-					}
-					else
-					if( type == typeof( float ) )
-					{
-						if( float.TryParse( m_Hash[ key ], out float value ) == false )
-						{
-							value = 0 ;
-						}
-						return value ;
-					}
-					else
-					if( type == typeof( double ) )
-					{
-						if( double.TryParse( m_Hash[ key ], out double value ) == false )
-						{
-							value = 0 ;
-						}
-						return value ;
-					}
-				
-					return m_Hash[ key ] ;
-				}
-				else
-				{
-					// Enum 型の場合は整数値を返す
-					if( int.TryParse( m_Hash[ key ], out int value ) == false )
-					{
-						value = 0 ;
-					}
-					return  value ;
-				}
-			}
-
-			// 書き込み
-			set
-			{
-				if( string.IsNullOrEmpty( key ) == true )
-				{
-					return ;
-				}
-
-				if( type.IsEnum == false )
-				{
-					if( m_Hash.ContainsKey( key ) == false )
-					{
-						m_Hash.Add( key, value.ToString() ) ;
-					}
-					else
-					{
-						m_Hash[ key ] = value.ToString() ;
 					}
 				}
 				else
+				if( type == typeof( byte ) )
 				{
-					// Enum の場合は一旦 int にキャストしてから保存する(そのままだと Enum の名称の文字列になってしまう)
-					int intValue = ( int )value ;
-
-					if( m_Hash.ContainsKey( key ) == false )
+					if( byte.TryParse( value, out var byteValue ) == false )
 					{
-						m_Hash.Add( key, intValue.ToString() ) ;
+						return defaultValue ;
 					}
-					else
-					{
-						m_Hash[ key ] = intValue.ToString() ;
-					}
+					return ( T )( object )byteValue ;
 				}
-			}
-		}
-
-		//-----------------------------------------------------------
-
-		/// <summary>
-		/// シリアライズ前に呼び出される
-		/// </summary>
-		public void OnBeforeSerialize()
-		{
-			// ハッシュをシリアライズ用の配列に格納する
-			int i, l = m_Hash.Keys.Count ;
-
-			if( l >  0 )
-			{
-				m_Elements = new Element[ l ] ;
-
-				string[] keys = new string[ l ] ;
-				m_Hash.Keys.CopyTo( keys, 0 ) ;
-
-				for( i  = 0 ; i <  l ; i ++ )
+				else
+				if( type == typeof( sbyte ) )
 				{
-					m_Elements[ i ] = new Element(){ Key = keys[ i ], Value = m_Hash[ keys[ i ] ] } ;
+					if( sbyte.TryParse( value, out var sbyteValue ) == false )
+					{
+						return defaultValue ;
+					}
+					return ( T )( object )sbyteValue ;
+				}
+				else
+				if( type == typeof( char ) )
+				{
+					if( char.TryParse( value, out var charValue ) == false )
+					{
+						return defaultValue ;
+					}
+					return ( T )( object )charValue ;
+				}
+				else
+				if( type == typeof( short ) )
+				{
+					if( short.TryParse( value, out var shortValue ) == false )
+					{
+						return defaultValue ;
+					}
+					return ( T )( object )shortValue ;
+				}
+				else
+				if( type == typeof( ushort ) )
+				{
+					if( ushort.TryParse( value, out var ushortValue ) == false )
+					{
+						return defaultValue ;
+					}
+					return ( T )( object )ushortValue ;
+				}
+				else
+				if( type == typeof( int ) )
+				{
+					if( int.TryParse( value, out var intValue ) == false )
+					{
+						return defaultValue ;
+					}
+					return ( T )( object )intValue ;
+				}
+				else
+				if( type == typeof( uint ) )
+				{
+					if( uint.TryParse( value, out var uintValue ) == false )
+					{
+						return defaultValue ;
+					}
+					return ( T )( object )uintValue ;
+				}
+				else
+				if( type == typeof( long ) )
+				{
+					if( long.TryParse( value, out var longValue ) == false )
+					{
+						return defaultValue ;
+					}
+					return ( T )( object )longValue ;
+				}
+				else
+				if( type == typeof( ulong ) )
+				{
+					if( ulong.TryParse( value, out var ulongValue ) == false )
+					{
+						return defaultValue ;
+					}
+					return ( T )( object )ulongValue ;
+				}
+				else
+				if( type == typeof( float ) )
+				{
+					if( float.TryParse( value, out var floatValue ) == false )
+					{
+						return defaultValue ;
+					}
+					return ( T )( object )floatValue ;
+				}
+				else
+				if( type == typeof( double ) )
+				{
+					if( double.TryParse( value, out var doubleValue ) == false )
+					{
+						return defaultValue ;
+					}
+					return ( T )( object )doubleValue ;
+				}
+				else
+				if( type == typeof( decimal ) )
+				{
+					if( decimal.TryParse( value, out var decimalValue ) == false )
+					{
+						return defaultValue ;
+					}
+					return ( T )( object )decimalValue ;
+				}
+				else
+				if( type == typeof( string ) )
+				{
+					return ( T )( object )value ;
+				}
+				else
+				if( type == typeof( DateTime ) )
+				{
+					if( DateTime.TryParse( value, out var dateTimeValue ) == false )
+					{
+						return defaultValue ;
+					}
+					return ( T )( object )dateTimeValue ;
+				}
+				else
+				if( type == typeof( DateTimeOffset ) )
+				{
+					if( DateTimeOffset.TryParse( value, out var dateTimeOffsetValue ) == false )
+					{
+						return defaultValue ;
+					}
+					return ( T )( object )dateTimeOffsetValue ;
+				}
+				else
+				if( type == typeof( TimeSpan ) )
+				{
+					if( TimeSpan.TryParse( value, out var timeSpanValue ) == false )
+					{
+						return defaultValue ;
+					}
+					return ( T )( object )timeSpanValue ;
+				}
+				else
+				if( type == typeof( Guid ) )
+				{
+					if( Guid.TryParse( value, out var guidValue ) == false )
+					{
+						return defaultValue ;
+					}
+					return ( T )( object )guidValue ;
 				}
 			}
 			else
 			{
-				m_Elements = null ;
+				// 列挙子
+				if( Enum.TryParse( type, value, out var enumValue ) == true )
+				{
+					if( Enum.IsDefined( type, enumValue ) == true )
+					{
+						return ( T )( object )enumValue ;
+					}
+				}
 			}
+
+			throw new Exception( "Unknown type." ) ;
 		}
 
 		/// <summary>
-		/// デシリアライズ後に呼び出される
+		/// 指定したキーの値が存在するかどうか
 		/// </summary>
-		public void OnAfterDeserialize()
+		/// <param name="key"></param>
+		/// <returns></returns>
+		/// <exception cref="Exception"></exception>
+		public static bool HasKey( string key )
 		{
-			// 高速化のためハッシュに展開する
-			m_Hash.Clear() ;
-
-			if( m_Elements != null && m_Elements.Length >  0 )
+			if( m_Instance == null )
 			{
-				int i, l = m_Elements.Length ;
-				for( i  = 0 ; i <  l ; i ++ )
-				{
-					m_Hash.Add( m_Elements[ i ].Key, m_Elements[ i ].Value ) ;
-				}
+				throw new Exception( "Preference is not created." ) ;
 			}
+
+			return m_Instance.HasKey_Private( key ) ;
+		}
+
+		// 指定したキーの値が存在するかどうか
+		private bool HasKey_Private( string key )
+		{
+			return m_Records.ContainsKey( key ) ;
+		}
+
+		/// <summary>
+		/// 指定したキーの値を削除する
+		/// </summary>
+		/// <param name="key"></param>
+		/// <returns></returns>
+		/// <exception cref="Exception"></exception>
+		public static bool Delete( string key )
+		{
+			if( m_Instance == null )
+			{
+				throw new Exception( "Preference is not created." ) ;
+			}
+
+			return m_Instance.Delete_Private( key ) ;
+		}
+
+		// 指定したキーの値を削除する
+		private bool Delete_Private( string key )
+		{
+			if( m_Records.ContainsKey( key ) == false )
+			{
+				return false ;
+			}
+
+			return m_Records.Remove( key ) ;
+		}
+
+		/// <summary>
+		/// 全ての値を消去する
+		/// </summary>
+		public static void Clear()
+		{
+			if( m_Instance == null )
+			{
+				throw new Exception( "Preference is not created." ) ;
+			}
+
+			m_Instance.Clear_Private() ;
+		}
+
+		// 全ての値を消去する
+		private void Clear_Private()
+		{
+			m_Records.Clear() ;
 		}
 	}
 }

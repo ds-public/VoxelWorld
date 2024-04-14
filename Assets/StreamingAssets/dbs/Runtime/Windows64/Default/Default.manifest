@@ -1,0 +1,21 @@
+ManifestFileVersion: 0
+CRC: 330666594
+AssetBundleManifest:
+  AssetBundleInfos:
+    Info_0:
+      Name: materials
+      Dependencies:
+        Dependency_0: shaders
+        Dependency_1: textures
+    Info_1:
+      Name: shaders
+      Dependencies: {}
+    Info_2:
+      Name: sounds/bgm/008_lobby
+      Dependencies: {}
+    Info_3:
+      Name: sounds/bgm/010_world
+      Dependencies: {}
+    Info_4:
+      Name: textures
+      Dependencies: {}

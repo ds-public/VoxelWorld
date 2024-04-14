@@ -23,6 +23,62 @@ namespace AssetBundleHelper
 		/// </summary>
 		public partial class ManifestInfo
 		{
+			// ManifestInfo :: CorrectPath
+
+			/// <summary>
+			/// パスに // が無く、正しい AssetBundlePath が分からない場合に検査する
+			/// </summary>
+			/// <param name="assetBundlePath"></param>
+			/// <param name="assetPath"></param>
+			/// <returns></returns>
+			internal protected bool CorrectPath( ref string assetBundlePath, ref string assetPath )
+			{
+				if( m_AssetBundleHash.ContainsKey( assetBundlePath ) == true )
+				{
+					// AssetBundlePath は正しいものになっている
+					return true ;
+				}
+
+				//---------------------------------
+
+				// AssetBundlePath が間違っている可能性かあるため、子階層を削り、正しい AssetBundlePath 及び AssetPath を走査する
+
+				int i ;
+
+				assetPath ??= string.Empty ;
+
+				while( true )
+				{
+					i = assetBundlePath.LastIndexOf( '/' ) ;
+					if( i >= 0 )
+					{
+						if( assetPath.Length == 0 )
+						{
+							assetPath = assetBundlePath[ ( i + 1 ).. ] ;
+						}
+						else
+						{
+							assetPath = assetBundlePath[ ( i + 1 ).. ] + "/" + assetPath ;
+						}
+
+						assetBundlePath = assetBundlePath[ ..i ] ;
+
+						if( m_AssetBundleHash.ContainsKey( assetBundlePath ) == true )
+						{
+							// アセットバンドルパスの正しいものを発見した
+							return true ;
+						}
+					}
+					else
+					{
+						break ;
+					}
+				}
+
+				// パスの指定が間違っている
+				return false ;
+			}
+
 
 			// ManifestInfo :: AllAssetPaths
 						
@@ -891,7 +947,7 @@ namespace AssetBundleHelper
 			/// <param name="keep">キャッシュオーバー時の動作(true=キャッシュオーバー時に保持する・false=キャッシュオーバー時に破棄する)</param>
 			/// <param name="instance">アセットバンドルマネージャのインスタンス</param>
 			/// <returns>列挙子</returns>
-			internal protected IEnumerator DownloadAssetBundle_Coroutine( string assetBundlePath, bool keep, Action<int,float,float> onProgress, Action<int,string> onResult, bool isManifestSaving, Request request, AssetBundleManager instance )
+			internal protected IEnumerator DownloadAssetBundle_Coroutine( string assetBundlePath, bool keep, Action<long,float,float> onProgress, Action<long,string> onResult, bool isManifestSaving, Request request, AssetBundleManager instance )
 			{
 				// そのファイルが更新対象か確認する
 				if( m_AssetBundleHash.ContainsKey( assetBundlePath ) == false )
@@ -1192,7 +1248,7 @@ namespace AssetBundleHelper
 			/// </summary>
 			/// <param name="assetBundlePath">アセットバンドルのパス</param>
 			/// <returns>結果(true=存在する・false=存在しない</returns>
-			internal protected int GetSize( string assetBundlePath )
+			internal protected long GetSize( string assetBundlePath )
 			{
 				// そのファイルが更新対象か確認する
 				if( m_AssetBundleHash.ContainsKey( assetBundlePath ) == false )
@@ -1223,7 +1279,7 @@ namespace AssetBundleHelper
 			/// <returns>アセットバンドルのパス一覧</returns>
 			internal protected string[] GetAllAssetBundlePaths( bool updateRequiredOnly = true )
 			{
-				List<string> paths = new List<string>() ;
+				var paths = new List<string>() ;
 
 				foreach( var assetBundleInfo in m_AssetBundleInfo )
 				{
@@ -1248,7 +1304,7 @@ namespace AssetBundleHelper
 			/// <returns>アセットバンドルのパス一覧</returns>
 			internal protected string[] GetAllAssetBundlePathsWithTags( string[] tags, bool updateRequiredOnly = true, bool isDependency = true )
 			{
-				List<string> paths = new List<string>() ;
+				var paths = new List<string>() ;
 
 				foreach( var assetBundleInfo in m_AssetBundleInfo )
 				{
@@ -1272,7 +1328,7 @@ namespace AssetBundleHelper
 				if( isDependency == true )
 				{
 					// 依存関係にあるものも含めて取得する
-					List<string> temporaryPaths = new List<string>() ;
+					var temporaryPaths = new List<string>() ;
 					foreach( var path in paths )
 					{
 						temporaryPaths.Add( path ) ;	// まずは自身を追加する
@@ -1324,7 +1380,7 @@ namespace AssetBundleHelper
 
 				// 更新が必要なもののみ返す
 
-				List<string> paths = new List<string>() ;
+				var paths = new List<string>() ;
 
 				AssetBundleInfo	dependentAssetBundleInfo ;
 
@@ -1429,10 +1485,10 @@ namespace AssetBundleHelper
 			/// </summary>
 			/// <param name="size">必要なキャッシュサイズ</param>
 			/// <returns>結果(true=成功・false=失敗)</returns>
-			private bool Cleanup( int requireSize )
+			private bool Cleanup( long requireSize )
 			{
 				// キープ対象全てとキープ非対象でタイムスタンプの新しい順にサイズを足していきキャッシュの容量をオーバーするまで検査する
-				List<AssetBundleInfo> freeAssetBundleInfo = new List<AssetBundleInfo>() ;
+				var freeAssetBundleInfo = new List<AssetBundleInfo>() ;
 
 				long freeCacheSize = CacheSize ;
 

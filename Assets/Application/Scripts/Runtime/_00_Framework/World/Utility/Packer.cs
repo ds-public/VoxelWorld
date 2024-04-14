@@ -2,6 +2,7 @@ using System ;
 using System.Collections ;
 using System.Collections.Generic ;
 using System.Text ;
+using System.Linq ;
 
 using UnityEngine ;
 
@@ -9,7 +10,7 @@ using MathHelper ;
 using uGUIHelper ;
 using TransformHelper ;
 
-namespace DBS.World
+namespace DSW.World
 {
 	// リトルエンディアン
 

@@ -4,7 +4,7 @@ using UnityEngine ;
 
 using uGUIHelper ;
 
-namespace DBS
+namespace DSW
 {
 	/// <summary>
 	/// 画面外の外枠クラス Version 2020/08/27 0

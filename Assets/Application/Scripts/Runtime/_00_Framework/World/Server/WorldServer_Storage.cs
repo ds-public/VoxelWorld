@@ -15,9 +15,9 @@ using MathHelper ;
 
 using StorageHelper ;
 
-using DBS.WorldServerClasses ;
+using DSW.WorldServerClasses ;
 
-namespace DBS.World
+namespace DSW.World
 {
 	/// <summary>
 	/// サーバー(ストレージ操作)
@@ -75,7 +75,7 @@ namespace DBS.World
 
 			int offset = 0 ;
 
-			if( StorageAccessor.Exists( m_CSAT_Path ) == StorageAccessor.Target.File )
+			if( StorageAccessor.Exists( m_CSAT_Path ) == StorageAccessor.TargetTypes.File )
 			{
 				byte[] data = StorageAccessor.Load( m_CSAT_Path ) ;
 

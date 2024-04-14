@@ -9,7 +9,7 @@ using TransformHelper ;
 
 using MathHelper ;
 
-namespace DBS.World
+namespace DSW.World
 {
 	/// <summary>
 	/// クライアント:チャンク処理関係
@@ -193,26 +193,6 @@ namespace DBS.World
 			}
 
 			//----------------------------------
-
-			// パフォーマンスモニタリング(処理対象チャンク数)
-			if( m_P_ProcrssingChunk_T_Now.Value == 0 )
-			{
-				if( targetChunks.Length >  0 )
-				{
-					m_P_ProcrssingChunk_T_Max.Value = targetChunks.Length ;
-				}
-			}
-			m_P_ProcrssingChunk_T_Now.Value = targetChunks.Length ;
-
-			// パフォーマンスモニタリング(処理完了チャンク数)
-			if( m_P_ProcrssingChunk_C_Now.Value == 0 )
-			{
-				if( c1 >  0 )
-				{
-					m_P_ProcrssingChunk_C_Max.Value = c1 ;
-				}
-			}
-			m_P_ProcrssingChunk_C_Now.Value = c1 ;
 
 //			if( c0 >  0  || c1 >  0 || targetChunks.Length >  0 )
 //			{
@@ -411,10 +391,10 @@ namespace DBS.World
 		/// <returns></returns>
 		private bool GetRaycastTargetBlock( float distance, out BlockPosition exist, out BlockPosition empty )
 		{
-			Vector3 fv = m_Camera.transform.forward ;
+			Vector3 fv = m_PlayerActor.Eye.forward ;
 			
-			Vector3 p0 = m_Camera.transform.position ;
-			Vector3 p1 = m_Camera.transform.position + fv * distance ;
+			Vector3 p0 = m_PlayerActor.Eye.position ;
+			Vector3 p1 = m_PlayerActor.Eye.position + fv * distance ;
 
 			// p0 から p1 に含まれるセルで最初にブロックが存在するセルの座標を取得する
 

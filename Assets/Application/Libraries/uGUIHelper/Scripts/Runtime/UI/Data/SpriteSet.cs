@@ -6,7 +6,7 @@ using UnityEngine ;
 namespace uGUIHelper
 {
 	/// <summary>
-	/// アトラスタイプのププライト管理用のクラス
+	/// アトラスタイプのスプライト管理用のクラス
 	/// </summary>
 	[Serializable]
 	public class SpriteSet

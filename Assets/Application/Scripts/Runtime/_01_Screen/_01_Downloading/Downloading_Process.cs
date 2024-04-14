@@ -1,8 +1,8 @@
 // 強制的にムービー再生
-#define PLAY_MOVIE
+//#define PLAY_MOVIE
 
 // ムービー演出を完全にカット
-//#define DISABLE_MOVIE
+#define DISABLE_MOVIE
 
 using System ;
 using System.Collections ;
@@ -16,7 +16,7 @@ using Cysharp.Threading.Tasks ;
 using uGUIHelper ;
 using AssetBundleHelper ;
 
-namespace DBS.Screens
+namespace DSW.Screens
 {
 	/// <summary>
 	/// 起動直後のダウンロード処理
@@ -49,13 +49,13 @@ namespace DBS.Screens
 			//------------------------------------------------------------------------------------------
 
 			// ロアメッセージをピックアップする(５種類)
-			List<LoreStructure> lores = new List<LoreStructure>()
+			var lores = new List<LoreStructure>()
 			{
-				new LoreStructure(){ Title = "題名１", Description = "説明１" },
-				new LoreStructure(){ Title = "題名２", Description = "説明２" },
-				new LoreStructure(){ Title = "題名３", Description = "説明３" },
-				new LoreStructure(){ Title = "題名４", Description = "説明４" },
-				new LoreStructure(){ Title = "題名５", Description = "説明５" },
+				new (){ Title = "題名１", Description = "説明１" },
+				new (){ Title = "題名２", Description = "説明２" },
+				new (){ Title = "題名３", Description = "説明３" },
+				new (){ Title = "題名４", Description = "説明４" },
+				new (){ Title = "題名５", Description = "説明５" },
 			} ;
 
 			//----------------------------------
@@ -130,10 +130,7 @@ namespace DBS.Screens
 #if !PLAY_MOVIE
 			else
 			{
-//				if( ignorePlayerData == false )
-//				{
-//					isSkipMovie = Tutorial.IsCompleted ;
-//				}
+				isSkipMovie = true ;
 			}
 #endif
 			await Execute( targetAssetBundlePaths, isSkipMovie, lores, "ゲームを開始できます", isSkipMovie ) ;
@@ -238,7 +235,7 @@ namespace DBS.Screens
 			DownloadAssetBundleAsync
 			(
 				this, targetAssetBundlePaths,
-				( long downloadedSize, int writtenSize, long totalSize, int storedFile, int totalFile, AssetBundleManager.DownloadEntity[] targets, int nowParallel, int maxParallel, int httpVersion ) =>
+				( long downloadedSize, long writtenSize, long totalSize, int storedFile, int totalFile, AssetBundleManager.DownloadEntity[] targets, int nowParallel, int maxParallel, int httpVersion ) =>
 				{
 					m_ProgressPanel.Set( downloadedSize, writtenSize, totalSize, storedFile, totalFile, targets, nowParallel, maxParallel, httpVersion ) ;
 				},

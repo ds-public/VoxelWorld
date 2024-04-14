@@ -8,9 +8,9 @@ using MathHelper ;
 using uGUIHelper ;
 using TransformHelper ;
 
-using DBS.WorldServerClasses ;
+using DSW.WorldServerClasses ;
 
-namespace DBS.World
+namespace DSW.World
 {
 	/// <summary>
 	/// サーバー処理
@@ -124,8 +124,8 @@ namespace DBS.World
 					// 変更がかかっていたらストレージに保存する
 					if( m_ChunkSetExistAllocations.ContainsKey( csId ) == false || m_ActiveChunkSets[ csId ].IsDirty == true )
 					{
-						Debug.Log( "<color=#FFFF00>[SERVER]チャンクセットが破棄される際にストレージに保存する:" + csId.ToString( "X4" ) + "</color>" ) ;
 						SaveDataBlocks( csId, m_ActiveChunkSets[ csId ].Inflate() ) ;
+						Debug.Log( "<color=#FFFF00>[SERVER]チャンクセットが破棄される際にストレージに保存する:" + csId.ToString( "X4" ) + " Size = " + m_ActiveChunkSets[ csId ].GetCompressedDataSize() + "</color>" ) ;
 					}
 
 					m_ActiveChunkSets.Remove( csId ) ;
@@ -152,8 +152,8 @@ namespace DBS.World
 						// 変更がかかっていたらストレージに保存する
 						if( m_ChunkSetExistAllocations.ContainsKey( activeChunkSet.CsId ) == false || activeChunkSet.IsDirty == true )
 						{
-							Debug.Log( "<color=#FFFF00>[SERVER]チャンクが破棄される際にストレージに保存する:" + activeChunkSet.CsId.ToString( "X4" ) + "</color>" ) ;
 							SaveDataBlocks( activeChunkSet.CsId, activeChunkSet.Inflate() ) ;
+							Debug.Log( "<color=#FFFF00>[SERVER]チャンクが破棄される際にストレージに保存する:" + activeChunkSet.CsId.ToString( "X4" ) + " Size = " + activeChunkSet.GetCompressedDataSize() + "</color>" ) ;
 						}
 
 						removeTargets.Add( activeChunkSet.CsId ) ;

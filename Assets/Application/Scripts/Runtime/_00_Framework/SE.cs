@@ -12,10 +12,10 @@ using UnityEngine ;
 // 要 AudioHelper パッケージ
 using AudioHelper ;
 
-namespace DBS
+namespace DSW
 {
 	/// <summary>
-	///ＳＥクラス Version 2022/09/23 0
+	///ＳＥクラス Version 2023/09/02 0
 	/// </summary>
 	public class SE : ExMonoBehaviour
 	{
@@ -29,34 +29,34 @@ namespace DBS
 			m_Instance = null ;
 		}
 
-		//-----------------------------------------------------------
+		//-----------------------------------
 
 		// ＳＥ名称の一覧(文字列からマスターのＩＤ値などに変わる可能性もある)
-
+		
 		public const string	m_InternalPath = "Internal|Sounds/SE/" ;
 
 		public const string None			= null ;
 
-		public const string Start			= m_InternalPath + "System//001_Start" ;
-		public const string Click			= m_InternalPath + "System//002_Click" ;
-		public const string Decision		= m_InternalPath + "System//002_Click" ;
-		public const string Cancel			= m_InternalPath + "System//003_Cancel" ;
+		public const string Start			= m_InternalPath + "System/001_Start" ;
+		public const string Click			= m_InternalPath + "System/002_Click" ;
+		public const string Decision		= m_InternalPath + "System/002_Click" ;
+		public const string Cancel			= m_InternalPath + "System/003_Cancel" ;
 
-		public const string Hit				= m_InternalPath + "System//005_Hit" ;
-		public const string Parry			= m_InternalPath + "System//006_Parry" ;
-		public const string Move			= m_InternalPath + "System//007_Move" ;
-		public const string Broken			= m_InternalPath + "System//008_Broken" ;
-		public const string Magic			= m_InternalPath + "System//009_Magic" ;
+		public const string Hit				= m_InternalPath + "System/005_Hit" ;
+		public const string Parry			= m_InternalPath + "System/006_Parry" ;
+		public const string Move			= m_InternalPath + "System/007_Move" ;
+		public const string Broken			= m_InternalPath + "System/008_Broken" ;
+		public const string Magic			= m_InternalPath + "System/009_Magic" ;
 
-		public const string Bomb			= m_InternalPath + "System//011_Bomb" ;
-		public const string Recover			= m_InternalPath + "System//012_Recover" ;
-		public const string Healing			= m_InternalPath + "System//013_Healing" ;
+		public const string Bomb			= m_InternalPath + "System/011_Bomb" ;
+		public const string Recover			= m_InternalPath + "System/012_Recover" ;
+		public const string Healing			= m_InternalPath + "System/013_Healing" ;
 
-		public const string Tap				= m_InternalPath + "System//024_Tap" ;
-		public const string Select			= m_InternalPath + "System//025_Select" ;
-		public const string Selection		= m_InternalPath + "System//025_Select" ;
+		public const string Tap				= m_InternalPath + "System/024_Tap" ;
+		public const string Select			= m_InternalPath + "System/025_Select" ;
+		public const string Selection		= m_InternalPath + "System/025_Select" ;
 
-		public const string Encount			= m_InternalPath + "Syetem//030_Encount" ;
+		public const string Encount			= m_InternalPath + "Syetem/030_Encount" ;
 
 		//-----------------------------------------------------------
 
@@ -68,15 +68,23 @@ namespace DBS
 		private const string TagName		= "SE" ;
 
 		//-----------------------------------------------------------
-
+		
 		/// <summary>
 		/// タイトル前から必要なアセットをロードする
 		/// </summary>
 		/// <returns></returns>
 		public static async UniTask LoadInternalAsync()
 		{
-			string path = m_InternalPath + "System" ;
+			string path ;
 
+			path = m_InternalPath + "System" ;
+			if( Asset.Exists( path ) == false )
+			{
+				// アセットバンドルの強制ダウンロードを行う(失敗してもダイアログは出さない)
+				await Asset.DownloadAssetBundleAsync( path, true ) ;
+			}
+
+			path = m_InternalPath + "Battle" ;
 			if( Asset.Exists( path ) == false )
 			{
 				// アセットバンドルの強制ダウンロードを行う(失敗してもダイアログは出さない)
@@ -87,17 +95,6 @@ namespace DBS
 		// パスの保険
 		private static string CorrectPath( string path )
 		{
-			// 保険をかける
-			if( path.Contains( "//" ) == false )
-			{
-				// アセットバンドルのパス指定が無い
-				int p = path.LastIndexOf( '/' ) ;
-				if( p >= 0 )
-				{
-					path = path.Substring( 0, p ) + "//" + path.Substring( p + 1, path.Length - ( p + 1 ) ) ;
-				}
-			}
-
 			if( path.IndexOf( m_InternalPath ) <  0 )
 			{
 				path = m_Path + path ;
@@ -116,7 +113,7 @@ namespace DBS
 		/// <param name="pan">パン(-1=左～0=中～+1=右)</param>
 		/// <param name="loop">ループ(true=する・false=しない)</param>
 		/// <returns>発音毎に割り当てられるユニークな識別子(-1で失敗)</returns>
-		public static int Play( string path, float volume = 1.0f, float pan = 0, bool loop = false )
+		public static int Play( string path, float volume = 1.0f, float pan = 0, float pitch = 0.0f, bool loop = false )
 		{
 			path = CorrectPath( path ) ;
 
@@ -130,7 +127,7 @@ namespace DBS
 			}
 
 			// 再生する
-			return AudioManager.Play( audioClip, loop, volume, pan, 0, TagName ) ;
+			return AudioManager.Play( audioClip, loop, volume, pan, pitch, TagName ) ;
 		}
 
 		/// <summary>
@@ -141,7 +138,7 @@ namespace DBS
 		/// <param name="pan">パン(-1=左～0=中～+1=右)</param>
 		/// <param name="loop">ループ(true=する・false=しない)</param>
 		/// <returns>列挙子</returns>
-		public static async UniTask<int> PlayAsync( string path, float volume = 1.0f, float pan = 0, bool loop = false )
+		public static async UniTask<int> PlayAsync( string path, float volume = 1.0f, float pan = 0, float pitch = 0.0f, bool loop = false )
 		{
 			path = CorrectPath( path ) ;
 
@@ -152,7 +149,7 @@ namespace DBS
 			if( Asset.Exists( path ) == true )
 			{
 				// 既にあるなら同期で高速再生
-				playId = Play( path, volume, pan, loop ) ;
+				playId = Play( path, volume, pan, pitch, loop ) ;
 				return playId ;
 			}
 
@@ -166,7 +163,7 @@ namespace DBS
 			}
 
 			// 再生する
-			playId = AudioManager.Play( audioClip, loop, volume, pan, 0, TagName ) ;
+			playId = AudioManager.Play( audioClip, loop, volume, pan, pitch, TagName ) ;
 			if( playId <  0 )
 			{
 				// 失敗
@@ -186,7 +183,7 @@ namespace DBS
 		/// <param name="listener">リスナーのトランスフォーム</param>
 		/// <param name="scale">距離係数(リスナーから音源までの距離にこの係数を掛け合わせたものが最終的な距離になる)</param>
 		/// <param name="volume">ボリューム係数(0～1)</param>
-		public static int Play3D( string path, Vector3 position, Transform listener = null, float scale = 1, float volume = 1.0f )
+		public static int Play3D( string path, Vector3 position, Transform listener = null, float scale = 1, float volume = 1.0f, float pitch = 0.0f, bool loop = false )
 		{
 			path = CorrectPath( path ) ;
 
@@ -200,7 +197,7 @@ namespace DBS
 			}
 			
 			// 再生する
-			return AudioManager.Play3D( audioClip, position, listener, scale, volume, TagName ) ;
+			return AudioManager.Play3D( audioClip, position, listener, scale, loop, volume, pitch, TagName ) ;
 		}
 		
 		/// <summary>
@@ -212,7 +209,7 @@ namespace DBS
 		/// <param name="scale">距離係数(リスナーから音源までの距離にこの係数を掛け合わせたものが最終的な距離になる)</param>
 		/// <param name="volume">ボリューム係数(0～1)</param>
 		/// <returns>列挙子</returns>
-		public static async UniTask<int> Play3DAsync( string path, Vector3 position, Transform listener = null, float scale = 1, float volume = 1.0f )
+		public static async UniTask<int> Play3DAsync( string path, Vector3 position, Transform listener = null, float scale = 1, float volume = 1.0f, float pitch = 0.0f, bool loop = false )
 		{
 			path = CorrectPath( path ) ;
 
@@ -223,7 +220,7 @@ namespace DBS
 			if( Asset.Exists( path ) == true )
 			{
 				// 既にあるなら高速再生
-				return Play3D( path, position, listener, scale, volume ) ;
+				return Play3D( path, position, listener, scale, volume, pitch, loop ) ;
 			}
 
 			// 複数を１つのアセットバンドルにまとめており同じシーンの中で何度も再生されるケースがあるのでリソース・アセットバンドル両方にキャッシュする
@@ -236,7 +233,7 @@ namespace DBS
 			}
 
 			// 再生する
-			playId = AudioManager.Play3D( audioClip, position, listener, scale, volume, TagName ) ;
+			playId = AudioManager.Play3D( audioClip, position, listener, scale, loop, volume, pitch, TagName ) ;
 			if( playId <  0 )
 			{
 				// 失敗

@@ -6,10 +6,10 @@ using UnityEngine.XR ;
 
 using uGUIHelper ;
 
-namespace DBS
+namespace DSW
 {
 	/// <summary>
-	/// 入力に対する反応演出のクラス Version 2022/09/19 0
+	/// 入力に対する反応演出のクラス Version 2023/07/06 0
 	/// </summary>
 	public class Ripple : ExMonoBehaviour
 	{
@@ -108,6 +108,12 @@ namespace DBS
 		private bool m_Focus = true ;
 		private int m_FocusWait = 1 ;
 
+		/// <summary>
+		/// インスタンスとして生成されたエフェクトの一覧
+		/// </summary>
+		private readonly List<GameObject> m_TouchEffects = new () ;
+
+
 		//---------------------------------------------------------------------------
 
 		internal void Awake()
@@ -175,6 +181,17 @@ namespace DBS
 
 			//----------------------------------
 
+			// 削除されたものは除外する
+			for( var i  = 0 ; i < m_TouchEffects.Count ; i ++ )
+			{
+				if( m_TouchEffects[ i ] == null )
+				{
+					m_TouchEffects.RemoveAt( i ) ;
+				}
+			}
+
+			//----------------------------------
+
 			if( XRSettings.enabled == false )
 			{
 				m_Canvas.SetActive( true ) ;
@@ -206,6 +223,7 @@ namespace DBS
 					m_TouchPosition = touchPosition ;
 
 					UICircle circle = m_Circle.Duplicate<UICircle>() ;
+					m_TouchEffects.Add( circle.gameObject ) ;
 
 					// デリゲートのポインタは保持されないので複製したオブジェクトごとに設定してやる必要がある
 					circle.GetTween( "FadeOut" ).SetOnFinished( OnFinish ) ;
@@ -217,6 +235,7 @@ namespace DBS
 					m_Interval = Time.realtimeSinceStartup ;
 
 					UICircle star = m_Star.Duplicate<UICircle>() ;
+					m_TouchEffects.Add( star.gameObject ) ;
 
 					// 方向ランダム指定
 					int a = UnityEngine.Random.Range(   0, 360 ) ;
@@ -254,6 +273,7 @@ namespace DBS
 							m_Interval = Time.realtimeSinceStartup ;
 
 							UICircle star = m_Star.Duplicate<UICircle>() ;
+							m_TouchEffects.Add( star.gameObject ) ;
 
 							// 方向ランダム指定
 							int a = UnityEngine.Random.Range(   0, 360 ) ;
@@ -286,6 +306,9 @@ namespace DBS
 
 		private void OnFinish( string identity, UITween tween )
 		{
+			// 登録も削除する
+			m_TouchEffects.Remove( tween.gameObject ) ;
+
 			// 終了したら自身を破棄する
 			Destroy( tween.gameObject ) ;
 		}
@@ -320,6 +343,19 @@ namespace DBS
 
 			m_Instance.m_TouchState = 0 ;
 			m_Instance.m_Line.ClearTrailPosition() ;
+
+			//----------------------------------------------------------
+
+			// インスタンス化したエフェクトも削除する
+			foreach( var touchEffect in m_Instance.m_TouchEffects )
+			{
+				if( touchEffect != null )
+				{
+//					GameObject.Destroy( touchEffect ) ;
+					GameObject.DestroyImmediate( touchEffect ) ;	// 即時消さなくてはならない(ブラー関係のため)
+				}
+			}
+			m_Instance.m_TouchEffects.Clear() ;
 		}
 
 		internal void OnApplicationFocus( bool state )

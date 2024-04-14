@@ -1,7 +1,10 @@
-using UnityEngine ;
 using System.Collections ;
+using UnityEngine ;
 
-using uGUIHelper ;
+#if UNITY_EDITOR
+using UnityEditor ;
+#endif
+
 
 namespace uGUIHelper
 {
@@ -10,8 +13,44 @@ namespace uGUIHelper
 	/// </summary>
 	public class UISpace : UIView
 	{
+		/// <summary>
+		/// ワールドルート
+		/// </summary>
+		public Transform WorldRoot
+		{
+			get
+			{
+				return m_WorldRoot ;
+			}
+			set
+			{
+				if( m_WorldRoot != value )
+				{
+#if UNITY_EDITOR
+					if( m_WorldRoot != null )
+					{
+						m_WorldRoot.hideFlags = HideFlags.None ;
+					}
+#endif
+					m_WorldRoot = value ;
+#if UNITY_EDITOR
+					if( m_WorldRoot != null )
+					{
+						// Transform のみを対象とする(GameObject を対象とすると、全てのコンポーネントが編集不能となる)
+						m_WorldRoot.hideFlags = HideFlags.NotEditable ;
+					}
+#endif
+				}
+			}
+		}
+
 		[SerializeField][HideInInspector]
-		private Camera m_TargetCamera = null ;
+		private Transform m_WorldRoot = null ;
+
+
+		/// <summary>
+		/// レンダリング対象のカメラ
+		/// </summary>
 		public  Camera   TargetCamera
 		{
 			get
@@ -24,10 +63,58 @@ namespace uGUIHelper
 			}
 		}
 		
+		[SerializeField][HideInInspector]
+		private Camera m_TargetCamera = null ;
+
+		/// <summary>
+		/// 実行時にカメラのカリングマスクと３Ｄ空間のレイヤーを指定したレイヤーに設定するかどうか
+		/// </summary>
+		public bool IsForceWorldLayer
+		{
+			get
+			{
+				return m_IsForceWorldLayer ;
+			}
+			set
+			{
+				m_IsForceWorldLayer = value ;
+			}
+		}
+
+		[SerializeField][HideInInspector]
+		private bool m_IsForceWorldLayer = true ;
+
+		/// <summary>
+		/// 強制設定するレイヤー(００～３１)
+		/// </summary>
+		public int WorldLayer
+		{
+			get
+			{
+				return m_WorldLayer ;
+			}
+			set
+			{
+				if( m_WorldLayer != value )
+				{
+					m_WorldLayer  = value ;
+
+					if( m_IsForceWorldLayer == true )
+					{
+						// Editor モードでも自動適用を行う
+						SetWorldLayer( m_WorldLayer ) ;
+					}
+				}
+			}
+		}
+
+		[SerializeField][HideInInspector]
+		private int m_WorldLayer = 0 ;
+
 		/// <summary>
 		/// カメラデプスを設定する
 		/// </summary>
-		/// <param name="tDepth"></param>
+		/// <param name="depth"></param>
 		/// <returns></returns>
 		public bool SetCameraDepth( int depth )
 		{
@@ -44,7 +131,7 @@ namespace uGUIHelper
 		/// <summary>
 		/// カリングマスクを設定する
 		/// </summary>
-		/// <param name="tMask"></param>
+		/// <param name="cullingMask"></param>
 		/// <returns></returns>
 		public bool SetCullingMask( int cullingMask )
 		{
@@ -58,8 +145,9 @@ namespace uGUIHelper
 			return true ;
 		}
 
-		[SerializeField][HideInInspector]
-		private bool	m_RenderTextureEnabled = false ;
+		/// <summary>
+		/// レンダーレクスチャを使用するかどうか
+		/// </summary>
 		public  bool	  RenderTextureEnabled
 		{
 			get
@@ -70,25 +158,24 @@ namespace uGUIHelper
 			{
 				if( m_RenderTextureEnabled != value )
 				{
-					m_RenderTextureEnabled = value ;
+					m_RenderTextureEnabled  = value ;
 
-					if( Application.isPlaying == true )
+					if( m_RenderTextureEnabled == true )
 					{
-						if( value == true )
-						{
-							CreateRenderTexture() ;
-						}
-						else
-						{
-							DeleteRenderTexture() ;
-						}
+						// 有効になった
+						CreateRenderTexture( false ) ;
+					}
+					else
+					{
+						// 無効になった
+						DeleteRenderTexture( false ) ;
 					}
 				}
 			}
 		}
 
 		[SerializeField][HideInInspector]
-		private RenderTexture	m_RenderTexture = null ;
+		private bool	m_RenderTextureEnabled = false ;
 
 		/// <summary>
 		/// レンダーテクスチャのインスタンス
@@ -102,7 +189,7 @@ namespace uGUIHelper
 		}
 
 		[SerializeField][HideInInspector]
-		private UIRawImage		m_RenderImage = null ;
+		private RenderTexture	m_RenderTexture = null ;
 
 		/// <summary>
 		/// レンダーイメージのインスタンス
@@ -115,12 +202,20 @@ namespace uGUIHelper
 			}
 		}
 
+		[SerializeField][HideInInspector]
+		private UIRawImage		m_RenderImage = null ;
+
+		// 操作禁止用の Tracker (HideFlags.NotEditable でも代用は出来そうだが・・・)
+
+
+		//-----------------------------------------------------------
 
 		[SerializeField][HideInInspector]
 		private Vector2			m_Size ;
 
-		[SerializeField][HideInInspector]
-		private bool			m_FlexibleFieldOfView = true ;
+		/// <summary>
+		/// 縦方向の角度を固定化するかどうか
+		/// </summary>
 		public  bool			  FlexibleFieldOfView
 		{
 			get
@@ -134,7 +229,11 @@ namespace uGUIHelper
 		}
 
 		[SerializeField][HideInInspector]
-		private float			m_BasisHeight = 0 ;
+		private bool			m_FlexibleFieldOfView = true ;
+
+		/// <summary>
+		/// 縦方向の基本的な長さ
+		/// </summary>
 		public  float			  BasisHeight
 		{
 			get
@@ -147,14 +246,21 @@ namespace uGUIHelper
 			}
 		}
 
+		[SerializeField][HideInInspector]
+		private float			m_BasisHeight = 0 ;
+
+
 
 		/// <summary>
 		/// カメラの焦点の位置
 		/// </summary>
-		[SerializeField]
-		protected Vector2 m_CameraOffset = Vector2.zero ;
 		public Vector2	CameraOffset{ get{ return m_CameraOffset ; } set{ m_CameraOffset = value ; } }
 
+		[SerializeField]
+		protected Vector2 m_CameraOffset = Vector2.zero ;
+
+
+		//-----------------------------------------------------------
 
 		private float m_InitialFieldOfView = 0 ;
 
@@ -185,43 +291,67 @@ namespace uGUIHelper
 		//-------------------------------------------------------------------------------------------
 
 		/// <summary>
-		/// 各派生クラスでの初期化処理を行う（メニューまたは AddView から生成される場合のみ実行れる）
+		/// 各派生クラスでの初期化処理を行う（メニューまたは AddView から生成される場合のみ実行される）　※AddView から呼ばれる可能性があるため UNITY_EDITOR 限定には出来ない
 		/// </summary>
-		/// <param name="tOption"></param>
-		override protected void OnBuild( string option = "" )
+		/// <param name="option"></param>
+		protected override void OnBuild( string option = "" )
 		{
+			GetRectTransform() ;
+
 			ResetRectTransform() ;
 
-			// ひとまず自身の子としてカメラを生成しておく
-			GameObject cameraGameObject = new GameObject( "Camera" ) ;
-			
-			cameraGameObject.transform.localPosition = Vector3.zero ;
-			cameraGameObject.transform.localRotation = Quaternion.identity ;
-			cameraGameObject.transform.localScale = Vector3.one ;
-			cameraGameObject.transform.SetParent( transform, false ) ;
+			var worldRoot = new GameObject( "3D" ) ;
+			worldRoot.transform.SetLocalPositionAndRotation( new Vector3( 0, 0, -3 ), Quaternion.identity ) ;
+			worldRoot.transform.localScale = Vector3.one ;
+			worldRoot.transform.SetParent( transform, false ) ;
 
-			m_TargetCamera = cameraGameObject.AddComponent<Camera>() ;
+			m_WorldRoot = worldRoot.transform ;
+
+			// ３Ｄ用のカメラを生成する
+			var camera3d = new GameObject( "3D Camera" ) ;
+			
+			camera3d.transform.SetLocalPositionAndRotation( new Vector3( 0, 0, -3 ), Quaternion.identity ) ;
+			camera3d.transform.localScale = Vector3.one ;
+			camera3d.transform.SetParent( worldRoot.transform, false ) ;
+
+			m_TargetCamera = camera3d.AddComponent<Camera>() ;
+
+			// ３Ｄ用のライトを生成する
+
+			var light3d = new GameObject( "Directional Light" ) ;
+			light3d.transform.SetLocalPositionAndRotation( new Vector3( 0, 0, -3 ), Quaternion.identity ) ;
+			light3d.transform.localScale = Vector3.one ;
+			light3d.transform.SetParent( worldRoot.transform, false ) ;
+
+			var light = light3d.AddComponent<Light>() ;
+			light.type = LightType.Directional ;
+			light.transform.SetLocalPositionAndRotation( Vector3.zero, Quaternion.identity ) ;
+			// ディレクショナルライトのデフォルトの方向はＺ＋(画面奥)を向いている
+			// つまり３Ｄオブジェクトの正面から光が当たる形である
+
+			//----------------------------------
+			// レイヤー対象
+
+			m_IsForceWorldLayer = true ;
+//			m_TargetLayer = 24 ;
 		}
 
 
-//		override protected void OnAwake()
+//		protected override void OnAwake()
 //		{
 //		}
 
-		override protected void OnStart()
+		protected override void OnStart()
 		{
-			if( Application.isPlaying == true )
+			if( m_TargetCamera != null )
 			{
 				if( m_RenderTextureEnabled == true )
 				{
-					CreateRenderTexture() ;
+					CreateRenderTexture( true ) ;
 					m_Size = Size ;
 				}
 
-				if( m_TargetCamera != null )
-				{
-					m_InitialFieldOfView = m_TargetCamera.fieldOfView ;
-				}
+				m_InitialFieldOfView = m_TargetCamera.fieldOfView ;
 			}
 		}
 
@@ -231,108 +361,261 @@ namespace uGUIHelper
 
 			//---------------------------------------------------------
 
-			if( m_RenderTextureEnabled == true && m_Size != Size )
+			if( m_WorldRoot != null && m_WorldRoot.parent != null )
 			{
-				ResizeRenderTexture() ;
-				m_Size = Size ;
+				// 常にグローバルで１倍になるようにスケールを調整する
+
+				float gsx = m_WorldRoot.parent.lossyScale.x ;
+				float gsy = m_WorldRoot.parent.lossyScale.y ;
+				float gsz = m_WorldRoot.parent.lossyScale.z ;
+
+				if( gsx != 0 && gsy != 0 && gsz != 0 )
+				{
+					// １つも０が無い事が処理条件
+
+					float lsx = 1.0f / gsx ;
+					float lsy = 1.0f / gsy ;
+					float lsz = 1.0f / gsz ;
+
+					if( m_WorldRoot.localScale.x != lsx || m_WorldRoot.localScale.y != lsy || m_WorldRoot.localScale.z != lsz )
+					{
+						// ローカルスケールを更新する
+						m_WorldRoot.localScale = new Vector3( lsx, lsy, lsz ) ;
+					}
+				}
+#if UNITY_EDITOR
+				m_WorldRoot.hideFlags = HideFlags.NotEditable ;
+#endif
 			}
 
-			if( Application.isPlaying == true )
+			//----------------------------------
+
+			if( m_RenderTextureEnabled == true && ( m_Size.x != Size.x || m_Size.y != Size.y ) )
 			{
-				if( m_TargetCamera != null )
+				// サイズ変更が発生したので作り直す
+				CreateRenderTexture( true ) ;
+
+				m_Size.x = Size.x ;
+				m_Size.y = Size.y ;
+			}
+
+			//---------------------------------
+
+			if( m_TargetCamera != null )
+			{
+				if( m_FlexibleFieldOfView == true && m_BasisHeight >  0 )
 				{
-					if( m_FlexibleFieldOfView == true && m_BasisHeight >  0 )
-					{
-						// 画面の縦幅に応じて３Ｄカメラの画角を調整し３Ｄの見た目の大きさを画面の縦比に追従させる
-						float fov = m_InitialFieldOfView * 0.5f ;
-						float distance = ( m_BasisHeight * 0.5f ) / Mathf.Tan( 2.0f * Mathf.PI * fov / 360.0f ) ;
-						float height = this.Height * 0.5f ;
-						float tanV = height / distance ;
-						fov = ( 360.0f * Mathf.Atan( tanV ) / ( 2.0f * Mathf.PI ) ) ;
-						m_TargetCamera.fieldOfView = fov * 2.0f ;
-					}
+					// 画面の縦幅に応じて３Ｄカメラの画角を調整し３Ｄの見た目の大きさを画面の縦比に追従させる
+					float fov = m_InitialFieldOfView * 0.5f ;
+					float distance = ( m_BasisHeight * 0.5f ) / Mathf.Tan( 2.0f * Mathf.PI * fov / 360.0f ) ;
+					float height = this.Height * 0.5f ;
+					float tanV = height / distance ;
+					fov = ( 360.0f * Mathf.Atan( tanV ) / ( 2.0f * Mathf.PI ) ) ;
+					m_TargetCamera.fieldOfView = fov * 2.0f ;
 				}
 			}
 		}
 
-		private Rect m_FullRendering = new Rect( 0, 0, 1, 1 ) ;
+		private static readonly Rect m_FullRendering = new ( 0, 0, 1, 1 ) ;
 
-		override protected void OnLateUpdate()
+		protected override void OnLateUpdate()
 		{
 			base.OnLateUpdate() ;
 
-			// RectTransform の位置に Camera を調整する
+			//----------------------------------------------------------
+
+			if( Application.isPlaying == true )
+			{
+				if( m_IsForceWorldLayer == true )
+				{
+					SetWorldLayer( m_WorldLayer ) ;
+				}
+			}
+
+			SetupCamera() ;
+		}
+
+		//-----------------------------------------------------------
+
+		/// <summary>
+		/// 強制的に３Ｄ空間全体のレイヤーを設定する
+		/// </summary>
+		/// <param name="layer"></param>
+		public void SetWorldLayer( int worldLayer )
+		{
+			m_WorldLayer = worldLayer ;
+
+			int cullingMask = ( 1 << m_WorldLayer ) ;
+
 			if( m_TargetCamera != null )
 			{
-				if( m_RenderTextureEnabled == false || Application.isPlaying == false )
-				{
-					Rect r = RectInCanvas ;
-
-					Vector2 c = GetCanvasSize() ;
-
-					// 画面の左下基準
-					r.x += ( c.x * 0.5f ) ;
-					r.y += ( c.y * 0.5f ) ;
-
-					float w = c.x ;
-					float h = c.y ;
-
-					r.x /= w ;
-					r.y /= h ;
-					r.width  /= w ;
-					r.height /= h ;
-
-					m_TargetCamera.rect = r ;
-				}
-				else
-				{
-					m_TargetCamera.rect = m_FullRendering ;
-				}
-
-				if( m_TargetCamera != null )
-				{
-					if( m_CameraOffset.x == 0 && m_CameraOffset.y == 0 )
-					{
-						m_TargetCamera.ResetProjectionMatrix() ;
-//						Debug.LogWarning( "元の行列:\n" + m_TargetCamera.projectionMatrix ) ;
-					}
-					else
-					{
-						float sw, sh ;
-						if( m_RenderTexture == null )
-						{
-							sw = Screen.width ;
-							sh = Screen.height ;
-						}
-						else
-						{
-							sw = m_RenderTexture.width ;
-							sh = m_RenderTexture.height ;
-						}
-
-						m_TargetCamera.projectionMatrix = PerspectiveOffCenter( m_TargetCamera, sw, sh, m_CameraOffset ) ;
-//						Debug.LogWarning( "今の行列:\n" + m_TargetCamera.projectionMatrix ) ;
-					}
-				}
+				m_TargetCamera.cullingMask = cullingMask ;
 			}
-		}
 
-		override protected void OnDestroy()
-		{
-			if( m_RenderTextureEnabled == true )
+			if( m_WorldRoot != null )
 			{
-				DeleteRenderTexture() ;
+				SetLayerRecursively( m_WorldRoot, m_WorldLayer ) ;
+
+				//----------------------------------------------------------
+				// ライトがある場合に対象をレイヤーに絞る
+
+				var lights = m_WorldRoot.GetComponentsInChildren<Light>( true ) ;
+				if( lights != null && lights.Length >  0 )
+				{
+					foreach( var light in lights )
+					{
+						light.cullingMask = cullingMask ;
+					}
+				}
 			}
 		}
 
-		private void CreateRenderTexture()
+		// 子を全て含めてレイヤーマスクを設定する(Transform 版)
+		private void SetLayerRecursively( Transform root, int layer )
+		{
+			root.gameObject.layer = layer ;
+
+			foreach( Transform childTransform in root.transform )
+			{
+				SetLayerRecursively( childTransform.gameObject, layer ) ;
+			}
+		}
+
+		// 子を全て含めてレイヤーマスクを設定する(GameObject 版)
+		private void SetLayerRecursively( GameObject root, int layer )
+		{
+			root.layer = layer ;
+
+			foreach( Transform childTransform in root.transform )
+			{
+				SetLayerRecursively( childTransform.gameObject, layer ) ;
+			}
+		}
+
+		// ガメラの画角やビューポートの設定を行う
+		private void SetupCamera()
 		{
 			if( m_TargetCamera == null )
 			{
+				// 不可
 				return ;
 			}
 
-			m_TargetCamera.clearFlags = CameraClearFlags.SolidColor ;
+			//----------------------------------
+
+			// RectTransform の位置に Camera を調整する
+			if( m_RenderTextureEnabled == false )
+			{
+				// フレームバッファに直接表示
+				var canvasSize = GetCanvasSize() ;
+				var spaceRect = RectInCanvas ;
+
+				float cw = canvasSize.x ;
+				float ch = canvasSize.y ;
+
+				// 画面の左下基準
+				spaceRect.x += ( cw * 0.5f ) ;
+				spaceRect.y += ( ch * 0.5f ) ;
+
+				spaceRect.x      /= cw ;
+				spaceRect.y      /= ch ;
+				spaceRect.width  /= cw ;
+				spaceRect.height /= ch ;
+
+				m_TargetCamera.rect = spaceRect ;
+			}
+			else
+			{
+				// レンダーテクスチャに表示
+				m_TargetCamera.rect = m_FullRendering ;
+			}
+
+			//---------------------------------
+
+			if( m_CameraOffset.x == 0 && m_CameraOffset.y == 0 )
+			{
+				// オフセット位置の操作は無し
+
+				m_TargetCamera.ResetProjectionMatrix() ;
+//				Debug.LogWarning( "元の行列:\n" + m_TargetCamera.projectionMatrix ) ;
+			}
+			else
+			{
+				// オフセット位置の操作が有り
+
+				float sw, sh ;
+				if( m_RenderTexture == null )
+				{
+					sw = Screen.width ;
+					sh = Screen.height ;
+				}
+				else
+				{
+					sw = m_RenderTexture.width ;
+					sh = m_RenderTexture.height ;
+				}
+
+				m_TargetCamera.projectionMatrix = GetPerspectiveOffCenter( m_TargetCamera, sw, sh, m_CameraOffset ) ;
+//				Debug.LogWarning( "今の行列:\n" + m_TargetCamera.projectionMatrix ) ;
+			}
+		}
+
+		/// <summary>
+		/// 強制更新
+		/// </summary>
+		public void Refresh()
+		{
+			Render() ;
+		}
+
+		/// <summary>
+		/// レンダーテクスチャが有効な時に強制的にカメラの描画を実行する
+		/// </summary>
+		public void Render()
+		{
+			if( m_TargetCamera != null && m_RenderTexture != null && m_TargetCamera.targetTexture == m_RenderTexture )
+			{
+				m_TargetCamera.Render() ;
+
+#if UNITY_EDITOR
+				if( Application.isPlaying == false )
+				{
+					// Editor モード中のレンダーテクスチャの自動更新
+					EditorUtility.SetDirty( m_RenderTexture ) ;
+				}
+#endif
+			}
+		}
+
+		protected override void OnDestroy()
+		{
+			// RenderTexture も破棄する
+			DeleteRenderTexture( false ) ;
+		}
+
+		//-------------------------------------------------------------------------------------------
+
+		// レンダーテクスチャを生成する
+		private void CreateRenderTexture( bool isResize )
+		{
+			//----------------------------------
+
+			// 以前のレンダーテクスチャがあれば破棄する(これをしないとメモリリークしまくってヤバいことになる)
+			DeleteRenderTexture( isResize ) ;
+
+			//------------------------------------------------------------------------------------------
+
+			if( m_TargetCamera == null )
+			{
+				// レンダリング対象のカメラが設定されていない
+				return ;
+			}
+
+			//----------------------------------
+			// RanderTexture の生成
+
+			// 背景の塗りつぶし方法に関してはカメラの設定をそのまま使用する
+//			m_TargetCamera.clearFlags = CameraClearFlags.SolidColor ;
 
 			if( m_RenderTexture == null && this.Width >  0 && this.Height >  0 )
 			{
@@ -343,18 +626,32 @@ namespace uGUIHelper
 				} ;
 				m_RenderTexture.Create() ;
 			}
+
 			if( m_RenderTexture == null )
 			{
+				// 通常はここにはこない(Space の Width か Height が 0 だとレンダーテクスチャが生成されない)
 				return ;
 			}
 
+			//----------------------------------
+			// RanderTexture の表示用の RawImage の生成と設定
+
 			if( m_RenderImage == null )
 			{
-				m_RenderImage = AddView<UIRawImage>() ;
+				m_RenderImage = AddView<UIRawImage>( "RawImage(Auto Generated)" ) ;
+				var rt = m_RenderImage.GetRectTransform() ;
+				if( rt != null )
+				{
+					rt.hideFlags = HideFlags.NotEditable ;
+				}
 			}
+
+			//--------------
+
 			m_RenderImage.SetAnchorToStretch() ;
 
 			m_TargetCamera.targetTexture = m_RenderTexture ;
+
 			m_RenderImage.Texture = m_RenderTexture ;
 
 			m_RenderImage.IsMask		= m_ImageMask ;
@@ -362,74 +659,61 @@ namespace uGUIHelper
 			m_RenderImage.IsShadow		= m_ImageShadow ;
 			m_RenderImage.IsOutline		= m_ImageOutline ;
 			m_RenderImage.IsGradient	= m_ImageGradient ;
+
+
+			//----------------------------------------------------------
+			// 最初は強制レンダリングを行う
+
+			SetupCamera() ;
+
+			Render() ;
 		}
 
-		private void DeleteRenderTexture()
+		// レンダーテクスチャを破棄する
+		private void DeleteRenderTexture( bool isResize )
 		{
 			if( m_TargetCamera != null )
 			{
 				m_TargetCamera.targetTexture = null ;
 			}
 
-			if( m_RenderImage != null )
+			if( isResize == false && m_RenderImage != null )
 			{
 				m_RenderImage.Texture = null ;
-				DestroyImmediate( m_RenderImage.gameObject ) ;
+				if( Application.isPlaying == true )
+				{
+					Destroy( m_RenderImage.gameObject ) ;
+				}
+				else
+				{
+					DestroyImmediate( m_RenderImage.gameObject ) ;
+				}
 				m_RenderImage = null ;
 			}
 
 			if( m_RenderTexture != null )
 			{
-				DestroyImmediate( m_RenderTexture ) ;
+				m_RenderTexture.Release() ;
+//				if( Application.isPlaying == true )
+//				{
+//					Destroy( m_RenderTexture ) ;
+//				}
+//				else
+//				{
+//					DestroyImmediate( m_RenderTexture ) ;
+//				}
 				m_RenderTexture = null ;
 			}
 
-			if( m_TargetCamera != null )
-			{
-				m_TargetCamera.clearFlags = CameraClearFlags.Depth ;
-			}
+			// 背景の塗りつぶし方法に関してはカメラの設定をそのまま使用する
+//			if( m_TargetCamera != null )
+//			{
+//				m_TargetCamera.clearFlags = CameraClearFlags.Depth ;
+//			}
 		}
 
-		private void ResizeRenderTexture()
-		{
-			if( m_TargetCamera == null || m_RenderTexture == null || m_RenderImage == null )
-			{
-				return ;
-			}
-
-			m_TargetCamera.targetTexture = null ;
-
-			m_RenderImage.Texture = null ;
-
-			DestroyImmediate( m_RenderTexture ) ;
-			m_RenderTexture = null ;
-
-			if( this.Width >  0 && this.Height >  0 )
-			{
-				m_RenderTexture = new RenderTexture( ( int )this.Width, ( int )this.Height, 24 )
-				{
-					antiAliasing = 2,
-					depth = 24	// 24以上にしないとステンシルがサポートされない事に注意する
-				} ;
-				m_RenderTexture.Create() ;
-			}
-			if( m_RenderTexture == null )
-			{
-				if( m_RenderImage != null )
-				{
-					m_RenderImage.Texture = null ;
-					DestroyImmediate( m_RenderImage.gameObject ) ;
-					m_RenderImage = null ;
-				}
-
-				return ;
-			}
-
-			m_TargetCamera.targetTexture = m_RenderTexture ;
-			m_RenderImage.Texture = m_RenderTexture ;
-		}
-
-		private Matrix4x4 PerspectiveOffCenter( Camera camera, float sw, float sh, Vector2 cameraOffset )
+		// カメラのオフセットをずらす場合の画角行列情報を計算する
+		private Matrix4x4 GetPerspectiveOffCenter( Camera camera, float sw, float sh, Vector2 cameraOffset )
 		{
 			float xMin = ( camera.rect.xMin - 0.5f ) * 2.0f ;
 			float xMax = ( camera.rect.xMax - 0.5f ) * 2.0f ;
@@ -468,7 +752,7 @@ namespace uGUIHelper
 			float d = - ( 2.0f * fcp * ncp ) / ( fcp - ncp ) ;
 			float e = - 1.0f ;
 
-			Matrix4x4 m = new Matrix4x4() ;
+			var m = new Matrix4x4() ;
 			m[ 0, 0 ] = x ;
 			m[ 0, 1 ] = 0 ;
 			m[ 0, 2 ] = a ;

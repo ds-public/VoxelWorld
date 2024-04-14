@@ -8,11 +8,11 @@ using UnityEngine ;
 
 using uGUIHelper ;
 
-using DBS.UI ;
+using DSW.UI ;
 using TMPro ;
 
 
-namespace DBS.DialogStyle
+namespace DSW.DialogStyle
 {
 	/// <summary>
 	/// スタンダードタイプのダイアログ

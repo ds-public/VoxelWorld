@@ -1,4 +1,4 @@
-﻿using UnityEngine ;
+using UnityEngine ;
 using System ;
 using System.Collections ;
 using System.Collections.Generic ;
@@ -68,7 +68,7 @@ namespace MultiplayerHelper
 		
 			// オブジェクトが非アクティブだと検出されないのでオブジェクトを非アクティブにしてはならない
 			// この判定は必須で mInstance は static であるためシーンの最初はオブジェクトが存在しても null になっている
-			m_Instance = GameObject.FindObjectOfType<MultiplayerManager>() ;
+			m_Instance = GameObject.FindAnyObjectByType<MultiplayerManager>() ;
 			if( m_Instance == null )
 			{
 				GameObject tGameObject = new GameObject( "MultiplayerManager" ) ;
@@ -117,7 +117,7 @@ namespace MultiplayerHelper
 				return ;
 			}
 		
-			MultiplayerManager tInstanceOther = GameObject.FindObjectOfType<MultiplayerManager>() ;
+			MultiplayerManager tInstanceOther = GameObject.FindAnyObjectByType<MultiplayerManager>() ;
 			if( tInstanceOther != null )
 			{
 				if( tInstanceOther != this )

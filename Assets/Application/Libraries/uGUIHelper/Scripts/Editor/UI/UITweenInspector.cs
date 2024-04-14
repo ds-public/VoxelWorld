@@ -139,7 +139,7 @@ namespace uGUIHelper
 					else
 					if( view.PositionProcessType == UITween.ProcessTypes.AnimationCurve )
 					{
-						AnimationCurve animationCurve = new AnimationCurve( view.PositionAnimationCurve.keys ) ;
+						var animationCurve = new AnimationCurve( view.PositionAnimationCurve.keys ) ;
 						view.PositionAnimationCurve = EditorGUILayout.CurveField( " Animation Curve", animationCurve /*, GUILayout.Width( 170f ), GUILayout.Height( 52f )*/ ) ;
 					}
 
@@ -225,7 +225,7 @@ namespace uGUIHelper
 					else
 					if( view.RotationProcessType == UITween.ProcessTypes.AnimationCurve )
 					{
-						AnimationCurve animationCurve = new AnimationCurve(  view.RotationAnimationCurve.keys ) ;
+						var animationCurve = new AnimationCurve(  view.RotationAnimationCurve.keys ) ;
 						view.RotationAnimationCurve = EditorGUILayout.CurveField( " Animation Curve", animationCurve /*, GUILayout.Width( 170f ), GUILayout.Height( 52f )*/ ) ;
 					}
 
@@ -311,7 +311,7 @@ namespace uGUIHelper
 					else
 					if( view.ScaleProcessType == UITween.ProcessTypes.AnimationCurve )
 					{
-						AnimationCurve animationCurve = new AnimationCurve(  view.ScaleAnimationCurve.keys ) ;
+						var animationCurve = new AnimationCurve(  view.ScaleAnimationCurve.keys ) ;
 						view.ScaleAnimationCurve = EditorGUILayout.CurveField( " Animation Curve", animationCurve /*, GUILayout.Width( 170f ), GUILayout.Height( 52f )*/ ) ;
 					}
 
@@ -409,7 +409,7 @@ namespace uGUIHelper
 					else
 					if( view.AlphaProcessType == UITween.ProcessTypes.AnimationCurve )
 					{
-						AnimationCurve animationCurve = new AnimationCurve( view.AlphaAnimationCurve.keys ) ;
+						var animationCurve = new AnimationCurve( view.AlphaAnimationCurve.keys ) ;
 						view.AlphaAnimationCurve = EditorGUILayout.CurveField( " Animation Curve", animationCurve /*, GUILayout.Width( 170f ), GUILayout.Height( 52f )*/ ) ;
 					}
 
@@ -645,7 +645,7 @@ namespace uGUIHelper
 		// 曲線を描画する
 		private void DrawCurve( UITween view, float checkFactor, UITween.ProcessTypes processType, UITween.EaseTypes easeType, AnimationCurve animationCurve )
 		{
-			Rect rect = GUILayoutUtility.GetRect( Screen.width - 160, 102f ) ;
+			var rect = GUILayoutUtility.GetRect( Screen.width - 160, 102f ) ;
 		
 			float x ;
 			x = ( rect.width - 102f ) * 0.5f ;
@@ -724,8 +724,8 @@ namespace uGUIHelper
 			dx ++ ;
 			dy ++ ;
 
-			Color32 c = new Color32( ( byte )( ( color >> 16 ) & 0xFF ), ( byte )( ( color >>  8 ) & 0xFF ),  ( byte )( ( color >>   0 ) & 0xFF ), ( byte )( ( color >> 24 ) & 0xFF ) ) ;
-			Rect r = new Rect( 0, 0, 1, 1 ) ;
+			var c = new Color32( ( byte )( ( color >> 16 ) & 0xFF ), ( byte )( ( color >>  8 ) & 0xFF ),  ( byte )( ( color >>   0 ) & 0xFF ), ( byte )( ( color >> 24 ) & 0xFF ) ) ;
+			var r = new Rect( 0, 0, 1, 1 ) ;
 
 			int lx, ly ;
 			int px, py ;
@@ -809,34 +809,34 @@ namespace uGUIHelper
 
 		//--------------------------------------------------------------------------
 
-		private readonly Dictionary<string,string> m_Japanese_Message = new Dictionary<string, string>()
+		private static readonly Dictionary<string,string> m_Japanese_Message = new ()
 		{
 			{ "RectTransformNone", "RectRansform クラスが必要です" },
 			{ "CanvasGroupNone",   "CanvasGroup クラスが必要です" },
 		} ;
-		private readonly Dictionary<string,string> m_English_Message = new Dictionary<string, string>()
+		private static readonly Dictionary<string,string> m_English_Message = new ()
 		{
 			{ "RectTransformNone", "'RectTransorm' is necessary." },
 			{ "CanvasGroupNone",   "'CanvasGroup' is necessary." },
 		} ;
 
-		private string GetMessage( string tLabel )
+		private static string GetMessage( string label )
 		{
 			if( Application.systemLanguage == SystemLanguage.Japanese )
 			{
-				if( m_Japanese_Message.ContainsKey( tLabel ) == false )
+				if( m_Japanese_Message.ContainsKey( label ) == false )
 				{
 					return "指定のラベル名が見つかりません" ;
 				}
-				return m_Japanese_Message[ tLabel ] ;
+				return m_Japanese_Message[ label ] ;
 			}
 			else
 			{
-				if( m_English_Message.ContainsKey( tLabel ) == false )
+				if( m_English_Message.ContainsKey( label ) == false )
 				{
 					return "Specifying the label name can not be found" ;
 				}
-				return m_English_Message[ tLabel ] ;
+				return m_English_Message[ label ] ;
 			}
 		}
 	}

@@ -11,7 +11,7 @@ using UnityEngine.Networking ;
 
 using uGUIHelper ;
 
-namespace DBS
+namespace DSW
 {
 	/// <summary>
 	/// ネットワーク全般を制御するクラス Version 2022/09/22 0
@@ -1323,7 +1323,7 @@ namespace DBS
 				TerminateRequest() ;		// リクエストはを全てクリアする
 
 //				request.Completed = true ;	// リクエストの完了待ちタスクは終了させる
-				CancelTask() ;				// 余計な処理をされると困るのでタスクを中断して(ルートまで全て中断して)それ以後の処理は行わせないようにする
+				CancelTasks() ;				// 余計な処理をされると困るのでタスクを中断して(ルートまで全て中断して)それ以後の処理は行わせないようにする
 
 				//---------------------------------
 

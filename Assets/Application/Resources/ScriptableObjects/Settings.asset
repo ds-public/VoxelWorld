@@ -30,6 +30,7 @@ MonoBehaviour:
   UseLocalAssetBundle: 1
   UseStreamingAssets: 1
   UseRemoteAssetBundle: 0
+  StreamingAssetsDirectAccessEnabled: 1
   UseParallelDownload: 1
   MaxParallelDownloadCount: 6
   RemoteAssetBundlePath: 
@@ -40,7 +41,7 @@ MonoBehaviour:
   SelectedPlatformType: 0
   EnableExceptionDialog: 1
   DataType: 0
-  WebAPI_EndPoints:
+  EndPoints:
   - Name: 0
     DisplayName: "\u5B9F\u9A13\u30B5\u30FC\u30D0\u30FC"
     Path: https://api-experiment-dbs.net/api/
@@ -57,7 +58,7 @@ MonoBehaviour:
     DisplayName: "\u672C\u756A\u30B5\u30FC\u30D0\u30FC"
     Path: https://api-release-dbs.net/api/
     Description: "\u516C\u958B\u7528\u306E\u74B0\u5883\u3067\u3059"
-  WebAPI_DefaultEndPoint: 1
+  EndPoint: 1
   DevelopmentMode: 1
   SecurityEnabled: 1
   ServerPortNumber: 32760

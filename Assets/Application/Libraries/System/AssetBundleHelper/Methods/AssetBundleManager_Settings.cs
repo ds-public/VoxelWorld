@@ -36,6 +36,7 @@ namespace AssetBundleHelper
 		[SerializeField,Header( "ストレージ内の保存対象パス" )]
 		private string m_DataPath = "AssetBundleCache" ;
 
+		//---------------
 
 		/// <summary>
 		/// 保存されたアセットバンドルファイルのパスをハッシュ化して隠蔽するかどうか
@@ -58,6 +59,8 @@ namespace AssetBundleHelper
 		[SerializeField,Header( "各種情報を暗号化するかどうか" )]
 		private bool m_SecurityEnabled = false ;
 
+		//---------------
+
 		/// <summary>
 		/// 非同期版のロードを行う際に通信以外処理を全て同期で行うかどうか(展開速度は上がるが別のコルーチンの呼び出し頻度が下がる)
 		/// </summary>
@@ -79,6 +82,8 @@ namespace AssetBundleHelper
 		[SerializeField,Header( "非同期ロード実行時に通信以外を全て同期で行うかどうか" )]
 		private bool m_FastLoadEnabled = true ;
 
+		//---------------
+
 		/// <summary>
 		/// ストレージへの書き込みを非同期で行うかどうか
 		/// </summary>
@@ -99,6 +104,31 @@ namespace AssetBundleHelper
 		
 		[SerializeField,Header( "ストレージへの書き込みを非同期で行うかどうか" )]
 		private bool m_AsynchronousWritingEnabled = true ;
+
+		//---------------
+
+		/// <summary>
+		/// ストレージへの書き込みをダウンロードしながら直接行う事を全マニフェストで許可するか
+		/// </summary>
+		public static bool DirectSaveEnabled
+		{
+			get
+			{
+				return m_Instance != null && m_Instance.m_DirectSaveEnabled ;
+			}
+			set
+			{
+				if( m_Instance != null )
+				{
+					m_Instance.m_DirectSaveEnabled = value ;
+				}
+			}
+		}
+		
+		[SerializeField,Header( "ストレージへの書き込みをダウンロードしながら直接行う事を全マニフェストで許可するか" )]
+		private bool m_DirectSaveEnabled = true ;
+
+		//---------------
 
 		/// <summary>
 		/// アセットバンドルマネージャ起動と同時にマニフェストをロードするかどうかを示す
@@ -258,35 +288,75 @@ namespace AssetBundleHelper
 
 		//-------------------------------------------------------------------------------------------
 
-		// 最低の受信バッファサイズ
-		private const int m_MinimumReceiveBufferSize = 1024 * 1024 * 16 ;
+		// 初期の受信バッファサイズ(一括)
+		private const int m_DefaultLargeReceiveBufferSize = 1024 * 1024 * 16 ;
+
+		// 最小の受信バッファサイズ(一括)
+		private const int m_MinimumLargeReceiveBufferSize = 1024 * 1024 *  4 ;
 
 		/// <summary>
-		/// 受信バッファのサイズ[並列それぞれのサイズ]
+		/// 受信バッファのサイズ(一括)[並列それぞれのサイズ]
 		/// </summary>
-		public static int ReceiveBufferSize
+		public static int LargeReceiveBufferSize
 		{
 			get
 			{
-				return m_Instance == null ? 0 : m_Instance.m_ReceiveBufferSize ;
+				return m_Instance == null ? 0 : m_Instance.m_LargeReceiveBufferSize ;
 			}
 			set
 			{
 				if( m_Instance != null )
 				{
-					int receiveBufferSize = value ;
-					if( receiveBufferSize <  m_MinimumReceiveBufferSize )
+					int largeReceiveBufferSize = value ;
+					if( largeReceiveBufferSize <  m_MinimumLargeReceiveBufferSize )
 					{
-						receiveBufferSize  = m_MinimumReceiveBufferSize ;
+						largeReceiveBufferSize  = m_MinimumLargeReceiveBufferSize ;
 					}
 
-					m_Instance.m_ReceiveBufferSize = receiveBufferSize ;
+					m_Instance.m_LargeReceiveBufferSize = largeReceiveBufferSize ;
 				}
 			}
 		}
 
-		[SerializeField,Header( "受信バッファのサイズ[並列それぞれのサイズ]" )]
-		private int m_ReceiveBufferSize = m_MinimumReceiveBufferSize ;	// 16MB
+		[SerializeField,Header( "受信バッファのサイズ(一括)[並列それぞれのサイズ]" )]
+		private int m_LargeReceiveBufferSize = m_DefaultLargeReceiveBufferSize ;
+
+		//---------------
+
+		// 初期の受信バッファサイズ(分割)
+		private const int m_DefaultSmallReceiveBufferSize = 1024 * 1024 *  1 ;
+
+		// 最小の受信バッファサイズ(分割)
+		private const int m_MinimumSmallReceiveBufferSize = 1024 ;
+
+		/// <summary>
+		/// 受信バッファのサイズ(分割)[並列それぞれのサイズ]
+		/// </summary>
+		public static int SmallReceiveBufferSize
+		{
+			get
+			{
+				return m_Instance == null ? 0 : m_Instance.m_SmallReceiveBufferSize ;
+			}
+			set
+			{
+				if( m_Instance != null )
+				{
+					int smallReceiveBufferSize = value ;
+					if( smallReceiveBufferSize <  m_MinimumSmallReceiveBufferSize )
+					{
+						smallReceiveBufferSize  = m_MinimumSmallReceiveBufferSize ;
+					}
+
+					m_Instance.m_SmallReceiveBufferSize = smallReceiveBufferSize ;
+				}
+			}
+		}
+
+		[SerializeField,Header( "受信バッファのサイズ(分割)[並列それぞれのサイズ]" )]
+		private int m_SmallReceiveBufferSize = m_DefaultSmallReceiveBufferSize ;
+
+		//-----------------------------------
 
 		// 受信バッファ構造体
 		public class ReceiveBufferStructure
@@ -295,80 +365,386 @@ namespace AssetBundleHelper
 			public byte[]	ReceiveBuffer ;
 		}
 
-		private List<ReceiveBufferStructure>	m_ReceiveBufferCache ;
+		//-----------------------------------
+		// 大きいバッファ
+
+		private List<ReceiveBufferStructure>	m_LargeReceiveBufferCache ;
+		private List<ReceiveBufferStructure>	m_LargeRemoveTargets ;
 
 		/// <summary>
-		/// 受信バッファキャッシュを生成する
+		/// 受信バッファ(大)キャッシュを生成する
 		/// </summary>
-		public void CreateReceiveBufferCache()
+		public void CreateLargeReceiveBufferCache()
 		{
-			m_ReceiveBufferCache = new List<ReceiveBufferStructure>() ;
+			m_LargeReceiveBufferCache	= new List<ReceiveBufferStructure>() ;
+			m_LargeRemoveTargets		= new List<ReceiveBufferStructure>() ;
 		}
 
 		/// <summary>
-		/// 受信バッファキャッシュを破棄する
+		/// 受信バッファ(大)キャッシュを破棄する
 		/// </summary>
-		public void DeleteReceiveBufferCache()
+		public void DeleteLargeReceiveBufferCache()
 		{
-			m_ReceiveBufferCache = null ;
+			m_LargeRemoveTargets		= null ;
+			m_LargeReceiveBufferCache	= null ;
 		}
 
 		/// <summary>
-		/// 受信バッファを生成または取得する
+		/// 使用していない受信バッファ(大)を破棄する
 		/// </summary>
-		/// <returns></returns>
-		public byte[] KeepReceiveBuffer()
+		/// <param name="isForce"></param>
+		public void ClearLargeReceiveBufferCache( bool isForce = false )
 		{
-			int i, l = m_ReceiveBufferCache.Count ;
+			if( m_LargeReceiveBufferCache == null || m_LargeReceiveBufferCache.Count == 0 )
+			{
+				// 不要
+				return ;
+			}
 
-			byte[] receiveBuffer = null ;
+			if( isForce == true )
+			{
+				// 全て強制破棄
+				m_LargeReceiveBufferCache.Clear() ;
+				return ;
+			}
+
+			//----------------------------------
+
+			int i, l = m_LargeReceiveBufferCache.Count ;
+
+			// 破棄対象
+			m_LargeRemoveTargets.Clear() ;
+
+			//----------------------------------
+
 			for( i  = 0 ; i <  l ; i ++ )
 			{
-				if( m_ReceiveBufferCache[ i ].IsUsing == false )
+				if( m_LargeReceiveBufferCache[ i ].IsUsing == false )
 				{
-					// 開いているバッファがある
-					m_ReceiveBufferCache[ i ].IsUsing	= true ;	// 確保状態とする
-					receiveBuffer						= m_ReceiveBufferCache[ i ].ReceiveBuffer ;
-					break ;
+					// 破棄対象に追加する
+					m_LargeRemoveTargets.Add( m_LargeReceiveBufferCache[ i ] ) ;
 				}
 			}
+
+			//----------------------------------
+
+			if( m_LargeRemoveTargets.Count >  0 )
+			{
+				// 破棄対象が存在するため破棄する
+				foreach( var removeTarget in m_LargeRemoveTargets )
+				{
+					m_LargeReceiveBufferCache.Remove( removeTarget ) ;
+				}
+
+				m_LargeRemoveTargets.Clear() ;
+			}
+		}
+
+		/// <summary>
+		/// 受信バッファ(大)を生成または取得する
+		/// </summary>
+		/// <returns></returns>
+		public byte[] KeepLargeReceiveBuffer()
+		{
+			int i, l = m_LargeReceiveBufferCache.Count ;
+
+			// 破棄対象
+			m_LargeRemoveTargets.Clear() ;
+
+			//----------------------------------
+
+			byte[] receiveBuffer = null ;
+
+			for( i  = 0 ; i <  l ; i ++ )
+			{
+				if( m_LargeReceiveBufferCache[ i ].IsUsing == false )
+				{
+					// 空いているバッファがある
+					if( m_LargeReceiveBufferCache[ i ].ReceiveBuffer != null && m_LargeReceiveBufferCache[ i ].ReceiveBuffer.Length != m_LargeReceiveBufferSize )
+					{
+						// サイズ的に設定の基準を満たす
+						m_LargeReceiveBufferCache[ i ].IsUsing	= true ;	// 確保状態とする
+						receiveBuffer							= m_LargeReceiveBufferCache[ i ].ReceiveBuffer ;
+						break ;
+					}
+					else
+					{
+						// サイズ的に設定の基準を満たさないので破棄する
+						m_LargeReceiveBufferCache[ i ].ReceiveBuffer = null ;
+
+						// 破棄対象に追加する
+						m_LargeRemoveTargets.Add( m_LargeReceiveBufferCache[ i ] ) ;
+					}
+				}
+			}
+
+			//----------------------------------
+
+			if( m_LargeRemoveTargets.Count >  0 )
+			{
+				// 破棄対象が存在するため破棄する
+				foreach( var removeTarget in m_LargeRemoveTargets )
+				{
+					m_LargeReceiveBufferCache.Remove( removeTarget ) ;
+				}
+
+				m_LargeRemoveTargets.Clear() ;
+			}
+
+			//----------------------------------
 
 			if( receiveBuffer == null )
 			{
 				// 確保できなかったので新たに生成する
-				receiveBuffer = new byte[ m_ReceiveBufferSize ] ;
+				receiveBuffer = new byte[ m_LargeReceiveBufferSize ] ;
 
-				m_ReceiveBufferCache.Add( new ReceiveBufferStructure()
+				m_LargeReceiveBufferCache.Add( new ReceiveBufferStructure()
 				{
 					IsUsing			= true,
 					ReceiveBuffer	= receiveBuffer
 				} ) ;
 			}
 
+			//----------------------------------------------------------
+#if UNITY_EDITOR
+			if( receiveBuffer == null )
+			{
+				Debug.LogWarning( "Large receive buffer could not allocated." ) ;
+			}
+#endif
 			return receiveBuffer ;
 		}
 
 		/// <summary>
-		/// 受信バッファを解放する
+		/// 受信バッファ(大)を解放する
 		/// </summary>
 		/// <param name="receiveBuffer"></param>
-		public void FreeReceiveBuffer( byte[] receiveBuffer )
+		public void FreeLargeReceiveBuffer( byte[] receiveBuffer )
 		{
-			int i, l = m_ReceiveBufferCache.Count ;
+			int i, l = m_LargeReceiveBufferCache.Count ;
 
 			for( i  = 0 ; i <  l ; i ++ )
 			{
-				if( m_ReceiveBufferCache[ i ].ReceiveBuffer == receiveBuffer )
+				if( m_LargeReceiveBufferCache[ i ].ReceiveBuffer == receiveBuffer )
 				{
-					m_ReceiveBufferCache[ i ].IsUsing = false ;	// 解放状態とする
+					m_LargeReceiveBufferCache[ i ].IsUsing = false ;	// 解放状態とする
 					break ;
 				}
 			}
 		}
 
+		/// <summary>
+		/// 使用中のバッファ(大)の数を取得する
+		/// </summary>
+		/// <returns></returns>
+		public int GetUsingLargeReceiveBufferCount()
+		{
+			int i, l = m_LargeReceiveBufferCache.Count ;
+			int count = 0 ;
+
+			for( i  = 0 ; i <  l ; i ++ )
+			{
+				if( m_LargeReceiveBufferCache[ i ].IsUsing == true )
+				{
+					count ++ ;
+				}
+			}
+
+			return count ;
+		}
+
+		//-----------------------------------
+		// 小さいバッファ
+
+		private List<ReceiveBufferStructure>	m_SmallReceiveBufferCache ;
+		private List<ReceiveBufferStructure>	m_SmallRemoveTargets ;
+
+		/// <summary>
+		/// 受信バッファ(小)キャッシュを生成する
+		/// </summary>
+		public void CreateSmallReceiveBufferCache()
+		{
+			m_SmallReceiveBufferCache	= new List<ReceiveBufferStructure>() ;
+			m_SmallRemoveTargets		= new List<ReceiveBufferStructure>() ;
+		}
+
+		/// <summary>
+		/// 受信バッファ(小)キャッシュを破棄する
+		/// </summary>
+		public void DeleteSmallReceiveBufferCache()
+		{
+			m_SmallRemoveTargets		= null ;
+			m_SmallReceiveBufferCache	= null ;
+		}
+
+		/// <summary>
+		/// 使用していない受信バッファ(小)を破棄する
+		/// </summary>
+		/// <param name="isForce"></param>
+		public void ClearSmallReceiveBufferCache( bool isForce = false )
+		{
+			if( m_SmallReceiveBufferCache == null || m_SmallReceiveBufferCache.Count == 0 )
+			{
+				// 不要
+				return ;
+			}
+
+			if( isForce == true )
+			{
+				// 全て強制破棄
+				m_SmallReceiveBufferCache.Clear() ;
+				return ;
+			}
+
+			//----------------------------------
+
+			int i, l = m_SmallReceiveBufferCache.Count ;
+
+			// 破棄対象
+			m_SmallRemoveTargets.Clear() ;
+
+			//----------------------------------
+
+			for( i  = 0 ; i <  l ; i ++ )
+			{
+				if( m_SmallReceiveBufferCache[ i ].IsUsing == false )
+				{
+					// 破棄対象に追加する
+					m_SmallRemoveTargets.Add( m_SmallReceiveBufferCache[ i ] ) ;
+				}
+			}
+
+			//----------------------------------
+
+			if( m_SmallRemoveTargets.Count >  0 )
+			{
+				// 破棄対象が存在するため破棄する
+				foreach( var removeTarget in m_SmallRemoveTargets )
+				{
+					m_SmallReceiveBufferCache.Remove( removeTarget ) ;
+				}
+
+				m_SmallRemoveTargets.Clear() ;
+			}
+		}
+
+		/// <summary>
+		/// 受信バッファ(小)を生成または取得する
+		/// </summary>
+		/// <returns></returns>
+		public byte[] KeepSmallReceiveBuffer()
+		{
+			int i, l = m_SmallReceiveBufferCache.Count ;
+
+			// 破棄対象
+			m_SmallRemoveTargets.Clear() ;
+
+			//----------------------------------
+
+			byte[] receiveBuffer = null ;
+
+			for( i  = 0 ; i <  l ; i ++ )
+			{
+				if( m_SmallReceiveBufferCache[ i ].IsUsing == false )
+				{
+					// 空いているバッファがある
+					if( m_SmallReceiveBufferCache[ i ].ReceiveBuffer != null && m_SmallReceiveBufferCache[ i ].ReceiveBuffer.Length != m_SmallReceiveBufferSize )
+					{
+						// サイズ的に設定の基準を満たす
+						m_SmallReceiveBufferCache[ i ].IsUsing	= true ;	// 確保状態とする
+						receiveBuffer							= m_SmallReceiveBufferCache[ i ].ReceiveBuffer ;
+						break ;
+					}
+					else
+					{
+						// サイズ的に設定の基準を満たさないので破棄する
+						m_SmallReceiveBufferCache[ i ].ReceiveBuffer = null ;
+
+						// 破棄対象に追加する
+						m_SmallRemoveTargets.Add( m_SmallReceiveBufferCache[ i ] ) ;
+					}
+				}
+			}
+
+			//----------------------------------
+
+			if( m_SmallRemoveTargets.Count >  0 )
+			{
+				// 破棄対象が存在するため破棄する
+				foreach( var removeTarget in m_SmallRemoveTargets )
+				{
+					m_SmallReceiveBufferCache.Remove( removeTarget ) ;
+				}
+
+				m_SmallRemoveTargets.Clear() ;
+			}
+
+			//----------------------------------
+
+			if( receiveBuffer == null )
+			{
+				// 確保できなかったので新たに生成する
+				receiveBuffer = new byte[ m_SmallReceiveBufferSize ] ;
+
+				m_SmallReceiveBufferCache.Add( new ReceiveBufferStructure()
+				{
+					IsUsing			= true,
+					ReceiveBuffer	= receiveBuffer
+				} ) ;
+			}
+
+			//----------------------------------------------------------
+#if UNITY_EDITOR
+			if( receiveBuffer == null )
+			{
+				Debug.LogWarning( "Small receive buffer could not allocated." ) ;
+			}
+#endif
+			return receiveBuffer ;
+		}
+
+		/// <summary>
+		/// 受信バッファ(小)を解放する
+		/// </summary>
+		/// <param name="receiveBuffer"></param>
+		public void FreeSmallReceiveBuffer( byte[] receiveBuffer )
+		{
+			int i, l = m_SmallReceiveBufferCache.Count ;
+
+			for( i  = 0 ; i <  l ; i ++ )
+			{
+				if( m_SmallReceiveBufferCache[ i ].ReceiveBuffer == receiveBuffer )
+				{
+					m_SmallReceiveBufferCache[ i ].IsUsing = false ;	// 解放状態とする
+					break ;
+				}
+			}
+		}
+
+		/// <summary>
+		/// 使用中のバッファ(小)の数を取得する
+		/// </summary>
+		/// <returns></returns>
+		public int GetUsingSmallReceiveBufferCount()
+		{
+			int i, l = m_SmallReceiveBufferCache.Count ;
+			int count = 0 ;
+
+			for( i  = 0 ; i <  l ; i ++ )
+			{
+				if( m_SmallReceiveBufferCache[ i ].IsUsing == true )
+				{
+					count ++ ;
+				}
+			}
+
+			return count ;
+		}
+
 		//-------------------------------------------------------------------------------------------
 
-		private List<Action> m_OnQuitCallbacks = new List<Action>() ;
+		// 緊急停止の読んで欲しいコールバックの登録
+		private readonly List<Action> m_OnQuitCallbacks = new () ;
 
 		/// <summary>
 		///  AssetBundleManager 停止時に呼んで欲しいコールバックを登録する
@@ -402,11 +778,10 @@ namespace AssetBundleHelper
 			}
 		}
 
-
 		//-------------------------------------------------------------------------------------------
 		// ダウンロード時に追加したい HTTP ヘッダ情報
 
-		private readonly Dictionary<string,string>	m_ConstantHeaders = new Dictionary<string, string>() ;
+		private readonly Dictionary<string,string>	m_ConstantHeaders = new () ;
 
 #if UNITY_EDITOR
 		/// <summary>
@@ -419,7 +794,7 @@ namespace AssetBundleHelper
 			public string Value ;
 		}
 
-		private readonly List<ConstantHeader>	m_ConstantHeaers_Monitor = new List<ConstantHeader>() ;
+		private readonly List<ConstantHeader>	m_ConstantHeaers_Monitor = new () ;
 #endif
 
 		/// <summary>
@@ -625,7 +1000,7 @@ namespace AssetBundleHelper
 			/// <summary>
 			/// ファイルサイズ
 			/// </summary>
-			public int		AssetBundleSize ;
+			public long		AssetBundleSize ;
 
 			/// <summary>
 			/// 参照された回数
@@ -634,8 +1009,8 @@ namespace AssetBundleHelper
 		}
 
 		[SerializeField][Header( "使用対象のアセットバンドル記録" )]
-		private List<UsingAssetBundleInfo>								m_UsingAssetBundles		= new List<UsingAssetBundleInfo>() ;
-		private Dictionary<( string, string ), UsingAssetBundleInfo>	m_UsingAssetBundles_Hash = new Dictionary<(string, string), UsingAssetBundleInfo>() ;
+		private List<UsingAssetBundleInfo>								m_UsingAssetBundles		= new () ;
+		private Dictionary<( string, string ), UsingAssetBundleInfo>	m_UsingAssetBundles_Hash = new () ;
 
 		/// <summary>
 		/// 現在使用するアセットバンドル情報を記録中かどうか
@@ -768,7 +1143,7 @@ namespace AssetBundleHelper
 				//--------------------------------------------------------------------------
 				// プラットフォーム関係無しのパス情報のみを返す
 
-				List<string> assetBundlePaths = new List<string>() ;
+				var assetBundlePaths = new List<string>() ;
 
 				foreach( var record in m_UsingAssetBundles )
 				{
@@ -854,7 +1229,7 @@ namespace AssetBundleHelper
 		}
 #endif
 		// 使用するアセットバンドル情報を記録する
-		private void RecordUsingAssetBundle_Private( string manifestName, string assetBundlePath, int assetBundleSize )
+		private void RecordUsingAssetBundle_Private( string manifestName, string assetBundlePath, long assetBundleSize )
 		{
 			var key = ( manifestName, assetBundlePath ) ;
 

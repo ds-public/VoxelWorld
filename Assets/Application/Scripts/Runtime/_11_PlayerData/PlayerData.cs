@@ -5,13 +5,8 @@ using System.Linq ;
 
 using UnityEngine ;
 
-using MessagePack ;	// 1.7.3.5 は Api Compatibility Lavel を .Net 4.x にしないと使えない
 
-using CSVHelper ;
-using JsonHelper ;
-using StorageHelper ;
-
-namespace DBS
+namespace DSW
 {
 	/// <summary>
 	/// ゲーム全体から参照されるプレイヤー系データを保持するクラス Version 2022/10/01

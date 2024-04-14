@@ -8,7 +8,8 @@ using UnityEngine ;
 using UnityEditor ;
 #endif
 
-namespace DBS.UI
+
+namespace DSW.UI
 {
 	/// <summary>
 	/// ButtonTransition 用の共通 ColorTint クラス
@@ -22,7 +23,7 @@ namespace DBS.UI
 		public		Color32	  Normal		=> m_Normal ;
 
 		[SerializeField]
-		protected	Color32	m_Normal		= new Color32( 255, 255, 255, 255 ) ;
+		protected	Color32	m_Normal		= new ( 255, 255, 255, 255 ) ;
 
 
 		/// <summary>
@@ -31,7 +32,7 @@ namespace DBS.UI
 		public		Color32	  Highlighted	=> m_Highlighted ;
 
 		[SerializeField]
-		protected	Color32	m_Highlighted	= new Color32( 247, 247, 247, 255 ) ;
+		protected	Color32	m_Highlighted	= new ( 247, 247, 247, 255 ) ;
 
 
 		/// <summary>
@@ -40,7 +41,7 @@ namespace DBS.UI
 		public		Color32	  Pressed		=> m_Pressed ;
 
 		[SerializeField]
-		protected	Color32	m_Pressed		= new Color32( 199, 199, 199, 255 ) ;
+		protected	Color32	m_Pressed		= new ( 199, 199, 199, 255 ) ;
 
 
 		/// <summary>
@@ -49,7 +50,7 @@ namespace DBS.UI
 		public		Color32	  Selected		=> m_Selected ;
 
 		[SerializeField]
-		protected	Color32	m_Selected		= new Color32( 247, 247, 247, 255 ) ;
+		protected	Color32	m_Selected		= new ( 247, 247, 247, 255 ) ;
 
 
 		/// <summary>
@@ -58,7 +59,7 @@ namespace DBS.UI
 		public		Color32	  Disabled		=> m_Disabled ;
 
 		[SerializeField]
-		protected	Color32	m_Disabled		= new Color32( 143, 143, 143, 255 ) ;
+		protected	Color32	m_Disabled		= new ( 143, 143, 143, 255 ) ;
 
 
 		/// <summary>

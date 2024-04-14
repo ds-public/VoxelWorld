@@ -3,7 +3,7 @@ using System.Collections ;
 using System.Collections.Generic ;
 using UnityEngine ;
 
-namespace DBS
+namespace DSW
 {
 	/// <summary>
 	/// Color32 型のメソッド拡張(注意:構造体の拡張メソッドには ref が必要) Version 2022/08/10
