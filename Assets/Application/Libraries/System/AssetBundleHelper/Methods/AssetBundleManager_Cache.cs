@@ -321,10 +321,8 @@ namespace AssetBundleHelper
 					foreach( var manifestInfo in m_ManifestInfo )
 					{
 						manifestInfo.RemoveAllFiles() ;
-//						manifestInfo.SetAllUpdateRequired() ;	// 更新が必要扱いにする
 					}
 				}
-//				result = StorageAccessor_Remove( string.Empty, true ) ;
 
 				result = true ;
 			}

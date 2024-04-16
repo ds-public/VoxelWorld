@@ -595,11 +595,17 @@ namespace AssetBundleHelper
 			/// </summary>
 			internal void SetAllUpdateRequired()
 			{
-				foreach( var assetBundleInfo in m_AssetBundleInfo )
+				if( IsStreamingAssetsOnly == false )	// 対象が StreamingAssets 且つ DirectAccesssEnabled が有効の場合のみ(DirectAccessEnabled が無効の場合は、コピーがデータフォルダに存在するため、再コピーする必要がある)
 				{
-					assetBundleInfo.UpdateRequired = true ;	// 更新が必要扱いにする
+					foreach( var assetBundleInfo in m_AssetBundleInfo )
+					{
+						if( assetBundleInfo.LocationPriority == LocationPriorities.Storage )	// 実際のロード対象がデータフォルダになっている(実際のロード対象が StreamingAssets になっている場合、最新は StreamingAssets 側であるため、データフォルダにコピーは存在しない)
+						{
+							assetBundleInfo.UpdateRequired = true ;	// 更新が必要扱いにする
+							Modified = true ;
+						}
+					}
 				}
-				Modified = true ;
 			}
 
 			/// <summary>
@@ -842,10 +848,16 @@ namespace AssetBundleHelper
 
 					//--------------------------------------------------------
 #if UNITY_EDITOR
-					// 確認用にＣＲＣ[CSV版]ファイルを保存する
+					// 確認用にＣＲＣ[CSV版]ファイルを保存する(ファイルが存在しなくても動作上の支障は無い)
 					string path =  StorageCacheRootPath + ManifestName + "/" ;
-					StorageAccessor_SaveText( path + ManifestName + ".csv", crcCsvText ) ;
-					Debug.Log( "[AssetBundleManager] Save CRC[CSV] File : " + ManifestName + "\n -> "+ path + ManifestName + ".csv" ) ;
+					if( StorageAccessor_SaveText( path + ManifestName + ".csv", crcCsvText, makeFolder:true ) == true )
+					{
+						Debug.Log( "[AssetBundleManager] Save CRC[CSV] File : " + ManifestName + "\n -> "+ path + ManifestName + ".csv" ) ;
+					}
+					else
+					{
+						Debug.LogWarning( "[AssetBundleManager] Save CRC[CSV] File : " + ManifestName + "\n -> "+ path + ManifestName + ".csv" + " is failed." ) ;
+					}
 #endif
 					//--------------------------------------------------------
 
@@ -895,10 +907,16 @@ namespace AssetBundleHelper
 
 					//--------------------------------------------------------
 #if UNITY_EDITOR
-					// 確認用にＣＲＣ[CSV版]ファイルを保存する
+					// 確認用にＣＲＣ[JSON版]ファイルを保存する(ファイルが存在しなくても動作上の支障は無い)
 					string path =  StorageCacheRootPath + ManifestName + "/" ;
-					StorageAccessor_SaveText( path + ManifestName + ".json", crcCsvText ) ;
-					Debug.Log( "[UnityEditorOnly : AssetBundleManager] Save CRC[JSON] File : " + ManifestName + "\n -> "+ path + ManifestName + ".json" ) ;
+					if( StorageAccessor_SaveText( path + ManifestName + ".json", crcJsonText, makeFolder:true ) == true )
+					{
+						Debug.Log( "[UnityEditorOnly : AssetBundleManager] Save CRC[JSON] File : " + ManifestName + "\n -> "+ path + ManifestName + ".json" ) ;
+					}
+					else
+					{
+						Debug.LogWarning( "[UnityEditorOnly : AssetBundleManager] Save CRC[JSON] File : " + ManifestName + "\n -> "+ path + ManifestName + ".json" + " is failed." ) ;
+					}
 #endif
 					//--------------------------------------------------------
 
