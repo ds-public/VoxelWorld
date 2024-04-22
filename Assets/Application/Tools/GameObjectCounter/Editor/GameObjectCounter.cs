@@ -15,7 +15,7 @@ using UnityEngine ;
 namespace Tools.ForGameObject
 {
 	/// <summary>
-	/// ゲームオブジェクトカウンター(エディター用) Version 2023/10/02 0
+	/// ゲームオブジェクトカウンター(エディター用) Version 2024/04/22 0
 	/// </summary>
 	public class GameObjectCounter : EditorWindow
 	{
@@ -26,6 +26,9 @@ namespace Tools.ForGameObject
 		}
 	
 		//----------------------------------------------------------
+
+		private Vector2 m_Scroll ;
+
 
 		// レイアウトを描画する
 		internal void OnGUI()
@@ -39,6 +42,29 @@ namespace Tools.ForGameObject
 				GUI.contentColor = new Color32( 255, 255,   0, 255 ) ;
 				GUILayout.Label( GetMessage( "Selected GameObject" ), GUILayout.Width( 200f ) ) ;
 				GUI.contentColor = Color.white ;
+
+				//---------------------------------
+
+				// スクロールビューで表示する
+				m_Scroll = GUILayout.BeginScrollView( m_Scroll ) ;
+				{
+					// 表示が必要な箇所だけ表示する
+					GUI.color = new Color32( 255, 127,   0, 255 ) ;
+					foreach( var go in Selection.gameObjects )
+					{
+						// アセット情報
+						GUILayout.BeginHorizontal() ;
+						{
+							// 横一列
+							EditorGUILayout.TextField( GetHierarchyPath( go ) ) ;
+						}
+						GUILayout.EndHorizontal() ;
+					}
+					GUI.color = Color.white ;
+				}
+				GUILayout.EndScrollView() ;
+
+				//---------------------------------
 
 				GUILayout.BeginHorizontal() ;	// 横並び開始
 				{
@@ -79,6 +105,31 @@ namespace Tools.ForGameObject
 			}
 		}
 
+		// ヒエラルキーのパスを取得する
+		private string GetHierarchyPath( GameObject go )
+		{
+			string path = string.Empty ;
+
+			Transform node = go.transform ;
+
+			do
+			{
+				if( string.IsNullOrEmpty( path ) == true )
+				{
+					path = node.name ;
+				}
+				else
+				{
+					path = $"{node.name}/{path}" ;
+				}
+
+				node = node.parent ;
+			}
+			while( node != null ) ;
+
+			return path ;
+		}
+
 		internal void OnSelectionChange() 
 		{
 			Repaint() ;
@@ -89,11 +140,44 @@ namespace Tools.ForGameObject
 			int count_a = 0 ;
 			int count_d = 0 ;
 
+			var checkedTargets = new List<GameObject>() ;
+
 			int i, l = targets.Length ;
 			for( i  = 0 ; i <  l ; i ++ )
 			{
 				var target = targets[ i ] ;
 
+				if( checkedTargets.Contains( target ) == false )
+				{
+					if( target.activeSelf == true )
+					{
+						count_a ++ ;
+					}
+					else
+					{
+						count_d ++ ;
+					}
+
+					int ci, cl = target.transform.childCount ;
+					if( cl >   0 )
+					{
+						for( ci  = 0 ; ci <  cl ; ci ++ )
+						{
+							GetCount( target.transform.GetChild( ci ).gameObject, ref count_a, ref count_d, checkedTargets ) ;
+						}
+					}
+
+					checkedTargets.Add( target ) ;
+				}
+			}
+
+			return ( count_a, count_d ) ;
+		}
+
+		private void GetCount( GameObject target, ref int count_a, ref int count_d, List<GameObject> checkedTargts )
+		{
+			if( checkedTargts.Contains( target ) == false )
+			{
 				if( target.activeSelf == true )
 				{
 					count_a ++ ;
@@ -108,32 +192,11 @@ namespace Tools.ForGameObject
 				{
 					for( ci  = 0 ; ci <  cl ; ci ++ )
 					{
-						GetCount( target.transform.GetChild( ci ).gameObject, ref count_a, ref count_d ) ;
+						GetCount( target.transform.GetChild( ci ).gameObject, ref count_a, ref count_d, checkedTargts ) ;
 					}
 				}
-			}
 
-			return ( count_a, count_d ) ;
-		}
-
-		private void GetCount( GameObject target, ref int count_a, ref int count_d )
-		{
-			if( target.activeSelf == true )
-			{
-				count_a ++ ;
-			}
-			else
-			{
-				count_d ++ ;
-			}
-
-			int ci, cl = target.transform.childCount ;
-			if( cl >   0 )
-			{
-				for( ci  = 0 ; ci <  cl ; ci ++ )
-				{
-					GetCount( target.transform.GetChild( ci ).gameObject, ref count_a, ref count_d ) ;
-				}
+				checkedTargts.Add( target ) ;
 			}
 		}
 
