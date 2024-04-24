@@ -10,6 +10,7 @@ using UnityEngine.Networking ;
 
 using StorageHelper ;
 
+
 /// <summary>
 /// アセットバンドルヘルパーパッケージ
 /// </summary>
@@ -862,7 +863,7 @@ namespace AssetBundleHelper
 				if( header.Count >  0 )
 				{
 					int i, l = header.Count ;
-					string[] keys = new string[ l ] ;
+					var keys = new string[ l ] ;
 					header.Keys.CopyTo( keys, 0 ) ;
 					for( i  = 0 ; i <  l ; i ++ )
 					{
@@ -914,7 +915,7 @@ namespace AssetBundleHelper
 					// 直接ストレージへ保存するケース(分割)
 					// ダウンロードしながら保存していく
 
-					www = new UnityWebRequest( url, "GET" ) ;
+					www = new ( url, "GET" ) ;
 
 					// 受信バッファを取得する(分割用のバッファを使用する)
 					receiveBuffer = instance.KeepSmallReceiveBuffer() ;
@@ -932,7 +933,7 @@ namespace AssetBundleHelper
 				if( header.Count >  0 )
 				{
 					int i, l = header.Count ;
-					string[] keys = new string[ l ] ;
+					var keys = new string[ l ] ;
 					header.Keys.CopyTo( keys, 0 ) ;
 					for( i  = 0 ; i <  l ; i ++ )
 					{

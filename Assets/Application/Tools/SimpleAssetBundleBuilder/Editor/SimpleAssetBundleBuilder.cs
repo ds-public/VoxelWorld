@@ -5,6 +5,7 @@ using System.Linq ;
 using System.Reflection ;
 using System.Text ;
 using System.Xml ;
+
 using UnityEngine ;
 using UnityEditor ;
 using UnityEditor.SceneManagement ;
@@ -16,7 +17,7 @@ using UnityEditor.SceneManagement ;
 namespace Tools.ForAssetBundle
 {
 	/// <summary>
-	/// アセットバンドルビルダークラス(エディター用) Version 2024/04/02 0
+	/// アセットバンドルビルダークラス(エディター用) Version 2024/04/23 0
 	/// </summary>
 	public class SimpleAssetBundleBuilder : EditorWindow
 	{
@@ -29,10 +30,10 @@ namespace Tools.ForAssetBundle
 		//------------------------------------------------------------
 
 		// アセットバンドル化するファイル単位の情報
-		[System.Serializable]
+		[Serializable]
 		class AssetBundleFile
 		{
-			[System.Serializable]
+			[Serializable]
 			public class AssetFile
 			{
 				public string	AssetPath ;
@@ -73,7 +74,7 @@ namespace Tools.ForAssetBundle
 				foreach( var assetFile in AssetFiles )
 				{
 					// 依存関係にあるアセットを検出する
-					string[] checkPaths = AssetDatabase.GetDependencies( assetFile.AssetPath ) ;
+					var checkPaths = AssetDatabase.GetDependencies( assetFile.AssetPath ) ;
 					if( checkPaths != null && checkPaths.Length >  0 )
 					{
 						foreach( var checkPath in checkPaths )
@@ -107,7 +108,7 @@ namespace Tools.ForAssetBundle
 			{
 				path = path.Replace( '\\', '/' ).TrimStart( '/' ) ;
 
-				string[] folderNames = path.Split( '/' ) ;
+				var folderNames = path.Split( '/' ) ;
 				int i, l = folderNames.Length ;
 
 				for( i  = 0 ; i <  l ; i ++ )
@@ -152,7 +153,7 @@ namespace Tools.ForAssetBundle
 					if( string.IsNullOrEmpty( extension ) == false )
 					{
 						extension = extension.ToLower() ;
-						if( extension == "meta" || extension == "cs" || extension == "js" || extension == "ds_store" )
+						if( extension.Contains( '_' ) == true || extension == "meta" || extension == "cs" || extension == "js" || extension == "ds_store" )
 						{
 							return false ;	// meta と cs と js 以外はＯＫ
 						}
@@ -372,7 +373,7 @@ namespace Tools.ForAssetBundle
 					path = m_AssetBundleRootFolderPath ;
 					if( string.IsNullOrEmpty( path ) == false )
 					{
-						string[] folderNameElements = path.Split( '/' ) ;
+						var folderNameElements = path.Split( '/' ) ;
 						string smallFolderName ;
 						if( folderNameElements != null && folderNameElements.Length >= 2 )
 						{
@@ -440,7 +441,7 @@ namespace Tools.ForAssetBundle
 			{
 				GUILayout.Label( "Build Target", GUILayout.Width( 80 ) ) ;	// null でないなら 74
 
-				BuildTarget buildTarget = ( BuildTarget )EditorGUILayout.EnumPopup( m_BuildTarget ) ;
+				var buildTarget = ( BuildTarget )EditorGUILayout.EnumPopup( m_BuildTarget ) ;
 				if( buildTarget != m_BuildTarget )
 				{
 					m_BuildTarget  = buildTarget ;
@@ -892,7 +893,10 @@ namespace Tools.ForAssetBundle
 				return ( null, null ) ;
 			}
 
-			var elements = text.Split( '\n', ( char )0x0D, ( char )0x0A ) ;
+			text = text.Replace( "\n", "\x0A" ) ;
+			text = text.Replace( "\x0D\x0A", "\x0A" ) ;
+
+			var elements = text.Split( '\x0A' ) ;
 			if( elements == null || elements.Length == 0 )
 			{
 				return ( null, null ) ;
@@ -920,7 +924,7 @@ namespace Tools.ForAssetBundle
 				if( path.IndexOf( ',' ) >= 0 )
 				{
 					// タグの指定あり
-					string[] words = path.Split( ',' ) ;
+					var words = path.Split( ',' ) ;
 					path = words[ 0 ] ;
 					if( words.Length >= 2 && string.IsNullOrEmpty( words[ 1 ] ) == false )
 					{
@@ -1255,7 +1259,7 @@ namespace Tools.ForAssetBundle
 			//-----------------------------------------------------
 
 			// フォルダ
-			string[] da = Directory.GetDirectories( currentPath ) ;
+			var da = Directory.GetDirectories( currentPath ) ;
 			if( da != null && da.Length >  0 )
 			{
 				// サブフォルダがあるのでさらに検査していく
@@ -1271,7 +1275,7 @@ namespace Tools.ForAssetBundle
 			}
 
 			// ファイル
-			string[] fa = Directory.GetFiles( currentPath ) ;
+			var fa = Directory.GetFiles( currentPath ) ;
 			if( fa != null && fa.Length >  0 )
 			{
 				for( int i  = 0 ; i <  fa.Length ; i ++ )
@@ -1426,7 +1430,7 @@ namespace Tools.ForAssetBundle
 			//-----------------------------------------------------
 
 			// フォルダ
-			string[] da = Directory.GetDirectories( currentPath ) ;
+			var da = Directory.GetDirectories( currentPath ) ;
 			if( da != null && da.Length >  0 )
 			{
 				// サブフォルダがあるのでさらに検査していく
@@ -1442,7 +1446,7 @@ namespace Tools.ForAssetBundle
 			}
 
 			// ファイル
-			string[] fa = Directory.GetFiles( currentPath ) ;
+			var fa = Directory.GetFiles( currentPath ) ;
 			if( fa != null && fa.Length >  0 )
 			{
 				for( int i  = 0 ; i <  fa.Length ; i ++ )
@@ -1459,7 +1463,6 @@ namespace Tools.ForAssetBundle
 		}
 
 		//---------------------------------------------------------------------
-
 
 		// パスを解析して最終的なターゲットパスを取得する
 		private string GetLowerPath( string path, out bool wildCard, out bool folderOnly, out bool noConvert, out bool isIgnore )
@@ -1705,7 +1708,7 @@ namespace Tools.ForAssetBundle
 		{
 			path = path.Replace( '\\', '/' ).TrimStart( '/' ) ;
 
-			string[] folderNames = path.Split( '/' ) ;
+			var folderNames = path.Split( '/' ) ;
 			int i, l = folderNames.Length ;
 
 			for( i  = 0 ; i <  l ; i ++ )
@@ -1750,7 +1753,7 @@ namespace Tools.ForAssetBundle
 				if( string.IsNullOrEmpty( extension ) == false )
 				{
 					extension = extension.ToLower() ;
-					if( extension == "meta" || extension == "cs" || extension == "js" || extension == "ds_store" )
+					if( extension.Contains( '_' ) == true || extension == "meta" || extension == "cs" || extension == "js" || extension == "ds_store" )
 					{
 						return false ;	// meta と cs と js 以外はＯＫ
 					}
@@ -1865,6 +1868,7 @@ namespace Tools.ForAssetBundle
 		{
 			public string	Path ;
 			public int		Size ;
+			public string	Hash ;
 			public uint		Crc ;
 		}
 
@@ -2197,6 +2201,7 @@ namespace Tools.ForAssetBundle
 				string filePath_Json = m_AssetBundleRootFolderPath + GetAssetBundleRootName() + ".json" ;
 
 				m_Differences = null ;
+
 				if( m_Differences == null && File.Exists( filePath_Csv )  == true )
 				{
 					// Csv  から古いファイル情報を取得する
@@ -2205,28 +2210,33 @@ namespace Tools.ForAssetBundle
 					{
 						// 分解して情報を格納する
 
-						string[] lines = text.Split( '\n' ) ;
+						text = text.Replace( "\n", "\x0A" ) ;
+						text = text.Replace( "\x0D\x0A", "\x0A" ) ;
+
+						var lines = text.Split( '\x0A' ) ;
 						if( lines != null && lines.Length >  0 )
 						{
-							m_Differences = new Dictionary<string, AssetBundleFileDifference>() ;
+							m_Differences = new () ;
 
 							l = lines.Length ;
 							for( i  = 0 ; i <  l ; i ++ )
 							{
-								string[] elements = lines[ i ].TrimEnd( '\n' ).Split( ',' ) ;
-								if( elements != null && elements.Length == 3 )
+								var elements = lines[ i ].TrimEnd( '\n' ).Split( ',' ) ;
+								if( elements != null && elements.Length >= 4 )
 								{
 									m_Differences.Add( elements[ 0 ], new AssetBundleFileDifference()
 									{
 										Path = elements[ 0 ],
 										Size = int.Parse( elements[ 1 ] ),
-										Crc  = uint.Parse( elements[ 2 ] )
+										Hash = elements[ 2 ],
+										Crc  = uint.Parse( elements[ 3 ] )
 									} ) ;
 								}
 							}
 						}
 					}
 				}
+
 				if( m_Differences == null && File.Exists( filePath_Json ) == true )
 				{
 					// Json から古いファイル情報を取得する
@@ -2239,12 +2249,16 @@ namespace Tools.ForAssetBundle
 						var pack = JsonUtility.FromJson<AssetBundleJsonRecordPack>( text ) ;
 						if( pack != null && pack.AssetBundleFiles != null && pack.AssetBundleFiles.Count >  0 )
 						{
-							m_Differences = new Dictionary<string, AssetBundleFileDifference>() ;
+							m_Differences = new () ;
 
 							l = pack.AssetBundleFiles.Count ;
 							for( i  = 0 ; i <  l ; i ++ )
 							{
-								m_Differences.Add( pack.AssetBundleFiles[ i ].Path, pack.AssetBundleFiles[ i ] ) ;
+								m_Differences.Add
+								(
+									pack.AssetBundleFiles[ i ].Path,
+									pack.AssetBundleFiles[ i ]
+								) ;
 							}
 						}
 					}
@@ -2255,11 +2269,12 @@ namespace Tools.ForAssetBundle
 //				Debug.LogWarning( "保存先ルートフォルダ:" + m_AssetBundleRootFolderPath ) ;
 //				Debug.LogWarning( "保存マニフェスト名:" + GetAssetBundleRootName() ) ;
 
-				string fillPath ;
+				string fullPath ;
 				byte[] data ;
 
 				string path ;
 				int size ;
+				string hash ;
 				uint crc ;
 
 				long totalSize = 0 ;
@@ -2280,21 +2295,31 @@ namespace Tools.ForAssetBundle
 				{
 					assetBundleFile = assetBundleFiles[ i ] ;
 
-					fillPath = m_AssetBundleRootFolderPath + assetBundleFile.AssetBundlePath ;
-					if( File.Exists( fillPath ) == true )
+					fullPath = m_AssetBundleRootFolderPath + assetBundleFile.AssetBundlePath ;
+					if( File.Exists( fullPath ) == true )
 					{
-						data = File.ReadAllBytes( fillPath ) ;
+						data = File.ReadAllBytes( fullPath ) ;
 
 						path = assetBundleFile.AssetBundlePath ;
 
 						if( data != null && data.Length >  0 )
 						{
 							size = data.Length ;
-							crc  = GetCRC32( data ) ;
+							if( assetBundleFile.NoConvert == false )
+							{
+								hash = GetHash( fullPath ) ;	// ハッシュ情報を取得する
+								crc  = GetCRC32( data ) ;
+							}
+							else
+							{
+								crc  = GetCRC32( data ) ;
+								hash = crc.ToString() ;			// 無変換系のファイルはハッシュ値にＣＲＣ値を使用する
+							}
 						}
 						else
 						{
 							size = 0 ;
+							hash = string.Empty ;
 							crc  = 0 ;
 						}
 
@@ -2310,11 +2335,12 @@ namespace Tools.ForAssetBundle
 								// 過去にファイルが存在する
 								var d = m_Differences[ path ] ;
 
-								if( d.Size != size || d.Crc != crc )
+								if( d.Size != size || d.Hash != hash || d.Crc != crc )
 								{
 									// Size または Crc が異なる
 									difference += "[U] " + path + " : " ;
 									difference += "Size = " + d.Size.ToString() + ( d.Size != size ? " -> " + size.ToString() : string.Empty ) + " " ;
+									difference += "Hash = "  + d.Hash  + ( d.Hash != hash  ? " -> " + hash  : string.Empty ) + "\n" ;
 									difference += "Crc = "  + d.Crc.ToString()  + ( d.Crc  != crc  ? " -> " + crc.ToString()  : string.Empty ) + "\n" ;
 
 									differenceCount ++ ;
@@ -2324,7 +2350,7 @@ namespace Tools.ForAssetBundle
 							else
 							{
 								// 過去にファイルが存在しない
-								difference += "[C] " + path + " : Size = " + size.ToString() + " Crc = " + crc.ToString() + "\n" ;
+								difference += "[C] " + path + " : Size = " + size.ToString() + " Hash = " + hash + " Crc = " + crc.ToString() + "\n" ;
 
 								differenceCount ++ ;
 								differenceTotalSize += ( ulong )size ;
@@ -2334,7 +2360,7 @@ namespace Tools.ForAssetBundle
 						//------------------------------------------------------
 						// Csv 版
 
-						textCsv += path + "," + size.ToString() + "," + crc.ToString() ;
+						textCsv += path + "," + size.ToString() + "," + hash + "," + crc.ToString() ;
 						if( assetBundleFile.Tags != null && assetBundleFile.Tags.Length >  0 )
 						{
 							textCsv += "," ;
@@ -2359,6 +2385,7 @@ namespace Tools.ForAssetBundle
 						textJson +=
 							"\"Path\":\"" + path + "\"," +
 							"\"Size\":" + size.ToString() + "," +
+							"\"Hash\":\"" + hash + "\"," +
 							"\"Crc\":" + crc.ToString() ;
 
 						if( assetBundleFile.Tags != null && assetBundleFile.Tags.Length >  0 )
@@ -2451,8 +2478,8 @@ namespace Tools.ForAssetBundle
 
 			return result ;
 		}
-
-	// ファイルサイズを見やすい形に変える
+		
+		// ファイルサイズを見やすい形に変える
 		private static string GetSizeName( ulong size )
 		{
 			string sizeName = "Value Overflow" ;
@@ -2690,6 +2717,86 @@ namespace Tools.ForAssetBundle
 			0x2d02ef8d
 		} ;
 
+		// アセットバンドルマニフェスト内のハッシュ値を取得する
+		private static string GetHash( string assetBundleFullPath )
+		{
+			string path = $"{assetBundleFullPath}.manifest" ;
+			if( File.Exists( path ) == false )
+			{
+				// マニフェストファイルが見つからない
+				return string.Empty ;
+			}
+
+			var text = File.ReadAllText( path ) ;
+			if( string.IsNullOrEmpty( text ) == true )
+			{
+				// ファイルの状態がおかしい
+				return string.Empty ;
+			}
+
+			text = text.Replace( "\n", "\x0A" ) ;
+			text = text.Replace( "\x0A\x0D", "\x0A" ) ;
+
+			var lines = text.Split( '\x0A' ) ;
+			if( lines == null || lines.Length == 0 )
+			{
+				return string.Empty ;
+			}
+
+			//----------------------------------
+			// マニフェストファイルを解析してハッシュ値を取り出す
+
+			int i, l = lines.Length ;
+			for( i  = 0 ; i <  l ; i ++ )
+			{
+				lines[ i ] = lines[ i ].Replace( " ", "" ) ;	// スペースを削除する
+				lines[ i ] = lines[ i ].ToLower() ;
+			}
+
+			string key ;
+
+			key = "AssetFileHash:".ToLower() ;	// アセットファイルのハッシュ値を対象とする
+			int o = -1 ;
+			for( i  = 0 ; i <  l ; i ++ )
+			{
+				if( lines[ i ].IndexOf( key ) == 0 )
+				{
+					// 該当区分発見
+					o = i ;
+					break ;
+				}
+			}
+
+			if( o <  0 )
+			{
+				// 該当区分が見つからない
+				return string.Empty ;
+			}
+
+			o ++ ;
+
+			key = "Hash:".ToLower() ;
+			int t = -1 ;
+			for( i  = o ; i <  l ; i ++ )
+			{
+				if( lines[ i ].IndexOf( key ) == 0 )
+				{
+					// 該当項目発見
+					t = i ;
+				}
+			}
+
+			if( t <  0 )
+			{
+				// 該当項目が見つからない
+				return string.Empty ;
+			}
+
+			//----------------------------------
+
+			return lines[ t ].Replace( key, "" ) ;
+		}
+
 		//-----------------------------------------------------------------
 
 		// 出力パスのフォルダ名を取得する
@@ -2815,7 +2922,7 @@ namespace Tools.ForAssetBundle
 			int d = 0 ;	// フォルダ・ファイルを消すカウント
 
 			// フォルダ
-			string[] da = Directory.GetDirectories( currentPath ) ;
+			var da = Directory.GetDirectories( currentPath ) ;
 			if( da != null && da.Length >  0 )
 			{
 				// サブフォルダがあるのでさらに検査していく
@@ -2852,7 +2959,7 @@ namespace Tools.ForAssetBundle
 			}
 
 			// ファイル
-			string[] fa = Directory.GetFiles( currentPath ) ;
+			var fa = Directory.GetFiles( currentPath ) ;
 			if( fa != null && fa.Length >  0 )
 			{
 				for( i  = 0 ; i <  fa.Length ; i ++ )
@@ -2966,7 +3073,7 @@ namespace Tools.ForAssetBundle
 
 		public static bool Build( string path )
 		{
-			SimpleAssetBundleBuilder sabb = ScriptableObject.CreateInstance<SimpleAssetBundleBuilder>() ;
+			var sabb = ScriptableObject.CreateInstance<SimpleAssetBundleBuilder>() ;
 
 			if( sabb.LoadConfiguration( path ) == false )
 			{
@@ -2991,7 +3098,7 @@ namespace Tools.ForAssetBundle
 		// コンフィギュレーションファイルのパスを取得する
 		private static string GetConfigurationFilePtah()
 		{
-			string[] args = Environment.GetCommandLineArgs() ;
+			var args = Environment.GetCommandLineArgs() ;
 			if( args == null || args.Length == 0 )
 			{
 				return null ;
@@ -3035,15 +3142,17 @@ namespace Tools.ForAssetBundle
 
 			//-------------------------------------------------
 
-			string[] line = code.Split( '\n' ) ;
+			code = code.Replace( "\n", "\x0A" ) ;
+			code = code.Replace( "\x0D\x0A", "\x0A" ) ;
+
+			var line = code.Split( '\x0A' ) ;
 			int i, l = line.Length ;
 			for( i  = 0 ; i <  l ; i ++ )
 			{
 				line[ i ] = line[ i ].Replace( " ", "" ) ;
-				line[ i ] = line[ i ].Replace( "\n", "" ) ;
 				line[ i ] = line[ i ].Replace( "\t", "" ) ;
 				line[ i ] = line[ i ].Replace( "\r", "" ) ;	// 超重要
-				string[] data = line[ i ].Split( '=' ) ;
+				var data = line[ i ].Split( '=' ) ;
 
 				if( data.Length == 2 )
 				{
@@ -3174,7 +3283,7 @@ namespace Tools.ForAssetBundle
 		{
 			value = value.ToLower() ;
 
-			BuildTarget buildTarget = BuildTarget.Android ;
+			var buildTarget = BuildTarget.Android ;
 
 			if( value == "StandaloneWindows".ToLower() || value == "Windows".ToLower() )
 			{
@@ -3312,7 +3421,7 @@ namespace Tools.ForAssetBundle
 
 			//-----------------------------------------
 
-			SimpleAssetBundleBuilder sabb = ScriptableObject.CreateInstance<SimpleAssetBundleBuilder>() ;
+			var sabb = ScriptableObject.CreateInstance<SimpleAssetBundleBuilder>() ;
 
 			//-----------------------------------------
 
@@ -3363,7 +3472,7 @@ namespace Tools.ForAssetBundle
 
 			public ExStringBuilder()
 			{
-				m_StringBuilder			= new StringBuilder() ;
+				m_StringBuilder			= new () ;
 			}
 
 			public int Length
@@ -3685,10 +3794,6 @@ namespace Tools.ForAssetBundle
 				.AppendLine( "this file is auto generated." )
 				.ToString() ;
 		}
-
-		//-------------------------------------------------------------------------------------------
-
-
 	}
 }
 

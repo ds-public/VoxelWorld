@@ -8,13 +8,13 @@ using UnityEngine ;
 // 要 SceneManagementHelper パッケージ
 using SceneManagementHelper ;
 
-using uGUIHelper ;
-
 using _Dialog = DSW.Dialog ;
+
+
 namespace DSW
 {
 	/// <summary>
-	/// シーンクラス(シーンの展開や追加に使用する)  Version 2022/10/01 0
+	/// シーンクラス(シーンの展開や追加に使用する)  Version 2024/04/24 0
 	/// </summary>
 	public class Scene : ExMonoBehaviour
 	{
@@ -125,7 +125,7 @@ namespace DSW
 		/// <returns></returns>
 		public static bool Load( string sceneName, string label = "", System.Object value = null )
 		{
-			Asset.ClearResourceCache( false, "Scene.Load( " + sceneName + " )" ) ;	// リソースキャッシュをクリアする
+			Asset.ClearResourceCache( "Scene.Load( " + sceneName + " )" ) ;	// リソースキャッシュをクリアする
 
 			return EnhancedSceneManager.Load( sceneName, label, value ) ;
 		}
@@ -142,7 +142,7 @@ namespace DSW
 		/// <returns></returns>
 		public static bool Load<T>( string sceneName, Action<T[]> onLoaded, string targetName = "", string label = "", System.Object value = null ) where T : UnityEngine.Component
 		{
-			Asset.ClearResourceCache( false, "Scene.Load<T>( " + sceneName + " )" ) ;	// リソースキャッシュをクリアする
+			Asset.ClearResourceCache( "Scene.Load<T>( " + sceneName + " )" ) ;	// リソースキャッシュをクリアする
 
 			return EnhancedSceneManager.Load<T>( sceneName, onLoaded, targetName, label, value ) ;
 		}
@@ -156,7 +156,7 @@ namespace DSW
 		/// <returns></returns>
 		public static async UniTask<bool> LoadAsync( string sceneName, string label = "", System.Object value = null )
 		{
-			Asset.ClearResourceCache( false, "Scene.LoadAsync( " + sceneName + " )" ) ;	// リソースキャッシュをクリアする
+			Asset.ClearResourceCache( "Scene.LoadAsync( " + sceneName + " )" ) ;	// リソースキャッシュをクリアする
 
 			EnhancedSceneManager.Request request = EnhancedSceneManager.LoadAsync( sceneName, label, value ) ;
 			await request ;
@@ -187,7 +187,7 @@ namespace DSW
 		/// <returns></returns>
 		public static async UniTask<T> LoadAsync<T>( string sceneName, string label = "", System.Object value = null ) where T : UnityEngine.Component
 		{
-			T[] targets = await LoadAsync<T>( sceneName, null, label, value ) ;
+			var targets = await LoadAsync<T>( sceneName, null, label, value ) ;
 			if( targets == null || targets.Length == 0 )
 			{
 				return null ;
@@ -205,13 +205,20 @@ namespace DSW
 		/// <param name="label"></param>
 		/// <param name="value"></param>
 		/// <returns></returns>
-		public static async UniTask<T[]> LoadAsync<T>( string sceneName, string targetName, string label = "", System.Object value = null ) where T : UnityEngine.Component
+		public static async UniTask<T[]> LoadAsync<T>( string sceneName, string targetName, string label = "", System.Object value = null, bool useUnloadUnusedAssets = false ) where T : UnityEngine.Component
 		{
-			Asset.ClearResourceCache( false, "Scene.LoadAsync<T>( " + sceneName + " )" ) ;	// リソースキャッシュをクリアする
+			Asset.ClearResourceCache( "Scene.LoadAsync<T>( " + sceneName + " )", useUnloadUnusedAssets: false ) ;	// リソースキャッシュをクリアする
 
 			T[] targets = null ;
 			EnhancedSceneManager.Request request = EnhancedSceneManager.LoadAsync<T>( sceneName, ( _ ) => { targets = _ ; }, targetName, label, value ) ;
 			await request ;
+
+			// Resources.UnloadUnusedAssets() は、シーンが実際に切り替わった後でないと実行しても意味がない。
+			if( useUnloadUnusedAssets == true )
+			{
+				Debug.Log( "<color=#FF7F00>[Scene.LoadAsync()] Resources.UnloadUnusedAssets() を実行します</color>" ) ;
+				_ = Resources.UnloadUnusedAssets() ;
+			}
 
 			if( request.IsDone == true )
 			{
@@ -239,7 +246,7 @@ namespace DSW
 		/// <param name="onFadeOutFinished"></param>
 		/// <param name="blockingFadeIn"></param>
 		/// <returns></returns>
-		public static async UniTask<bool> LoadWithFade( string sceneName, string label = "", System.Object value = null, bool fastLoad = true, Action<string> onFadeOutFinished = null, bool blockingFadeIn = false, float duration = -1, Fade.FadeTypes fadeType = Fade.FadeTypes.Color, bool isGauge = false, bool isForce = false )
+		public static async UniTask<bool> LoadWithFade( string sceneName, string label = "", System.Object value = null, bool fastLoad = true, Action<string> onFadeOutFinished = null, bool blockingFadeIn = false, float duration = -1, Fade.FadeTypes fadeType = Fade.FadeTypes.Color, bool isGauge = false, bool isForce = false, bool useUnloadUnusedAssets = false )
 		{
 			if( m_IsFading == true )
 			{
@@ -286,7 +293,7 @@ namespace DSW
 			//----------------------------------------------------------
 
 			// リソースとアセットバンドルのキャッシュをクリアする(破棄シーンと展開シーンで引き継がれるものがあるのでキャッシュクリアは展開後に行う
-			Asset.ClearResourceCache( false, "Scene.LoadWithFade( " + sceneName + " )" ) ;	// リソースキャッシュをクリアする
+			Asset.ClearResourceCache( "Scene.LoadWithFade( " + sceneName + " )", useUnloadUnusedAssets: false ) ;	// リソースキャッシュをクリアする
 
 			// デフォルトで準備完了状態とする
 			Ready |= ( blockingFadeIn == false ) ;
@@ -306,6 +313,13 @@ namespace DSW
 				await request ;
 
 				result = request.IsDone ;
+			}
+
+			// Resources.UnloadUnusedAssets() は、シーンが実際に切り替わった後でないと実行しても意味がない。
+			if( useUnloadUnusedAssets == true )
+			{
+				Debug.Log( "<color=#FF7F00>[Scene.LoadWithFade()] Resources.UnloadUnusedAssets() を実行します</color>" ) ;
+				_ = Resources.UnloadUnusedAssets() ;
 			}
 
 			// ロードされたシーンで準備が完了するまでフェードインを行わせたくない場合にこのフラグを操作する
@@ -393,7 +407,7 @@ namespace DSW
 		/// <returns></returns>
 		public static async UniTask<T> AddAsync<T>( string sceneName, string label = "", System.Object value = null, bool deactivate = false ) where T : UnityEngine.Component
 		{
-			T[] targets = await AddAsync<T>( sceneName, null, label, value ) ;
+			var targets = await AddAsync<T>( sceneName, null, label, value ) ;
 			if( targets == null || targets.Length == 0 )
 			{
 				return null ;
@@ -447,7 +461,7 @@ namespace DSW
 		/// <returns></returns>
 		public static bool Back( string label = "", System.Object value = null )
 		{
-			Asset.ClearResourceCache( false, "Scene.Back()" ) ;	// リソースキャッシュをクリアする
+			Asset.ClearResourceCache( "Scene.Back()" ) ;	// リソースキャッシュをクリアする
 
 			return EnhancedSceneManager.Back( label, value ) ;
 		}
@@ -463,7 +477,7 @@ namespace DSW
 		/// <returns></returns>
 		public static bool Back<T>( Action<T[]> onLoaded = null, string targetName = "", string label = "", System.Object value = null ) where T : UnityEngine.Component
 		{
-			Asset.ClearResourceCache( false, "Scene.Back<T>()" ) ;	// リソースキャッシュをクリアする
+			Asset.ClearResourceCache( "Scene.Back<T>()" ) ;	// リソースキャッシュをクリアする
 
 			return EnhancedSceneManager.Back<T>( onLoaded, targetName, label, value ) ;
 		}
@@ -476,7 +490,7 @@ namespace DSW
 		/// <returns></returns>
 		public static async UniTask<bool> BackAsync( string label = "", System.Object value = null )
 		{
-			Asset.ClearResourceCache( false, "Scene.BackAsync()" ) ;	// リソースキャッシュをクリアする
+			Asset.ClearResourceCache( "Scene.BackAsync()" ) ;	// リソースキャッシュをクリアする
 
 			EnhancedSceneManager.Request request = EnhancedSceneManager.BackAsync( label, value ) ;
 			await request ;
@@ -506,7 +520,7 @@ namespace DSW
 		/// <returns></returns>
 		public static async UniTask<T> BackAsync<T>( string label = "", System.Object value = null ) where T : UnityEngine.Component
 		{
-			T[] targets = await BackAsync<T>( null, label, value ) ;
+			var targets = await BackAsync<T>( null, label, value ) ;
 			if( targets == null || targets.Length == 0 )
 			{
 				return null ;
@@ -525,7 +539,7 @@ namespace DSW
 		/// <returns></returns>
 		public static async UniTask<T[]> BackAsync<T>( string targetName, string label = "", System.Object value = null ) where T : UnityEngine.Component
 		{
-			Asset.ClearResourceCache( false, "Scene.BackAsync<T>()" ) ;	// リソースキャッシュをクリアする
+			Asset.ClearResourceCache( "Scene.BackAsync<T>()" ) ;	// リソースキャッシュをクリアする
 
 			T[] targets = null ;
 			EnhancedSceneManager.Request request = EnhancedSceneManager.BackAsync<T>( ( _ ) => { targets = _ ; }, targetName, label, value ) ;
@@ -556,7 +570,7 @@ namespace DSW
 		/// <param name="onFadeOutFinished"></param>
 		/// <param name="blockingFadeIn"></param>
 		/// <returns></returns>
-		public static async UniTask<bool> BackWithFade( string label = "", System.Object value = null, bool fastLoad = true, Action<string> onFadeOutFinished = null, bool blockingFadeIn = false, float duration = -1 )
+		public static async UniTask<bool> BackWithFade( string label = "", System.Object value = null, bool fastLoad = true, Action<string> onFadeOutFinished = null, bool blockingFadeIn = false, float duration = -1, bool useUnloadUnusedAssets = false )
 		{
 			string sceneName = EnhancedSceneManager.GetPreviousName() ;
 			if( string.IsNullOrEmpty( sceneName ) == true )
@@ -578,7 +592,7 @@ namespace DSW
 			// デフォルトで準備完了状態とする
 			Ready |= ( blockingFadeIn == false ) ;
 
-			Asset.ClearResourceCache( false, "Scene.BackWithFade( " + sceneName + " )" ) ;	// リソースキャッシュをクリアする
+			Asset.ClearResourceCache( "Scene.BackWithFade( " + sceneName + " )" ) ;	// リソースキャッシュをクリアする
 
 			bool result ;
 
@@ -595,6 +609,13 @@ namespace DSW
 				await request ;
 
 				result = request.IsDone ;
+			}
+
+			// Resources.UnloadUnusedAssets() は、シーンが実際に切り替わった後でないと実行しても意味がない。
+			if( useUnloadUnusedAssets == true )
+			{
+				Debug.Log( "<color=#FF7F00>[Scene.LoadWithFade()] Resources.UnloadUnusedAssets() を実行します</color>" ) ;
+				_ = Resources.UnloadUnusedAssets() ;
 			}
 
 			// ロードされたシーンで準備が完了するまでフェードインを行わせたくない場合にこのフラグを操作する

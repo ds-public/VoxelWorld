@@ -612,7 +612,7 @@ namespace DSW
 			int playId ;
 
 			// 再生中以外のものは破棄されて構わないので一切キャッシュには積まない
-			AudioClip audioClip = await Asset.LoadAsync<AudioClip>( path, Asset.CachingTypes.Same ) ;
+			AudioClip audioClip = await Asset.LoadAsync<AudioClip>( path, Asset.CachingTypes.None ) ;
 			if( audioClip == null )
 			{
 				// 失敗

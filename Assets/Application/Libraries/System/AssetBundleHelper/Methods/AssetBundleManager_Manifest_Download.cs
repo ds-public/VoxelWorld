@@ -5,9 +5,9 @@ using System.Collections.Generic ;
 using System.Linq ;
 
 using UnityEngine ;
-using UnityEngine.Networking ;
 
 using StorageHelper ;
+
 
 /// <summary>
 /// アセットバンドルヘルパーパッケージ
@@ -42,7 +42,7 @@ namespace AssetBundleHelper
 				{
 					// StreamingAssets が対象になっている
 //					url = "StreamingAssets://" + Application.streamingAssetsPath + "/" + StreamingAssetsRootPath + assetBundleInfo.Path ;
-					url = "StreamingAssets://" + StreamingAssetsRootPath + assetBundleInfo.Path ;
+					url = $"StreamingAssets://{StreamingAssetsRootPath}{assetBundleInfo.Path}" ;
 					isDetected = true ;
 				}
 
@@ -62,7 +62,7 @@ namespace AssetBundleHelper
 				)
 				{
 					// ネットワークからダウンロードを試みる
-					url = RemoteAssetBundleRootPath + assetBundleInfo.Path ;
+					url = $"{RemoteAssetBundleRootPath}{assetBundleInfo.Path}" ;
 					isDetected = true ;
 				}
 
@@ -83,7 +83,7 @@ namespace AssetBundleHelper
 				{
 
 					// ローカルファイル からダウンロードを試みる
-					url = "file://" + LocalAssetBundleRootPath + assetBundleInfo.Path ;
+					url = $"file://{LocalAssetBundleRootPath}{assetBundleInfo.Path}" ;
 					isDetected = true ;
 				}
 #endif
@@ -91,7 +91,14 @@ namespace AssetBundleHelper
 			}
 
 			// ローカルにアセットバンドルが存在しない場合にリモートから取得しローカルに保存する
-			private IEnumerator LoadAssetBundleFromRemote_Coroutine( AssetBundleInfo assetBundleInfo, LocationTypes locationType, bool keep, Action<float,float> onProgress, Action<string> onResult, bool isManifestSaving, Request request, AssetBundleManager instance )
+			private IEnumerator LoadAssetBundleFromRemote_Coroutine
+			(
+				AssetBundleInfo assetBundleInfo, LocationTypes locationType,
+				Action<float,float> onProgress, Action<string> onResult,
+				bool isManifestSaving,
+				Request request,
+				AssetBundleManager instance
+			)
 			{
 				// ダウンロード中の数をカウントする
 				DownloadingCount ++ ;
@@ -125,7 +132,7 @@ namespace AssetBundleHelper
 				bool isLoaded = false ;	// 多重実行されないための念のためのフラグ
 
 				// アセットバンドルファイルの保存パス
-				string storagePath = StorageCacheRootPath + ManifestName + "/" + assetBundleInfo.Path ;
+				string storagePath = $"{StorageCacheRootPath}{ManifestName}/{assetBundleInfo.Path}" ;
 
 				//-----------------------------------------------------------------------------------------
 				// 予めサイズがわかっている場合にキャッシュを空ける
@@ -171,7 +178,7 @@ namespace AssetBundleHelper
 					//--------------------------------
 
 					// StreamingAssets からダウンロードを試みる
-					yield return instance.StartCoroutine( StorageAccessor.LoadFromStreamingAssetsAsync( StreamingAssetsRootPath + assetBundleInfo.Path, ( _1, _2 ) => { data = _1 ; } ) ) ;
+					yield return instance.StartCoroutine( StorageAccessor.LoadFromStreamingAssetsAsync( $"{StreamingAssetsRootPath}{assetBundleInfo.Path}", ( _1, _2 ) => { data = _1 ; } ) ) ;
 					if( data != null && data.Length >  0 )
 					{
 						onProgress?.Invoke( 1.0f, 0.0f ) ;
@@ -253,7 +260,7 @@ namespace AssetBundleHelper
 					//----------------------------------------------------------------------------------------
 
 					// ネットワークからダウンロードを試みる
-					path = RemoteAssetBundleRootPath + assetBundleInfo.Path + "?time=" + GetClientTime() ;
+					path = $"{RemoteAssetBundleRootPath}{assetBundleInfo.Path}?time={GetClientTime()}" ;
 
 					yield return instance.StartCoroutine
 					(
@@ -400,7 +407,7 @@ namespace AssetBundleHelper
 					//--------------------------------
 
 					// ローカルファイル からダウンロードを試みる
-					data = File_Load( LocalAssetBundleRootPath + assetBundleInfo.Path ) ;
+					data = File_Load( $"{LocalAssetBundleRootPath}{assetBundleInfo.Path}" ) ;
 					if( data != null && data.Length >  0 )
 					{
 						if( request != null )
@@ -557,7 +564,6 @@ namespace AssetBundleHelper
 
 				assetBundleInfo.LastUpdateTime	= GetClientTime() ;	// タイムスタンプ更新
 
-				assetBundleInfo.Keep			= keep ;			// アセットバンドルストレージキャッシュに永続的に残すかどうか(キャッシュクリーンの破棄対象から除外するかどうか)
 				assetBundleInfo.UpdateRequired	= false ;			// 更新は不要(最新の状態のものである)
 
 				Modified = true ;									// アセットバンドルの状態に変化があった

@@ -5,6 +5,7 @@ using System.Linq ;
 
 using UnityEngine ;
 
+
 /// <summary>
 /// アセットバンドルヘルパーパッケージ
 /// </summary>
@@ -22,7 +23,7 @@ namespace AssetBundleHelper
 		/// <returns></returns>
 		public static bool IsManifestCompleted( string manifestName )
 		{
-			ManifestInfo manifestInfo = GetManifest( manifestName ) ;
+			var manifestInfo = GetManifest( manifestName ) ;
 			if( manifestInfo == null )
 			{
 				return false ;
@@ -65,7 +66,7 @@ namespace AssetBundleHelper
 		{
 			if( m_ManifestHash == null )
 			{
-				m_ManifestHash = new Dictionary<string, ManifestInfo>() ;
+				m_ManifestHash = new () ;
 			}
 			else
 			{
@@ -136,7 +137,7 @@ namespace AssetBundleHelper
 		/// <returns>マニフェストの登録リスト上でのインデックス番号(-1で未登録)</returns>
 		public static bool HasManifest( string manifestName )
 		{
-			return m_Instance == null ? false : ( m_Instance.GetManifestIndex_Private( manifestName ) >= 0 ) ;
+			return m_Instance != null && ( m_Instance.GetManifestIndex_Private( manifestName ) >= 0 ) ;
 		}
 
 		/// <summary>
@@ -205,7 +206,7 @@ namespace AssetBundleHelper
 			if( manifestInfo == null )
 			{
 				// 未登録(新規に登録する)
-				manifestInfo = new ManifestInfo() ;
+				manifestInfo = new () ;
 				manifestInfo.Setup
 				(
 					manifestName, crcOnly, storageCacheRootPath,
@@ -293,7 +294,7 @@ namespace AssetBundleHelper
 			}
 
 			// 指定のマニフェストに属する全アセットバンドルを破棄する
-			manifestInfo.ClearAssetBundleCache( true, false ) ;
+			manifestInfo.ClearAssetBundleCache( CacheReleaseTypes.Perfect ) ;
 
 			m_ManifestInfo.Remove( manifestInfo ) ;
 			UpdateManifestHash() ;
@@ -321,7 +322,7 @@ namespace AssetBundleHelper
 
 			foreach( var manifestInfo in m_ManifestInfo )
 			{
-				manifestInfo.ClearAssetBundleCache( true, false ) ;
+				manifestInfo.ClearAssetBundleCache( CacheReleaseTypes.Perfect ) ;
 			}
 
 			m_ManifestInfo.Clear() ;
@@ -500,7 +501,7 @@ namespace AssetBundleHelper
 				return null ;
 			}
 
-			ManifestInfo mainfestInfo = GetManifest( manifestName ) ;
+			var mainfestInfo = GetManifest( manifestName ) ;
 			if( mainfestInfo == null )
 			{
 				return null ;

@@ -17,7 +17,7 @@ using UnityEditor ;
 namespace AssetBundleHelper
 {
 	/// <summary>
-	/// アセットバンドルマネージャクラス(シングルトン) Version 2024/04/16 0
+	/// アセットバンドルマネージャクラス(シングルトン) Version 2024/04/23 0
 	/// </summary>
 	public partial class AssetBundleManager : MonoBehaviour
 	{
@@ -30,7 +30,7 @@ namespace AssetBundleHelper
 		{
 			var go = new GameObject( "AssetBundleManager" ) ;
 		
-			Transform t = go.transform ;
+			var t = go.transform ;
 			t.SetParent( null ) ;
 			t.SetLocalPositionAndRotation( Vector2.zero, Quaternion.identity ) ;
 			t.localScale = Vector3.one ;
@@ -73,7 +73,7 @@ namespace AssetBundleHelper
 		private CancellationTokenSource	m_WritingCancellationSource ;
 
 		/// <summary>
-		/// 外部アセットバンドルの場合の場所タイプ
+		/// アセットバンドルの保存場所タイプ
 		/// </summary>
 		public enum LocationTypes
 		{
@@ -83,12 +83,12 @@ namespace AssetBundleHelper
 			Storage,
 
 			/// <summary>
-			/// StreamingAssets のみ
+			/// StreamingAssets のみ (読み込みのみ・更新不可)
 			/// </summary>
 			StreamingAssets,
 
 			/// <summary>
-			/// Storage および StreamingAssets
+			/// Storage および StreamingAssets (StreamingAssets より新しいものがあれば Storage に保存されている)
 			/// </summary>
 			StorageAndStreamingAssets,
 		}
@@ -139,10 +139,6 @@ namespace AssetBundleHelper
 
 			//----------------------------------
 
-#if false
-			// 保存されている全マニフェスト情報を読み出す
-			LoadSystemFile() ;
-#endif
 			if( m_ManifestInfo == null )
 			{
 				m_ManifestInfo = new List<ManifestInfo>() ;
@@ -159,16 +155,18 @@ namespace AssetBundleHelper
 			// リソースキャッシュを生成する
 			if( m_ResourceCache == null )
 			{
-				m_ResourceCache		= new Dictionary<string, ResourceCacheElement>() ;
+				m_ResourceCache			= new () ;
+				m_ResourceCacheDetector = new () ;
 #if UNITY_EDITOR
-				m_ResourceCacheInfo = new List<ResourceCacheElement>() ;
+				m_ResourceCacheViewer = new List<ResourceCacheElement>() ;
 #endif
 			}
 			else
 			{
 				m_ResourceCache.Clear() ;
+				m_ResourceCacheDetector.Clear() ;
 #if UNITY_EDITOR
-				m_ResourceCacheInfo.Clear() ;
+				m_ResourceCacheViewer.Clear() ;
 #endif
 			}
 
@@ -240,7 +238,7 @@ namespace AssetBundleHelper
 				DontDestroyOnLoad( gameObject ) ;
 			}
 
-			//		gameObject.hideFlags = HideFlags.HideInHierarchy ;
+//			gameObject.hideFlags = HideFlags.HideInHierarchy ;
 
 			//-----------------------------
 
@@ -437,16 +435,17 @@ namespace AssetBundleHelper
 				return ;
 			}
 
+			//----------------------------------
+
 			if( m_ManifestInfo == null || m_ManifestInfo.Count >  0 )
 			{
 				foreach( var manifestInfo in m_ManifestInfo )
 				{
 					// 各マニフェストのアセットバンドルキャッシュもクリアする
-					manifestInfo.ClearAssetBundleCache( false, false ) ;
+					manifestInfo.ClearAssetBundleCache( CacheReleaseTypes.Limited ) ;
 				}
 			}
 		}
-
 
 		//-------------------------------------------------------------------------------------------
 

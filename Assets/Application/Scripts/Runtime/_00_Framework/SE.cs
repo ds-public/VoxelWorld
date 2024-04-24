@@ -84,6 +84,10 @@ namespace DSW
 				await Asset.DownloadAssetBundleAsync( path, true ) ;
 			}
 
+			// 画面遷移時にアセットバンドルキャッシュを破棄しないようにする
+			Asset.SetAssetBundleRetaining( path, true ) ;
+
+
 			path = m_InternalPath + "Battle" ;
 			if( Asset.Exists( path ) == false )
 			{
@@ -120,7 +124,7 @@ namespace DSW
 			//----------------------------------
 
 			// 複数を１つのアセットバンドルにまとめており同じシーンの中で何度も再生されるケースがあるのでリソース・アセットバンドル両方にキャッシュする
-			AudioClip audioClip = Asset.Load<AudioClip>( path, Asset.CachingTypes.Same ) ;
+			AudioClip audioClip = Asset.Load<AudioClip>( path, Asset.CachingTypes.ReferenceCount ) ;
 			if( audioClip == null )
 			{
 				return -1 ;
@@ -154,7 +158,7 @@ namespace DSW
 			}
 
 			// 複数を１つのアセットバンドルにまとめており同じシーンの中で何度も再生されるケースがあるのでリソース・アセットバンドル両方にキャッシュする
-			AudioClip audioClip = await Asset.LoadAsync<AudioClip>( path, Asset.CachingTypes.Same ) ;
+			AudioClip audioClip = await Asset.LoadAsync<AudioClip>( path, Asset.CachingTypes.ReferenceCount ) ;
 			if( audioClip == null )
 			{
 				// 失敗
@@ -190,7 +194,7 @@ namespace DSW
 			//----------------------------------
 
 			// 複数を１つのアセットバンドルにまとめており同じシーンの中で何度も再生されるケースがあるのでリソース・アセットバンドル両方にキャッシュする
-			AudioClip audioClip = Asset.Load<AudioClip>( path, Asset.CachingTypes.Same ) ;
+			AudioClip audioClip = Asset.Load<AudioClip>( path, Asset.CachingTypes.ReferenceCount ) ;
 			if( audioClip == null )
 			{
 				return -1 ;
@@ -224,7 +228,7 @@ namespace DSW
 			}
 
 			// 複数を１つのアセットバンドルにまとめており同じシーンの中で何度も再生されるケースがあるのでリソース・アセットバンドル両方にキャッシュする
-			AudioClip audioClip = await Asset.LoadAsync<AudioClip>( path, Asset.CachingTypes.Same ) ;
+			AudioClip audioClip = await Asset.LoadAsync<AudioClip>( path, Asset.CachingTypes.ReferenceCount ) ;
 			if( audioClip == null )
 			{
 				// 失敗
