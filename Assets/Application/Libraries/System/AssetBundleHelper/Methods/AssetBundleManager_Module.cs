@@ -535,7 +535,7 @@ namespace AssetBundleHelper
 							//------------------------------
 
 							// バッファスタックが生成されていなければ生成する
-							m_WritingBuffers ??= new List<WritingBuffer>() ;
+							m_WritingBuffers ??= new () ;
 
 							// バッファスタックに貯める
 							m_WritingBuffers.Add( writingBuffer ) ;

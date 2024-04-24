@@ -326,7 +326,7 @@ namespace AssetBundleHelper
 			if( assets != null && assets.Length >  0 )
 			{
 				// 成功したら終了
-				UnityEngine.Object asset = assets.FirstOrDefault( _ => _.name == subAssetName ) ;
+				var asset = assets.FirstOrDefault( _ => _.name == subAssetName ) ;
 				return ( asset != null && asset.GetType() == type ) ? asset : null ;
 			}
 			
@@ -355,7 +355,7 @@ namespace AssetBundleHelper
 					if( assets != null && assets.Length >  0 )
 					{
 						// 成功したら終了
-						UnityEngine.Object asset = assets.FirstOrDefault( _ => _.name == subAssetName ) ;
+						var asset = assets.FirstOrDefault( _ => _.name == subAssetName ) ;
 						return ( asset != null && asset.GetType() == type ) ? asset : null ;
 					}
 				}
@@ -477,7 +477,7 @@ namespace AssetBundleHelper
 			}
 
 			EditorSceneManager.LoadSceneInPlayMode( path, new UnityEngine.SceneManagement.LoadSceneParameters( mode ) ) ;
-			UnityEngine.SceneManagement.Scene scene = UnityEngine.SceneManagement.SceneManager.GetSceneByName( sceneName ) ;
+			var scene = UnityEngine.SceneManagement.SceneManager.GetSceneByName( sceneName ) ;
 			if( scene.IsValid() == false )
 			{
 				onError?.Invoke( "Could not load." ) ;
@@ -567,26 +567,26 @@ namespace AssetBundleHelper
 		// 一般タイプに対する拡張子
 		internal protected readonly Dictionary<Type,List<string>> m_TypeToExtension = new ()
 		{
-			{ typeof( Sprite ),						new List<string>{ ".png", ".jpg", ".tga", ".gif", ".bmp", ".tiff",											} },
-			{ typeof( GameObject ),					new List<string>{ ".prefab", ".asset", ".fbx", ".dae", ".obj", ".max", ".blend", 							} },
-			{ typeof( AudioClip ),					new List<string>{ ".wav", ".ogg", ".mp3", ".aif", ".aiff", ".xm", ".mod", ".it", ".s3m",					} },
-			{ typeof( TextAsset ),					new List<string>{ ".txt", ".json", ".bytes", ".csv", ".html", ".xml",  ".yml", ".htm", ".fnt"				} },
-			{ typeof( Texture2D ),					new List<string>{ ".png", ".jpg", ".tga", ".psd", ".gif", ".bmp", ".tif", ".tiff", ".iff", ".pict"			} },
-			{ typeof( Texture ),					new List<string>{ ".png", ".jpg", ".tga", ".psd", ".gif", ".bmp", ".tif", ".tiff", ".iff", ".pict", ".exr"	} },
-			{ typeof( AnimationClip ),				new List<string>{ ".anim",																					} },
-			{ typeof( Font ),						new List<string>{ ".ttf", ".otf", ".dfont", 																} },
-			{ typeof( Material ),					new List<string>{ ".mat", ".material",																		} },
-			{ typeof( Cubemap ),					new List<string>{ ".hdr", ".cubemap",																		} },
-			{ typeof( RuntimeAnimatorController ),	new List<string>{ ".controller",																			} },
-			{ typeof( AnimatorOverrideController ),	new List<string>{ ".overrideController",																	} },
-			{ typeof( Mesh ),						new List<string>{ ".fbx", ".dae", ".obj", ".max", ".blend", 												} },
-			{ typeof( Shader ),						new List<string>{ ".shader", 																				} },
-			{ typeof( PhysicMaterial ),				new List<string>{ ".physicmaterial", 																		} },
-			{ typeof( AvatarMask ),					new List<string>{ ".mask", 																					} },
-			{ typeof( Playable ),					new List<string>{ ".playable", 																				} },
-			{ typeof( SpriteAtlas ),				new List<string>{ ".spriteatlas", 																			} },
-			{ typeof( VideoClip ),					new List<string>{ ".mp4", ".mov", ".asf", ".avi", ".mpg", ".mpeg"											} },
-			{ typeof( ScriptableObject ),			new List<string>{ ".asset"																					} },
+			{ typeof( Sprite ),						new (){ ".png", ".jpg", ".tga", ".gif", ".bmp", ".tiff",											} },
+			{ typeof( GameObject ),					new (){ ".prefab", ".asset", ".fbx", ".dae", ".obj", ".max", ".blend", 								} },
+			{ typeof( AudioClip ),					new (){ ".wav", ".ogg", ".mp3", ".aif", ".aiff", ".xm", ".mod", ".it", ".s3m",						} },
+			{ typeof( TextAsset ),					new (){ ".txt", ".json", ".bytes", ".csv", ".html", ".xml",  ".yml", ".htm", ".fnt"					} },
+			{ typeof( Texture2D ),					new (){ ".png", ".jpg", ".tga", ".psd", ".gif", ".bmp", ".tif", ".tiff", ".iff", ".pict"			} },
+			{ typeof( Texture ),					new (){ ".png", ".jpg", ".tga", ".psd", ".gif", ".bmp", ".tif", ".tiff", ".iff", ".pict", ".exr"	} },
+			{ typeof( AnimationClip ),				new (){ ".anim",																					} },
+			{ typeof( Font ),						new (){ ".ttf", ".otf", ".dfont", 																	} },
+			{ typeof( Material ),					new (){ ".mat", ".material",																		} },
+			{ typeof( Cubemap ),					new (){ ".hdr", ".cubemap",																			} },
+			{ typeof( RuntimeAnimatorController ),	new (){ ".controller",																				} },
+			{ typeof( AnimatorOverrideController ),	new (){ ".overrideController",																		} },
+			{ typeof( Mesh ),						new (){ ".fbx", ".dae", ".obj", ".max", ".blend", 													} },
+			{ typeof( Shader ),						new (){ ".shader", 																					} },
+			{ typeof( PhysicMaterial ),				new (){ ".physicmaterial", 																			} },
+			{ typeof( AvatarMask ),					new (){ ".mask", 																					} },
+			{ typeof( Playable ),					new (){ ".playable", 																				} },
+			{ typeof( SpriteAtlas ),				new (){ ".spriteatlas", 																			} },
+			{ typeof( VideoClip ),					new (){ ".mp4", ".mov", ".asf", ".avi", ".mpg", ".mpeg"												} },
+			{ typeof( ScriptableObject ),			new (){ ".asset"																					} },
 		} ;
 
 		internal protected Type GetTypeFromExtension( string extension )

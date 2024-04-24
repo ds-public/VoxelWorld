@@ -1125,7 +1125,7 @@ namespace AssetBundleHelper
 			/// <param name="element"></param>
 			internal protected int IncrementCachingReferenceCount( AssetBundleCacheElement assetBundleCache, int count )
 			{
-				return IncrementCachingReferenceCount_Private( assetBundleCache, count, new List<AssetBundleCacheElement>() ) ;
+				return IncrementCachingReferenceCount_Private( assetBundleCache, count, new () ) ;
 			}
 
 			/// <summary>
@@ -1173,7 +1173,7 @@ namespace AssetBundleHelper
 			/// <param name="element"></param>
 			internal protected int DecrementCachingReferenceCount( AssetBundleCacheElement assetBundleCache, int count, bool withAssets )
 			{
-				return DecrementCachingReferenceCount_Private( assetBundleCache, count, withAssets, new List<AssetBundleCacheElement>() ) ;
+				return DecrementCachingReferenceCount_Private( assetBundleCache, count, withAssets, new () ) ;
 			}
 
 			/// <summary>
@@ -1200,8 +1200,7 @@ namespace AssetBundleHelper
 						// 破棄対象となった
 						if( assetBundleCache.AssetBundle != null )
 						{
-							Debug.Log( "<color=#FF7F00>アセットバンドルを破棄する " + assetBundleCache.Path + " : " + withAssets + "</color>" ) ;
-
+//							Debug.Log( "<color=#FF7F00>アセットバンドルを破棄する " + assetBundleCache.Path + " : " + withAssets + "</color>" ) ;
 							assetBundleCache.AssetBundle.Unload( withAssets ) ;
 							assetBundleCache.AssetBundle = null ;
 						}
@@ -1251,7 +1250,7 @@ namespace AssetBundleHelper
 			/// <param name="element"></param>
 			internal protected int IncrementRetainReferenceCount( AssetBundleCacheElement assetBundleCache )
 			{
-				return IncrementRetainReferenceCount_Private( assetBundleCache, new List<AssetBundleCacheElement>() ) ;
+				return IncrementRetainReferenceCount_Private( assetBundleCache, new () ) ;
 			}
 
 			/// <summary>
@@ -1299,7 +1298,7 @@ namespace AssetBundleHelper
 			/// <param name="element"></param>
 			internal protected int DecrementRetainReferenceCount( AssetBundleCacheElement assetBundleCache, bool withAssets )
 			{
-				return DecrementRetainReferenceCount_Private( assetBundleCache, withAssets, new List<AssetBundleCacheElement>() ) ;
+				return DecrementRetainReferenceCount_Private( assetBundleCache, withAssets, new () ) ;
 			}
 
 			/// <summary>
@@ -1326,7 +1325,7 @@ namespace AssetBundleHelper
 						// 破棄対象となった
 						if( assetBundleCache.AssetBundle != null )
 						{
-							Debug.Log( "<color=#FF7F00>アセットバンドルを破棄する " + assetBundleCache.Path + " : " + withAssets + "</color>" ) ;
+//							Debug.Log( "<color=#FF7F00>アセットバンドルを破棄する " + assetBundleCache.Path + " : " + withAssets + "</color>" ) ;
 
 							assetBundleCache.AssetBundle.Unload( withAssets ) ;
 							assetBundleCache.AssetBundle = null ;
@@ -1582,7 +1581,7 @@ namespace AssetBundleHelper
 				string path = $"{StorageCacheRootPath}{ManifestName}/" ;
 				
 				// 削除した
-				StorageAccessor_Remove( path + assetBundleInfo.Path ) ;
+				StorageAccessor_Remove( $"{path}{assetBundleInfo.Path}" ) ;
 
 				// ファイルが存在しなくなったフォルダも削除する
 				if( instance.m_SecurityEnabled == false )
@@ -1858,7 +1857,6 @@ namespace AssetBundleHelper
 			/// <summary>
 			/// 非アセットバンドルの直接パスを取得する
 			/// </summary>
-			/// <param name="tNeedUpdateOnly">更新が必要なものみに対象を限定するかどうか</param>
 			/// <returns>アセットバンドルのパス一覧</returns>
 			internal protected string GetAssetFilePath( string assetBundlePath, AssetBundleManager instance )
 			{

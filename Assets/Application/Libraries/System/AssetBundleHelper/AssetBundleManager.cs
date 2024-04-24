@@ -17,7 +17,7 @@ using UnityEditor ;
 namespace AssetBundleHelper
 {
 	/// <summary>
-	/// アセットバンドルマネージャクラス(シングルトン) Version 2024/04/23 0
+	/// アセットバンドルマネージャクラス(シングルトン) Version 2024/04/24 0
 	/// </summary>
 	public partial class AssetBundleManager : MonoBehaviour
 	{
@@ -141,7 +141,7 @@ namespace AssetBundleHelper
 
 			if( m_ManifestInfo == null )
 			{
-				m_ManifestInfo = new List<ManifestInfo>() ;
+				m_ManifestInfo = new () ;
 			}
 			else
 			if( m_ManifestInfo.Count >  0 )
@@ -158,7 +158,7 @@ namespace AssetBundleHelper
 				m_ResourceCache			= new () ;
 				m_ResourceCacheDetector = new () ;
 #if UNITY_EDITOR
-				m_ResourceCacheViewer = new List<ResourceCacheElement>() ;
+				m_ResourceCacheViewer = new () ;
 #endif
 			}
 			else
@@ -179,7 +179,7 @@ namespace AssetBundleHelper
 			//----------------------------------
 
 			// ストレージへの書き込みを中断するキャンセルトークンを生成する
-			m_WritingCancellationSource = new CancellationTokenSource() ;
+			m_WritingCancellationSource = new () ;
 
 			//----------------------------------
 
@@ -244,7 +244,7 @@ namespace AssetBundleHelper
 
 			// 原点じゃないと気持ち悪い
 			gameObject.transform.SetLocalPositionAndRotation( Vector2.zero, Quaternion.identity ) ;
-			gameObject.transform.localScale		= Vector3.one ;
+			gameObject.transform.localScale	= Vector3.one ;
 
 			//-----------------------------
 		

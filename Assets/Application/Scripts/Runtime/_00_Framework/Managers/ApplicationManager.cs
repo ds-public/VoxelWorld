@@ -1048,6 +1048,8 @@ namespace DSW
 			// アセットバンドルに追い出したシーン関連のアセットバンドルを破棄する
 			FreeAssetBundleOfScenes() ;
 
+			AssetBundleManager.ClearResourceCache( true, true ) ;
+
 			//----------------------------------
 
 			// ブロッカーを無効化する

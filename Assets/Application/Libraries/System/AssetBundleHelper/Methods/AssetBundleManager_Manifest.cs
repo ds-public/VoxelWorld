@@ -585,7 +585,7 @@ namespace AssetBundleHelper
 
 				if( m_AssetBundleInfo == null )
 				{
-					m_AssetBundleInfo = new List<AssetBundleInfo>() ;
+					m_AssetBundleInfo = new () ;
 				}
 				else
 				{
@@ -594,7 +594,7 @@ namespace AssetBundleHelper
 
 				if( m_AssetBundleHash == null )
 				{
-					m_AssetBundleHash = new Dictionary<string, AssetBundleInfo>() ;
+					m_AssetBundleHash = new () ;
 				}
 				else
 				{
@@ -765,7 +765,7 @@ namespace AssetBundleHelper
 					// フォルダごとまとめて削除する
 
 					// ベースパス
-					string storagePath = StorageCacheRootPath + ManifestName + "/" ;
+					string storagePath = $"{StorageCacheRootPath}{ManifestName}/" ;
 				
 					// マニフェストが内包する全アセットバンドルファイルを削除する
 					StorageAccessor_Remove( storagePath, true ) ;
@@ -780,7 +780,7 @@ namespace AssetBundleHelper
 					foreach( var assetBundleInfo in	m_AssetBundleInfo )
 					{
 						// アセットバンドルファイルの保存パス
-						storagePath = StorageCacheRootPath + ManifestName + "/" + assetBundleInfo.Path ;
+						storagePath = $"{StorageCacheRootPath}{ManifestName}/{assetBundleInfo.Path}" ;
 
 						if( StorageAccessor_Exists( storagePath ) == StorageAccessor.TargetTypes.File )
 						{
@@ -988,7 +988,7 @@ namespace AssetBundleHelper
 					//--------------------------------------------------------
 #if UNITY_EDITOR
 					// 確認用にＣＲＣ[CSV版]ファイルを保存する(ファイルが存在しなくても動作上の支障は無い)
-					string path =  StorageCacheRootPath + ManifestName + "/" ;
+					string path = $"{StorageCacheRootPath}{ManifestName}/" ;
 					if( StorageAccessor_SaveText( path + ManifestName + ".csv", crcCsvText, makeFolder:true ) == true )
 					{
 						Debug.Log( "[AssetBundleManager] Save CRC[CSV] File : " + ManifestName + "\n -> "+ path + ManifestName + ".csv" ) ;
@@ -1013,7 +1013,7 @@ namespace AssetBundleHelper
 					{
 						if( string.IsNullOrEmpty( lines[ i ] ) == false )
 						{
-							string[] keyAndValue = lines[ i ].Split( ',' ) ;
+							var keyAndValue = lines[ i ].Split( ',' ) ;
 	
 							if( keyAndValue.Length >  0  && string.IsNullOrEmpty( keyAndValue[ 0 ] ) == false )
 							{
@@ -1038,7 +1038,7 @@ namespace AssetBundleHelper
 									tags = keyAndValue[ 4 ].Split( ' ' ) ;
 								}
 
-								additionalInfoHash.Add( keyAndValue[ 0 ].ToLower(), new AssetBundleAdditionalInfo( size, hash, crc, tags ) ) ;
+								additionalInfoHash.Add( keyAndValue[ 0 ].ToLower(), new ( size, hash, crc, tags ) ) ;
 							}
 						}
 					}
@@ -1178,13 +1178,13 @@ namespace AssetBundleHelper
 								{
 									// StreamingAssets へダイレクトアクセス可能な環境のみ StreamingAssets に残存するアセットバンドルが使用できる
 
-									if( StorageAccesor_ExistsInStreamingAssets( StreamingAssetsRootPath + "/" + assetBundleInfo.Path ) == true )
+									if( StorageAccesor_ExistsInStreamingAssets( $"{StreamingAssetsRootPath}/{assetBundleInfo.Path}" ) == true )
 									{
 										// StreamingAssets にファイルが存在している
 										if
 										(
-											assetBundleInfo.Size	== assetBundleInfo_Constant.Size	&&
-											assetBundleInfo.Hash	== assetBundleInfo_Constant.Hash
+											assetBundleInfo.Size == assetBundleInfo_Constant.Size &&
+											assetBundleInfo.Hash == assetBundleInfo_Constant.Hash
 										)
 										{
 											// 完全に同一ファイルが StreamingAssets に存在しているので StreamingAssets の方を優先する
@@ -1231,7 +1231,7 @@ namespace AssetBundleHelper
 					// StreamingAssets 使用且つダイレクトアクセスの場合は全てのアセットバンドルを最新版をダウンロード済みの完全な状態として扱う
 					foreach( var assetBundleInfo in m_AssetBundleInfo )
 					{
-						assetBundleInfo.UpdateRequired	= false ;
+						assetBundleInfo.UpdateRequired   = false ;
 						assetBundleInfo.LocationPriority = LocationPriorities.StreamingAssets ;	// 処理上は意味は無いが Inspector で見た時に勘違いするので優先を StreamingAssets にしておく
 					}
 				}
@@ -1928,7 +1928,7 @@ namespace AssetBundleHelper
 										tags = keyAndValue[ 4 ].Split( ' ' ) ;
 									}
 
-									additionalInfoHash.Add( keyAndValue[ 0 ].ToLower(), new AssetBundleAdditionalInfo( size, hash, crc, tags ) ) ;
+									additionalInfoHash.Add( keyAndValue[ 0 ].ToLower(), new ( size, hash, crc, tags ) ) ;
 								}
 							}
 						}

@@ -159,7 +159,7 @@ namespace AssetBundleHelper
 			{
 				if( ReferenceCount <= 0 )
 				{
-					Debug.LogWarning( "異常" ) ;
+					Debug.LogWarning( "参照カウントが異常です Path = " + Path ) ;
 					return false ;
 				}
 
@@ -234,10 +234,8 @@ namespace AssetBundleHelper
 #endif
 			//----------------------------------
 
-			var assetBundleCache = resourceCache.AssetBundleCache ;
-
 			// アセットバンドル側の参照カウントを減少させる
-			assetBundleCache?.DecrementCachingReferenceCount( 1, true ) ;	// LocalAssets からロードしている場合はインスタンスは null である
+			resourceCache.AssetBundleCache?.DecrementCachingReferenceCount( 1, true ) ;	// LocalAssets からロードしている場合はインスタンスは null である
 		}
 
 		//-------------------------------------------------------------------
@@ -246,18 +244,18 @@ namespace AssetBundleHelper
 		/// リソースキャッシュをクリアする
 		/// </summary>
 		/// <returns>結果(true=成功・false=失敗)</returns>
-		public static bool ClearResourceCache( bool useUnloadUnusedAssets )
+		public static bool ClearResourceCache( bool isPerfect, bool useUnloadUnusedAssets )
 		{
 			if( m_Instance == null )
 			{
 				return false ;
 			}
 
-			return m_Instance.ClearResourceCache_Private( useUnloadUnusedAssets ) ;
+			return m_Instance.ClearResourceCache_Private( isPerfect, useUnloadUnusedAssets ) ;
 		}
 
 		// リソースキャッシュをクリアする
-		private bool ClearResourceCache_Private( bool useUnloadUnusedAssets )
+		private bool ClearResourceCache_Private( bool isPerfect, bool useUnloadUnusedAssets )
 		{
 			// リソースキャッシュをクリア
 			if( m_ResourceCache != null && m_ResourceCache.Count >  0 )
@@ -265,9 +263,11 @@ namespace AssetBundleHelper
 #if UNITY_EDITOR
 				Debug.Log( "<color=#FF80FF>[AssetBundleManager] キャッシュからクリア対象となる展開済みリソース数 = " + m_ResourceCache.Count + "</color>" ) ;
 #endif
+				// ResourceCache が AssetBundleCache に紐づいている(参照カウントで管理されている)場合は、
+				// AssetBundleCache の参照カウントを下げて、AssetBundleCache の参照カウントが 0 になったら AssetBundleCache を破棄する
 				foreach( var resourceCache in m_ResourceCache.Values )
 				{
-					// 注意：UseeLocalAssets が true である場合、ReferenceCount を使用しても AssetBundleCache が貯まる事は無い
+					// 注意：UseeLocalAssets が true である場合、ReferenceCount を使用しても AssetBundleCache が貯まる事は無い(AssetBundleCache が null のケースがある)
 					resourceCache.AssetBundleCache?.DecrementCachingReferenceCount( 1, true ) ;
 				}
 
@@ -280,13 +280,15 @@ namespace AssetBundleHelper
 
 			//----------------------------------------------------------
 
+            CacheReleaseTypes cacheReleaseType = ( isPerfect == false ? CacheReleaseTypes.Standard : CacheReleaseTypes.Perfect ) ;
+            
 			// アセットバンドルキャッシュをクリア
 			if( m_ManifestInfo == null || m_ManifestInfo.Count >  0 )
 			{
 				foreach( var manifestInfo in m_ManifestInfo )
 				{
 					// 各マニフェストのアセットバンドルキャッシュもクリアする
-					manifestInfo.ClearAssetBundleCache( CacheReleaseTypes.Standard ) ;
+					manifestInfo.ClearAssetBundleCache( cacheReleaseType ) ;
 				}
 			}
 

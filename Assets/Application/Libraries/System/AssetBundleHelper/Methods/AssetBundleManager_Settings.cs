@@ -5,6 +5,7 @@ using System.Linq ;
 
 using UnityEngine ;
 
+
 /// <summary>
 /// アセットバンドルヘルパーパッケージ
 /// </summary>
@@ -847,7 +848,6 @@ namespace AssetBundleHelper
 						record.Value = value ;
 					}
 #endif
-
 				}
 				else
 				{

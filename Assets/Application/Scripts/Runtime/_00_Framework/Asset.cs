@@ -1338,7 +1338,7 @@ namespace DSW
 		public static bool ClearResourceCache( string message = "", bool useUnloadUnusedAssets = true )
 		{
 			Debug.Log( "<color=#00FFFF>[AssetBundleManager] シーン遷移によりキャッシュをクリアします : " + message + "</color>" ) ;
-			return AssetBundleManager.ClearResourceCache( useUnloadUnusedAssets: useUnloadUnusedAssets ) ;
+			return AssetBundleManager.ClearResourceCache( false, useUnloadUnusedAssets: useUnloadUnusedAssets ) ;
 		}
 
 		/// <summary>
