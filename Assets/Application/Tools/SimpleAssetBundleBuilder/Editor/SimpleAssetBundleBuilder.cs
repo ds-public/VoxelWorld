@@ -17,7 +17,7 @@ using UnityEditor.SceneManagement ;
 namespace Tools.ForAssetBundle
 {
 	/// <summary>
-	/// アセットバンドルビルダークラス(エディター用) Version 2024/04/23 0
+	/// アセットバンドルビルダークラス(エディター用) Version 2024/04/26 0
 	/// </summary>
 	public class SimpleAssetBundleBuilder : EditorWindow
 	{
@@ -56,7 +56,7 @@ namespace Tools.ForAssetBundle
 
 			public void AddAssetFile( string assetPath, int assetType )
 			{
-				AssetFiles.Add( new AssetFile( assetPath, assetType ) ) ;
+				AssetFiles.Add( new ( assetPath, assetType ) ) ;
 			}
 
 			// 依存関係のあるアセットも対象に追加する
@@ -161,6 +161,17 @@ namespace Tools.ForAssetBundle
 				}
 
 				return true ;
+			}
+
+			/// <summary>
+			/// 内包するアセットファイルをアルファベット順にソートする(BuildTree のハッシュ値に影響する可能性があるため)
+			/// </summary>
+			public void SortAssetFiles()
+			{
+				if( AssetFiles != null && AssetFiles.Count >  1 )
+				{
+					AssetFiles = AssetFiles.OrderBy( _ => _.AssetPath ).ToList() ;
+				}
 			}
 		}
 
@@ -769,7 +780,7 @@ namespace Tools.ForAssetBundle
 
 						if( m_CollectDependencies == false )
 						{
-							ac = " [ " + assetBundleFile.AssetFiles.Count +" ]" ;
+							ac = $" [ {assetBundleFile.AssetFiles.Count} ]" ;
 						}
 						else
 						{
@@ -783,7 +794,7 @@ namespace Tools.ForAssetBundle
 								}
 							}
 
-							ac = " [ " + st[ 0 ] + " + " + st[ 1 ] +" ]" ;
+							ac = $" [ {st[ 0 ]} + {st[ 1 ]} ]" ;
 						}
 
 						string assetBundlePath = assetBundleFile.AssetBundlePath ;
@@ -1073,7 +1084,7 @@ namespace Tools.ForAssetBundle
 										{
 											folderName = path[ ..p ] ;
 										}
-										assetBundleFile.AssetBundlePath = folderName + "/" + assetName ;	// 出力パス(相対)
+										assetBundleFile.AssetBundlePath = $"{folderName}/{assetName}" ;	// 出力パス(相対)
 									}
 
 									// コードで対象指定：単独ファイルのケース
@@ -1176,7 +1187,7 @@ namespace Tools.ForAssetBundle
 									}
 								}
 
-								assetBundleFile.AssetBundlePath	= path + "/" + assetName ;	// 出力パス(相対)
+								assetBundleFile.AssetBundlePath	= $"{path}/{assetName}" ;	// 出力パス(相対)
 
 								// コードで対象指定：単独ファイルのケース
 								assetBundleFile.AddAssetFile( targetPaths[ i ], 0 ) ;
@@ -1223,7 +1234,7 @@ namespace Tools.ForAssetBundle
 									assetName = assetName[ p.. ] ;
 								}
 
-								assetBundleFile.AssetBundlePath = path + "/" + assetName ;	// 出力パス
+								assetBundleFile.AssetBundlePath = $"{path}/{assetName}" ;	// 出力パス
 
 								// 再帰的に素材ファイルを加える
 								AddAssetBundleFile( assetBundleFile, targetPaths[ i ] ) ;
@@ -1895,7 +1906,17 @@ namespace Tools.ForAssetBundle
 
 			//-----------------------------------------------------------------------------
 
+			// 各アセットバンドルの内包アセットの並び順をアルファベット順でソートしておく(BuildTree のハッシュに影響があるかもしれないため)
+			l = assetBundleFiles.Length ;
+			for( i  = 0 ; i <  l ; i ++ )
+			{
+				assetBundleFiles[ i ].SortAssetFiles() ;
+			}
+
+			//-----------------------------------------------------------------------------
+
 			// アセットバンドルファイルの階層が浅い方から順にビルドするようにソートする(小さい値の方が先)
+			// →今のところ不要
 
 			//-----------------------------------------------------------------------------
 
@@ -1988,7 +2009,7 @@ namespace Tools.ForAssetBundle
 					l = maps.Count ;
 					for( i  = 0 ; i <  l ; i ++ )
 					{
-						path = assetBundleRootFolderPath + "/" + maps[ i ].assetBundleName ;
+						path = $"{assetBundleRootFolderPath}/{maps[ i ].assetBundleName}" ;
 
 						if( Directory.Exists( path ) == true )
 						{
@@ -2087,7 +2108,7 @@ namespace Tools.ForAssetBundle
 							//------------------------------
 							// 出力するアセットバンドルファイル名と同名のフォルダが既に存在する場合は削除しておかないとビルドに失敗する
 
-							path = assetBundleRootFolderPath + "/" + map.assetBundleName ;
+							path = $"{assetBundleRootFolderPath}/{map.assetBundleName}" ;
 
 							if( Directory.Exists( path ) == true )
 							{

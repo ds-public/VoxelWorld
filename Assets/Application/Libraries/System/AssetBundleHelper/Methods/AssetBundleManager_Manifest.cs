@@ -867,6 +867,7 @@ namespace AssetBundleHelper
 				//------------------------------------
 	
 				string[] assetBundlePaths = null ;
+				KeyValuePair<string,string>[] assetBundlePathAndHashs = null ;
 
 				int i, l ;
 
@@ -884,6 +885,7 @@ namespace AssetBundleHelper
 				// Manifest ファイルをダウンロードする
 				if( CrcOnly == false )
 				{
+					// Manifest ファイルはダウンロード・ストレージに保存した上でバイナリデータを取得する
 					instance.StartCoroutine( LoadManifestAsync( ( bool _1, byte[] _2 ) => { manifestDone = _1 ; manifestData = _2 ; }, instance ) ) ;
 				}
 				else
@@ -931,6 +933,7 @@ namespace AssetBundleHelper
 					}
 
 					//------------------------------------
+					// 重要：リモートから取得した最新のマニフェスト情報
 
 					// バイナリからアセットバンドルを生成する
 					var assetBundle = AssetBundle.LoadFromMemory( manifestData ) ;
@@ -955,6 +958,7 @@ namespace AssetBundleHelper
 						yield break ;
 					}
 
+					// パスのみを取得する
 					assetBundlePaths = m_Manifest.GetAllAssetBundles() ;
 					if( assetBundlePaths == null || assetBundlePaths.Length == 0 )
 					{
@@ -967,6 +971,14 @@ namespace AssetBundleHelper
 						yield break ;
 					}
 					
+					// パスとハッシュを取得する
+					l = assetBundlePaths.Length ;
+					assetBundlePathAndHashs = new KeyValuePair<string, string>[ l ] ;
+					for( i  = 0 ; i <  l ; i ++ )
+					{
+						assetBundlePathAndHashs[ i ] = new ( assetBundlePaths[ i ], m_Manifest.GetAssetBundleHash( assetBundlePaths[ i ] ).ToString() ) ;
+					}
+
 					// アセットバンドル破棄(重要)
 					assetBundle.Unload( false ) ;
 				}
@@ -974,12 +986,17 @@ namespace AssetBundleHelper
 				//---------------------------------------------------------
 				// CRCを展開する
 
+				string assetBundlePath ;
+
 				int size ;
 				string hash ;
 				uint crc ;
 				string[] tags ;
 
 				Dictionary<string,AssetBundleAdditionalInfo> additionalInfoHash = null ;
+
+				//-----------------------------------------------------------------------------------------
+				// Crc[Csv版]
 
 				if( string.IsNullOrEmpty( crcCsvText ) == false )
 				{
@@ -989,7 +1006,7 @@ namespace AssetBundleHelper
 #if UNITY_EDITOR
 					// 確認用にＣＲＣ[CSV版]ファイルを保存する(ファイルが存在しなくても動作上の支障は無い)
 					string path = $"{StorageCacheRootPath}{ManifestName}/" ;
-					if( StorageAccessor_SaveText( path + ManifestName + ".csv", crcCsvText, makeFolder:true ) == true )
+					if( StorageAccessor_SaveText( $"{path}{ManifestName}.csv", crcCsvText, makeFolder:true ) == true )
 					{
 						Debug.Log( "[AssetBundleManager] Save CRC[CSV] File : " + ManifestName + "\n -> "+ path + ManifestName + ".csv" ) ;
 					}
@@ -1017,34 +1034,57 @@ namespace AssetBundleHelper
 	
 							if( keyAndValue.Length >  0  && string.IsNullOrEmpty( keyAndValue[ 0 ] ) == false )
 							{
-								size = 0 ;
+								// フォーマットが古いものか新しいものか判定する
+
+								assetBundlePath = keyAndValue[ 0 ].ToLower() ;
+
+								size	= 0 ;
+								hash	= string.Empty ;
+								crc		= 0 ;
+								tags	= null ;
+
 								if( keyAndValue.Length >  1 && string.IsNullOrEmpty( keyAndValue[ 1 ] ) == false )
 								{
 									int.TryParse( keyAndValue[ 1 ], out size ) ;
 								}
-								hash = string.Empty ;
 								if( keyAndValue.Length >  2 && string.IsNullOrEmpty( keyAndValue[ 2 ] ) == false )
 								{
-									hash = keyAndValue[ 2 ] ;
-								}
-								crc = 0 ;
-								if( keyAndValue.Length >  3 && string.IsNullOrEmpty( keyAndValue[ 3 ] ) == false )
-								{
-									uint.TryParse( keyAndValue[ 3 ], out crc ) ;
-								}
-								tags = null ;
-								if( keyAndValue.Length >  4 && string.IsNullOrEmpty( keyAndValue[ 4 ] ) == false )
-								{
-									tags = keyAndValue[ 4 ].Split( ' ' ) ;
+									if( keyAndValue[ 2 ].Length >= 16 )
+									{
+										// 新バージョンのフォーマット
+
+										hash = keyAndValue[ 2 ] ;
+
+										if( keyAndValue.Length >  3 && string.IsNullOrEmpty( keyAndValue[ 3 ] ) == false )
+										{
+											uint.TryParse( keyAndValue[ 3 ], out crc ) ;
+										}
+										if( keyAndValue.Length >  4 && string.IsNullOrEmpty( keyAndValue[ 4 ] ) == false )
+										{
+											tags = keyAndValue[ 4 ].Split( ' ' ) ;
+										}
+									}
+									else
+									{
+										// 古バージョンのフォーマット
+
+										uint.TryParse( keyAndValue[ 2 ], out crc ) ;
+
+										if( keyAndValue.Length >  3 && string.IsNullOrEmpty( keyAndValue[ 3 ] ) == false )
+										{
+											tags = keyAndValue[ 3 ].Split( ' ' ) ;
+										}
+									}
 								}
 
-								additionalInfoHash.Add( keyAndValue[ 0 ].ToLower(), new ( size, hash, crc, tags ) ) ;
+								additionalInfoHash.Add( assetBundlePath, new ( size, hash, crc, tags ) ) ;
 							}
 						}
 					}
 				}
 
-				//-------------
+				//-----------------------------------------------------------------------------------------
+				// Crc[Json版]
 
 				if( string.IsNullOrEmpty( crcJsonText ) == false )
 				{
@@ -1088,21 +1128,29 @@ namespace AssetBundleHelper
 
 				ManifestInfo.AssetBundleInfo node ;
 
-				// Manifest
-				if( assetBundlePaths != null && assetBundlePaths.Length >  0 )
+				// Manifest : 実際に有効なアセットバンドルに対して .crc または .json の情報を設定する
+				if( assetBundlePathAndHashs != null )
 				{
 					// アセットバンドルファイルの情報を追加する
-					foreach( var assetBundlePath in assetBundlePaths )
+					foreach( var assetBundlePathAndHash in assetBundlePathAndHashs )
 					{
+						assetBundlePath = assetBundlePathAndHash.Key ;
+
 						size	= 0 ;
-						hash	= string.Empty ;
+						hash	= assetBundlePathAndHash.Value ;
 						crc		= 0 ;
 						tags	= null ;
 
 						if( additionalInfoHash != null && additionalInfoHash.ContainsKey( assetBundlePath ) == true )
 						{
-							size	= additionalInfoHash[ assetBundlePath ].Size ;                                                                                                                                                                                                                  
-							hash	= additionalInfoHash[ assetBundlePath ].Hash ;
+							size	= additionalInfoHash[ assetBundlePath ].Size ;
+
+							if( string.IsNullOrEmpty( additionalInfoHash[ assetBundlePath ].Hash ) == false )
+							{
+								// .crc .json ファイル側のハッシュで上書きする
+								hash	= additionalInfoHash[ assetBundlePath ].Hash ;
+							}
+
 							crc		= additionalInfoHash[ assetBundlePath ].Crc ;
 							tags	= additionalInfoHash[ assetBundlePath ].Tags ;
 						}
@@ -1116,10 +1164,9 @@ namespace AssetBundleHelper
 					}
 				}
 
-				// Crc
+				// 非アセットバンドル化ファイルの情報を追加する
 				if( additionalInfoHash != null && additionalInfoHash.Count >  0 )
 				{
-					// 非アセットバンドル化ファイルの情報を追加する
 					foreach( var additionalInfo in additionalInfoHash )
 					{
 						if( m_AssetBundleHash.ContainsKey( additionalInfo.Key ) == false )
@@ -1181,10 +1228,11 @@ namespace AssetBundleHelper
 									if( StorageAccesor_ExistsInStreamingAssets( $"{StreamingAssetsRootPath}/{assetBundleInfo.Path}" ) == true )
 									{
 										// StreamingAssets にファイルが存在している
+										// 重要：非アセットバンドルのケースもあるのでＣＲＣで確認する
 										if
 										(
 											assetBundleInfo.Size == assetBundleInfo_Constant.Size &&
-											assetBundleInfo.Hash == assetBundleInfo_Constant.Hash
+											assetBundleInfo.Crc  == assetBundleInfo_Constant.Crc
 										)
 										{
 											// 完全に同一ファイルが StreamingAssets に存在しているので StreamingAssets の方を優先する
@@ -1554,7 +1602,8 @@ namespace AssetBundleHelper
 						else
 						{
 							// 非アセットバンドル(assetBundleInfo=ダウンロードした最新のもの・node=ローカルストレージ保存のもの)
-							if( assetBundleInfo.Size == node.Size && assetBundleInfo.Hash == node.Hash )
+							// 非アセットバンドルはハッシュ値が存在しない場合があるためＣＲＣ値を使用する
+							if( assetBundleInfo.Size == node.Size && assetBundleInfo.Crc == node.Crc )
 							{
 								// ＣＲＣとサイズは同じである
 
@@ -1800,35 +1849,63 @@ namespace AssetBundleHelper
 				//------------------------------------
 	
 				string[] assetBundlePaths = null ;
+				KeyValuePair<string,string>[] assetBundlePathAndHashs = null ;
 
 				int i, l ;
 
-				byte[] data = null ;
+//				bool manifestDone = false ;
+				byte[] manifestData = null ;
 
-				string text ;
+//				bool crcCsvDone = false ;
+				string crcCsvText = null ;
+
+//				bool crcJsonDone = false ;
+				string crcJsonText = null ;
 
 				//------------------------------------
 
 				if( CrcOnly == false )
 				{
 					// StreamingAssets からロードを試みる
-					yield return instance.StartCoroutine( StorageAccessor.LoadFromStreamingAssetsAsync( $"{StreamingAssetsRootPath}{ManifestName}", ( _1, _2 ) => { data = _1 ; } ) ) ;
+					yield return instance.StartCoroutine( StorageAccessor.LoadFromStreamingAssetsAsync( $"{StreamingAssetsRootPath}{ManifestName}", ( _1, _2 ) => { manifestData = _1 ; } ) ) ;
+//					manifestDone = true ;
+				}
+//				else
+//				{
+//					manifestDone = true ;
+//				}
+
+				// Crc[Csv版] ファイルをダウンロードする
+//				yield return instance.StartCoroutine( StorageAccessor.LoadTextFromStreamingAssetsAsync( $"{StreamingAssetsRootPath}{ManifestName}.csv", ( _1, _2 ) => { crcCsvText = _1 ; } ) ) ;
+//				crcCsvDone = ( string.IsNullOrEmpty( crcCsvText ) == false ) ; ;
+
+				// Crc[Json版] ファイルをダウンロードする
+				yield return instance.StartCoroutine( StorageAccessor.LoadTextFromStreamingAssetsAsync( $"{StreamingAssetsRootPath}{ManifestName}.json", ( _1, _2 ) => { crcJsonText = _1 ; } ) ) ;
+//				crcJsonDone = ( string.IsNullOrEmpty( crcJsonText ) == false ) ;
+
+				//---------------------------------------------------------
+
+				if( CrcOnly == false )
+				{
+					// Manifest を展開する
 
 					//--------------------------------------------------------
 
-					if( data == null || data.Length == 0 )
+					if( manifestData == null || manifestData.Length == 0 )
 					{
 						// データが取得出来ない
 						Error = "Could not load data : " + ManifestName ;
 						onError?.Invoke( Error ) ;
 						m_Busy = false ;
+
 						yield break ;
 					}
 
 					//------------------------------------
+					// 重要：リモートから取得した最新のマニフェスト情報
 
 					// バイナリからアセットバンドルを生成する
-					var assetBundle = AssetBundle.LoadFromMemory( data ) ;
+					var assetBundle = AssetBundle.LoadFromMemory( manifestData ) ;
 					if( assetBundle == null )
 					{
 						// アセットバンドルが生成出来ない
@@ -1850,6 +1927,7 @@ namespace AssetBundleHelper
 						yield break ;
 					}
 
+					// アセットバンドルパスを取得する
 					assetBundlePaths = m_Manifest.GetAllAssetBundles() ;
 					if( assetBundlePaths == null || assetBundlePaths.Length == 0 )
 					{
@@ -1862,74 +1940,99 @@ namespace AssetBundleHelper
 						yield break ;
 					}
 					
+					// パスとハッシュを取得する
+					l = assetBundlePaths.Length ;
+					assetBundlePathAndHashs = new KeyValuePair<string, string>[ l ] ;
+					for( i  = 0 ; i <  l ; i ++ )
+					{
+						assetBundlePathAndHashs[ i ] = new ( assetBundlePaths[ i ], m_Manifest.GetAssetBundleHash( assetBundlePaths[ i ] ).ToString() ) ;
+					}
+
 					assetBundle.Unload( false ) ;
 				}
 
 				//---------------------------------------------------------
+				// CRCを展開する
 
-				// ＣＲＣファイルのロードを試みる
-				text = string.Empty ;
-				data = null ;	// 初期化が必要
+				string assetBundlePath ;
 
-				//-------------
-
-				Dictionary<string,AssetBundleAdditionalInfo> additionalInfoHash = null ;
 				int			size ;
 				string		hash ;
 				uint		crc ;
 				string[]	tags ;
 
+				Dictionary<string,AssetBundleAdditionalInfo> additionalInfoHash = null ;
+
 				//-----------------------------------------------------------------------------------------
 				// Crc[Csv版]
 
-				if( additionalInfoHash == null )
+				if( string.IsNullOrEmpty( crcCsvText ) == false )
 				{
-					// StreamingAssets からロードを試みる
-					yield return instance.StartCoroutine( StorageAccessor.LoadTextFromStreamingAssetsAsync( $"{StreamingAssetsRootPath}{ManifestName}.csv", ( _1, _2 ) => { text = _1 ; } ) ) ;
+					// CRC[CSV版]ファイルを展開する
 
-					if( string.IsNullOrEmpty( text ) == false )
+					//--------------------------------------------------------
+
+					additionalInfoHash = new () ;
+
+					// ＣＲＣデータが取得出来た場合のみアセットバンドル名をキー・ＣＲＣ値をバリューとしたディクショナリを生成する
+
+					crcCsvText = crcCsvText.Replace( "\n", "\x0A" ) ;
+					crcCsvText = crcCsvText.Replace( "\x0D\x0A", "\x0A" ) ;
+
+					var lines = crcCsvText.Split( '\x0A' ) ;
+					l = lines.Length ;
+					for( i  = 0 ; i <  l ; i ++ )
 					{
-						//--------------------------------------------------------
-
-						additionalInfoHash = new () ;
-
-						// ＣＲＣデータが取得出来た場合のみアセットバンドル名をキー・ＣＲＣ値をバリューとしたディクショナリを生成する
-						text = text.Replace( "\n", "\x0A" ) ;
-						text = text.Replace( "\x0D\x0A", "\x0A" ) ;
-
-						string[] lines = text.Split( '\x0A' ) ;
-						l = lines.Length ;
-						for( i  = 0 ; i <  l ; i ++ )
+						if( string.IsNullOrEmpty( lines[ i ] ) == false )
 						{
-							if( string.IsNullOrEmpty( lines[ i ] ) == false )
-							{
-								var keyAndValue = lines[ i ].Split( ',' ) ;
+							var keyAndValue = lines[ i ].Split( ',' ) ;
 	
-								if( keyAndValue.Length >  0  && string.IsNullOrEmpty( keyAndValue[ 0 ] ) == false )
-								{
-									size = 0 ;
-									if( keyAndValue.Length >  1 && string.IsNullOrEmpty( keyAndValue[ 1 ] ) == false )
-									{
-										int.TryParse( keyAndValue[ 1 ], out size ) ;
-									}
-									hash = string.Empty ;
-									if( keyAndValue.Length >  2 && string.IsNullOrEmpty( keyAndValue[ 2 ] ) == false )
-									{
-										hash = keyAndValue[ 2 ] ;
-									}
-									crc = 0 ;
-									if( keyAndValue.Length >  3 && string.IsNullOrEmpty( keyAndValue[ 3 ] ) == false )
-									{
-										uint.TryParse( keyAndValue[ 3 ], out crc ) ;
-									}
-									tags = null ;
-									if( keyAndValue.Length >  4 && string.IsNullOrEmpty( keyAndValue[ 4 ] ) == false )
-									{
-										tags = keyAndValue[ 4 ].Split( ' ' ) ;
-									}
+							if( keyAndValue.Length >  0  && string.IsNullOrEmpty( keyAndValue[ 0 ] ) == false )
+							{
+								// フォーマットが古いものか新しいものか判定する
 
-									additionalInfoHash.Add( keyAndValue[ 0 ].ToLower(), new ( size, hash, crc, tags ) ) ;
+								assetBundlePath = keyAndValue[ 0 ].ToLower() ;
+
+								size	= 0 ;
+								hash	= string.Empty ;
+								crc		= 0 ;
+								tags	= null ;
+
+								if( keyAndValue.Length >  1 && string.IsNullOrEmpty( keyAndValue[ 1 ] ) == false )
+								{
+									int.TryParse( keyAndValue[ 1 ], out size ) ;
 								}
+								if( keyAndValue.Length >  2 && string.IsNullOrEmpty( keyAndValue[ 2 ] ) == false )
+								{
+									if( keyAndValue[ 2 ].Length >= 16 )
+									{
+										// 新バージョンのフォーマット
+
+										hash = keyAndValue[ 2 ] ;
+
+										if( keyAndValue.Length >  3 && string.IsNullOrEmpty( keyAndValue[ 3 ] ) == false )
+										{
+											uint.TryParse( keyAndValue[ 3 ], out crc ) ;
+										}
+										if( keyAndValue.Length >  4 && string.IsNullOrEmpty( keyAndValue[ 4 ] ) == false )
+										{
+											tags = keyAndValue[ 4 ].Split( ' ' ) ;
+										}
+									}
+									else
+									{
+										// 古バージョンのフォーマット
+
+										uint.TryParse( keyAndValue[ 2 ], out crc ) ;
+
+										if( keyAndValue.Length >  3 && string.IsNullOrEmpty( keyAndValue[ 3 ] ) == false )
+										{
+											tags = keyAndValue[ 3 ].Split( ' ' ) ;
+										}
+									}
+								}
+
+								additionalInfoHash.Add( assetBundlePath, new ( size, hash, crc, tags ) ) ;
 							}
 						}
 					}
@@ -1938,24 +2041,23 @@ namespace AssetBundleHelper
 				//-----------------------------------------------------------------------------------------
 				// Crc[Json版]
 
-				if( additionalInfoHash == null )
+				if( string.IsNullOrEmpty( crcJsonText ) == false )
 				{
-					// StreamingAssets からロードを試みる
-					yield return instance.StartCoroutine( StorageAccessor.LoadTextFromStreamingAssetsAsync( $"{StreamingAssetsRootPath}{ManifestName}.json", ( _1, _2 ) => { text = _1 ; } ) ) ;
+					// CRC[JSON版]ファイルを展開する
 
-					if( string.IsNullOrEmpty( text ) == false )
+					// Jenkins でビルドした際に妙な改行が入っている事があるため検査して不備があれば修正する
+					crcJsonText = CorrectCrcJsonText( crcJsonText ) ;
+
+					//--------------------------------------------------------
+
+					var json = JsonUtility.FromJson<JsonDeserializer>( crcJsonText ) ;
+					if( json != null )
 					{
-						//--------------------------------------------------------
+						additionalInfoHash = new () ;
 
-						var json = JsonUtility.FromJson<JsonDeserializer>( text ) ;
-						if( json != null )
+						foreach( var assetBundleFile in json.AssetBundleFiles )
 						{
-							additionalInfoHash = new () ;
-
-							foreach( var assetBundleFile in json.AssetBundleFiles )
-							{
-								additionalInfoHash.Add( assetBundleFile.Path.ToLower(), assetBundleFile ) ;
-							}
+							additionalInfoHash.Add( assetBundleFile.Path.ToLower(), assetBundleFile ) ;
 						}
 					}
 				}
@@ -1968,20 +2070,29 @@ namespace AssetBundleHelper
 
 				ManifestInfo.AssetBundleInfo node ;
 
-				if( assetBundlePaths != null && assetBundlePaths.Length >  0)
+				// Manifest : 実際に有効なアセットバンドルに対して .crc または .json の情報を設定する
+				if( assetBundlePathAndHashs != null )
 				{
 					// アセットバンドルファイルの情報を追加する
-					foreach( var assetBundlePath in assetBundlePaths )
+					foreach( var assetBundlePathAndHash in assetBundlePathAndHashs )
 					{
+						assetBundlePath = assetBundlePathAndHash.Key ;
+
 						size	= 0 ;
-						hash	= string.Empty ;
+						hash	=  assetBundlePathAndHash.Value ;
 						crc		= 0 ;
 						tags	= null ;
 
 						if( additionalInfoHash != null && additionalInfoHash.ContainsKey( assetBundlePath ) == true )
 						{
-							size	= additionalInfoHash[ assetBundlePath ].Size ;                                                                                                                                                                                                                  
-							hash	= additionalInfoHash[ assetBundlePath ].Hash ;
+							size	= additionalInfoHash[ assetBundlePath ].Size ;
+
+							if( string.IsNullOrEmpty( additionalInfoHash[ assetBundlePath ].Hash ) == false )
+							{
+								// .crc .json ファイル側のハッシュで上書きする
+								hash	= additionalInfoHash[ assetBundlePath ].Hash ;
+							}
+
 							crc		= additionalInfoHash[ assetBundlePath ].Crc ;
 							tags	= additionalInfoHash[ assetBundlePath ].Tags ;
 						}
@@ -1995,16 +2106,16 @@ namespace AssetBundleHelper
 					}
 				}
 
+				// 非アセットバンドル化ファイルの情報を追加する
 				if( additionalInfoHash != null && additionalInfoHash.Count >  0 )
 				{
-					// 非アセットバンドル化ファイルの情報を追加する
 					foreach( var additionalInfo in additionalInfoHash )
 					{
 						if( m_AssetBundleHash_Constant.ContainsKey( additionalInfo.Key ) == false )
 						{
 							// アセットバンドルとして追加されていないので非アセットバンドル化ファイルとみなす
 							size	= additionalInfo.Value.Size ;                                                                                                                                                                                                                  
-							hash	= additionalInfo.Value.Hash ;
+							hash	= additionalInfo.Value.Hash ;	// 存在しない
 							crc		= additionalInfo.Value.Crc ;
 							tags	= additionalInfo.Value.Tags ;
 

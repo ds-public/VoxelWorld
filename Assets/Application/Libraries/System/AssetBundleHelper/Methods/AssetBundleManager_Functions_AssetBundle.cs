@@ -561,7 +561,6 @@ namespace AssetBundleHelper
 
 			return Directory.GetCurrentDirectory().Replace( "\\", "/" ) + "/" + path ;
 		}
-
 #endif
 
 		// 一般タイプに対する拡張子

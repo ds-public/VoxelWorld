@@ -17,7 +17,7 @@ using UnityEditor ;
 namespace AssetBundleHelper
 {
 	/// <summary>
-	/// アセットバンドルマネージャクラス(シングルトン) Version 2024/04/24 0
+	/// アセットバンドルマネージャクラス(シングルトン) Version 2024/04/26 0
 	/// </summary>
 	public partial class AssetBundleManager : MonoBehaviour
 	{
@@ -30,10 +30,9 @@ namespace AssetBundleHelper
 		{
 			var go = new GameObject( "AssetBundleManager" ) ;
 		
-			var t = go.transform ;
-			t.SetParent( null ) ;
-			t.SetLocalPositionAndRotation( Vector2.zero, Quaternion.identity ) ;
-			t.localScale = Vector3.one ;
+			go.transform.SetParent( null ) ;
+			go.transform.SetLocalPositionAndRotation( Vector2.zero, Quaternion.identity ) ;
+			go.transform.localScale = Vector3.one ;
 		
 			go.AddComponent<AssetBundleManager>() ;
 			Selection.activeGameObject = go ;
