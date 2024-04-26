@@ -9,10 +9,11 @@ using UnityEngine ;
 
 using ICSharpCode.SharpZipLib.GZip ;
 
+
 namespace DSW
 {
 	/// <summary>
-	/// ＧＺｉｐクラス Version 2022/10/11 0
+	/// ＧＺｉｐクラス Version 2024/04/24 0
 	/// </summary>
 	public class GZip : ExMonoBehaviour
 	{
@@ -50,7 +51,7 @@ namespace DSW
 				return null ;
 			}
 
-			MemoryStream mis = new MemoryStream( data, 0, length ) ;
+			var mis = new MemoryStream( data, 0, length ) ;
 	
 			return Decompress_Private( mis ) ;
 		}
@@ -69,7 +70,7 @@ namespace DSW
 				return null ;
 			}
 
-			MemoryStream mis = new MemoryStream( data, offset, length ) ;
+			var mis = new MemoryStream( data, offset, length ) ;
 	
 			return Decompress_Private( mis ) ;
 		}
@@ -88,7 +89,7 @@ namespace DSW
 				return null ;
 			}
 
-			MemoryStream mis = new MemoryStream( data ) ;
+			var mis = new MemoryStream( data ) ;
 	
 			return Decompress_Private( mis ) ;
 		}
@@ -101,7 +102,7 @@ namespace DSW
 		/// <returns></returns>
 		public static byte[] Decompress( string path )
 		{
-			FileStream fis = File.OpenRead( path ) ;
+			var fis = File.OpenRead( path ) ;
 			if( fis != null )
 			{
 				return Decompress_Private( fis ) ;
@@ -113,13 +114,13 @@ namespace DSW
 		{
 			byte[] result ;
 
-			GZipInputStream gis = new GZipInputStream( cis ) ;
+			var gis = new GZipInputStream( cis ) ;
 
 			MemoryStream mos ;
 
 			//----------------------------------
 
-			byte[] buffer = new byte[ BufferSize ] ;
+			var buffer = new byte[ BufferSize ] ;
 			int length ;
 
 			mos = new MemoryStream() ;
@@ -157,7 +158,7 @@ namespace DSW
 		{
 			if( data != null && data.Length >  0 )
 			{
-				MemoryStream mis = new MemoryStream( data ) ;
+				var mis = new MemoryStream( data ) ;
 				
 				return await DecompressAsync_Private( mis, onAction ) ;
 			}
@@ -172,7 +173,7 @@ namespace DSW
 		/// <returns></returns>
 		public static async UniTask<byte[]> DecompressAsync( string path, Action<byte[]> onAction = null )
 		{
-			FileStream fis = File.OpenRead( path ) ;
+			var fis = File.OpenRead( path ) ;
 			if( fis != null )
 			{
 				return await DecompressAsync_Private( fis,onAction ) ;
@@ -184,13 +185,13 @@ namespace DSW
 		{
 			byte[] result ;
 
-			GZipInputStream gis = new GZipInputStream( cis ) ;
+			var gis = new GZipInputStream( cis ) ;
 
 			MemoryStream mos ;
 
 			//----------------------------------
 
-			byte[] buffer = new byte[ BufferSize ] ;
+			var buffer = new byte[ BufferSize ] ;
 			int length ;
 
 			mos = new MemoryStream() ;
@@ -239,7 +240,7 @@ namespace DSW
 		{
 			if( data != null && data.Length >  0 )
 			{
-				MemoryStream mis = new MemoryStream( data ) ;
+				var mis = new MemoryStream( data ) ;
 	
 				return Compress_Private( mis, level ) ;
 			}
@@ -254,7 +255,7 @@ namespace DSW
 		/// <returns></returns>
 		public static byte[] Compress( string path, int level = 3 )
 		{
-			FileStream fis = File.OpenRead( path ) ;
+			var fis = File.OpenRead( path ) ;
 			if( fis != null )
 			{
 				return Compress_Private( fis, level ) ;
@@ -266,14 +267,14 @@ namespace DSW
 		{
 			byte[] result ;
 
-			MemoryStream mos = new MemoryStream() ;
-			GZipOutputStream gos = new GZipOutputStream( mos ) ;
+			var mos = new MemoryStream() ;
+			var gos = new GZipOutputStream( mos ) ;
 
 			gos.SetLevel( level ) ;
 
 			//----------------------------------------------------------
 
-			byte[] buffer = new byte[ BufferSize ] ;	// ファイル用のバッファ
+			var buffer = new byte[ BufferSize ] ;	// ファイル用のバッファ
 			int length ;
 
 			do
@@ -310,7 +311,7 @@ namespace DSW
 		{
 			if( data != null && data.Length >  0 )
 			{
-				MemoryStream mis = new MemoryStream( data ) ;
+				var mis = new MemoryStream( data ) ;
 				
 				return await CompressAsync_Private( mis, onAction, level ) ;
 			}
@@ -325,7 +326,7 @@ namespace DSW
 		/// <returns></returns>
 		public static async UniTask<byte[]> CompressAsync( string path, Action<byte[]> onAction = null, int level = 3 )
 		{
-			FileStream fis = File.OpenRead( path ) ;
+			var fis = File.OpenRead( path ) ;
 			if( fis != null )
 			{
 				return await CompressAsync_Private( fis, onAction, level ) ;
@@ -337,14 +338,14 @@ namespace DSW
 		{
 			byte[] result ;
 
-			MemoryStream mos = new MemoryStream() ;
-			GZipOutputStream gos = new GZipOutputStream( mos ) ;
+			var mos = new MemoryStream() ;
+			var gos = new GZipOutputStream( mos ) ;
 
 			gos.SetLevel( level ) ;
 
 			//----------------------------------------------------------
 
-			byte[] buffer = new byte[ BufferSize ] ;	// ファイル用のバッファ
+			var buffer = new byte[ BufferSize ] ;	// ファイル用のバッファ
 			int length ;
 
 			do
@@ -512,7 +513,7 @@ namespace DSW
 				return null ;
 			}
 
-			byte[] data = new byte[ size ] ;
+			var data = new byte[ size ] ;
 
 			Get( data ) ;
 
@@ -626,7 +627,7 @@ namespace DSW
 			}
 
 			// 一時バッファ確保
-			byte[] buffer = new byte[ bufferSize ] ;
+			var buffer = new byte[ bufferSize ] ;
 
 			int size ;
 			int step = 0 ;
