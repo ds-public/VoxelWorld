@@ -30,8 +30,11 @@ namespace AssetBundleHelper
 			/// <param name="assetBundlePath"></param>
 			/// <param name="assetPath"></param>
 			/// <returns></returns>
-			internal protected bool CorrectPath( ref string assetBundlePath, ref string assetPath )
+			internal protected bool CorrectPath( ref string assetBundlePath, ref string assetPath, out bool isSingle )
 			{
+				// 単体ファイルではない
+				isSingle = false ;
+
 				if( m_AssetBundleHash.ContainsKey( assetBundlePath ) == true )
 				{
 					// AssetBundlePath は正しいものになっている
@@ -40,7 +43,9 @@ namespace AssetBundleHelper
 
 				//---------------------------------
 
-				// AssetBundlePath が間違っている可能性かあるため、子階層を削り、正しい AssetBundlePath 及び AssetPath を走査する
+				string originalAssetBundlePath = assetBundlePath ;
+
+				// AssetBundlePath が間違っている可能性があるため、子階層を削り、正しい AssetBundlePath 及び AssetPath を走査する
 
 				int i ;
 
@@ -73,6 +78,40 @@ namespace AssetBundleHelper
 						break ;
 					}
 				}
+
+				//---------------------------------------------------------
+				// １アセットバンドルファイル＝１アセットファイルのケース
+
+				assetBundlePath = originalAssetBundlePath ;
+				int p0 = assetBundlePath.LastIndexOf( '/' ) ;
+				int p1 = assetBundlePath.LastIndexOf( '.' ) ;
+				if( p1 >= 0 && p1 >  p0 )
+				{
+					// 拡張子あり(最後の拡張子を使用する)
+					if( p0 >= 0 )
+					{
+						p0 ++ ;
+						assetPath = assetBundlePath[ p0.. ] ;
+					}
+					else
+					{
+						assetPath = assetBundlePath ;
+					}
+
+					assetBundlePath = assetBundlePath[ ..p1 ] ;
+
+					if( m_AssetBundleHash.ContainsKey( assetBundlePath ) == true )
+					{
+						// アセットバンドルパスの正しいものを発見した
+
+						// 単体ファイルである
+						isSingle = true ;
+
+						return true ;
+					}
+				}
+
+				//---------------------------------------------------------
 
 				// パスの指定が間違っている
 				return false ;
@@ -275,7 +314,7 @@ namespace AssetBundleHelper
 			/// <returns></returns>
 			internal protected ( UnityEngine.Object, AssetBundleCacheElement ) LoadAsset
 			(
-				string assetBundlePath, string assetName, Type type,
+				string assetBundlePath, string assetName, Type type, bool isSingle,
 				AssetBundleManager instance
 			)
 			{
@@ -292,7 +331,7 @@ namespace AssetBundleHelper
 				var asset = m_AssetBundleHash[ assetBundlePath ].LoadAsset
 				(
 					assetBundle,
-					assetBundlePath, assetName, type,
+					assetBundlePath, assetName, type, isSingle,
 					LocalAssetsRootPath,
 					instance
 				) ;
@@ -315,7 +354,7 @@ namespace AssetBundleHelper
 			/// <returns></returns>
 			internal protected IEnumerator LoadAsset_Coroutine
 			(
-				string assetBundlePath, string assetName, Type type,
+				string assetBundlePath, string assetName, Type type, bool isSingle,
 				Action<UnityEngine.Object, AssetBundleCacheElement> onLoaded, Action<string> onError,
 				Request request,
 				AssetBundleManager instance
@@ -348,7 +387,7 @@ namespace AssetBundleHelper
 //				else
 //				{
 					// 同期
-					asset = assetBundleInfo.LoadAsset( assetBundle, assetBundlePath, assetName, type, LocalAssetsRootPath, instance ) ;
+					asset = assetBundleInfo.LoadAsset( assetBundle, assetBundlePath, assetName, type, isSingle, LocalAssetsRootPath, instance ) ;
 //				}
 				
 				if( asset != null )
@@ -477,7 +516,7 @@ namespace AssetBundleHelper
 			/// <returns>サブアセットに含まれる任意のコンポーネントのインスタンス</returns>
 			internal protected ( UnityEngine.Object, AssetBundleCacheElement ) LoadSubAsset
 			(
-				string assetBundlePath, string assetName, string subAssetName, Type type,
+				string assetBundlePath, string assetName, string subAssetName, Type type, bool isSingle,
 				string localAssetPath, AssetBundleManager instance
 			)
 			{
@@ -491,7 +530,7 @@ namespace AssetBundleHelper
 				//---------------------------------------------------------
 
 				// アセットのロード
-				var asset = m_AssetBundleHash[ assetBundlePath ].LoadSubAsset( assetBundle, assetBundlePath, assetName, subAssetName, type, LocalAssetsRootPath, localAssetPath, instance ) ;
+				var asset = m_AssetBundleHash[ assetBundlePath ].LoadSubAsset( assetBundle, assetBundlePath, assetName, subAssetName, type, isSingle, LocalAssetsRootPath, localAssetPath, instance ) ;
 
 				// 参照カウントはここで処理する
 
@@ -515,7 +554,7 @@ namespace AssetBundleHelper
 			/// <returns></returns>
 			internal protected IEnumerator LoadSubAsset_Coroutine
 			(
-				string assetBundlePath, string assetName, string subAssetName, Type type,
+				string assetBundlePath, string assetName, string subAssetName, Type type, bool isSingle,
 				Action<UnityEngine.Object, AssetBundleCacheElement> onLoaded, Action<string> onError,
 				Request request,
 				string localAssetPath, AssetBundleManager instance
@@ -547,7 +586,7 @@ namespace AssetBundleHelper
 //				else
 //				{
 					// 同期
-					asset = assetBundleInfo.LoadSubAsset( assetBundle, assetBundlePath, assetName, subAssetName, type, LocalAssetsRootPath, localAssetPath, instance ) ;
+					asset = assetBundleInfo.LoadSubAsset( assetBundle, assetBundlePath, assetName, subAssetName, type, isSingle, LocalAssetsRootPath, localAssetPath, instance ) ;
 //				}
 
 				if( asset != null )
@@ -577,7 +616,7 @@ namespace AssetBundleHelper
 			/// <returns></returns>
 			internal protected ( UnityEngine.Object[], AssetBundleCacheElement ) LoadAllSubAssets
 			(
-				string assetBundlePath, string assetName, Type type,
+				string assetBundlePath, string assetName, Type type, bool isSingle,
 				string localAssetPath, AssetBundleManager instance
 			)
 			{
@@ -592,7 +631,7 @@ namespace AssetBundleHelper
 				//---------------------------------------------------------
 
 				// アセットをロードする
-				var assets = m_AssetBundleHash[ assetBundlePath ].LoadAllSubAssets( assetBundle, assetBundlePath, assetName, type, LocalAssetsRootPath, localAssetPath, instance ) ;
+				var assets = m_AssetBundleHash[ assetBundlePath ].LoadAllSubAssets( assetBundle, assetBundlePath, assetName, type, isSingle, LocalAssetsRootPath, localAssetPath, instance ) ;
 
 				return ( assets, assetBundleCache ) ;
 			}
@@ -613,7 +652,7 @@ namespace AssetBundleHelper
 			/// <returns></returns>
 			internal protected IEnumerator LoadAllSubAssets_Coroutine
 			(
-				string assetBundlePath, string assetName, Type type,
+				string assetBundlePath, string assetName, Type type, bool isSingle,
 				Action<UnityEngine.Object[], AssetBundleCacheElement> onLoaded, Action<string> onError,
 				Request request,
 				string localAssetPath, AssetBundleManager instance
@@ -647,7 +686,7 @@ namespace AssetBundleHelper
 //				else
 //				{
 					// 同期
-					assets = assetBundleInfo.LoadAllSubAssets( assetBundle, assetBundlePath, assetName, type, LocalAssetsRootPath, localAssetPath, instance ) ;
+					assets = assetBundleInfo.LoadAllSubAssets( assetBundle, assetBundlePath, assetName, type, isSingle, LocalAssetsRootPath, localAssetPath, instance ) ;
 //				}
 
 				if( assets != null && assets.Length >  0 )

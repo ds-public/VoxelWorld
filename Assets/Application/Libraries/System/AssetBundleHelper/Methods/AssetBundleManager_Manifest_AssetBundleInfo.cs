@@ -259,20 +259,67 @@ namespace AssetBundleHelper
 				/// <param name="assetBundleName">アセットバンドル名</param>
 				/// <param name="assetName">アセット名</param>
 				/// <returns>アセットに含まれる任意のコンポーネントのインスタンス</returns>
-				internal protected UnityEngine.Object LoadAsset( AssetBundle assetBundle, string assetBundlePath, string assetName, Type type, string localAssetsRootPath, AssetBundleManager instance )
+				internal protected UnityEngine.Object LoadAsset
+				(
+					AssetBundle assetBundle,
+					string assetBundlePath, string assetName, Type type, bool isSingle,
+					string localAssetsRootPath,
+					AssetBundleManager instance
+				)
 				{
 					string path ;
 
-					// ひとまず assetName は空想定でやってみる
-					if( string.IsNullOrEmpty( assetName ) == true )
+					if( isSingle == false )
 					{
-						// アセットバンドル＝単一アセットのケース
-						path = ( $"{localAssetsRootPath}{assetBundlePath}" ).ToLower() ;
+						// 複数のアセットファイルが存在するタイプ
+
+						// ひとまず assetName は空想定でやってみる
+						if( string.IsNullOrEmpty( assetName ) == true )
+						{
+							// アセットバンドル＝単一アセットのケース
+							path = ( $"{localAssetsRootPath}{assetBundlePath}" ) ;
+						}
+						else
+						{
+							// アセットバンドル＝複合アセットのケース
+							path = ( $"{localAssetsRootPath}{assetBundlePath}/{assetName}" ) ;
+						}
 					}
 					else
 					{
-						// アセットバンドル＝複合アセットのケース
-						path = ( $"{localAssetsRootPath}{assetBundlePath}/{assetName}" ).ToLower() ;
+						// 単体のアセットファイルが存在するタイプ
+						int i = assetBundlePath.LastIndexOf( '/' ) ;
+						if( i >= 0 )
+						{
+							// フォルダがある
+
+							assetBundlePath = assetBundlePath[ ..i ] ;
+
+							if( string.IsNullOrEmpty( assetName ) == true )
+							{
+								// アセットファイル名が空(基本的にありえない)
+								path = ( $"{localAssetsRootPath}{assetBundlePath}" ) ;
+							}
+							else
+							{
+								path = ( $"{localAssetsRootPath}{assetBundlePath}/{assetName}" ) ;
+							}
+						}
+						else
+						{
+							// フォルダがない
+
+							if( string.IsNullOrEmpty( assetName ) == true )
+							{
+								// アセットファイル名が空(基本的にありえない)
+								return null ;
+							}
+							else
+							{
+								// アセットバンドル＝複合アセットのケース
+								path = ( $"{localAssetsRootPath}{assetName}" ) ;
+							}
+						}
 					}
 
 					// まずはそのままロードしてみる
@@ -309,11 +356,6 @@ namespace AssetBundleHelper
 						}
 					}
 					
-//					if( asset != null )
-//					{
-//						asset = ReplaceShader( asset, type ) ;
-//					}
-
 					return asset ;
 				}
 
@@ -393,9 +435,15 @@ namespace AssetBundleHelper
 				/// <param name="instance">アセットバンドルマネージャのインスタンス</param>
 				/// <param name="resourcePath">アセットのリソースパス</param>
 				/// <returns>サブアセットに含まれる任意のコンポーネントのインスタンス</returns>
-				internal protected UnityEngine.Object LoadSubAsset( AssetBundle assetBundle, string assetBundlePath, string assetName, string subAssetName, Type type, string localAssetsRootPath, string localAssetPath, AssetBundleManager instance )
+				internal protected UnityEngine.Object LoadSubAsset
+				(
+					AssetBundle assetBundle,
+					string assetBundlePath, string assetName, string subAssetName, Type type, bool isSingle,
+					string localAssetsRootPath, string localAssetPath,
+					AssetBundleManager instance
+				)
 				{
-					var subAssets = LoadAllSubAssets( assetBundle, assetBundlePath, assetName, type, localAssetsRootPath, localAssetPath, instance ) ;
+					var subAssets = LoadAllSubAssets( assetBundle, assetBundlePath, assetName, type, isSingle, localAssetsRootPath, localAssetPath, instance ) ;
 					if( subAssets == null || subAssets.Length == 0 )
 					{
 						return null ;
@@ -434,19 +482,67 @@ namespace AssetBundleHelper
 				/// <param name="tInstance">アセットバンドルマネージャのインスタンス</param>
 				/// <param name="tResourcePath">アセットのリソースパス</param>
 				/// <returns>全てのサブアセットに含まれる任意のコンポーネントのインスタンス</returns>
-				internal protected UnityEngine.Object[] LoadAllSubAssets( AssetBundle assetBundle, string assetBundlePath, string assetName, Type type, string localAssetsRootPath, string localAssetPath, AssetBundleManager instance )
+				internal protected UnityEngine.Object[] LoadAllSubAssets
+				(
+					AssetBundle assetBundle,
+					string assetBundlePath, string assetName, Type type, bool isSingle,
+					string localAssetsRootPath, string localAssetPath,
+					AssetBundleManager instance
+				)
 				{
 					string path ;
 
-					if( string.IsNullOrEmpty( assetName ) == true )
+					if( isSingle == false )
 					{
-						// アセットバンドル＝単一アセットのケース
-						path = ( $"{localAssetsRootPath}{assetBundlePath}" ).ToLower() ;
+						// 複数のアセットファイルが存在するタイプ
+
+						// ひとまず assetName は空想定でやってみる
+						if( string.IsNullOrEmpty( assetName ) == true )
+						{
+							// アセットバンドル＝単一アセットのケース
+							path = ( $"{localAssetsRootPath}{assetBundlePath}" ) ;
+						}
+						else
+						{
+							// アセットバンドル＝複合アセットのケース
+							path = ( $"{localAssetsRootPath}{assetBundlePath}/{assetName}" ) ;
+						}
 					}
 					else
 					{
-						// アセットバンドル＝複合アセットのケース
-						path = ( $"{localAssetsRootPath}{assetBundlePath}/{assetName}" ).ToLower() ;
+						// 単体のアセットファイルが存在するタイプ
+						int i = assetBundlePath.LastIndexOf( '/' ) ;
+						if( i >= 0 )
+						{
+							// フォルダがある
+
+							assetBundlePath = assetBundlePath[ ..i ] ;
+
+							if( string.IsNullOrEmpty( assetName ) == true )
+							{
+								// アセットファイル名が空(基本的にありえない)
+								path = ( $"{localAssetsRootPath}{assetBundlePath}" ) ;
+							}
+							else
+							{
+								path = ( $"{localAssetsRootPath}{assetBundlePath}/{assetName}" ) ;
+							}
+						}
+						else
+						{
+							// フォルダがない
+
+							if( string.IsNullOrEmpty( assetName ) == true )
+							{
+								// アセットファイル名が空(基本的にありえない)
+								return null ;
+							}
+							else
+							{
+								// アセットバンドル＝複合アセットのケース
+								path = ( $"{localAssetsRootPath}{assetName}" ) ;
+							}
+						}
 					}
 
 					var assets = assetBundle.LoadAssetWithSubAssets( path, type ) ;	// 注意：該当が無くても配列数０のインスタンスが返る
