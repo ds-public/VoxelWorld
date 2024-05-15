@@ -1103,7 +1103,7 @@ namespace uGUIHelper
 		//--------------------------------------------------
 	
 		// 各派生クラスでの初期化処理を行う（メニューまたは AddView から生成される場合のみ実行れる）
-		override protected void OnBuild( string option = "" )
+		protected override void OnBuild( string option = "" )
 		{
 			TextMeshProUGUI textMesh = CTextMesh ;
 			if( textMesh == null )

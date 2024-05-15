@@ -15,7 +15,7 @@ using UnityEditorInternal ;
 namespace SpriteHelper
 {
 	/// <summary>
-	/// スプライト制御クラス  Version 2024/02/24
+	/// スプライト制御クラス  Version 2024/05/14
 	/// </summary>
 //	[ExecuteAlways]
 	[DisallowMultipleComponent]
@@ -166,7 +166,6 @@ namespace SpriteHelper
 		/// 位置Ｘを設定する
 		/// </summary>
 		/// <param name="x"></param>
-		/// <param name="y"></param>
 		public void SetPositionX( float x )
 		{
 			transform.localPosition = new Vector3( x, transform.localPosition.y, transform.localPosition.z ) ;
@@ -175,12 +174,21 @@ namespace SpriteHelper
 		/// <summary>
 		/// 位置Ｙを設定する
 		/// </summary>
-		/// <param name="x"></param>
 		/// <param name="y"></param>
 		public void SetPositionY( float y )
 		{
 			transform.localPosition = new Vector3( transform.localPosition.x, y, transform.localPosition.z ) ;
 		}
+
+		/// <summary>
+		/// 位置Ｚを設定する
+		/// </summary>
+		/// <param name="z"></param>
+		public void SetPositionZ( float z )
+		{
+			transform.localPosition = new Vector3( transform.localPosition.x, transform.localPosition.y, z ) ;
+		}
+
 
 		/// <summary>
 		/// 位置
@@ -208,7 +216,7 @@ namespace SpriteHelper
 			}
 			set
 			{
-				transform.localPosition = new Vector3( value, transform.localPosition.y, transform.localPosition.x ) ;
+				transform.localPosition = new Vector3( value, transform.localPosition.y, transform.localPosition.z ) ;
 			}
 		}
 
@@ -223,9 +231,25 @@ namespace SpriteHelper
 			}
 			set
 			{
-				transform.localPosition = new Vector3( transform.localPosition.x, value, transform.localPosition.x ) ;
+				transform.localPosition = new Vector3( transform.localPosition.x, value, transform.localPosition.z ) ;
 			}
 		}
+
+		/// <summary>
+		/// Ｚ座標
+		/// </summary>
+		public float PositionZ
+		{
+			get
+			{
+				return transform.localPosition.z ;
+			}
+			set
+			{
+				transform.localPosition = new Vector3( transform.localPosition.x, transform.localPosition.y, value ) ;
+			}
+		}
+
 
 		/// <summary>
 		/// Ｘ軸回転
@@ -293,5 +317,8 @@ namespace SpriteHelper
 				transform.localScale = new Vector3( value.x, value.y, 1 ) ;
 			}
 		}
+
+
+		//-------------------------------------------------------------------------------------------
 	}
 }

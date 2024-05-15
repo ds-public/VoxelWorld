@@ -151,7 +151,7 @@ namespace uGUIHelper
 
 			int i, l = m_Sprites.Count ;
 
-			List<Sprite> sprites = new List<Sprite>() ;
+			var sprites = new List<Sprite>() ;
 
 			for( i  = 0 ; i <  l ; i ++ )
 			{

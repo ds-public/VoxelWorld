@@ -59,7 +59,7 @@ namespace SpriteHelper
 			SpriteAtlas spriteAtlas = EditorGUILayout.ObjectField( new GUIContent( "Sprite Atlas", "<color=#00FFFF>SpriteAtlas</color>アセットを設定します\nランタイム実行中、<color=#00FFFF>SetSpriteInAtlas</color>メソッドを使用する事により\n表示する<color=#00FFFF>Spriteを動的に切り替える</color>事が出来ます" ), component.SpriteAtlas, typeof( SpriteAtlas ), false ) as SpriteAtlas ;
 			if( spriteAtlas != component.SpriteAtlas )
 			{
-				Undo.RecordObject( component, "[SpriteController] Sprite Atlas : Change" ) ;	// アンドウバッファに登録
+				Undo.RecordObject( component, "[SpriteImage] Sprite Atlas : Change" ) ;	// アンドウバッファに登録
 
 				// SpriteAtlas 側を設定する
 				component.SpriteAtlas = spriteAtlas ;
@@ -125,7 +125,7 @@ namespace SpriteHelper
 					int index = EditorGUILayout.Popup( "Selected Sprite", indexBase, spriteNames.ToArray() ) ;
 					if( index != indexBase )
 					{
-						Undo.RecordObject( component, "[SpriteController] Sprite : Change" ) ;	// アンドウバッファに登録
+						Undo.RecordObject( component, "[SpriteImage] Sprite : Change" ) ;	// アンドウバッファに登録
 						component.Sprite = sprites[ index - indexMove ] ;
 						EditorUtility.SetDirty( component ) ;
 					}
@@ -152,7 +152,7 @@ namespace SpriteHelper
 			Texture spriteSetTextureChange = EditorGUILayout.ObjectField( "Sprite Set", spriteSetTextureActive, typeof( Texture ), false ) as Texture ;
 			if( spriteSetTextureChange != spriteSetTextureActive )
 			{
-				Undo.RecordObject( component, "[SpriteController] SpriteSet Texture : Change" ) ;	// アンドウバッファに登録
+				Undo.RecordObject( component, "[SpriteImage] SpriteSet Texture : Change" ) ;	// アンドウバッファに登録
 
 				// SpriteSet 側を設定する
 				RefreshSpriteSet( component, spriteSetTextureChange ) ;
@@ -262,7 +262,7 @@ namespace SpriteHelper
 					int index = EditorGUILayout.Popup( "Selected Sprite", indexBase, spriteNames ) ;
 					if( index != indexBase )
 					{
-						Undo.RecordObject( component, "[SpriteController] Sprite : Change" ) ;	// アンドウバッファに登録
+						Undo.RecordObject( component, "[SpriteImage] Sprite : Change" ) ;	// アンドウバッファに登録
 						component.SetSpriteInAtlas( spriteNames[ index ] ) ;
 						EditorUtility.SetDirty( component ) ;
 					}
@@ -281,6 +281,38 @@ namespace SpriteHelper
 						EditorGUILayout.EndHorizontal() ;
 					}
 				}
+			}
+
+			//------------------------------------------------------------------------------------------
+			// Interpolation 関係
+
+			// 変化値
+			float interpolationValue = EditorGUILayout.Slider( "Interpolation Value", component.InterpolationValue, 0, 1 ) ;
+			if( component.InterpolationValue != interpolationValue )
+			{
+				Undo.RecordObject( component, "[SpriteImage] Interpolation Value : Change" ) ;	// アンドウバッファに登録
+				component.InterpolationValue  = interpolationValue ;
+				EditorUtility.SetDirty( component ) ;
+			}
+
+			// 変化色
+			var interpolationColor = Color.white ;
+			interpolationColor.r = component.InterpolationColor.r ;
+			interpolationColor.g = component.InterpolationColor.g ;
+			interpolationColor.b = component.InterpolationColor.b ;
+			interpolationColor.a = component.InterpolationColor.a ;
+			interpolationColor = EditorGUILayout.ColorField( "Interpolation Color", interpolationColor ) ;
+			if
+			(
+				interpolationColor.r != component.InterpolationColor.r ||
+				interpolationColor.g != component.InterpolationColor.g ||
+				interpolationColor.b != component.InterpolationColor.b ||
+				interpolationColor.a != component.InterpolationColor.a
+			)
+			{
+				Undo.RecordObject( component, "[SpriteImage] Interpolation Color : Change" ) ;	// アンドウバッファに登録
+				component.InterpolationColor = interpolationColor ;
+				EditorUtility.SetDirty( component ) ;
 			}
 		}
 

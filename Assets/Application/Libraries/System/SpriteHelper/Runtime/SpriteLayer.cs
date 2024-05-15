@@ -12,7 +12,7 @@ using UnityEditorInternal ;
 namespace SpriteHelper
 {
 	/// <summary>
-	/// スプライト制御クラス  Version 2023/12/31
+	/// スプライト制御クラス  Version 2024/05/12
 	/// </summary>
 //	[ExecuteAlways]
 	[DisallowMultipleComponent]

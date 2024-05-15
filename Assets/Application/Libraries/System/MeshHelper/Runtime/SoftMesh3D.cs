@@ -13,7 +13,7 @@ using UnityEditorInternal ;
 namespace MeshHelper
 {
 	/// <summary>
-	/// ３Ｄメッシュ Version 2024/03/26
+	/// ３Ｄメッシュ Version 2024/05/13
 	/// </summary>
 	[ExecuteAlways]
 	[DisallowMultipleComponent]
@@ -1566,6 +1566,17 @@ namespace MeshHelper
 			else
 			{
 				m_Mesh.Clear() ;
+			}
+
+			// 頂点数に応じてインデックスのビット数に適切なものを設定する
+			if( aV.Length >= 65535 )
+			{
+				// タイリングでは必須といえる
+				m_Mesh.indexFormat = UnityEngine.Rendering.IndexFormat.UInt32 ;	// 頂点数の最大値を増やす
+			}
+			else
+			{
+				m_Mesh.indexFormat = UnityEngine.Rendering.IndexFormat.UInt16 ;
 			}
 
 			m_Mesh.name			= modelName ;

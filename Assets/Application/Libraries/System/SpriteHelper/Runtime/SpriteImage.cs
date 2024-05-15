@@ -15,7 +15,7 @@ using UnityEditorInternal ;
 namespace SpriteHelper
 {
 	/// <summary>
-	/// スプライト制御クラス  Version 2024/02/25
+	/// スプライト制御クラス  Version 2024/05/14
 	/// </summary>
 	[ExecuteAlways]
 	[DisallowMultipleComponent]
@@ -107,8 +107,13 @@ namespace SpriteHelper
 
 				SetSprites( sprites ) ;
 			}
-		}
 
+			var material = Resources.Load<Material>( "SpriteHelper/Materials/DefaultSprite" ) ;
+			if( material != null )
+			{
+				spriteRenderer.sharedMaterial = material ;
+			}
+		}
 
 		//-------------------------------------------------------------------------------------------
 
@@ -274,7 +279,46 @@ namespace SpriteHelper
 
 			return sprite ;
 		}
-		
+
+		// アトラス内のスプライトをキャッシュにためつつ取得する
+		private Sprite[] GetSpritesInAtlas()
+		{
+			if( m_SpriteAtlas != null )
+			{
+				CleanupAtlasSprites() ;
+
+				int count = m_SpriteAtlas.spriteCount ;
+				if( count >  0 )
+				{
+					var sprites = new Sprite[ count ] ;
+					if( m_SpriteAtlas.GetSprites( sprites ) == count )
+					{
+						// キャッシュを生成する
+						m_SpritesInAtlas ??= new Dictionary<string, Sprite>() ;
+
+						string key = "(Clone)" ;
+
+						foreach( var sprite in sprites )
+						{
+							// 存在するのでキャッシュに貯める
+							string spriteName = sprite.name ;
+							if( spriteName.Contains( key ) == true )
+							{
+								spriteName = spriteName.Replace( key, string.Empty ) ;
+								sprite.name = spriteName ;
+							}
+
+							m_SpritesInAtlas.Add( spriteName, sprite ) ;
+						}
+
+						return sprites ;
+					}
+				}
+			}
+
+			return null ;
+		}
+
 		/// <summary>
 		/// アトラススプライト内のスプライトを表示する
 		/// </summary>
@@ -360,6 +404,84 @@ namespace SpriteHelper
 			//----------------------------------------------------------
 
 			return null ;
+		}
+
+		/// <summary>
+		/// 全てのスプライトを取得する
+		/// </summary>
+		/// <param name="spriteName">スプライト名</param>
+		/// <returns>スプライトのインスタンス</returns>
+		public Sprite[] GetSprites()
+		{
+			//----------------------------------------------------------
+			// SpriteAtlas
+
+			if( m_SpriteAtlas != null )
+			{
+				return GetSpritesInAtlas() ;
+			}
+
+			//----------------------------------------------------------
+			// SpriteSet
+
+			if( m_SpriteSet != null )
+			{
+				return m_SpriteSet.GetSprites() ;
+			}
+
+			//----------------------------------------------------------
+
+			return null ;
+		}
+
+		/// <summary>
+		/// 全てのスプライトの識別名を取得する
+		/// </summary>
+		/// <returns></returns>
+		public string[] GetSpriteNames()
+		{
+			var sprites = GetSprites() ;
+			if( sprites == null )
+			{
+				return null ;
+			}
+
+			var spriteNames = new string[ sprites.Length ] ;
+
+			int i, l = sprites.Length ;
+			for( i  = 0 ; i <  l ; i ++ )
+			{
+				spriteNames[ i ] = sprites[ i ].name ;
+			}
+
+			return spriteNames ;
+		}
+
+		/// <summary>
+		/// スプライトの数を取得する
+		/// </summary>
+		/// <returns></returns>
+		public int GetSpriteCount()
+		{
+			//----------------------------------------------------------
+			// SpriteAtlas
+
+			if( m_SpriteAtlas != null )
+			{
+				return m_SpriteAtlas.spriteCount ;
+			}
+
+			//----------------------------------------------------------
+			// SpriteSet
+
+			if( m_SpriteSet != null )
+			{
+				return m_SpriteSet.SpriteCount ;
+			}
+
+			//----------------------------------------------------------
+
+			return 0 ;
 		}
 
 		/// <summary>
@@ -524,7 +646,6 @@ namespace SpriteHelper
 				if( m_DuplicatedMaterial == null )
 				{
 					// 複製なし
-
 					if( Application.isPlaying == false )
 					{
 						return CSpriteRenderer.sharedMaterial == null ? Color.white : CSpriteRenderer.sharedMaterial.color ;
@@ -537,7 +658,6 @@ namespace SpriteHelper
 				else
 				{
 					// 複製あり
-
 					return m_DuplicatedMaterial.color ;
 				}
 			}
@@ -551,7 +671,6 @@ namespace SpriteHelper
 				if( m_DuplicatedMaterial == null )
 				{
 					// 複製なし
-
 					if( Application.isPlaying == false )
 					{
 						if( CSpriteRenderer.sharedMaterial != null )
@@ -568,16 +687,10 @@ namespace SpriteHelper
 							CSpriteRenderer.material = m_DuplicatedMaterial ;
 						}
 					}
-
-					if( m_DuplicatedMaterial != null )
-					{
-						m_DuplicatedMaterial.color = value ;
-					}
 				}
-				else
-				{
-					// 複製あり
 
+				if( m_DuplicatedMaterial != null )
+				{
 					m_DuplicatedMaterial.color = value ;
 				}
 			}
@@ -598,7 +711,6 @@ namespace SpriteHelper
 				if( m_DuplicatedMaterial == null )
 				{
 					// 複製なし
-
 					if( Application.isPlaying == false )
 					{
 						return CSpriteRenderer.sharedMaterial == null ? 1 : CSpriteRenderer.sharedMaterial.color.a ;
@@ -611,7 +723,6 @@ namespace SpriteHelper
 				else
 				{
 					// 複製あり
-
 					return m_DuplicatedMaterial.color.a ;
 				}
 			}
@@ -642,18 +753,10 @@ namespace SpriteHelper
 							CSpriteRenderer.material = m_DuplicatedMaterial ;
 						}
 					}
-
-					if( m_DuplicatedMaterial != null )
-					{
-						var color = m_DuplicatedMaterial.color ;
-						color.a = value ;
-						m_DuplicatedMaterial.color = color ;
-					}
 				}
-				else
-				{
-					// 複製あり
 
+				if( m_DuplicatedMaterial != null )
+				{
 					var color = m_DuplicatedMaterial.color ;
 					color.a = value ;
 					m_DuplicatedMaterial.color = color ;
@@ -1216,6 +1319,13 @@ namespace SpriteHelper
 		
 			collider = gameObject.AddComponent<T>() ;
 			collider.enabled = true ;
+			collider.isTrigger = true ;
+
+			if( TryGetComponent<Rigidbody2D>( out _ ) == false )
+			{
+				var rigidbody2d = gameObject.AddComponent<Rigidbody2D>() ;
+				rigidbody2d.gravityScale = 0 ;
+			}
 		}
 
 		/// <summary>
@@ -1223,6 +1333,18 @@ namespace SpriteHelper
 		/// </summary>
 		public void RemoveCollider()
 		{
+			if( TryGetComponent<Rigidbody2D>( out var rigidbody2d ) == true )
+			{
+				if( Application.isPlaying == false )
+				{
+					DestroyImmediate( rigidbody2d ) ;
+				}
+				else
+				{
+					Destroy( rigidbody2d ) ;
+				}
+			}
+
 			var collider = CCollider ;
 			if( collider == null )
 			{
@@ -1319,7 +1441,200 @@ namespace SpriteHelper
 		}
 
 		//-------------------------------------------------------------------------------------------
+		// Interpolation 関係
 
+		/// <summary>
+		/// 線形補間値
+		/// </summary>
+		public float InterpolationValue
+		{
+			get
+			{
+				if( CSpriteRenderer == null )
+				{
+					return 0 ;
+				}
 
+				Material material ;
+				if( m_DuplicatedMaterial == null )
+				{
+					// 複製なし
+					if( Application.isPlaying == false )
+					{
+						material = CSpriteRenderer.sharedMaterial ;
+					}
+					else
+					{
+						material = CSpriteRenderer.material ;
+					}
+				}
+				else
+				{
+					// 複製あり
+					material = m_DuplicatedMaterial ;
+				}
+
+				if( material == null )
+				{
+					return 0 ;
+				}
+
+				//---------------------------------
+
+				string key = "_InterpolationValue" ;
+
+				if( material.HasFloat( key ) == false )
+				{
+					return 0 ;
+				}
+
+				return material.GetFloat( key ) ;
+			}
+			set
+			{
+				if( CSpriteRenderer == null )
+				{
+					return ;
+				}
+
+				Material material ;
+
+				if( m_DuplicatedMaterial == null )
+				{
+					// 複製なし
+					if( Application.isPlaying == false )
+					{
+						if( CSpriteRenderer.sharedMaterial != null )
+						{
+							m_DuplicatedMaterial = Instantiate( CSpriteRenderer.sharedMaterial ) ;
+							CSpriteRenderer.sharedMaterial = m_DuplicatedMaterial ;
+						}
+					}
+					else
+					{
+						if( CSpriteRenderer.material != null )
+						{
+							m_DuplicatedMaterial = Instantiate( CSpriteRenderer.material ) ;
+							CSpriteRenderer.material = m_DuplicatedMaterial ;
+						}
+					}
+				}
+
+				if( m_DuplicatedMaterial == null )
+				{
+					return ;
+				}
+
+				material = m_DuplicatedMaterial ;
+				
+				//---------------------------------
+
+				string key = "_InterpolationValue" ;
+
+				if( material.HasFloat( key ) == false )
+				{
+					return ;
+				}
+
+				material.SetFloat( key, value ) ;
+			}
+		}
+
+		/// <summary>
+		/// 線形補間色
+		/// </summary>
+		public Color InterpolationColor
+		{
+			get
+			{
+				if( CSpriteRenderer == null )
+				{
+					return Color.white ;
+				}
+
+				Material material ;
+				if( m_DuplicatedMaterial == null )
+				{
+					// 複製なし
+					if( Application.isPlaying == false )
+					{
+						material = CSpriteRenderer.sharedMaterial ;
+					}
+					else
+					{
+						material = CSpriteRenderer.material ;
+					}
+				}
+				else
+				{
+					// 複製あり
+					material = m_DuplicatedMaterial ;
+				}
+
+				if( material == null )
+				{
+					return Color.white ;
+				}
+
+				//---------------------------------
+
+				string key = "_InterpolationColor" ;
+
+				if( material.HasColor( key ) == false )
+				{
+					return Color.white ;
+				}
+
+				return material.GetColor( key ) ;
+			}
+			set
+			{
+				if( CSpriteRenderer == null )
+				{
+					return ;
+				}
+
+				Material material ;
+
+				if( m_DuplicatedMaterial == null )
+				{
+					// 複製なし
+					if( Application.isPlaying == false )
+					{
+						if( CSpriteRenderer.sharedMaterial != null )
+						{
+							m_DuplicatedMaterial = Instantiate( CSpriteRenderer.sharedMaterial ) ;
+							CSpriteRenderer.sharedMaterial = m_DuplicatedMaterial ;
+						}
+					}
+					else
+					{
+						if( CSpriteRenderer.material != null )
+						{
+							m_DuplicatedMaterial = Instantiate( CSpriteRenderer.material ) ;
+							CSpriteRenderer.material = m_DuplicatedMaterial ;
+						}
+					}
+				}
+
+				if( m_DuplicatedMaterial == null )
+				{
+					return ;
+				}
+
+				material = m_DuplicatedMaterial ;
+				
+				//---------------------------------
+
+				string key = "_InterpolationColor" ;
+
+				if( material.HasColor( key ) == false )
+				{
+					return ;
+				}
+
+				material.SetColor( key, value ) ;
+			}
+		}
 	}
 }

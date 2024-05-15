@@ -2020,17 +2020,17 @@ namespace AssetBundleHelper
 		/// </summary>
 		/// <param name="asset"></param>
 		/// <returns></returns>
-		public static bool FreeAsset( UnityEngine.Object asset )
+		public static bool FreeAsset( UnityEngine.Object asset, bool isForce = false )
 		{
 			if( m_Instance == null || asset == null )
 			{
 				return false ;
 			}
-			return m_Instance.FreeAsset_Private( asset ) ;
+			return m_Instance.FreeAsset_Private( asset, isForce ) ;
 		}
 
 		// アセット(リソース)を破棄する
-		private bool FreeAsset_Private( UnityEngine.Object asset )
+		private bool FreeAsset_Private( UnityEngine.Object asset, bool isForce )
 		{
 			if( m_ResourceCacheDetector.ContainsKey( asset ) == false )
 			{
@@ -2043,7 +2043,7 @@ namespace AssetBundleHelper
 			var resourceCache = m_ResourceCacheDetector[ asset ] ;
 
 			// アセット(リソース)の参照カウントを減少させる
-			if( resourceCache.Free() == true )
+			if( resourceCache.Free( isForce ) == true )
 			{
 				// アセット(リソース)の参照カウントが０になったのでアセット(リソース)のキャッシュを削除する
 				RemoveResourceCache( resourceCache.Path ) ;

@@ -15,7 +15,7 @@ using UnityEditorInternal ;
 namespace SpriteHelper
 {
 	/// <summary>
-	/// スプライト制御クラス  Version 2023/12/31
+	/// スプライト制御クラス  Version 2024/05/12
 	/// </summary>
 	[ExecuteAlways]
 	[DisallowMultipleComponent]
@@ -1153,7 +1153,7 @@ namespace SpriteHelper
 			//----------------------------------------------------------
 			// ピボットの反映
 
-			m_Camera.transform.localPosition = new Vector3( - viewportW * m_Pivot.x, - viewportH * m_Pivot.y, -1 ) ;
+			m_Camera.transform.localPosition = new Vector3( - viewportW * m_Pivot.x, - viewportH * m_Pivot.y, m_Camera.transform.localPosition.z ) ;
 
 			//----------------------------------------------------------
 			// 解像度を更新

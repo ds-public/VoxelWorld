@@ -14,7 +14,7 @@ using AssetBundleHelper ;
 namespace DSW
 {
 	/// <summary>
-	/// アセットクラス(アセット全般の読み出しに使用する) Version 2024/04/24 0
+	/// アセットクラス(アセット全般の読み出しに使用する) Version 2024/05/08 0
 	/// </summary>
 	public class Asset : ExMonoBehaviour
 	{
@@ -750,9 +750,9 @@ namespace DSW
 		/// </summary>
 		/// <param name="asset"></param>
 		/// <returns></returns>
-		public static bool Free( UnityEngine.Object asset )
+		public static bool Free( UnityEngine.Object asset, bool isForce = false )
 		{
-			return AssetBundleManager.FreeAsset( asset ) ;
+			return AssetBundleManager.FreeAsset( asset, isForce ) ;
 		}
 
 		//-------------------------------------------------------------------------------------------

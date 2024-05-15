@@ -2,7 +2,8 @@ using UnityEngine ;
 using System;
 using System.Collections ;
 
-// Last Update 2024/03/07
+// Last Update 2024/05/12
+
 
 /// <summary>
 /// 乱数生成のパッケージ
@@ -14,7 +15,7 @@ namespace MathHelper
 	/// </summary>
 	public static class Random_XorShift
 	{
-		private static readonly XorShift m_XorShift = new XorShift() ;
+		private static readonly XorShift m_XorShift = new () ;
 
 		static Random_XorShift()
 		{
@@ -47,11 +48,11 @@ namespace MathHelper
 		}
 
 		// UNIXエポックを表すDateTimeオブジェクトを取得
-		private static readonly DateTime UNIX_EPOCH = new DateTime( 1970, 1, 1, 0, 0, 0, 0 ) ;
+		private static readonly DateTime UNIX_EPOCH = new ( 1970, 1, 1, 0, 0, 0, 0 ) ;
 
 		private static long GetUnixTime()
 		{
-			DateTime dt = DateTime.Now ;
+			var dt = DateTime.Now ;
 
 			// UTC時間に変換
 			dt.ToUniversalTime() ;
@@ -185,9 +186,7 @@ namespace MathHelper
 				if( swap == true )
 				{
 					// 値を入れ替える
-					int v = min ;
-					min = max ;
-					max = v ;
+					( min, max ) = ( max, min ) ;
 				}
 				else
 				{
@@ -211,9 +210,7 @@ namespace MathHelper
 				if( isSwap == true )
 				{
 					// 値を入れ替える
-					float v = min ;
-					min = max ;
-					max = v ;
+					( min, max ) = ( max, min ) ;
 				}
 				else
 				{

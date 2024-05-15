@@ -155,7 +155,7 @@ namespace AssetBundleHelper
 			/// 
 			/// </summary>
 			/// <returns></returns>
-			public bool Free()
+			public bool Free( bool isForce )
 			{
 				if( ReferenceCount <= 0 )
 				{
@@ -166,7 +166,14 @@ namespace AssetBundleHelper
 				//---------------------------------
 
 				// 参照カウントを減少させる
-				ReferenceCount -- ;
+				if( isForce == false )
+				{
+					ReferenceCount -- ;
+				}
+				else
+				{
+					ReferenceCount = 0 ;
+				}
 
 				// 参照カウントが０になったらキャッシュから削除する必要がある
 				return ( ReferenceCount == 0 ) ;
