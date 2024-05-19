@@ -42,7 +42,7 @@ using DSW.World ;
 namespace DSW
 {
 	/// <summary>
-	/// アプリケーションマネージャクラス Version 2024/04/13 0
+	/// アプリケーションマネージャクラス Version 2024/05/19 0
 	/// </summary>
 	public class ApplicationManager : SingletonManagerBase<ApplicationManager>
 	{
@@ -628,8 +628,19 @@ namespace DSW
 			//----------------------------------------------------------
 			// カーソルの制御を設定する
 
+			// カーソルの制御設定
+
 			InputManager.SetInputProcessingType( InputProcessingTypes.Switching ) ;
 			InputManager.SetCursorProcessing( true ) ;
+
+			uGUIHelper.InputAdapter.UIEventSystem.SetInputProcessingType( uGUIHelper.InputAdapter.InputProcessingTypes.Parallel ) ;
+			uGUIHelper.InputAdapter.UIEventSystem.SetCursorProcessing( false ) ;
+
+			// ゲームパッドが繋がっていたらゲームパッドを初期の入力状態にする
+			if( GamePad.NumberOfGamePads >  0 )
+			{
+				InputManager.SetInputType( InputTypes.GamePad ) ;
+			}
 
 			//----------------------------------------------------------
 			// プレイヤー情報の初期値を設定しておく

@@ -218,7 +218,10 @@ namespace uGUIHelper.InputAdapter
 			//--------------
 
 			// ポインターが非表示になっている可能性があるので念のため表示しておく
-			UnityEngine.Cursor.visible = true ;
+			if( m_CursorProcessing == true )
+			{
+				UnityEngine.Cursor.visible = true ;
+			}
 
 			// 振動を強制停止
 			StopMotor() ;
@@ -424,7 +427,7 @@ namespace uGUIHelper.InputAdapter
 
 			if( InputProcessingType == InputProcessingTypes.Switching )
 			{
-				// いずれか片方の入力のみ可能
+				// いずれか片方の入力のみ可能(Pointer・GamePadの最初の入力は無効＝切り替え扱い)
 
 				if( m_InputType == InputTypes.Pointer )
 				{
@@ -451,22 +454,14 @@ namespace uGUIHelper.InputAdapter
 						// Pointer モード有効中
 						Pointer.Update( false ) ;
 
-						Vector2 axis_0 = GamePad.GetAxis( 0 ) ;
-						Vector2 axis_1 = GamePad.GetAxis( 1 ) ;
-						Vector2 axis_2 = GamePad.GetAxis( 2 ) ;
+						var axis_0 = GamePad.GetAxis( 0 ) ;
+						var axis_1 = GamePad.GetAxis( 1 ) ;
+						var axis_2 = GamePad.GetAxis( 2 ) ;
 
 						if( GamePad.GetButtonAll() != 0 || axis_0.x != 0 || axis_0.y != 0 || axis_1.x != 0 || axis_1.y != 0 || axis_2.x != 0 || axis_2.y != 0 )
 						{
 							// GamePad モードへ移行
-
-							m_SystemCursorVisible = false ;
-
-							m_InputType = InputTypes.GamePad ;
-							m_InputHold = true ;
-							m_Tick = 0 ;
-
-							m_OnInputTypeChanged?.Invoke( m_InputType ) ;
-							m_OnInputTypeChangedDelegate?.Invoke( m_InputType ) ;
+							SetInputType_Private( InputTypes.GamePad ) ;
 						}
 					}
 				}
@@ -476,9 +471,9 @@ namespace uGUIHelper.InputAdapter
 					if( m_InputHold == true )
 					{
 						// 切り替えた直後は一度全開放しないと入力できない
-						Vector2 axis_0 = GamePad.GetAxis( 0 ) ;
-						Vector2 axis_1 = GamePad.GetAxis( 1 ) ;
-						Vector2 axis_2 = GamePad.GetAxis( 2 ) ;
+						var axis_0 = GamePad.GetAxis( 0 ) ;
+						var axis_1 = GamePad.GetAxis( 1 ) ;
+						var axis_2 = GamePad.GetAxis( 2 ) ;
 
 						if( GamePad.GetButtonAll() == 0 && axis_0.x == 0 && axis_0.y == 0 && axis_1.x == 0 && axis_1.y == 0 && axis_2.x == 0 && axis_2.y == 0 )
 						{
@@ -504,44 +499,28 @@ namespace uGUIHelper.InputAdapter
 						if( m_Position.Equals( MousePosition ) == false || GetMouseButton( 0 ) == true || GetMouseButton( 1 ) == true || GetMouseButton( 2 ) == true )
 						{
 							// Pointer モードへ移行
-
-							m_SystemCursorVisible = true ;
-
-							m_InputType = InputTypes.Pointer ;
-							m_InputHold = true ;
-
-							m_OnInputTypeChanged?.Invoke( m_InputType ) ;
-							m_OnInputTypeChangedDelegate?.Invoke( m_InputType ) ;
+							SetInputType_Private( InputTypes.Pointer ) ;
 						}
 					}
 				}
 			}
 			else
 			{
-				// 両方の入力が同時に可能
+				// 両方の入力が同時に可能(Pointer・GamePadの最初の入力は有効＝切り替えと同時に効果を発揮する)
 
 				// 最後に入力された方を現在のモードとする
 				if( m_InputType == InputTypes.Pointer )
 				{
 					// 現在は Pointer モード扱い
 
-					Vector2 axis_0 = GamePad.GetAxis( 0 ) ;
-					Vector2 axis_1 = GamePad.GetAxis( 1 ) ;
-					Vector2 axis_2 = GamePad.GetAxis( 2 ) ;
+					var axis_0 = GamePad.GetAxis( 0 ) ;
+					var axis_1 = GamePad.GetAxis( 1 ) ;
+					var axis_2 = GamePad.GetAxis( 2 ) ;
 
 					if( GamePad.GetButtonAll() != 0 || axis_0.x != 0 || axis_0.y != 0 || axis_1.x != 0 || axis_1.y != 0 || axis_2.x != 0 || axis_2.y != 0 )
 					{
 						// GamePad モードへ移行
-
-						// GamePad モード解除判定用に現在の Pointer の位置を記録する
-						m_Position = MousePosition ;
-
-						m_SystemCursorVisible = false ;
-
-						m_InputType = InputTypes.GamePad ;
-
-						m_OnInputTypeChanged?.Invoke( m_InputType ) ;
-						m_OnInputTypeChangedDelegate?.Invoke( m_InputType ) ;
+						SetInputType_Private( InputTypes.GamePad ) ;
 					}
 				}
 				else
@@ -551,13 +530,7 @@ namespace uGUIHelper.InputAdapter
 					if( m_Position.Equals( MousePosition ) == false || GetMouseButton( 0 ) == true || GetMouseButton( 1 ) == true || GetMouseButton( 2 ) == true )
 					{
 						// Pointer モードへ移行
-
-						m_SystemCursorVisible = true ;
-
-						m_InputType = InputTypes.Pointer ;
-
-						m_OnInputTypeChanged?.Invoke( m_InputType ) ;
-						m_OnInputTypeChangedDelegate?.Invoke( m_InputType ) ;
+						SetInputType_Private( InputTypes.Pointer ) ;
 					}
 				}
 
@@ -570,38 +543,8 @@ namespace uGUIHelper.InputAdapter
 				GamePad.Update( false ) ;
 			}
 
-			//----------------------------------------------------------
-			// カーソルの表示制御
-
-			if( CursorProcessing == true )
-			{
-				// カーソルの表示制御が有効になっている
-				bool isVisible = m_SystemCursorVisible & CursorVisible ;
-                if( isVisible != m_ActiveCursorVisible )
-                {
-					// カーソルの表示状態が変化する
-					m_ActiveCursorVisible = isVisible ;
-
-					if( m_ActiveCursorVisible == true )
-					{
-						// カーソルは表示
-						UnityEngine.Cursor.visible = true ;
-					}
-					else
-					{
-						// カーソルは隠蔽
-						UnityEngine.Cursor.visible = false ;
-					}
-                }
-            }
-
-			//----------------------------------------------------------
-
-			if( m_Updater.Count >  0 )
-			{
-				Updater updater = m_Updater.Peek() ;
-				updater.Action( updater.Option ) ;
-			}
+			// 共通ルーチンの呼び出し
+			ExecuteCommonProcessing() ;
 		}
 
 		// 毎フレーム呼び出される(物理)
@@ -619,6 +562,108 @@ namespace uGUIHelper.InputAdapter
 
 			// GamePad
 			GamePad.Update( true ) ;
+		}
+
+		//-------------------------------------------------------------------------------------------
+
+		/// <summary>
+		/// 入力タイプを強制指定する
+		/// </summary>
+		/// <param name="inputType"></param>
+		public static bool SetInputType( InputTypes inputType )
+		{
+			if( m_Instance == null )
+			{
+				return false ;
+			}
+
+			m_Instance.SetInputType_Private( inputType ) ;
+
+			// 共通ルーチンの呼び出し
+			m_Instance.ExecuteCommonProcessing() ;
+
+			return true ;
+		}
+
+		// 入力タイプを強制指定する
+		private void SetInputType_Private( InputTypes inputType )
+		{
+			if( inputType == InputTypes.GamePad )
+			{
+				// GamePad モードへ移行
+
+				m_InputType = InputTypes.GamePad ;
+
+				m_SystemCursorVisible = false ;
+
+				m_OnInputTypeChanged?.Invoke( m_InputType ) ;
+				m_OnInputTypeChangedDelegate?.Invoke( m_InputType ) ;
+			}
+			else
+			if( inputType == InputTypes.Pointer )
+			{
+				// Pointer モードへ移行
+
+				m_InputType = InputTypes.Pointer ;
+
+				m_SystemCursorVisible = true ;
+
+				m_OnInputTypeChanged?.Invoke( m_InputType ) ;
+				m_OnInputTypeChangedDelegate?.Invoke( m_InputType ) ;
+			}
+
+			if( InputProcessingType == InputProcessingTypes.Switching )
+			{
+				// 最初の入力を無効化(切り替え用)にするための変数初期化
+				m_InputHold = true ;
+				m_Tick = 0 ;
+			}
+			else
+			{
+				// GamePad モード解除判定用に現在の Pointer の位置を記録する
+				m_Position = MousePosition ;
+			}
+		}
+
+		//-------------------------------------------------------------------------------------------
+		// 共通ルーチン
+
+		private void ExecuteCommonProcessing()
+		{
+			//----------------------------------------------------------
+			// カーソルの表示制御
+
+			if( CursorProcessing == true )
+			{
+				// カーソルの表示制御が有効になっている
+				bool isVisible = m_SystemCursorVisible & CursorVisible ;
+
+				if( isVisible != m_ActiveCursorVisible )
+				{
+					// カーソルの表示状態が変化する
+					m_ActiveCursorVisible = isVisible ;
+
+					if( m_ActiveCursorVisible == true )
+					{
+						// カーソルは表示
+						UnityEngine.Cursor.visible = true ;
+					}
+					else
+					{
+						// カーソルは隠蔽
+						UnityEngine.Cursor.visible = false ;
+					}
+				}
+			}
+
+			//----------------------------------------------------------
+			// アップデート時のコールバック
+
+			if( m_Updater.Count >  0 )
+			{
+				Updater updater = m_Updater.Peek() ;
+				updater.Action( updater.Option ) ;
+			}
 		}
 
 		//-------------------------------------------------------------------------------------------------------------------
