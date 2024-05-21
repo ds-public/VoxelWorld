@@ -485,6 +485,17 @@ namespace MeshHelper
 
 				// 確認用
 				EditorGUILayout.ObjectField( " ", component.Sprite, typeof( Sprite ), false ) ;
+
+				if( component.Sprite != null )
+				{
+					// サイズ
+					EditorGUILayout.BeginHorizontal() ;
+					{
+						GUILayout.FlexibleSpace() ;
+						GUILayout.Label( $"{component.Sprite.rect.width} x {component.Sprite.rect.height}" ) ;
+					}
+					EditorGUILayout.EndHorizontal() ;
+				}
 			}
 
 			//----------------------------------------------------------
@@ -719,6 +730,8 @@ namespace MeshHelper
 				if( targetSprites.Count >  0 )
 				{
 					// 存在するので更新する
+					component.SpriteSet ??= new SpriteSet() ;
+
 					component.SpriteSet.ClearSprites() ;
 					component.SpriteSet.SetSprites( targetSprites.ToArray() ) ;
 				}
@@ -727,6 +740,9 @@ namespace MeshHelper
 					// 存在しないのでクリアする
 					component.SpriteSet?.ClearSprites() ;
 				}
+
+				// 選択中のスプライトは一旦消去する
+				component.Sprite = null ;
 
 				// SpriteAtlas 側を消去する
 				component.SpriteAtlas = null ;

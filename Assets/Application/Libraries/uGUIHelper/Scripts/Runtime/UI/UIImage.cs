@@ -62,6 +62,8 @@ namespace uGUIHelper
 					CleanupAtlasSprites() ;
 
 					m_SpriteAtlas  = value ;
+
+					Sprite = null ;	// 選択中のスプライトも初期化する
 				}
 			}
 		}
@@ -89,7 +91,11 @@ namespace uGUIHelper
 			{
 				if( m_SpriteSet != value )
 				{
+					// 基本的にはインスタンスは維持して中身の情報を入れ替えるのでここが呼ばれる事は無い
+
 					m_SpriteSet  = value ;
+
+					Sprite = null ;	// 選択中のスプライトも初期化する
 				}
 			}
 		}

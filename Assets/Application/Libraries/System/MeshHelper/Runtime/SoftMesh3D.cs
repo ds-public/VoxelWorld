@@ -13,7 +13,7 @@ using UnityEditorInternal ;
 namespace MeshHelper
 {
 	/// <summary>
-	/// ３Ｄメッシュ Version 2024/05/13
+	/// ３Ｄメッシュ Version 2024/05/21
 	/// </summary>
 	[ExecuteAlways]
 	[DisallowMultipleComponent]
@@ -29,7 +29,7 @@ namespace MeshHelper
 //		[MenuItem( "MeshHelper/Add a SoftMesh3D" )]					// メニューから
 		public static void CreateSoftMesh3D()
 		{
-			GameObject go = Selection.activeGameObject ;
+			var go = Selection.activeGameObject ;
 			if( go == null )
 			{
 				return ;
@@ -44,7 +44,7 @@ namespace MeshHelper
 
 			var child = new GameObject( "SoftMesh3D" ) ;
 
-			Transform t = child.transform ;
+			var t = child.transform ;
 			t.SetParent( go.transform, false ) ;
 			t.SetLocalPositionAndRotation( Vector3.zero, Quaternion.identity ) ;
 			t.localScale = Vector3.one ;
@@ -188,6 +188,8 @@ namespace MeshHelper
 					CleanupAtlasSprites() ;
 
 					m_SpriteAtlas  = value ;
+
+					Sprite = null ;	// 選択中のスプライトも初期化する
 				}
 			}
 		}
@@ -214,7 +216,11 @@ namespace MeshHelper
 			{
 				if( m_SpriteSet != value )
 				{
+					// 基本的にはインスタンスは維持して中身の情報を入れ替えるのでここが呼ばれる事は無い
+
 					m_SpriteSet  = value ;
+
+					Sprite = null ;	// 選択中のスプライトも初期化する
 				}
 			}
 		}

@@ -3,13 +3,14 @@ using System.Collections ;
 using System.Collections.Generic ;
 using UnityEngine ;
 
+
 namespace SpriteHelper
 {
 	/// <summary>
 	/// マルチタイプのスプライト管理用のクラス
 	/// </summary>
 	[Serializable]
-	public class MultiModeSprite
+	public class SpriteSet
 	{
 		/// <summary>
 		/// スプライト内のテクスチャ
@@ -26,7 +27,7 @@ namespace SpriteHelper
 			}
 		}
 
-		[HideInInspector][SerializeField]
+		[SerializeField][HideInInspector]
 		private Texture2D m_Texture ;
 
 		// 個々のスプライト情報を保持する
@@ -55,28 +56,6 @@ namespace SpriteHelper
 			}
 		}
 
-/*		
-		/// <summary>
-		/// アトラスタイプのスプライトを生成する
-		/// </summary>
-		/// <param name="path"></param>
-		/// <returns></returns>
-		public static SpriteSet Create( string path = null )
-		{
-			SpriteSet spriteSet = new SpriteSet() ;
-
-			if( string.IsNullOrEmpty( path ) == false )
-			{
-				if( spriteSet.Load( path ) == false )
-				{
-//					DestroyImmediate( atlasSprite ) ;
-					return null ;
-				}
-			}
-
-			return spriteSet ;
-		}
-*/
 		//-------------------------------------------------------------------------------------------
 
 		/// <summary>

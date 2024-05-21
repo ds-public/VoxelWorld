@@ -1193,6 +1193,17 @@ namespace uGUIHelper
 
 				// 確認用
 				EditorGUILayout.ObjectField( " ", image.Sprite, typeof( Sprite ), false ) ;
+
+				if( image.Sprite != null )
+				{
+					// サイズ
+					EditorGUILayout.BeginHorizontal() ;
+					{
+						GUILayout.FlexibleSpace() ;
+						GUILayout.Label( $"{image.Sprite.rect.width} x {image.Sprite.rect.height}" ) ;
+					}
+					EditorGUILayout.EndHorizontal() ;
+				}
 			}
 
 			//----------------------------------------------------------
@@ -1233,6 +1244,17 @@ namespace uGUIHelper
 			if( image.SpriteSet != null )
 			{
 				spriteSetTextureActive = image.SpriteSet.Texture ;
+
+				if( spriteSetTextureActive != null )
+				{
+					// サイズ
+					EditorGUILayout.BeginHorizontal() ;
+					{
+						GUILayout.FlexibleSpace() ;
+						GUILayout.Label( $"{spriteSetTextureActive.width} x {spriteSetTextureActive.height}" ) ;
+					}
+					EditorGUILayout.EndHorizontal() ;
+				}
 			}
 
 			if( spriteSetTextureActive != null )
@@ -1316,6 +1338,17 @@ namespace uGUIHelper
 
 					// 確認用
 					EditorGUILayout.ObjectField( " ", image.Sprite, typeof( Sprite ), false ) ;
+
+					if( image.Sprite != null )
+					{
+						// サイズ
+						EditorGUILayout.BeginHorizontal() ;
+						{
+							GUILayout.FlexibleSpace() ;
+							GUILayout.Label( $"{image.Sprite.rect.width} x {image.Sprite.rect.height}" ) ;
+						}
+						EditorGUILayout.EndHorizontal() ;
+					}
 				}
 			}
 		}
@@ -1403,6 +1436,8 @@ namespace uGUIHelper
 				if( targetSprites.Count >  0 )
 				{
 					// 存在するので更新する
+					image.SpriteSet ??= new SpriteSet() ;
+
 					image.SpriteSet.ClearSprites() ;
 					image.SpriteSet.SetSprites( targetSprites.ToArray() ) ;
 				}
@@ -1411,6 +1446,9 @@ namespace uGUIHelper
 					// 存在しないのでクリアする
 					image.SpriteSet?.ClearSprites() ;
 				}
+
+				// 選択中のスプライトは一旦消去する
+				image.Sprite = null ;
 
 				// SpriteAtlas 側を消去する
 				image.SpriteAtlas = null ;
