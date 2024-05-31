@@ -14,7 +14,7 @@ using UnityEditorInternal ;
 namespace MeshHelper
 {
 	/// <summary>
-	/// ２Ｄメッシュ Version 2024/05/21
+	/// ２Ｄメッシュ Version 2024/05/31
 	/// </summary>
 	[ExecuteAlways]
 	[DisallowMultipleComponent]
@@ -815,6 +815,30 @@ namespace MeshHelper
 				}
 			}
 		}
+
+        /// <summary>
+        /// グリッドを設定する
+        /// </summary>
+        /// <param name="x"></param>
+        /// <param name="y"></param>
+        public void SetGrid( int x, int y )
+        {
+            if( x <= 0 )
+            {
+                x  = 1 ;
+            }
+            if( y <= 0 )
+            {
+                y  = 1 ;
+            }
+
+            if( m_GridX != x || m_GridY != y )
+            {
+                m_GridX = x ;
+                m_GridY = y ;
+                m_IsMeshDirty = true ;
+            }
+        }
 
 		/// <summary>
 		/// 分割数(円専用)

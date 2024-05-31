@@ -14,7 +14,7 @@ using UnityEditor ;
 namespace SceneManagementHelper
 {
 	/// <summary>
-	/// エンハンスドシーンマネージャクラス Version 2024/04/25 0
+	/// エンハンスドシーンマネージャクラス Version 2024/05/30 0
 	/// </summary>
 	public class EnhancedSceneManager : MonoBehaviour
 	{
@@ -294,18 +294,18 @@ namespace SceneManagementHelper
 		/// </summary>
 		/// <param name="label">受け渡しパラメータの識別名</param>
 		/// <returns>結果(true=存在する・false=存在しない)</returns>
-		public static bool ContainsParameter( string label )
+		public static bool HasParameter( string label )
 		{
 			if( m_Instance == null )
 			{
 				return false ;
 			}
 
-			return m_Instance.ContainsParameter_Private( label ) ;
+			return m_Instance.HasParameter_Private( label ) ;
 		}
 
 		// シーン間の受け渡しパラメータの存在を確認する
-		private bool ContainsParameter_Private( string label )
+		private bool HasParameter_Private( string label )
 		{
 			if( m_Parameter.ContainsKey( label ) == false )
 			{
@@ -320,18 +320,18 @@ namespace SceneManagementHelper
 		/// </summary>
 		/// <param name="label">受け渡しパラメータの識別名</param>
 		/// <returns>結果(true=存在する・false=存在しない)</returns>
-		public static bool ContainsParameter<T>( string label )
+		public static bool HasParameter<T>( string label )
 		{
 			if( m_Instance == null )
 			{
 				return false ;
 			}
 
-			return m_Instance.ContainsParameter_Private<T>( label ) ;
+			return m_Instance.HasParameter_Private<T>( label ) ;
 		}
 
 		// シーン間の受け渡しパラメータの存在を確認する
-		private bool ContainsParameter_Private<T>( string label )
+		private bool HasParameter_Private<T>( string label )
 		{
 			if( m_Parameter.ContainsKey( label ) == false )
 			{

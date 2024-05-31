@@ -756,7 +756,7 @@ namespace DSW
 		/// <returns></returns>
 		public static bool ContainsParameter( string label )
 		{
-			return EnhancedSceneManager.ContainsParameter( label ) ;
+			return EnhancedSceneManager.HasParameter( label ) ;
 		}
 
 		/// <summary>
@@ -767,7 +767,7 @@ namespace DSW
 		/// <returns></returns>
 		public static bool ContainsParameter<T>( string label )
 		{
-			return EnhancedSceneManager.ContainsParameter<T>( label ) ;
+			return EnhancedSceneManager.HasParameter<T>( label ) ;
 		}
 
 		/// <summary>
