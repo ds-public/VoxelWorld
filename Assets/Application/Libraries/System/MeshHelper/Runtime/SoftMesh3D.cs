@@ -13,7 +13,7 @@ using UnityEditorInternal ;
 namespace MeshHelper
 {
 	/// <summary>
-	/// ３Ｄメッシュ Version 2024/05/21
+	/// ３Ｄメッシュ Version 2024/06/14
 	/// </summary>
 	[ExecuteAlways]
 	[DisallowMultipleComponent]
@@ -1216,7 +1216,7 @@ namespace MeshHelper
 		/// <summary>
 		/// アクティブかどうか
 		/// </summary>
-		public bool ActiveeSelf
+		public bool ActiveSelf
 		{
 			get
 			{

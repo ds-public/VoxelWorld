@@ -15,7 +15,7 @@ using UnityEditor ;
 namespace InputHelper
 {
 	/// <summary>
-	/// 入力操作クラス Version 2024/05/19 0
+	/// 入力操作クラス Version 2024/06/11 0
 	/// </summary>
 	[DefaultExecutionOrder( -90 )]
 	public partial class InputManager : MonoBehaviour
@@ -402,6 +402,8 @@ namespace InputHelper
 		private float	m_Tick = 0 ;
 		private Vector3 m_Position = Vector3.zero ;
 
+        private const float m_DriftThreshold = 0.1f ;
+
 		// 毎フレーム呼び出される(描画)
 		private void ProcessUpdate()
 		{
@@ -445,7 +447,17 @@ namespace InputHelper
 						var axis_1 = GamePad.GetAxis( 1 ) ;
 						var axis_2 = GamePad.GetAxis( 2 ) ;
 
-						if( GamePad.GetButtonAll() != 0 || axis_0.x != 0 || axis_0.y != 0 || axis_1.x != 0 || axis_1.y != 0 || axis_2.x != 0 || axis_2.y != 0 )
+                        // ドリフト対策
+                        float ax0 = Mathf.Abs( axis_0.x ) ;
+                        float ay0 = Mathf.Abs( axis_0.y ) ;
+                        float ax1 = Mathf.Abs( axis_1.x ) ;
+                        float ay1 = Mathf.Abs( axis_1.y ) ;
+                        float ax2 = Mathf.Abs( axis_2.x ) ;
+                        float ay2 = Mathf.Abs( axis_2.y ) ;
+                        float ax = Mathf.Max( ax0, ax1, ax2 ) ;
+                        float ay = Mathf.Max( ay0, ay1, ay2 ) ;
+
+						if( GamePad.GetButtonAll() != 0 || ax >  m_DriftThreshold || ay >  m_DriftThreshold )
 						{
 							// GamePad モードへ移行
 							SetInputType_Private( InputTypes.GamePad ) ;
@@ -462,7 +474,17 @@ namespace InputHelper
 						var axis_1 = GamePad.GetAxis( 1 ) ;
 						var axis_2 = GamePad.GetAxis( 2 ) ;
 
-						if( GamePad.GetButtonAll() == 0 && axis_0.x == 0 && axis_0.y == 0 && axis_1.x == 0 && axis_1.y == 0 && axis_2.x == 0 && axis_2.y == 0 )
+                        // ドリフト対策
+                        float ax0 = Mathf.Abs( axis_0.x ) ;
+                        float ay0 = Mathf.Abs( axis_0.y ) ;
+                        float ax1 = Mathf.Abs( axis_1.x ) ;
+                        float ay1 = Mathf.Abs( axis_1.y ) ;
+                        float ax2 = Mathf.Abs( axis_2.x ) ;
+                        float ay2 = Mathf.Abs( axis_2.y ) ;
+                        float ax = Mathf.Max( ax0, ax1, ax2 ) ;
+                        float ay = Mathf.Max( ay0, ay1, ay2 ) ;
+
+						if( GamePad.GetButtonAll() == 0 && ax <  m_DriftThreshold && ay <  m_DriftThreshold )
 						{
 							m_InputHold = false ;
 
@@ -504,7 +526,17 @@ namespace InputHelper
 					var axis_1 = GamePad.GetAxis( 1 ) ;
 					var axis_2 = GamePad.GetAxis( 2 ) ;
 
-					if( GamePad.GetButtonAll() != 0 || axis_0.x != 0 || axis_0.y != 0 || axis_1.x != 0 || axis_1.y != 0 || axis_2.x != 0 || axis_2.y != 0 )
+                    // ドリフト対策
+                    float ax0 = Mathf.Abs( axis_0.x ) ;
+                    float ay0 = Mathf.Abs( axis_0.y ) ;
+                    float ax1 = Mathf.Abs( axis_1.x ) ;
+                    float ay1 = Mathf.Abs( axis_1.y ) ;
+                    float ax2 = Mathf.Abs( axis_2.x ) ;
+                    float ay2 = Mathf.Abs( axis_2.y ) ;
+                    float ax = Mathf.Max( ax0, ax1, ax2 ) ;
+                    float ay = Mathf.Max( ay0, ay1, ay2 ) ;
+
+					if( GamePad.GetButtonAll() != 0 || ax >  m_DriftThreshold || ay >  m_DriftThreshold )
 					{
 						// GamePad モードへ移行
 						SetInputType_Private( InputTypes.GamePad ) ;
