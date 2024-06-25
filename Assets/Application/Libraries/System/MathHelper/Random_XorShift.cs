@@ -1,12 +1,10 @@
 using UnityEngine ;
-using System;
+using System ;
 using System.Collections ;
-
-// Last Update 2024/05/12
 
 
 /// <summary>
-/// 乱数生成のパッケージ
+/// 乱数生成のパッケージ Version 2024/06/25
 /// </summary>
 namespace MathHelper
 {
@@ -150,7 +148,7 @@ namespace MathHelper
 		/// <returns></returns>
 		public int Get( int max, bool limit = true )
 		{
-			if( max <  0 )
+			if( max <= 0 )
 			{
 				return 0 ; // 値が不正
 			}
@@ -165,7 +163,7 @@ namespace MathHelper
 		/// <returns></returns>
 		public ulong Get( ulong max, bool limit = true )
 		{
-			if( max <  0 )
+			if( max <= 0 )
 			{
 				return 0 ; // 値が不正
 			}
@@ -194,6 +192,11 @@ namespace MathHelper
 				}
 			}
 
+            if( min == max )
+            {
+                return min ;
+            }
+
 			return min + ( int )( Get() % ( ulong )( ( max - min ) + ( limit ? 1 : 0 ) ) ) ;
 		}
 
@@ -217,6 +220,11 @@ namespace MathHelper
 					return 0f ;  // 値が不正
 				}
 			}
+
+            if( min == max )
+            {
+                return min ;
+            }
 
 			ulong r = Get() ;
 			float a = ( float )( r % ( 100000000L + 1L ) ) / ( float )100000000L ;
