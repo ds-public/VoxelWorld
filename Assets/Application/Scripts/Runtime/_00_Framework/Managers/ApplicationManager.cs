@@ -427,7 +427,7 @@ namespace DSW
 		new protected void Awake()
 		{
 			// 簡易デバッグログ表示を有効にする
-			DebugScreen.Create( 0xFFFFFFFF, 32, 24 ) ;
+//			DebugScreen.Create( 0xFFFFFFFF, 32, 24 ) ;
 
 			base.Awake() ;
 
@@ -437,9 +437,9 @@ namespace DSW
 			// デフォルト
 			int frameRate_Rendering = 60 ;
 			int frameRate_FixedTime = 60 ;
-			Settings.VsyncTypes vsyncType = Settings.VsyncTypes.Invalid ;
+			var vsyncType = Settings.VsyncTypes.Invalid ;
 
-			Settings settings =  LoadSettings() ;
+			var settings =  LoadSettings() ;
 			if( settings != null )
 			{
 				frameRate_Rendering = settings.FrameRate_Rendering ;
