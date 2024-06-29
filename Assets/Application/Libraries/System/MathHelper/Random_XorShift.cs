@@ -1,11 +1,10 @@
 using UnityEngine ;
-using System;
+using System ;
 using System.Collections ;
 
-// Last Update 2024/03/07
 
 /// <summary>
-/// 乱数生成のパッケージ
+/// 乱数生成のパッケージ Version 2024/06/25
 /// </summary>
 namespace MathHelper
 {
@@ -14,7 +13,7 @@ namespace MathHelper
 	/// </summary>
 	public static class Random_XorShift
 	{
-		private static readonly XorShift m_XorShift = new XorShift() ;
+		private static readonly XorShift m_XorShift = new () ;
 
 		static Random_XorShift()
 		{
@@ -47,11 +46,11 @@ namespace MathHelper
 		}
 
 		// UNIXエポックを表すDateTimeオブジェクトを取得
-		private static readonly DateTime UNIX_EPOCH = new DateTime( 1970, 1, 1, 0, 0, 0, 0 ) ;
+		private static readonly DateTime UNIX_EPOCH = new ( 1970, 1, 1, 0, 0, 0, 0 ) ;
 
 		private static long GetUnixTime()
 		{
-			DateTime dt = DateTime.Now ;
+			var dt = DateTime.Now ;
 
 			// UTC時間に変換
 			dt.ToUniversalTime() ;
@@ -149,7 +148,7 @@ namespace MathHelper
 		/// <returns></returns>
 		public int Get( int max, bool limit = true )
 		{
-			if( max <  0 )
+			if( max <= 0 )
 			{
 				return 0 ; // 値が不正
 			}
@@ -164,7 +163,7 @@ namespace MathHelper
 		/// <returns></returns>
 		public ulong Get( ulong max, bool limit = true )
 		{
-			if( max <  0 )
+			if( max <= 0 )
 			{
 				return 0 ; // 値が不正
 			}
@@ -185,15 +184,18 @@ namespace MathHelper
 				if( swap == true )
 				{
 					// 値を入れ替える
-					int v = min ;
-					min = max ;
-					max = v ;
+					( min, max ) = ( max, min ) ;
 				}
 				else
 				{
 					return 0 ;  // 値が不正
 				}
 			}
+
+            if( min == max )
+            {
+                return min ;
+            }
 
 			return min + ( int )( Get() % ( ulong )( ( max - min ) + ( limit ? 1 : 0 ) ) ) ;
 		}
@@ -211,15 +213,18 @@ namespace MathHelper
 				if( isSwap == true )
 				{
 					// 値を入れ替える
-					float v = min ;
-					min = max ;
-					max = v ;
+					( min, max ) = ( max, min ) ;
 				}
 				else
 				{
 					return 0f ;  // 値が不正
 				}
 			}
+
+            if( min == max )
+            {
+                return min ;
+            }
 
 			ulong r = Get() ;
 			float a = ( float )( r % ( 100000000L + 1L ) ) / ( float )100000000L ;

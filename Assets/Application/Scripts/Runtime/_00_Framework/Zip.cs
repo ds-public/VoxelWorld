@@ -9,10 +9,11 @@ using UnityEngine ;
 
 using ICSharpCode.SharpZipLib.Zip ;
 
+
 namespace DSW
 {
 	/// <summary>
-	/// Ｚｉｐクラス Version 2022/12/12 0
+	/// Ｚｉｐクラス Version 2024/04/24 0
 	/// </summary>
 	public class Zip : ExMonoBehaviour
 	{
@@ -43,7 +44,7 @@ namespace DSW
 		{
 			if( data != null && data.Length >  0 )
 			{
-				MemoryStream mis = new MemoryStream( data ) ;
+				var mis = new MemoryStream( data ) ;
 				return GetFiles_Private( mis, password ) ;
 			}
 			return null ;
@@ -55,7 +56,7 @@ namespace DSW
 		/// <returns></returns>
 		public static ( string, long )[] GetFiles( string path, string password = null )
 		{
-			FileStream fis = File.OpenRead( path ) ;
+			var fis = File.OpenRead( path ) ;
 			if( fis != null )
 			{
 				return GetFiles_Private( fis, password ) ;
@@ -65,9 +66,9 @@ namespace DSW
 
 		private static ( string, long )[] GetFiles_Private( Stream cis, string password = null )
 		{
-			List<( string, long )> files = new List<( string, long )>() ;
+			var files = new List<( string, long )>() ;
 
-			ZipInputStream zis = new ZipInputStream( cis ) ;
+			var zis = new ZipInputStream( cis ) ;
 
 			if( string.IsNullOrEmpty( password ) == false )
 			{
@@ -115,7 +116,7 @@ namespace DSW
 		{
 			if( data != null && data.Length >  0 )
 			{
-				MemoryStream mis = new MemoryStream( data ) ;
+				var mis = new MemoryStream( data ) ;
 				return Decompress_Private( mis, name, password ) ;
 			}
 			return null ;
@@ -129,7 +130,7 @@ namespace DSW
 		/// <returns></returns>
 		public static byte[] Decompress( string path, string name, string password = null )
 		{
-			FileStream fis = File.OpenRead( path ) ;
+			var fis = File.OpenRead( path ) ;
 			if( fis != null )
 			{
 				return Decompress_Private( fis, name, password ) ;
@@ -139,7 +140,7 @@ namespace DSW
 
 		private static byte[] Decompress_Private( Stream cis, string name, string password = null )
 		{
-			ZipInputStream zis = new ZipInputStream( cis ) ;
+			var zis = new ZipInputStream( cis ) ;
 
 			if( string.IsNullOrEmpty( password ) == false )
 			{
@@ -221,7 +222,7 @@ namespace DSW
 		{
 			if( data != null && data.Length >  0 )
 			{
-				MemoryStream mis = new MemoryStream( data ) ;
+				var mis = new MemoryStream( data ) ;
 				return await DecompressAsync_Private( mis, name, onAction, password ) ;
 			}
 			return null ;
@@ -235,7 +236,7 @@ namespace DSW
 		/// <returns></returns>
 		public static async UniTask<byte[]> DecompressAsync( string path, string name, Action<byte[]> onAction = null, string password = null )
 		{
-			FileStream fis = File.OpenRead( path ) ;
+			var fis = File.OpenRead( path ) ;
 			if( fis != null )
 			{
 				return await DecompressAsync_Private( fis, name, onAction, password ) ;
@@ -245,7 +246,7 @@ namespace DSW
 
 		private static async UniTask<byte[]> DecompressAsync_Private( Stream cis, string name, Action<byte[]> onAction, string password )
 		{
-			ZipInputStream zis = new ZipInputStream( cis ) ;
+			var zis = new ZipInputStream( cis ) ;
 
 			if( string.IsNullOrEmpty( password ) == false )
 			{
@@ -337,7 +338,7 @@ namespace DSW
 		{
 			if( data != null && data.Length >  0 )
 			{
-				MemoryStream mis = new MemoryStream( data ) ;
+				var mis = new MemoryStream( data ) ;
 	
 				return DecompressAll_Private( mis, password ) ;
 			}
@@ -352,7 +353,7 @@ namespace DSW
 		/// <returns></returns>
 		public static ( string, byte[] )[] DecompressAll( string path, string password = null )
 		{
-			FileStream fis = File.OpenRead( path ) ;
+			var fis = File.OpenRead( path ) ;
 			if( fis != null )
 			{
 				return DecompressAll_Private( fis, password ) ;
@@ -362,9 +363,9 @@ namespace DSW
 
 		private static ( string, byte[] )[] DecompressAll_Private( Stream cis, string password = null )
 		{
-			List<( string, byte[] )> buffers = new List<( string, byte[] )>() ;
+			var buffers = new List<( string, byte[] )>() ;
 
-			ZipInputStream zis = new ZipInputStream( cis ) ;
+			var zis = new ZipInputStream( cis ) ;
 
 			if( string.IsNullOrEmpty( password ) == false )
 			{
@@ -452,7 +453,7 @@ namespace DSW
 		{
 			if( data != null && data.Length >  0 )
 			{
-				MemoryStream mis = new MemoryStream( data ) ;
+				var mis = new MemoryStream( data ) ;
 				
 				return await DecompressAllAsync_Private( mis, onAction, password ) ;
 			}
@@ -467,7 +468,7 @@ namespace DSW
 		/// <returns></returns>
 		public static async UniTask<( string, byte[] )[]> DecompressAllAsync( string path, Action<( string, byte[] )[]> onAction = null, string password = null )
 		{
-			FileStream fis = File.OpenRead( path ) ;
+			var fis = File.OpenRead( path ) ;
 			if( fis != null )
 			{
 				return await DecompressAllAsync_Private( fis, onAction, password ) ;
@@ -477,9 +478,9 @@ namespace DSW
 
 		private static async UniTask<( string, byte[] )[]> DecompressAllAsync_Private( Stream cis, Action<( string, byte[] )[]> onAction, string password )
 		{
-			List<( string, byte[] )> buffers = new List<( string, byte[] )>() ;
+			var buffers = new List<( string, byte[] )>() ;
 
-			ZipInputStream zis = new ZipInputStream( cis ) ;
+			var zis = new ZipInputStream( cis ) ;
 
 			if( string.IsNullOrEmpty( password ) == false )
 			{
@@ -588,8 +589,8 @@ namespace DSW
 
 			byte[] result ;
 
-			MemoryStream mos = new MemoryStream() ;
-			ZipOutputStream zos = new ZipOutputStream( mos ) ;
+			var mos = new MemoryStream() ;
+			var zos = new ZipOutputStream( mos ) ;
 
 			if( string.IsNullOrEmpty( password ) == false )
 			{
@@ -606,7 +607,7 @@ namespace DSW
 			byte[] data ;
 			string path ;
 
-			byte[] buffer = new byte[ BufferSize ] ;	// ファイル用のバッファ
+			var buffer = new byte[ BufferSize ] ;	// ファイル用のバッファ
 			int length ;
 
 			FileStream fis ;
@@ -624,7 +625,7 @@ namespace DSW
 						data = sources[ i ].data as byte[] ;
 						if( data.Length >  0 )
 						{
-							entry = new ZipEntry( name )
+							entry = new ( name )
 							{
 								DateTime	= DateTime.Now,
 								Size		= data.Length
@@ -644,7 +645,7 @@ namespace DSW
 						fis = File.OpenRead( path ) ;
 						if( fis != null )
 						{
-							entry = new ZipEntry( name )
+							entry = new ( name )
 							{
 								DateTime	= DateTime.Now,
 								Size		= fis.Length
@@ -710,8 +711,8 @@ namespace DSW
 
 			byte[] result ;
 
-			MemoryStream mos = new MemoryStream() ;
-			ZipOutputStream zos = new ZipOutputStream( mos ) ;
+			var mos = new MemoryStream() ;
+			var zos = new ZipOutputStream( mos ) ;
 
 			if( string.IsNullOrEmpty( password ) == false )
 			{
@@ -728,7 +729,7 @@ namespace DSW
 			byte[] data ;
 			string path ;
 
-			byte[] buffer = new byte[ BufferSize ] ;	// ファイル用のバッファ
+			var buffer = new byte[ BufferSize ] ;	// ファイル用のバッファ
 			int length ;
 
 			MemoryStream mis ;
@@ -747,7 +748,7 @@ namespace DSW
 						data = sources[ i ].Item2 as byte[] ;
 						if( data.Length >  0 )
 						{
-							entry = new ZipEntry( name )
+							entry = new ( name )
 							{
 								DateTime	= DateTime.Now,
 								Size		= data.Length
@@ -780,7 +781,7 @@ namespace DSW
 						fis = File.OpenRead( path ) ;
 						if( fis != null )
 						{
-							entry = new ZipEntry( name )
+							entry = new ( name )
 							{
 								DateTime	= DateTime.Now,
 								Size		= fis.Length

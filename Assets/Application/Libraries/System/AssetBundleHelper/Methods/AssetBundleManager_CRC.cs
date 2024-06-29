@@ -23,7 +23,7 @@ namespace AssetBundleHelper
 		/// <returns>経過秒</returns>
 		internal protected static long GetClientTime()
 		{
-			DateTime utc = DateTime.UtcNow ;
+			var utc = DateTime.UtcNow ;
 			utc = utc.ToUniversalTime() ;
 			TimeSpan timeSpan = utc - UNIX_EPOCH ;
 			return ( long )timeSpan.TotalSeconds ;

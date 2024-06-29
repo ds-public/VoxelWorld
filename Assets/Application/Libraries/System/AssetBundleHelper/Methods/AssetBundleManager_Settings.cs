@@ -5,6 +5,7 @@ using System.Linq ;
 
 using UnityEngine ;
 
+
 /// <summary>
 /// アセットバンドルヘルパーパッケージ
 /// </summary>
@@ -376,8 +377,8 @@ namespace AssetBundleHelper
 		/// </summary>
 		public void CreateLargeReceiveBufferCache()
 		{
-			m_LargeReceiveBufferCache	= new List<ReceiveBufferStructure>() ;
-			m_LargeRemoveTargets		= new List<ReceiveBufferStructure>() ;
+			m_LargeReceiveBufferCache	= new () ;
+			m_LargeRemoveTargets		= new () ;
 		}
 
 		/// <summary>
@@ -498,7 +499,7 @@ namespace AssetBundleHelper
 				// 確保できなかったので新たに生成する
 				receiveBuffer = new byte[ m_LargeReceiveBufferSize ] ;
 
-				m_LargeReceiveBufferCache.Add( new ReceiveBufferStructure()
+				m_LargeReceiveBufferCache.Add( new ()
 				{
 					IsUsing			= true,
 					ReceiveBuffer	= receiveBuffer
@@ -564,8 +565,8 @@ namespace AssetBundleHelper
 		/// </summary>
 		public void CreateSmallReceiveBufferCache()
 		{
-			m_SmallReceiveBufferCache	= new List<ReceiveBufferStructure>() ;
-			m_SmallRemoveTargets		= new List<ReceiveBufferStructure>() ;
+			m_SmallReceiveBufferCache	= new () ;
+			m_SmallRemoveTargets		= new () ;
 		}
 
 		/// <summary>
@@ -686,7 +687,7 @@ namespace AssetBundleHelper
 				// 確保できなかったので新たに生成する
 				receiveBuffer = new byte[ m_SmallReceiveBufferSize ] ;
 
-				m_SmallReceiveBufferCache.Add( new ReceiveBufferStructure()
+				m_SmallReceiveBufferCache.Add( new ()
 				{
 					IsUsing			= true,
 					ReceiveBuffer	= receiveBuffer
@@ -829,7 +830,7 @@ namespace AssetBundleHelper
 					m_ConstantHeaders.Add( key, value ) ;
 #if UNITY_EDITOR
 
-					m_ConstantHeaers_Monitor.Add( new ConstantHeader(){ Key = key, Value = value } ) ;
+					m_ConstantHeaers_Monitor.Add( new (){ Key = key, Value = value } ) ;
 #endif
 				}
 			}
@@ -847,7 +848,6 @@ namespace AssetBundleHelper
 						record.Value = value ;
 					}
 #endif
-
 				}
 				else
 				{
@@ -941,7 +941,7 @@ namespace AssetBundleHelper
 		{
 			get
 			{
-				return m_Instance != null ? m_Instance.m_LogEnabled : false ;
+				return m_Instance != null && m_Instance.m_LogEnabled ;
 			}
 			set
 			{
@@ -952,7 +952,7 @@ namespace AssetBundleHelper
 			}
 		}
 		
-		[SerializeField,Header("ログを出力するかどうか")]
+		[SerializeField,Header( "ログを出力するかどうか" )]
 		private bool m_LogEnabled = true ;
 
 		//-----------------------------------------------------------
@@ -970,8 +970,8 @@ namespace AssetBundleHelper
 			/// <summary>
 			/// デバッグ用のキャッシュ中のリソースの表示リスト
 			/// </summary>
-			[SerializeField,Header("【リソースキャッシュ情報】")]
-			private List<ResourceCacheElement>	m_ResourceCacheInfo = null ;
+			[SerializeField,Header( "【リソースキャッシュ情報】" )]
+			private List<ResourceCacheElement>	m_ResourceCacheViewer = null ;
 #endif
 
 		//-------------------------------------------------------------------------------------------------------------------
@@ -1008,8 +1008,8 @@ namespace AssetBundleHelper
 			public int		ReferencedCount ;
 		}
 
-		[SerializeField][Header( "使用対象のアセットバンドル記録" )]
-		private List<UsingAssetBundleInfo>								m_UsingAssetBundles		= new () ;
+		[SerializeField][Header( "使用対象のアセットバンドル記録(レコーディング用)" )]
+		private List<UsingAssetBundleInfo>								m_UsingAssetBundles		 = new () ;
 		private Dictionary<( string, string ), UsingAssetBundleInfo>	m_UsingAssetBundles_Hash = new () ;
 
 		/// <summary>
@@ -1119,22 +1119,22 @@ namespace AssetBundleHelper
 				string text = string.Empty ;
 
 				// Platform
-				text += "# Platform = " + platformName + "\n" ;
+				text += $"# Platform = {platformName}\n" ;
 
 				// TotalFile
-				text += "# TotalFile = " + m_UsingAssetBundles.Count + "\n" ;
+				text += $"# TotalFile = {m_UsingAssetBundles.Count}\n" ;
 
 				// TotalSize
-				text += "# TotalSize = " + totalSize.ToString() + " byte" ;
+				text += $"# TotalSize = {totalSize} byte" ;
 				if( totalSize >= 1024 )
 				{
-					text += " ( " + GetSizeName( totalSize ) + " )" ;
+					text += $" ( {GetSizeName( totalSize )} )" ;
 				}
 				text += "\n" ;
 
 				foreach( var record in m_UsingAssetBundles )
 				{
-					text += record.ManifestName + separator + record.AssetBundlePath + separator + record.AssetBundleSize.ToString() + separator + record.ReferencedCount.ToString() + "\n" ;
+					text += $"{record.ManifestName}{separator}{record.AssetBundlePath}{separator}{record.AssetBundleSize}{separator}{record.ReferencedCount}\n" ;
 				}
 
 				// 保存
@@ -1147,7 +1147,7 @@ namespace AssetBundleHelper
 
 				foreach( var record in m_UsingAssetBundles )
 				{
-					assetBundlePaths.Add( record.ManifestName + "/" + record.AssetBundlePath ) ;
+					assetBundlePaths.Add( $"{record.ManifestName}/{record.AssetBundlePath}" ) ;
 				}
 
 				//----------------------------------
@@ -1255,6 +1255,5 @@ namespace AssetBundleHelper
 			}
 		}
 #endif
-
 	}
 }

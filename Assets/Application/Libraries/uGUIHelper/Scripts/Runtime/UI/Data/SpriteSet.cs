@@ -3,6 +3,7 @@ using System.Collections ;
 using System.Collections.Generic ;
 using UnityEngine ;
 
+
 namespace uGUIHelper
 {
 	/// <summary>
@@ -72,15 +73,12 @@ namespace uGUIHelper
 		/// <returns></returns>
 		public static SpriteSet Create( string path = null )
 		{
-//			UIAtlasSprite atlasSprite = ScriptableObject.CreateInstance<UIAtlasSprite>() ;
-
-			SpriteSet spriteSet = new SpriteSet() ;
+			var spriteSet = new SpriteSet() ;
 
 			if( string.IsNullOrEmpty( path ) == false )
 			{
 				if( spriteSet.Load( path ) == false )
 				{
-//					DestroyImmediate( atlasSprite ) ;
 					return null ;
 				}
 			}
@@ -100,7 +98,7 @@ namespace uGUIHelper
 				m_Path = path ;
 			}
 
-			Sprite[] sprites = Resources.LoadAll<Sprite>( path ) ;
+			var sprites = Resources.LoadAll<Sprite>( path ) ;
 			if( sprites == null )
 			{
 				return false ;
@@ -124,8 +122,8 @@ namespace uGUIHelper
 		/// <param name="spriteList"></param>
 		public void SetSprites( Sprite[] sprites )
 		{
-			m_Sprites = new List<Sprite>() ;
-			m_Names = new List<string>() ;
+			m_Sprites = new () ;
+			m_Names = new () ;
 
 			int i, l = sprites.Length ;
 			for( i  = 0 ; i <  l ; i ++ )
@@ -151,7 +149,7 @@ namespace uGUIHelper
 
 			int i, l = m_Sprites.Count ;
 
-			List<Sprite> sprites = new List<Sprite>() ;
+			var sprites = new List<Sprite>() ;
 
 			for( i  = 0 ; i <  l ; i ++ )
 			{
@@ -231,13 +229,13 @@ namespace uGUIHelper
 
 			int i, l = m_Sprites.Count ;
 
-			List<string> names = new List<string>() ;
+			var spriteNames = new List<string>() ;
 
 			for( i  = 0 ; i <  l ; i ++ )
 			{
 				if( m_Sprites[ i ] != null )
 				{
-					names.Add( m_Sprites[ i ].name ) ;
+					spriteNames.Add( m_Sprites[ i ].name ) ;
 				}
 				else
 				{
@@ -245,7 +243,7 @@ namespace uGUIHelper
 				}
 			}
 
-			return names.ToArray() ;
+			return spriteNames.ToArray() ;
 		}
 
 		/// <summary>

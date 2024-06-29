@@ -12,10 +12,11 @@ using UnityEngine ;
 // 要 AudioHelper パッケージ
 using AudioHelper ;
 
+
 namespace DSW
 {
 	/// <summary>
-	///ＳＥクラス Version 2023/09/02 0
+	///ＳＥクラス Version 2024/05/05 0
 	/// </summary>
 	public class SE : ExMonoBehaviour
 	{
@@ -84,6 +85,10 @@ namespace DSW
 				await Asset.DownloadAssetBundleAsync( path, true ) ;
 			}
 
+			// 画面遷移時にアセットバンドルキャッシュを破棄しないようにする
+			Asset.SetAssetBundleRetaining( path, true ) ;
+
+
 			path = m_InternalPath + "Battle" ;
 			if( Asset.Exists( path ) == false )
 			{
@@ -120,7 +125,7 @@ namespace DSW
 			//----------------------------------
 
 			// 複数を１つのアセットバンドルにまとめており同じシーンの中で何度も再生されるケースがあるのでリソース・アセットバンドル両方にキャッシュする
-			AudioClip audioClip = Asset.Load<AudioClip>( path, Asset.CachingTypes.Same ) ;
+			var audioClip = Asset.Load<AudioClip>( path, Asset.CachingTypes.ReferenceCount ) ;
 			if( audioClip == null )
 			{
 				return -1 ;
@@ -140,6 +145,7 @@ namespace DSW
 		/// <returns>列挙子</returns>
 		public static async UniTask<int> PlayAsync( string path, float volume = 1.0f, float pan = 0, float pitch = 0.0f, bool loop = false )
 		{
+			string originalPath = path ;
 			path = CorrectPath( path ) ;
 
 			//----------------------------------
@@ -149,12 +155,12 @@ namespace DSW
 			if( Asset.Exists( path ) == true )
 			{
 				// 既にあるなら同期で高速再生
-				playId = Play( path, volume, pan, pitch, loop ) ;
+				playId = Play( originalPath, volume, pan, pitch, loop ) ;
 				return playId ;
 			}
 
 			// 複数を１つのアセットバンドルにまとめており同じシーンの中で何度も再生されるケースがあるのでリソース・アセットバンドル両方にキャッシュする
-			AudioClip audioClip = await Asset.LoadAsync<AudioClip>( path, Asset.CachingTypes.Same ) ;
+			var audioClip = await Asset.LoadAsync<AudioClip>( path, Asset.CachingTypes.ReferenceCount ) ;
 			if( audioClip == null )
 			{
 				// 失敗
@@ -190,7 +196,7 @@ namespace DSW
 			//----------------------------------
 
 			// 複数を１つのアセットバンドルにまとめており同じシーンの中で何度も再生されるケースがあるのでリソース・アセットバンドル両方にキャッシュする
-			AudioClip audioClip = Asset.Load<AudioClip>( path, Asset.CachingTypes.Same ) ;
+			var audioClip = Asset.Load<AudioClip>( path, Asset.CachingTypes.ReferenceCount ) ;
 			if( audioClip == null )
 			{
 				return -1 ;
@@ -211,6 +217,7 @@ namespace DSW
 		/// <returns>列挙子</returns>
 		public static async UniTask<int> Play3DAsync( string path, Vector3 position, Transform listener = null, float scale = 1, float volume = 1.0f, float pitch = 0.0f, bool loop = false )
 		{
+			string originalPath = path ;
 			path = CorrectPath( path ) ;
 
 			//----------------------------------
@@ -220,11 +227,11 @@ namespace DSW
 			if( Asset.Exists( path ) == true )
 			{
 				// 既にあるなら高速再生
-				return Play3D( path, position, listener, scale, volume, pitch, loop ) ;
+				return Play3D( originalPath, position, listener, scale, volume, pitch, loop ) ;
 			}
 
 			// 複数を１つのアセットバンドルにまとめており同じシーンの中で何度も再生されるケースがあるのでリソース・アセットバンドル両方にキャッシュする
-			AudioClip audioClip = await Asset.LoadAsync<AudioClip>( path, Asset.CachingTypes.Same ) ;
+			var audioClip = await Asset.LoadAsync<AudioClip>( path, Asset.CachingTypes.ReferenceCount ) ;
 			if( audioClip == null )
 			{
 				// 失敗

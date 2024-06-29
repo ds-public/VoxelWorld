@@ -26,8 +26,8 @@ namespace DSW.World
 		// ブロック情報
 //		public short[,,]	Block = new short[ 16, 16, 16 ] ;	// x z y
 
-		private ChunkSetStreamData	m_ChunkSetStream ;
-		private int					m_Offset ;
+		private readonly ChunkSetStreamData	m_ChunkSetStream ;
+		private readonly int				m_Offset ;
 
 		//-----------------------------------
 
@@ -106,12 +106,12 @@ namespace DSW.World
 		private MeshFilter		m_MeshFilter ;
 		private Mesh			m_Mesh ;
 
-		private List<Vector3>	m_Vertices	= new List<Vector3>() ;
-		private List<Vector3>	m_Normals	= new List<Vector3>() ;
-		private	List<Color32>	m_Colors	= new List<Color32>() ;
-		private	List<Vector2>	m_UVs		= new List<Vector2>() ;
+		private readonly List<Vector3>	m_Vertices	= new () ;
+		private readonly List<Vector3>	m_Normals	= new () ;
+		private	readonly List<Color32>	m_Colors	= new () ;
+		private	readonly List<Vector2>	m_UVs		= new () ;
 		
-		private readonly List<short>	m_BlockIndices = new List<short>() ;
+		private readonly List<short>	m_BlockIndices = new () ;
 
 		//-----------------------------------------------------
 
@@ -214,14 +214,14 @@ namespace DSW.World
 
 			BoundingBox = new Vector3[]
 			{
-				new Vector3( x0, y0, z0 ),
-				new Vector3( x1, y0, z0 ),
-				new Vector3( x0, y1, z0 ),
-				new Vector3( x1, y1, z0 ),
-				new Vector3( x0, y0, z1 ),
-				new Vector3( x1, y0, z1 ),
-				new Vector3( x0, y1, z1 ),
-				new Vector3( x1, y1, z1 ),
+				new ( x0, y0, z0 ),
+				new ( x1, y0, z0 ),
+				new ( x0, y1, z0 ),
+				new ( x1, y1, z0 ),
+				new ( x0, y0, z1 ),
+				new ( x1, y0, z1 ),
+				new ( x0, y1, z1 ),
+				new ( x1, y1, z1 ),
 			} ;
 
 			//----------------------------------------------------------
@@ -273,12 +273,12 @@ namespace DSW.World
 		//-------------------------------------------------------------------------------------------
 		// テクスチャユーティリティ
 
-		private static Vector3				m_Nx0 = new Vector3( -1,  0,  0 ) ;
-		private static Vector3				m_Nx1 = new Vector3(  1,  0,  0 ) ;
-		private static Vector3				m_Nz0 = new Vector3(  0,  0, -1 ) ;
-		private static Vector3				m_Nz1 = new Vector3(  0,  0,  1 ) ;
-		private static Vector3				m_Ny0 = new Vector3(  0, -1,  0 ) ;
-		private static Vector3				m_Ny1 = new Vector3(  0,  1,  0 ) ;
+		private static Vector3				m_Nx0 = new ( -1,  0,  0 ) ;
+		private static Vector3				m_Nx1 = new (  1,  0,  0 ) ;
+		private static Vector3				m_Nz0 = new (  0,  0, -1 ) ;
+		private static Vector3				m_Nz1 = new (  0,  0,  1 ) ;
+		private static Vector3				m_Ny0 = new (  0, -1,  0 ) ;
+		private static Vector3				m_Ny1 = new (  0,  1,  0 ) ;
 
 		private static readonly Vector3[]	m_Nx0s = { m_Nx0, m_Nx0, m_Nx0, m_Nx0 } ;
 		private static readonly Vector3[]	m_Nx1s = { m_Nx1, m_Nx1, m_Nx1, m_Nx1 } ;
@@ -287,8 +287,8 @@ namespace DSW.World
 		private static readonly Vector3[]	m_Ny0s = { m_Ny0, m_Ny0, m_Ny0, m_Ny0 } ;
 		private static readonly Vector3[]	m_Ny1s = { m_Ny1, m_Ny1, m_Ny1, m_Ny1 } ;
 
-		private static Color32				m_White = new Color32( 255, 255, 255, 255 ) ;
-		private static Color32				m_Green = new Color32(   0, 255,  63, 255 ) ;
+		private static Color32				m_White = new ( 255, 255, 255, 255 ) ;
+		private static Color32				m_Green = new (   0, 255,  63, 255 ) ;
 
 		private static readonly Color32[]	m_Whites = { m_White, m_White, m_White, m_White } ;
 		private static readonly Color32[]	m_Greens = { m_Green, m_Green, m_Green, m_Green } ;
@@ -518,6 +518,18 @@ namespace DSW.World
 
 				//---------------------------------------------------------
 
+				// 頂点数に応じてインデックスのビット数に適切なものを設定する
+				if( m_Vertices.Count >= 65535 )
+				{
+					m_Mesh.indexFormat = UnityEngine.Rendering.IndexFormat.UInt32 ;	// 頂点数の最大値を増やす
+				}
+				else
+				{
+					m_Mesh.indexFormat = UnityEngine.Rendering.IndexFormat.UInt16 ;
+				}
+
+				//---------------------------------------------------------
+
 				// メッシュに必要情報を設定する
 				m_Mesh.SetVertices( m_Vertices ) ;
 				m_Mesh.SetNormals( m_Normals ) ;
@@ -533,7 +545,7 @@ namespace DSW.World
 				{
 					indices[ i ] = i ;
 				}
-				m_Mesh.SetIndices( indices, MeshTopology.Quads, 0 ) ;
+				m_Mesh.SetIndices( indices, MeshTopology.Quads, 0 ) ;	// 四角ポリゴン
 			}
 			else
 			{

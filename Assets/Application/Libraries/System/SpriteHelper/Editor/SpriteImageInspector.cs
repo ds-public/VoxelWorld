@@ -1,6 +1,10 @@
 #if UNITY_EDITOR
 
 using System.Collections.Generic ;
+using System.Linq ;
+using System.Text.RegularExpressions ;
+using System.Reflection ;
+
 using UnityEngine ;
 using UnityEngine.UI ;
 using UnityEngine.U2D ;
@@ -9,9 +13,40 @@ using UnityEditor ;
 
 namespace SpriteHelper
 {
+	public static class SerializedPropertyExtensions
+	{
+		/// <summary>
+		/// リストの要素Indexを返す
+		/// </summary>
+		public static int GetArrayElementIndex( this SerializedProperty property )
+		{
+			// プロパティがリストのインデックスであれば、パスは(変数名).Array.data[(インデックス)] 
+			// となるため、この文字列からインデックスを取得する
+
+			// リストの要素であるか判定する
+			var match = Regex.Match( property.propertyPath, "^([a-zA-Z0-9_]*).Array.data\\[([0-9]*)\\]$" ) ;
+			if( match.Success == false )
+			{
+				return -1 ;
+			}
+
+			// Indexを抜き出す
+			var splitPath = property.propertyPath.Split( '.' ) ;
+			var regax = new Regex( @"[^0-9]" ) ;
+			if( int.TryParse( regax.Replace( splitPath[ ^1 ], "" ), out var index ) == false )
+			{
+				return -1 ;
+			}
+
+			return index ;
+		}
+	}
+
+
 	[ CustomEditor( typeof( SpriteImage ), true ) ]
 	public class SpriteImageInspector : Editor
 	{
+
 		/// <summary>
 		/// スンスペクター描画
 		/// </summary>
@@ -44,9 +79,18 @@ namespace SpriteHelper
 
 			DrawAtlas( component ) ;
 
+			if( component.SpriteAtlas != null || component.SpriteSet != null )
+			{
+				DrawFlipper( component ) ;
+			}
+
 			DrawCollider( component ) ;
 
 			DrawAnimator( component ) ;
+
+			//----------------------------------------------------------
+
+			serializedObject.ApplyModifiedProperties() ;
 		}
 
 		//-------------------------------------------------------------------------------------------
@@ -59,7 +103,7 @@ namespace SpriteHelper
 			SpriteAtlas spriteAtlas = EditorGUILayout.ObjectField( new GUIContent( "Sprite Atlas", "<color=#00FFFF>SpriteAtlas</color>アセットを設定します\nランタイム実行中、<color=#00FFFF>SetSpriteInAtlas</color>メソッドを使用する事により\n表示する<color=#00FFFF>Spriteを動的に切り替える</color>事が出来ます" ), component.SpriteAtlas, typeof( SpriteAtlas ), false ) as SpriteAtlas ;
 			if( spriteAtlas != component.SpriteAtlas )
 			{
-				Undo.RecordObject( component, "[SpriteController] Sprite Atlas : Change" ) ;	// アンドウバッファに登録
+				Undo.RecordObject( component, "[SpriteImage] Sprite Atlas : Change" ) ;	// アンドウバッファに登録
 
 				// SpriteAtlas 側を設定する
 				component.SpriteAtlas = spriteAtlas ;
@@ -74,6 +118,8 @@ namespace SpriteHelper
 					if( sprites != null && sprites.Length >  0 )
 					{
 						component.Sprite = sprites[ 0 ] ;
+						component.Width  = component.Sprite.rect.width ;
+						component.Height = component.Sprite.rect.height ;
 					}
 				}
 
@@ -125,7 +171,7 @@ namespace SpriteHelper
 					int index = EditorGUILayout.Popup( "Selected Sprite", indexBase, spriteNames.ToArray() ) ;
 					if( index != indexBase )
 					{
-						Undo.RecordObject( component, "[SpriteController] Sprite : Change" ) ;	// アンドウバッファに登録
+						Undo.RecordObject( component, "[SpriteImage] Sprite : Change" ) ;	// アンドウバッファに登録
 						component.Sprite = sprites[ index - indexMove ] ;
 						EditorUtility.SetDirty( component ) ;
 					}
@@ -133,6 +179,17 @@ namespace SpriteHelper
 
 				// 確認用
 				EditorGUILayout.ObjectField( " ", component.Sprite, typeof( Sprite ), false ) ;
+
+				if( component.Sprite != null )
+				{
+					// サイズ
+					EditorGUILayout.BeginHorizontal() ;
+					{
+						GUILayout.FlexibleSpace() ;
+						GUILayout.Label( $"{component.Sprite.rect.width} x {component.Sprite.rect.height}" ) ;
+					}
+					EditorGUILayout.EndHorizontal() ;
+				}
 			}
 
 			//----------------------------------------------------------
@@ -152,7 +209,7 @@ namespace SpriteHelper
 			Texture spriteSetTextureChange = EditorGUILayout.ObjectField( "Sprite Set", spriteSetTextureActive, typeof( Texture ), false ) as Texture ;
 			if( spriteSetTextureChange != spriteSetTextureActive )
 			{
-				Undo.RecordObject( component, "[SpriteController] SpriteSet Texture : Change" ) ;	// アンドウバッファに登録
+				Undo.RecordObject( component, "[SpriteImage] SpriteSet Texture : Change" ) ;	// アンドウバッファに登録
 
 				// SpriteSet 側を設定する
 				RefreshSpriteSet( component, spriteSetTextureChange ) ;
@@ -167,6 +224,8 @@ namespace SpriteHelper
 					if( sprites != null && sprites.Length >  0 )
 					{
 						component.Sprite = sprites[ 0 ] ;
+						component.Width  = component.Sprite.rect.width ;
+						component.Height = component.Sprite.rect.height ;
 					}
 				}
 				EditorUtility.SetDirty( component ) ;
@@ -262,7 +321,7 @@ namespace SpriteHelper
 					int index = EditorGUILayout.Popup( "Selected Sprite", indexBase, spriteNames ) ;
 					if( index != indexBase )
 					{
-						Undo.RecordObject( component, "[SpriteController] Sprite : Change" ) ;	// アンドウバッファに登録
+						Undo.RecordObject( component, "[SpriteImage] Sprite : Change" ) ;	// アンドウバッファに登録
 						component.SetSpriteInAtlas( spriteNames[ index ] ) ;
 						EditorUtility.SetDirty( component ) ;
 					}
@@ -282,6 +341,38 @@ namespace SpriteHelper
 					}
 				}
 			}
+
+			//------------------------------------------------------------------------------------------
+			// Interpolation 関係
+
+			// 変化値
+			float interpolationValue = EditorGUILayout.Slider( "Interpolation Value", component.InterpolationValue, 0, 1 ) ;
+			if( component.InterpolationValue != interpolationValue )
+			{
+				Undo.RecordObject( component, "[SpriteImage] Interpolation Value : Change" ) ;	// アンドウバッファに登録
+				component.InterpolationValue  = interpolationValue ;
+				EditorUtility.SetDirty( component ) ;
+			}
+
+			// 変化色
+			var interpolationColor = Color.white ;
+			interpolationColor.r = component.InterpolationColor.r ;
+			interpolationColor.g = component.InterpolationColor.g ;
+			interpolationColor.b = component.InterpolationColor.b ;
+			interpolationColor.a = component.InterpolationColor.a ;
+			interpolationColor = EditorGUILayout.ColorField( "Interpolation Color", interpolationColor ) ;
+			if
+			(
+				interpolationColor.r != component.InterpolationColor.r ||
+				interpolationColor.g != component.InterpolationColor.g ||
+				interpolationColor.b != component.InterpolationColor.b ||
+				interpolationColor.a != component.InterpolationColor.a
+			)
+			{
+				Undo.RecordObject( component, "[SpriteImage] Interpolation Color : Change" ) ;	// アンドウバッファに登録
+				component.InterpolationColor = interpolationColor ;
+				EditorUtility.SetDirty( component ) ;
+			}
 		}
 
 		//---------------
@@ -293,6 +384,11 @@ namespace SpriteHelper
 		/// <returns></returns>
 		private Sprite[] GetSprites( SpriteAtlas spriteAtlas )
 		{
+			if( spriteAtlas == null )
+			{
+				return null ;
+			}
+
 			var so = new SerializedObject( spriteAtlas ) ;
 			if( so == null )
 			{
@@ -367,6 +463,8 @@ namespace SpriteHelper
 				if( targetSprites.Count >  0 )
 				{
 					// 存在するので更新する
+					component.SpriteSet ??= new SpriteSet() ;
+
 					component.SpriteSet.ClearSprites() ;
 					component.SpriteSet.SetSprites( targetSprites.ToArray() ) ;
 				}
@@ -375,6 +473,9 @@ namespace SpriteHelper
 					// 存在しないのでクリアする
 					component.SpriteSet?.ClearSprites() ;
 				}
+
+				// 選択中のスプライトは一旦消去する
+				component.Sprite = null ;
 
 				// SpriteAtlas 側を消去する
 				component.SpriteAtlas = null ;
@@ -385,6 +486,480 @@ namespace SpriteHelper
 			}
 		}
 
+		//-------------------------------------------------------------------------------------------
+
+		protected void DrawFlipper( SpriteImage component )
+		{
+			EditorGUILayout.Separator() ;	// 少し区切りスペース
+			DrawSeparater() ;
+
+			//------------------------------------------------------------------------------------------
+
+			List<string> animationNames ;
+
+			if( component.Animations != null && component.Animations.Count >  0 )
+			{
+				animationNames = component.Animations.Where( _ => string.IsNullOrEmpty( _.AnimationName ) == false ).Select( _ => _.AnimationName ).ToList() ;
+			}
+			else
+			{
+				animationNames = new List<string>() ;
+			}
+
+			if( animationNames.Count == 0 )
+			{
+				animationNames.Insert( 0, "None" ) ;
+			}
+
+			int indexOld = 0 ;
+			int index = animationNames.IndexOf( component.PlayingAnimationName ) ;
+			if( index >= 0 )
+			{
+				indexOld = index ;
+			}
+
+			// アニメーション選択
+			int indexNew = EditorGUILayout.Popup( "Animation Name", indexOld, animationNames.ToArray() ) ;
+			if( indexOld != indexNew )
+			{
+				Undo.RecordObject( component, "[SpriteImage] Animation Name : Change" ) ;	// アンドウバッファに登録
+				component.PlayingAnimationName = animationNames[ indexNew ] ;
+				EditorUtility.SetDirty( component ) ;
+			}
+
+			GUILayout.BeginHorizontal() ;	// 横並び
+			{
+				bool isLooping = EditorGUILayout.Toggle( component.IsAnimationLooping, GUILayout.Width( 16f ) ) ;
+				if( component.IsAnimationLooping != isLooping )
+				{
+					Undo.RecordObject( component, "[SpriteImage] Is Animation Looping : Change" ) ;	// アンドウバッファに登録
+					component.IsAnimationLooping = isLooping ;
+					EditorUtility.SetDirty( component ) ;
+				}
+				GUILayout.Label( new GUIContent( "Is Animation Looping", "ループさせるかどうか" ) ) ;
+			}
+			GUILayout.EndHorizontal() ;		// 横並び終了
+
+			// 変化値
+			float animationSpeed = EditorGUILayout.Slider( "Animtion Speed", component.AnimationSpeed, 0.1f, 10.0f ) ;
+			if( component.AnimationSpeed != animationSpeed )
+			{
+				Undo.RecordObject( component, "[SpriteImage] Animation Speed : Change" ) ;	// アンドウバッファに登録
+				component.AnimationSpeed  = animationSpeed ;
+				EditorUtility.SetDirty( component ) ;
+			}
+
+			GUILayout.BeginHorizontal() ;	// 横並び
+			{
+				bool playOnAwake = EditorGUILayout.Toggle( component.AnimationPlayOnAwake, GUILayout.Width( 16f ) ) ;
+				if( component.AnimationPlayOnAwake != playOnAwake )
+				{
+					Undo.RecordObject( component, "[SpriteImage] Animation Play On Awake : Change" ) ;	// アンドウバッファに登録
+					component.AnimationPlayOnAwake = playOnAwake ;
+					EditorUtility.SetDirty( component ) ;
+				}
+				GUILayout.Label( new GUIContent( "Animation Play On Awake", "自動でアニメーションを再生させるかどうか" ) ) ;
+			}
+			GUILayout.EndHorizontal() ;		// 横並び終了
+
+			//----------------------------------------------------------
+			// アニメーション一覧
+
+			var animations = serializedObject.FindProperty( "m_Animations" ) ;
+			EditorGUILayout.PropertyField( animations ) ;
+
+			//----------------------------------------------------------
+
+			if( Application.isPlaying == true )
+			{
+				// 再生中かどうか(ランタイム実行中のみ有効)
+				GUILayout.BeginHorizontal() ;	// 横並び
+				{
+					bool isAnimationPlaying = EditorGUILayout.Toggle( component.IsAnimationPlaying, GUILayout.Width( 16f ) ) ;
+					if( component.IsAnimationPlaying != isAnimationPlaying )
+					{
+						component.IsAnimationPlaying  = isAnimationPlaying ;
+					}
+					
+					GUILayout.Label( new GUIContent( "Is Animation Playing", "アニメーションが再生中かどうか" ) ) ;
+				}
+				GUILayout.EndHorizontal() ;		// 横並び終了
+			}
+
+			//------------------------------------------------------------------------------------------
+
+			EditorGUILayout.Separator() ;	// 少し区切りスペース
+			DrawSeparater() ;
+		}
+
+//#if false
+		// 個々のアニメーション情報表示
+		[CustomPropertyDrawer( typeof( SpriteImage.AnimationDescriptor ), true )]
+		public class AnimationDrawer : PropertyDrawer
+		{
+			private float LineHeight { get { return EditorGUIUtility.singleLineHeight + EditorGUIUtility.standardVerticalSpacing ; } }
+
+			/// <summary>
+			/// プロパティの高さを取得する(カスタムによって高さが変わるなら必須)
+			/// </summary>
+			/// <param name="property"></param>
+			/// <param name="label"></param>
+			/// <returns></returns>
+			public override float GetPropertyHeight( SerializedProperty property, GUIContent label )
+			{
+				// フレームリスト部分の縦幅は可変
+				var framesProperty = property.FindPropertyRelative( "Frames" ) ;
+				float height = EditorGUI.GetPropertyHeight( framesProperty ) ;
+
+				return base.GetPropertyHeight( property, label ) + EditorGUIUtility.standardVerticalSpacing + LineHeight * 0 + height + EditorGUIUtility.standardVerticalSpacing ;
+			}
+
+			/// <summary>
+			/// 指定された矩形内のプロパティを描画する
+			/// </summary>
+			/// <param name="position"></param>
+			/// <param name="property"></param>
+			/// <param name="label"></param>
+			public override void OnGUI( Rect position, SerializedProperty property, GUIContent label )
+			{
+				EditorGUI.BeginProperty( position, label, property ) ;
+
+				// ラベルを描画
+//				position = EditorGUI.PrefixLabel( position, GUIUtility.GetControlID( FocusType.Passive ), label ) ;
+
+				// 子のフィールドをインデントしない 
+//				var indent = EditorGUI.indentLevel ;
+//				EditorGUI.indentLevel = 0 ;
+
+				float x = position.x ;
+				float y = position.y ;
+				float w = position.width ;
+
+				var spriteImage = property.serializedObject.targetObject as SpriteImage ;
+#if false
+				SpriteImage.AnimationDescriptor animation = null ;
+				int index = property.GetArrayElementIndex() ;
+				if( index >= 0 && spriteImage.Animations != null && spriteImage.Animations.Count >  index )
+				{
+					animation = spriteImage.Animations[ index ] ;
+				}
+#endif
+				//---------------------------------
+				// AnimationtName
+
+				var animationNameProperty = property.FindPropertyRelative( "AnimationName" ) ;
+
+				var animationNameRect = new Rect( x, y, w, EditorGUIUtility.singleLineHeight ) ;
+
+				string animationNameLabel = "Name" ; // animationNameProperty.displayName ;
+				var animationName = EditorGUI.TextField( animationNameRect, animationNameLabel, animationNameProperty.stringValue ) ;
+				if( animationNameProperty.stringValue != animationName )
+				{
+					if( string.IsNullOrEmpty( animationName ) == false )
+					{
+						Undo.RecordObject( spriteImage, "[SpriteImage] Animation Name : Change" ) ;	// アンドウバッファに登録
+						animationNameProperty.stringValue = animationName ;
+						EditorUtility.SetDirty( spriteImage ) ;
+					}
+				}
+
+				y += LineHeight ;
+
+				//---------------------------------
+				// FrameDuartion
+#if false
+				y += LineHeight ;
+
+				var frameDurationProperty = property.FindPropertyRelative( "FrameDuration" ) ;
+
+				var frameDurationRect = new Rect( x, y, w, EditorGUIUtility.singleLineHeight ) ;
+
+				var frameDuration = EditorGUI.FloatField( frameDurationRect, frameDurationProperty.displayName, frameDurationProperty.floatValue ) ;
+				if( frameDurationProperty.floatValue != frameDuration )
+				{
+					if( frameDuration >  0 )
+					{
+						Undo.RecordObject( spriteImage, "[SpriteImage] Frame Duration : Change" ) ;	// アンドウバッファに登録
+						frameDurationProperty.floatValue = frameDuration ;
+						EditorUtility.SetDirty( spriteImage ) ;
+					}
+				}
+#endif
+				//---------------------------------
+				// Frames
+
+				var framesProperty = property.FindPropertyRelative( "Frames" ) ;
+				float framesHeight = EditorGUI.GetPropertyHeight( framesProperty ) ;
+
+				var framesRect = new Rect( x + ( w * 0.0f ), y, w * 1.0f, framesHeight ) ;
+
+				EditorGUI.PropertyField( framesRect, framesProperty ) ;
+
+				//---------------------------------------------------------
+
+				// インデントを元通りに戻します
+//				EditorGUI.indentLevel = indent ;
+
+				EditorGUI.EndProperty() ;
+			}
+
+#if false
+			private bool CheckAnimationName( List<SpriteImage.AnimationDescriptor> animations, SpriteImage.AnimationDescriptor animation, string requestAnimationName )
+			{
+				if( animations == null || animations.Count <= 1 )
+				{
+					return true ;
+				}
+
+				var animationNames = animations.Where( _ => ( _ != animation ) ).Select( _ => _.AnimationName ).ToList() ;
+				if( animationNames.Count == 0 )
+				{
+					return true ;
+				}
+				
+				//---------------------------------
+
+				foreach( var animationName in animationNames )
+				{
+					if( animationName == requestAnimationName )
+					{
+						// 名称が重複している
+						return false ;
+					}
+				}
+
+				return true ;
+			}
+
+			// アニメーション名が被る場合は適切に変更して返す
+			private string CorrectAnimationName( List<SpriteImage.AnimationDescriptor> animations, SpriteImage.AnimationDescriptor animation, string requestAnimationName )
+			{
+				if( animations == null || animations.Count <= 1 )
+				{
+					return requestAnimationName ;
+				}
+
+				var animationNames = animations.Where( _ => ( _ != animation ) ).Select( _ => _.AnimationName ).ToList() ;
+				if( animationNames.Count == 0 )
+				{
+					return requestAnimationName ;
+				}
+				
+				//---------------------------------
+
+				bool isDuplication ;
+				var regax = new Regex( @"[^0-9]" ) ;
+
+				int limitCount = 0 ;
+
+				do
+				{
+					isDuplication = false ;
+					foreach( var animationName in animationNames )
+					{
+						if( animationName == requestAnimationName )
+						{
+							// 名称が重複してしまう
+							isDuplication = true ;
+							break ;
+						}
+					}
+
+					if( isDuplication == true )
+					{
+						// 名称を変更する
+
+						var match = Regex.Match( requestAnimationName, "^([a-zA-Z0-9_]*)\\(([0-9]*)\\)$" ) ;	// 最後がカッコ番号になっているかどうか
+						if( match.Success == true )
+						{
+							int i = requestAnimationName.LastIndexOf( '(' ) ;
+							string number = requestAnimationName[ i.. ] ;
+							requestAnimationName = requestAnimationName[ ..i ] ;
+							int.TryParse( regax.Replace( number, "" ), out var count ) ;
+							count ++ ;
+							requestAnimationName = $"{requestAnimationName}({count})" ;
+						}
+						else
+						{
+							requestAnimationName += "(1)" ;
+						}
+					}
+
+					limitCount ++ ;
+					if( limitCount >= 1000 )
+					{
+						break ;
+					}
+				}
+				while( isDuplication ) ;	// 重複が起きなくなったら抜ける
+
+				//---------------------------------
+
+				return requestAnimationName ;
+			}
+#endif
+		}
+
+
+		// 個々のアニメーション情報表示
+		[CustomPropertyDrawer( typeof( SpriteImage.AnimationDescriptor.FrameDescriptor ), true )]
+		public class AnimationFrameDrawer : PropertyDrawer
+		{
+			/// プロパティの高さを取得する。カスタムによって高さが変わるなら必須
+			public override float GetPropertyHeight( SerializedProperty property, GUIContent label )
+			{
+				return base.GetPropertyHeight( property, label ) ;
+			}
+
+			// 指定された矩形内のプロパティを描画
+			public override void OnGUI( Rect position, SerializedProperty property, GUIContent label )
+			{
+//				position.x =+ ( position.width * 0.2f ) ;
+//				position.width *= 0.8f ;
+
+				EditorGUI.BeginProperty( position, label, property ) ;
+
+				// ラベルを描画
+//				position = EditorGUI.PrefixLabel( position, GUIUtility.GetControlID( FocusType.Passive ), label ) ;
+
+				// 子のフィールドをインデントしない 
+//				var indent = EditorGUI.indentLevel ;
+//				EditorGUI.indentLevel = 0 ;
+
+				float x = position.x ;
+				float y = position.y ;
+				float w = position.width ;
+				float h = position.height ;
+
+				var spriteImage = property.serializedObject.targetObject as SpriteImage ;
+
+				// 各長さ
+				float textureWidth = h ;
+
+				float cw = w - textureWidth ;
+
+				float spriteNameWidth = cw * 0.6f ;
+				float spaceWidth = cw * 0.05f ;
+				float durationWidth = cw * 0.3f ;
+
+				//---------------------------------
+				// SpriteName
+
+				var spriteName = property.FindPropertyRelative( "SpriteName" ).stringValue ;
+
+				var names = spriteImage.GetSpriteNames() ;
+				if( names == null || names.Length == 0 )
+				{
+					names = new string[]{ "Unknown" } ;
+				}
+				var spriteNames = names.ToList() ;
+
+				int indexOld = 0 ;
+				int index = spriteNames.IndexOf( spriteName ) ;
+				if( index >= 0 )
+				{
+					indexOld = index ;
+				}
+
+				//---------------------------------
+				// スプライ群が存在する状態で空文字は許容しない(重要:初期状態では一見スプライト識別名が設定されているようで実際は空文字になっている)
+				if( string.IsNullOrEmpty( spriteName ) == true )
+				{
+					if( names != null && names.Length >  0 )
+					{
+						property.FindPropertyRelative( "SpriteName" ).stringValue = names[ 0 ] ;
+					}
+				}
+				//---------------------------------
+
+				var spriteNameRect = new Rect( x, y, spriteNameWidth, h ) ;
+
+				int indexNew = EditorGUI.Popup( spriteNameRect, indexOld, spriteNames.ToArray() ) ;
+				if( indexOld != indexNew )
+				{
+					Undo.RecordObject( spriteImage, "[SpriteImage] SpriteName : Change" ) ;	// アンドウバッファに登録
+					property.FindPropertyRelative( "SpriteName" ).stringValue = spriteNames[ indexNew ] ;
+					EditorUtility.SetDirty( spriteImage ) ;
+				}
+
+				x += spriteNameWidth ;
+				x += spaceWidth ;
+
+				//---------------------------------
+				// Sprite(Texture)
+
+				Sprite sprite = spriteImage.GetSpriteInAtlas( spriteNames[ indexNew ] ) ;
+				if( sprite != null )
+				{
+					var textureRect = new Rect( x, y - EditorGUIUtility.standardVerticalSpacing * 0.5f, textureWidth, textureWidth ) ;
+					DrawPreviewTexture( textureRect, sprite ) ;
+				}
+
+				x += textureWidth ;
+				x += spaceWidth ;
+
+				//---------------------------------
+				// Duration
+
+				var durationProperty = property.FindPropertyRelative( "Duration" ) ;
+
+				if( durationProperty.floatValue <= 0 )
+				{
+					durationProperty.floatValue  = 0.1f ;
+				}
+
+				var durationRect = new Rect( x, y, durationWidth, h ) ;
+
+				var duration = EditorGUI.FloatField( durationRect, durationProperty.floatValue ) ;
+				if( durationProperty.floatValue != duration )
+				{
+					if( duration <= 0 )
+					{
+						duration  = 0.1f ;
+					}
+
+					Undo.RecordObject( spriteImage, "[SpriteImage] Duration : Change" ) ;	// アンドウバッファに登録
+					durationProperty.floatValue = duration ;
+					EditorUtility.SetDirty( spriteImage ) ;
+				}
+
+//				x += durationWidth ;
+//				x += spaceWidth ;
+
+				//---------------------------------------------------------
+
+				// インデントを元通りに戻します
+//				EditorGUI.indentLevel = indent ;
+
+				EditorGUI.EndProperty() ;
+			}
+
+			// シンプルなテクスチャを描画する
+			private void DrawPreviewTexture( Rect position, Sprite sprite )
+			{
+				var fullSize = new Vector2( sprite.texture.width, sprite.texture.height ) ;
+				var size = new Vector2( sprite.textureRect.width, sprite.textureRect.height ) ;
+ 
+				Rect coords = sprite.textureRect ;
+				coords.x      /= fullSize.x ;
+				coords.width  /= fullSize.x ;
+				coords.y      /= fullSize.y ;
+				coords.height /= fullSize.y ;
+ 
+				Vector2 ratio ;
+				ratio.x = position.width  / size.x ;
+				ratio.y = position.height / size.y ;
+				float minRatio = Mathf.Min( ratio.x, ratio.y ) ;
+ 
+				Vector2 center  = position.center ;
+				position.width  = size.x * minRatio ;
+				position.height = size.y * minRatio ;
+				position.center = center ;
+ 
+				GUI.DrawTextureWithTexCoords( position, sprite.texture, coords ) ;
+			}
+		}
+//#endif
 		//-------------------------------------------------------------------------------------------
 		// Collider
 
@@ -592,6 +1167,7 @@ namespace SpriteHelper
 			EditorGUI.DrawRect( new Rect( rect.x + 0, rect.y + 1, rect.width - 0, 1 ), Color.black ) ;
 
 			EditorGUILayout.Space( 8 ) ;	// 少し区切りスペース
+
 		}
 	}
 }

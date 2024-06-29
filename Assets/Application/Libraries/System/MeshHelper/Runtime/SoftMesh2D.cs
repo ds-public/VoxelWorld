@@ -1,6 +1,7 @@
 using System ;
 using System.Collections ;
 using System.Collections.Generic ;
+//using System.Linq ;
 using UnityEngine ;
 using UnityEngine.U2D ;
 
@@ -13,7 +14,7 @@ using UnityEditorInternal ;
 namespace MeshHelper
 {
 	/// <summary>
-	/// ２Ｄメッシュ Version 2024/03/26
+	/// ２Ｄメッシュ Version 2024/06/14
 	/// </summary>
 	[ExecuteAlways]
 	[DisallowMultipleComponent]
@@ -29,7 +30,7 @@ namespace MeshHelper
 //		[MenuItem( "MeshHelper/Add a SoftMesh2D" )]					// メニューから
 		public static void CreateSoftMesh2D()
 		{
-			GameObject go = Selection.activeGameObject ;
+			var go = Selection.activeGameObject ;
 			if( go == null )
 			{
 				return ;
@@ -44,7 +45,7 @@ namespace MeshHelper
 
 			var child = new GameObject( "SoftMesh2D" ) ;
 
-			Transform t = child.transform ;
+			var t = child.transform ;
 			t.SetParent( go.transform, false ) ;
 			t.SetLocalPositionAndRotation( Vector3.zero, Quaternion.identity ) ;
 			t.localScale = Vector3.one ;
@@ -187,6 +188,8 @@ namespace MeshHelper
 					CleanupAtlasSprites() ;
 
 					m_SpriteAtlas  = value ;
+
+					Sprite = null ;	// 選択中のスプライトも初期化する
 				}
 			}
 		}
@@ -213,7 +216,11 @@ namespace MeshHelper
 			{
 				if( m_SpriteSet != value )
 				{
+					// 基本的にはインスタンスは維持して中身の情報を入れ替えるのでここが呼ばれる事は無い
+
 					m_SpriteSet  = value ;
+
+					Sprite = null ;	// 選択中のスプライトも初期化する
 				}
 			}
 		}
@@ -809,6 +816,30 @@ namespace MeshHelper
 			}
 		}
 
+        /// <summary>
+        /// グリッドを設定する
+        /// </summary>
+        /// <param name="x"></param>
+        /// <param name="y"></param>
+        public void SetGrid( int x, int y )
+        {
+            if( x <= 0 )
+            {
+                x  = 1 ;
+            }
+            if( y <= 0 )
+            {
+                y  = 1 ;
+            }
+
+            if( m_GridX != x || m_GridY != y )
+            {
+                m_GridX = x ;
+                m_GridY = y ;
+                m_IsMeshDirty = true ;
+            }
+        }
+
 		/// <summary>
 		/// 分割数(円専用)
 		/// </summary>
@@ -1281,7 +1312,7 @@ namespace MeshHelper
 		/// <summary>
 		/// アクティブかどうか
 		/// </summary>
-		public bool ActiveeSelf
+		public bool ActiveSelf
 		{
 			get
 			{
@@ -1622,6 +1653,7 @@ namespace MeshHelper
 			}
 
 			//----------------------------------------------------------
+			// メッシュ生成
 
 			if( m_Mesh == null )
 			{
@@ -1632,6 +1664,17 @@ namespace MeshHelper
 				m_Mesh.Clear() ;
 			}
 
+			// 頂点数に応じてインデックスのビット数に適切なものを設定する
+			if( aV.Length >= 65535 )
+			{
+				// タイリングでは必須といえる
+				m_Mesh.indexFormat = UnityEngine.Rendering.IndexFormat.UInt32 ;	// 頂点数の最大値を増やす
+			}
+			else
+			{
+				m_Mesh.indexFormat = UnityEngine.Rendering.IndexFormat.UInt16 ;
+			}
+
 			m_Mesh.name			= modelName ;
 			m_Mesh.vertices		= aV ;
 			if( aN != null )
@@ -1640,8 +1683,53 @@ namespace MeshHelper
 			}
 			m_Mesh.colors		= aC ;
 			m_Mesh.uv			= aT ;
+
 			m_Mesh.triangles	= aI ;
 
+			// １メッシュあたりのポリゴン数に制限は無い模様
+#if false
+			// ポリゴン数が 65536 を超える場合は複数のサブメッシュに分割する
+			int limit = 65536 * 3 ;
+			if( aI.Length <= limit )
+			{
+				// 分割なし
+				Debug.Log( "分割なし" ) ;
+
+				m_Mesh.triangles	= aI ;
+			}
+			else
+			{
+				// 分割あり
+				Debug.Log( "分割あり" ) ;
+
+				int count = aI.Length ;
+
+				int index = count / limit ;
+				if( ( count % limit ) >  0 )
+				{
+					index ++ ;
+				}
+
+				Debug.Log( "分割数 : " + index ) ;
+
+				// サブメッシュ数は SetTriangles() でサブメッシュを設定する前に設定する必要がある
+				m_Mesh.subMeshCount = index ;
+
+				int point ;
+
+				var aL = new List<int>( aI ) ;
+
+				index = 0 ;
+				for( point  = 0 ; point <  count ; point += limit )
+				{
+					int range = count - point ;
+					range = Math.Min( range, limit ) ;
+
+					m_Mesh.SetTriangles( aL.GetRange( point, range ), index ) ;
+					index ++ ;
+				}
+			}
+#endif
 			if( aN == null )
 			{
 				m_Mesh.RecalculateNormals() ;
@@ -3766,10 +3854,22 @@ namespace MeshHelper
 				if( m_DirectionType == DirectionTypes.Z_Axis )
 				{
 					m_Collider2D = gameObject.AddComponent<BoxCollider2D>() ;
+
+					if( TryGetComponent<Rigidbody2D>( out _ ) == false )
+					{
+						var rigidbody2d = gameObject.AddComponent<Rigidbody2D>() ;
+						rigidbody2d.gravityScale = 0 ;
+					}
 				}
 				else
 				{
 					m_Collider3D = gameObject.AddComponent<MeshCollider>() ;
+
+					if( TryGetComponent<Rigidbody>( out _ ) == false )
+					{
+						var rigidbody3d = gameObject.AddComponent<Rigidbody>() ;
+						rigidbody3d.useGravity = true ;
+					}
 				}
 			}
 			else
@@ -3778,10 +3878,22 @@ namespace MeshHelper
 				if( m_DirectionType == DirectionTypes.Z_Axis )
 				{
 					m_Collider2D = gameObject.AddComponent<CircleCollider2D>() ;
+
+					if( TryGetComponent<Rigidbody2D>( out _ ) == false )
+					{
+						var rigidbody2d = gameObject.AddComponent<Rigidbody2D>() ;
+						rigidbody2d.gravityScale = 0 ;
+					}
 				}
 				else
 				{
 					m_Collider3D = gameObject.AddComponent<MeshCollider>() ;
+
+					if( TryGetComponent<Rigidbody>( out _ ) == false )
+					{
+						var rigidbody3d = gameObject.AddComponent<Rigidbody>() ;
+						rigidbody3d.useGravity = true ;
+					}
 				}
 			}
 
@@ -3795,6 +3907,18 @@ namespace MeshHelper
 		/// </summary>
 		public void RemoveCollider()
 		{
+			if( TryGetComponent<Rigidbody>( out var rigidbody3d ) == true )
+			{
+				if( Application.isPlaying == false )
+				{
+					DestroyImmediate( rigidbody3d ) ;
+				}
+				else
+				{
+					Destroy( rigidbody3d ) ;
+				}
+			}
+
 			if( m_Collider3D != null )
 			{
 				if( Application.isPlaying == false )
@@ -3807,6 +3931,20 @@ namespace MeshHelper
 				}
 	
 				m_Collider3D = null ;
+			}
+
+			//----------------------------------
+
+			if( TryGetComponent<Rigidbody2D>( out var rigidbody2d ) == true )
+			{
+				if( Application.isPlaying == false )
+				{
+					DestroyImmediate( rigidbody2d ) ;
+				}
+				else
+				{
+					Destroy( rigidbody2d ) ;
+				}
 			}
 
 			if( m_Collider2D != null )

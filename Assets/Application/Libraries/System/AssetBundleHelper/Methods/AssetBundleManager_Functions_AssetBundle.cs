@@ -14,6 +14,7 @@ using UnityEditor ;
 using UnityEditor.SceneManagement ;
 #endif
 
+
 /// <summary>
 /// アセットバンドルヘルパーパッケージ
 /// </summary>
@@ -35,8 +36,11 @@ namespace AssetBundleHelper
 		/// <returns></returns>
 		private ( string, Type )[] GetLocalAllAssetPaths( string localAssetsRootPath, string folderPath, bool isOriginal )
 		{
-			folderPath = localAssetsRootPath + folderPath ;
-			folderPath = folderPath.TrimEnd( '/' ) + "/" ;
+			folderPath = $"{localAssetsRootPath}{folderPath}" ;
+			if( folderPath[ ^1 ] != '/' )
+			{
+				folderPath += "/" ;
+			}
 
 			var allAssetPaths = new List<( string, Type )>() ;
 
@@ -52,7 +56,7 @@ namespace AssetBundleHelper
 
 			//--------------
 
-			string[] paths = Directory.GetFiles( currentFolderPath ) ;
+			var paths = Directory.GetFiles( currentFolderPath ) ;
 			if( paths != null && paths.Length >  0 )
 			{
 				// アセットバンドル部のパスと拡張子を削除する
@@ -92,7 +96,7 @@ namespace AssetBundleHelper
 			}
 
 			// サブフォルダを検索する
-			string[] folderPaths = Directory.GetDirectories( currentFolderPath ) ;
+			var folderPaths = Directory.GetDirectories( currentFolderPath ) ;
 			if( folderPaths != null && folderPaths.Length >  0 )
 			{
 				l = folderPaths.Length ;
@@ -110,8 +114,11 @@ namespace AssetBundleHelper
 		/// <returns></returns>
 		private string[] GetLocalAllAssetPaths( string localAssetsRootPath, string folderPath, Type type, bool isOriginal )
 		{
-			folderPath = localAssetsRootPath + folderPath ;
-			folderPath = folderPath.TrimEnd( '/' ) + "/" ;
+			folderPath = $"{localAssetsRootPath}{folderPath}" ;
+			if( folderPath[ ^1 ] != '/' )
+			{
+				folderPath += "/" ;
+			}
 
 			if( type == null )
 			{
@@ -133,7 +140,7 @@ namespace AssetBundleHelper
 
 			//--------------
 
-			string[] paths = Directory.GetFiles( currentFolderPath ) ;
+			var paths = Directory.GetFiles( currentFolderPath ) ;
 			if( paths != null && paths.Length >  0 )
 			{
 				// アセットバンドル部のパスと拡張子を削除する
@@ -176,7 +183,7 @@ namespace AssetBundleHelper
 			}
 
 			// サブフォルダを検索
-			string[] folderPaths = Directory.GetDirectories( currentFolderPath ) ;
+			var folderPaths = Directory.GetDirectories( currentFolderPath ) ;
 			if( folderPaths != null && folderPaths.Length >  0 )
 			{
 				l = folderPaths.Length ;
@@ -195,7 +202,7 @@ namespace AssetBundleHelper
 		/// <returns></returns>
 		private UnityEngine.Object LoadLocalAsset( string localAssetsRootPath, string path, Type type )
 		{
-			path = localAssetsRootPath + path ;
+			path = $"{localAssetsRootPath}{path}" ;
 			
 			// 最初はそのままロードを試みる
 			UnityEngine.Object asset = AssetDatabase.LoadAssetAtPath( path, type ) ;
@@ -251,7 +258,7 @@ namespace AssetBundleHelper
 		/// <returns></returns>
 		private UnityEngine.Object[] LoadLocalAllAssets( string localAssetsRootPath, string folderPath, Type type )
 		{
-			folderPath = localAssetsRootPath + folderPath ;
+			folderPath = $"{localAssetsRootPath}{folderPath}" ;
 			
 			if( Directory.Exists( folderPath ) == false )
 			{
@@ -280,7 +287,7 @@ namespace AssetBundleHelper
 		// 再帰でサブフォルダのアセットも取得する
 		private void LoadLocalAllAssets_Recursion( string currentPath, Type type, ref List<UnityEngine.Object> temporaryAssets )
 		{
-			string[] filePaths = Directory.GetFiles( currentPath ) ;
+			var filePaths = Directory.GetFiles( currentPath ) ;
 			if( filePaths != null && filePaths.Length >  0 )
 			{
 				foreach( var filePath in filePaths )
@@ -293,7 +300,7 @@ namespace AssetBundleHelper
 				}
 			}
 
-			string[] folderPaths = Directory.GetDirectories( currentPath ) ;
+			var folderPaths = Directory.GetDirectories( currentPath ) ;
 			if( folderPaths != null && folderPaths.Length >  0 )
 			{
 				foreach( var folderPath in folderPaths )
@@ -312,14 +319,14 @@ namespace AssetBundleHelper
 		/// <returns></returns>
 		private UnityEngine.Object LoadLocalSubAsset( string localAssetsRootPath, string path, string subAssetName, Type type )
 		{
-			path = localAssetsRootPath + path ;
+			path = $"{localAssetsRootPath}{path}" ;
 			
 			// 最初はそのままロードを試みる
-			UnityEngine.Object[] assets = AssetDatabase.LoadAllAssetRepresentationsAtPath( path ) ;
+			var assets = AssetDatabase.LoadAllAssetRepresentationsAtPath( path ) ;
 			if( assets != null && assets.Length >  0 )
 			{
 				// 成功したら終了
-				UnityEngine.Object asset = assets.FirstOrDefault( _ => _.name == subAssetName ) ;
+				var asset = assets.FirstOrDefault( _ => _.name == subAssetName ) ;
 				return ( asset != null && asset.GetType() == type ) ? asset : null ;
 			}
 			
@@ -348,7 +355,7 @@ namespace AssetBundleHelper
 					if( assets != null && assets.Length >  0 )
 					{
 						// 成功したら終了
-						UnityEngine.Object asset = assets.FirstOrDefault( _ => _.name == subAssetName ) ;
+						var asset = assets.FirstOrDefault( _ => _.name == subAssetName ) ;
 						return ( asset != null && asset.GetType() == type ) ? asset : null ;
 					}
 				}
@@ -371,10 +378,10 @@ namespace AssetBundleHelper
 		/// <returns></returns>
 		private UnityEngine.Object[] LoadLocalAllSubAssets( string localAssetsRootPath, string path, Type type )
 		{
-			path = localAssetsRootPath + path ;
+			path = $"{localAssetsRootPath}{path}" ;
 			
 			// 最初はそのままロードを試みる
-			UnityEngine.Object[] assets = AssetDatabase.LoadAllAssetRepresentationsAtPath( path ) ;
+			var assets = AssetDatabase.LoadAllAssetRepresentationsAtPath( path ) ;
 			if( assets != null && assets.Length >  0 )
 			{
 				// 成功したら終了
@@ -458,7 +465,7 @@ namespace AssetBundleHelper
 
 			//----------------------------------------------------------
 
-			path = localAssetsRootPath + path ;
+			path = $"{localAssetsRootPath}{path}" ;
 
 			// 拡張子が無い場合はタイプ検索を行う
 			int i0 = path.LastIndexOf( '/' ) ;
@@ -470,7 +477,7 @@ namespace AssetBundleHelper
 			}
 
 			EditorSceneManager.LoadSceneInPlayMode( path, new UnityEngine.SceneManagement.LoadSceneParameters( mode ) ) ;
-			UnityEngine.SceneManagement.Scene scene = UnityEngine.SceneManagement.SceneManager.GetSceneByName( sceneName ) ;
+			var scene = UnityEngine.SceneManagement.SceneManager.GetSceneByName( sceneName ) ;
 			if( scene.IsValid() == false )
 			{
 				onError?.Invoke( "Could not load." ) ;
@@ -487,7 +494,7 @@ namespace AssetBundleHelper
 		/// <returns></returns>
 		private bool ContainsLocalAsset( string localAssetsRootPath, string path )
 		{
-			path = localAssetsRootPath + path ;
+			path = $"{localAssetsRootPath}{path}" ;
 
 			bool result = ( Directory.Exists( path ) == true ) | ( File.Exists( path ) ) ;
 			if( result == true )
@@ -545,7 +552,7 @@ namespace AssetBundleHelper
 		/// <returns></returns>
 		private string GetLocalAssetFilePath( string localAssetsRootPath, string path )
 		{
-			path = localAssetsRootPath + path ;
+			path = $"{localAssetsRootPath}{path}" ;
 
 			if( File.Exists( path ) == false )
 			{
@@ -554,32 +561,31 @@ namespace AssetBundleHelper
 
 			return Directory.GetCurrentDirectory().Replace( "\\", "/" ) + "/" + path ;
 		}
-
 #endif
 
 		// 一般タイプに対する拡張子
 		internal protected readonly Dictionary<Type,List<string>> m_TypeToExtension = new ()
 		{
-			{ typeof( Sprite ),						new List<string>{ ".png", ".jpg", ".tga", ".gif", ".bmp", ".tiff",											} },
-			{ typeof( GameObject ),					new List<string>{ ".prefab", ".asset", ".fbx", ".dae", ".obj", ".max", ".blend", 							} },
-			{ typeof( AudioClip ),					new List<string>{ ".wav", ".ogg", ".mp3", ".aif", ".aiff", ".xm", ".mod", ".it", ".s3m",					} },
-			{ typeof( TextAsset ),					new List<string>{ ".txt", ".json", ".bytes", ".csv", ".html", ".xml",  ".yml", ".htm", ".fnt"				} },
-			{ typeof( Texture2D ),					new List<string>{ ".png", ".jpg", ".tga", ".psd", ".gif", ".bmp", ".tif", ".tiff", ".iff", ".pict"			} },
-			{ typeof( Texture ),					new List<string>{ ".png", ".jpg", ".tga", ".psd", ".gif", ".bmp", ".tif", ".tiff", ".iff", ".pict", ".exr"	} },
-			{ typeof( AnimationClip ),				new List<string>{ ".anim",																					} },
-			{ typeof( Font ),						new List<string>{ ".ttf", ".otf", ".dfont", 																} },
-			{ typeof( Material ),					new List<string>{ ".mat", ".material",																		} },
-			{ typeof( Cubemap ),					new List<string>{ ".hdr", ".cubemap",																		} },
-			{ typeof( RuntimeAnimatorController ),	new List<string>{ ".controller",																			} },
-			{ typeof( AnimatorOverrideController ),	new List<string>{ ".overrideController",																	} },
-			{ typeof( Mesh ),						new List<string>{ ".fbx", ".dae", ".obj", ".max", ".blend", 												} },
-			{ typeof( Shader ),						new List<string>{ ".shader", 																				} },
-			{ typeof( PhysicMaterial ),				new List<string>{ ".physicmaterial", 																		} },
-			{ typeof( AvatarMask ),					new List<string>{ ".mask", 																					} },
-			{ typeof( Playable ),					new List<string>{ ".playable", 																				} },
-			{ typeof( SpriteAtlas ),				new List<string>{ ".spriteatlas", 																			} },
-			{ typeof( VideoClip ),					new List<string>{ ".mp4", ".mov", ".asf", ".avi", ".mpg", ".mpeg"											} },
-			{ typeof( ScriptableObject ),			new List<string>{ ".asset"																					} },
+			{ typeof( Sprite ),						new (){ ".png", ".jpg", ".tga", ".gif", ".bmp", ".tiff",											} },
+			{ typeof( GameObject ),					new (){ ".prefab", ".asset", ".fbx", ".dae", ".obj", ".max", ".blend", 								} },
+			{ typeof( AudioClip ),					new (){ ".wav", ".ogg", ".mp3", ".aif", ".aiff", ".xm", ".mod", ".it", ".s3m",						} },
+			{ typeof( TextAsset ),					new (){ ".txt", ".json", ".bytes", ".csv", ".html", ".xml",  ".yml", ".htm", ".fnt"					} },
+			{ typeof( Texture2D ),					new (){ ".png", ".jpg", ".tga", ".psd", ".gif", ".bmp", ".tif", ".tiff", ".iff", ".pict"			} },
+			{ typeof( Texture ),					new (){ ".png", ".jpg", ".tga", ".psd", ".gif", ".bmp", ".tif", ".tiff", ".iff", ".pict", ".exr"	} },
+			{ typeof( AnimationClip ),				new (){ ".anim",																					} },
+			{ typeof( Font ),						new (){ ".ttf", ".otf", ".dfont", 																	} },
+			{ typeof( Material ),					new (){ ".mat", ".material",																		} },
+			{ typeof( Cubemap ),					new (){ ".hdr", ".cubemap",																			} },
+			{ typeof( RuntimeAnimatorController ),	new (){ ".controller",																				} },
+			{ typeof( AnimatorOverrideController ),	new (){ ".overrideController",																		} },
+			{ typeof( Mesh ),						new (){ ".fbx", ".dae", ".obj", ".max", ".blend", 													} },
+			{ typeof( Shader ),						new (){ ".shader", 																					} },
+			{ typeof( PhysicMaterial ),				new (){ ".physicmaterial", 																			} },
+			{ typeof( AvatarMask ),					new (){ ".mask", 																					} },
+			{ typeof( Playable ),					new (){ ".playable", 																				} },
+			{ typeof( SpriteAtlas ),				new (){ ".spriteatlas", 																			} },
+			{ typeof( VideoClip ),					new (){ ".mp4", ".mov", ".asf", ".avi", ".mpg", ".mpeg"												} },
+			{ typeof( ScriptableObject ),			new (){ ".asset"																					} },
 		} ;
 
 		internal protected Type GetTypeFromExtension( string extension )
@@ -635,7 +641,7 @@ namespace AssetBundleHelper
 			return path ;
 		}
 
-		//-----------------------------------------------------------
+		//-------------------------------------------------------------------------------------------
 
 		/// <summary>
 		/// アセットバンドルに含まれる全てのアセットのパスを取得する(同期版)
@@ -643,26 +649,19 @@ namespace AssetBundleHelper
 		/// <param name="path"></param>
 		/// <param name="cachingType"></param>
 		/// <returns></returns>
-		public static ( string, Type )[] GetAllAssetPaths( string path, CachingTypes cachingType = CachingTypes.None, bool isOriginal = false )
+		public static ( string, Type )[] GetAllAssetPaths( string path, bool isOriginal = false )
 		{
 			if( m_Instance == null )
 			{
 				return default ;
 			}
-			return m_Instance.GetAllAssetPaths_Private( path, cachingType, isOriginal ) ;
+			return m_Instance.GetAllAssetPaths_Private( path, isOriginal ) ;
 		}
 
-		// アセットを取得する(同期版)
-		private ( string, Type )[] GetAllAssetPaths_Private( string path, CachingTypes cachingType, bool isOriginal )
+		// アセットバンドルに含まれる全てのアセットのパスを取得する(同期版)
+		private ( string, Type )[] GetAllAssetPaths_Private( string path, bool isOriginal )
 		{
-			bool isCaching = false ;
-
-			if( cachingType == CachingTypes.AssetBundleOnly || cachingType == CachingTypes.Same )
-			{
-				isCaching = true ;
-			}
-
-			//------------------------------------------------
+			// ※isOriginal はネイティブのパスかどうか
 
 			( string, Type )[] allAssetPaths = null ;
 
@@ -674,13 +673,18 @@ namespace AssetBundleHelper
 #if UNITY_EDITOR
 					if( m_UseLocalAssets == true )
 					{
-						// ローカルアセットからロードを試みる
+						// LocalAssets からロードを試みる(同期)
 						allAssetPaths = GetLocalAllAssetPaths( m_ManifestHash[ manifestName ].LocalAssetsRootPath, ToLocal( path ), isOriginal ) ;
 					}
 #endif
-					if( allAssetPaths == null && string.IsNullOrEmpty( assetBundlePath ) == false && m_ManifestHash[ manifestName ].CorrectPath( ref assetBundlePath, ref assetPath ) == true )
+					if( allAssetPaths == null && string.IsNullOrEmpty( assetBundlePath ) == false && m_ManifestHash[ manifestName ].CorrectPath( ref assetBundlePath, ref assetPath, out _ ) == true )
 					{
-						allAssetPaths = m_ManifestHash[ manifestName ].GetAllAssetPaths( assetBundlePath, isCaching, false, this ) ;
+						// LocalAssetBundle StreamingAssets RemoteAssetBundle からロードを試みる(同期)
+						allAssetPaths = m_ManifestHash[ manifestName ].GetAllAssetPaths
+						(
+							assetBundlePath,
+							this
+						) ;
 					}
 				}
 			}
@@ -706,7 +710,7 @@ namespace AssetBundleHelper
 		/// <param name="cachingType"></param>
 		/// <param name="keep"></param>
 		/// <returns></returns>
-		public static Request GetAllAssetPathsAsync( string path, Action<(string,Type)[]> onLoaded = null, CachingTypes cachingType = CachingTypes.None, bool keep = false, bool isOriginal = false )
+		public static Request GetAllAssetPathsAsync( string path, Action<( string, Type )[]> onLoaded = null, bool keep = false, bool isOriginal = false )
 		{
 			if( m_Instance == null )
 			{
@@ -715,21 +719,14 @@ namespace AssetBundleHelper
 			}
 
 			var request = new Request( m_Instance ) ;
-			m_Instance.StartCoroutine( m_Instance.GetAllAssetPathsAsync_Private( path, onLoaded, cachingType, keep, isOriginal, request ) ) ;
+			m_Instance.StartCoroutine( m_Instance.GetAllAssetPathsAsync_Private( path, onLoaded, keep, isOriginal, request ) ) ;
 			return request ;
 		}
 
 		// アセットバンドルに含まれる全てのアセットのパスを取得する(非同期版)
-		private IEnumerator GetAllAssetPathsAsync_Private( string path, Action<( string, Type )[]> onLoaded, CachingTypes cachingType, bool keep, bool isOriginal, Request request )
+		private IEnumerator GetAllAssetPathsAsync_Private( string path, Action<( string, Type )[]> onLoaded, bool keep, bool isOriginal, Request request )
 		{
-			bool isCaching = false ;
-
-			if( cachingType == CachingTypes.AssetBundleOnly || cachingType == CachingTypes.Same )
-			{
-				isCaching = true ;
-			}
-
-			//------------------------------------------------
+			// ※isOriginal はネイティブパスにするかどうか
 
 			( string, Type )[] allAssetPaths = null ;
 			string error = null ;
@@ -746,13 +743,20 @@ namespace AssetBundleHelper
 #if UNITY_EDITOR
 					if( m_UseLocalAssets == true )
 					{
-						// ローカルアセットからロードを試みる
+						// LocalAssets からロードを試みる(非同期)
 						allAssetPaths = GetLocalAllAssetPaths( m_ManifestHash[ manifestName ].LocalAssetsRootPath, ToLocal( path ), isOriginal ) ;
 					}
 #endif
-					if( allAssetPaths == null && string.IsNullOrEmpty( assetBundlePath ) == false && m_ManifestHash[ manifestName ].CorrectPath( ref assetBundlePath, ref assetPath ) == true )
+					if( allAssetPaths == null && string.IsNullOrEmpty( assetBundlePath ) == false && m_ManifestHash[ manifestName ].CorrectPath( ref assetBundlePath, ref assetPath, out _ ) == true )
 					{
-						yield return StartCoroutine( m_ManifestHash[ manifestName ].GetAllAssetPaths_Coroutine( assetBundlePath, isCaching, false, keep, ( _ ) => { allAssetPaths = _ ; }, ( _ ) => { error = _ ; }, request, this ) ) ;
+						// LocalAssetBundle StreamingAssets RemoteAssetBundle からロードを試みる(非同期)
+						yield return StartCoroutine( m_ManifestHash[ manifestName ].GetAllAssetPaths_Coroutine
+						(
+							assetBundlePath,
+							( _ ) => { allAssetPaths = _ ; }, ( _ ) => { error = _ ; },
+							request,
+							this
+						) ) ;
 					}
 				}
 			}
@@ -788,26 +792,19 @@ namespace AssetBundleHelper
 		/// <param name="path"></param>
 		/// <param name="cachingType"></param>
 		/// <returns></returns>
-		public static string[] GetAllAssetPaths( string path, Type type, CachingTypes cachingType = CachingTypes.None, bool isOriginal = false )
+		public static string[] GetAllAssetPaths( string path, Type type, bool isOriginal = false )
 		{
 			if( m_Instance == null )
 			{
 				return default ;
 			}
-			return m_Instance.GetAllAssetPaths_Private( path, type, cachingType, isOriginal ) ;
+			return m_Instance.GetAllAssetPaths_Private( path, type, isOriginal ) ;
 		}
 
 		// アセットを取得する(同期版)
-		private string[] GetAllAssetPaths_Private( string path, Type type, CachingTypes cachingType, bool isOriginal )
+		private string[] GetAllAssetPaths_Private( string path, Type type, bool isOriginal )
 		{
-			bool isCaching = false ;
-
-			if( cachingType == CachingTypes.AssetBundleOnly || cachingType == CachingTypes.Same )
-			{
-				isCaching = true ;
-			}
-
-			//------------------------------------------------
+			// ※isOriginal はネイティブパスにするかどうか
 
 			string[] allAssetPaths = null ;
 
@@ -819,13 +816,18 @@ namespace AssetBundleHelper
 #if UNITY_EDITOR
 					if( m_UseLocalAssets == true )
 					{
-						// ローカルアセットからロードを試みる
+						// LocalAssets からロードを試みる(同期)
 						allAssetPaths = GetLocalAllAssetPaths( m_ManifestHash[ manifestName ].LocalAssetsRootPath, ToLocal( path ), type, isOriginal ) ;
 					}
 #endif
-					if( allAssetPaths == null && string.IsNullOrEmpty( assetBundlePath ) == false && m_ManifestHash[ manifestName ].CorrectPath( ref assetBundlePath, ref assetPath ) == true )
+					if( allAssetPaths == null && string.IsNullOrEmpty( assetBundlePath ) == false && m_ManifestHash[ manifestName ].CorrectPath( ref assetBundlePath, ref assetPath, out _ ) == true )
 					{
-						allAssetPaths = m_ManifestHash[ manifestName ].GetAllAssetPaths( assetBundlePath, type, isCaching, false, this ) ;
+						// LocalAssetBundle StreamingAssets RemoteAssetBundle からロードを試みる(同期)
+						allAssetPaths = m_ManifestHash[ manifestName ].GetAllAssetPaths
+						(
+							assetBundlePath, type,
+							this
+						) ;
 					}
 				}
 			}
@@ -851,7 +853,7 @@ namespace AssetBundleHelper
 		/// <param name="cachingType"></param>
 		/// <param name="keep"></param>
 		/// <returns></returns>
-		public static Request GetAllAssetPathsAsync( string path, Type type, Action<string[]> onLoaded = null, CachingTypes cachingType = CachingTypes.None, bool keep = false, bool isOriginal = false )
+		public static Request GetAllAssetPathsAsync( string path, Type type, Action<string[]> onLoaded = null, bool keep = false, bool isOriginal = false )
 		{
 			if( m_Instance == null )
 			{
@@ -860,21 +862,14 @@ namespace AssetBundleHelper
 			}
 
 			var request = new Request( m_Instance ) ;
-			m_Instance.StartCoroutine( m_Instance.GetAllAssetPathsAsync_Private( path, type, onLoaded, cachingType, keep, isOriginal, request ) ) ;
+			m_Instance.StartCoroutine( m_Instance.GetAllAssetPathsAsync_Private( path, type, onLoaded, keep, isOriginal, request ) ) ;
 			return request ;
 		}
 
 		// アセットバンドルに含まれる全てのアセットのパスを取得する(非同期版)
-		private IEnumerator GetAllAssetPathsAsync_Private( string path, Type type, Action<string[]> onLoaded, CachingTypes cachingType, bool keep, bool isOriginal, Request request )
+		private IEnumerator GetAllAssetPathsAsync_Private( string path, Type type, Action<string[]> onLoaded, bool keep, bool isOriginal, Request request )
 		{
-			bool isCaching = false ;
-
-			if( cachingType == CachingTypes.AssetBundleOnly || cachingType == CachingTypes.Same )
-			{
-				isCaching = true ;
-			}
-
-			//------------------------------------------------
+			// ※isOriginal はネイティブパスにするかどうか
 
 			string[] allAssetPaths = null ;
 			string error = null ;
@@ -891,13 +886,20 @@ namespace AssetBundleHelper
 #if UNITY_EDITOR
 					if( m_UseLocalAssets == true )
 					{
-						// ローカルアセットからロードを試みる
+						// LocalAssets からロードを試みる(同期)
 						allAssetPaths = GetLocalAllAssetPaths( m_ManifestHash[ manifestName ].LocalAssetsRootPath, ToLocal( path ), type, isOriginal ) ;
 					}
 #endif
-					if( allAssetPaths == null && string.IsNullOrEmpty( assetBundlePath ) == false && m_ManifestHash[ manifestName ].CorrectPath( ref assetBundlePath, ref assetPath ) == true )
+					if( allAssetPaths == null && string.IsNullOrEmpty( assetBundlePath ) == false && m_ManifestHash[ manifestName ].CorrectPath( ref assetBundlePath, ref assetPath, out _ ) == true )
 					{
-						yield return StartCoroutine( m_ManifestHash[ manifestName ].GetAllAssetPaths_Coroutine( assetBundlePath, type, isCaching, false, keep, ( _ ) => { allAssetPaths = _ ; }, ( _ ) => { error = _ ; }, request, this ) ) ;
+						// LocalAssetBundle StreamingAssets RemoteAssetBundle からロードを試みる(同期)
+						yield return StartCoroutine( m_ManifestHash[ manifestName ].GetAllAssetPaths_Coroutine
+						(
+							assetBundlePath, type,
+							( _ ) => { allAssetPaths = _ ; }, ( _ ) => { error = _ ; },
+							request,
+							this
+						) ) ;
 					}
 				}
 			}
@@ -962,34 +964,26 @@ namespace AssetBundleHelper
 		// アセットを取得する(同期版)
 		private UnityEngine.Object LoadAsset_Private( string path, Type type, CachingTypes cachingType )
 		{
-			bool resourceCaching = false ;
-			bool assetBundleCaching = false ;
-
-			if( cachingType == CachingTypes.ResourceOnly || cachingType == CachingTypes.Same )
-			{
-				resourceCaching		= true ;
-			}
-			if( cachingType == CachingTypes.AssetBundleOnly || cachingType == CachingTypes.Same )
-			{
-				assetBundleCaching	= true ;
-			}
+			bool cachingEnabled = ( cachingType != CachingTypes.None ) ;
 
 			//------------------------------------------------
 
 			// 同名型違いが存在するため型名を最後に付与する
-			string resourceCachePath = path + ":" + type.ToString() ;
+			string resourceCachePath = $"{path}:{type}" ;
 
 			//--------------
 
 			// キャッシュにあればそれを返す
-			if( m_ResourceCache != null && m_ResourceCache.ContainsKey( resourceCachePath ) == true )
+			if( m_ResourceCache.ContainsKey( resourceCachePath ) == true )
 			{
-				return m_ResourceCache[ resourceCachePath ].Get() ;
+				// キャッシュされているインスタンスを返す(参照カウントも増加する)
+				return m_ResourceCache[ resourceCachePath ].Load() ;
 			}
 
 			//------------------------------------------------
 
-			UnityEngine.Object asset = null ;
+			UnityEngine.Object						asset				= null ;
+			ManifestInfo.AssetBundleCacheElement	assetBundleCache	= null ;
 
 			// アセットバンドルからロードを試みる
 			if( GetManifestNameAndAssetBundleName( path, out string manifestName, out string assetBundlePath, out string assetPath ) == true )
@@ -999,13 +993,18 @@ namespace AssetBundleHelper
 #if UNITY_EDITOR
 					if( m_UseLocalAssets == true )
 					{
-						// ローカルアセットからロードを試みる
+						// LocalAssets からロードを試みる(同期)
 						asset = LoadLocalAsset( m_ManifestHash[ manifestName ].LocalAssetsRootPath, ToLocal( path ), type ) ;
 					}
 #endif
-					if( asset == null && string.IsNullOrEmpty( assetBundlePath ) == false && m_ManifestHash[ manifestName ].CorrectPath( ref assetBundlePath, ref assetPath ) == true )
+					if( asset == null && string.IsNullOrEmpty( assetBundlePath ) == false && m_ManifestHash[ manifestName ].CorrectPath( ref assetBundlePath, ref assetPath, out var isSingle ) == true )
 					{
-						asset = m_ManifestHash[ manifestName ].LoadAsset( assetBundlePath, assetPath, type, assetBundleCaching, false, this ) ;
+						// LocalAssetBundle StreamingAssets RemoteAssetBundle からロードを試みる(同期)
+						( asset, assetBundleCache ) = m_ManifestHash[ manifestName ].LoadAsset
+						(
+							assetBundlePath, assetPath, type, isSingle,
+							this
+						) ;
 					}
 				}
 			}
@@ -1019,14 +1018,10 @@ namespace AssetBundleHelper
 			//------------------------------------------------
 
 			// 必要であればここでキャッシュに貯める
-			if( resourceCaching == true && m_ResourceCache != null && m_ResourceCache.ContainsKey( resourceCachePath ) == false )
+			if( cachingEnabled == true )
 			{
-//				Debug.Log( "--------------->キャッシュに追加:" + resourceCachePath ) ;
-				var element = new ResourceCacheElement( resourceCachePath, asset ) ;
-				m_ResourceCache.Add( resourceCachePath, element ) ;
-#if UNITY_EDITOR
-				m_ResourceCacheInfo.Add( element ) ;
-#endif
+				// アセット(リソース)キャッシュの追加
+				AddResourceCache( resourceCachePath, asset, assetBundleCache ) ;
 			}
 
 			//------------------------------------------------
@@ -1083,22 +1078,12 @@ namespace AssetBundleHelper
 		// アセットを取得する(非同期版)
 		private IEnumerator LoadAssetAsync_Private( string path, Type type, Action<UnityEngine.Object> onLoaded, CachingTypes cachingType, bool keep, Request request )
 		{
-			bool resourceCaching = false ;
-			bool assetBundleCaching = false ;
-
-			if( cachingType == CachingTypes.ResourceOnly || cachingType == CachingTypes.Same )
-			{
-				resourceCaching		= true ;
-			}
-			if( cachingType == CachingTypes.AssetBundleOnly || cachingType == CachingTypes.Same )
-			{
-				assetBundleCaching	= true ;
-			}
+			bool cachingEnabled = ( cachingType != CachingTypes.None ) ;
 
 			//------------------------------------------------
 
 			// 同名型違いが存在するため型名を最後に付与する
-			string resourceCachePath = path + ":" + type.ToString() ;
+			string resourceCachePath = $"{path}:{type}" ;
 
 			//------------------------------------------------
 
@@ -1106,18 +1091,23 @@ namespace AssetBundleHelper
 			string error = null ;
 
 			// キャッシュにあればそれを返す
-			if( m_ResourceCache != null && m_ResourceCache.ContainsKey( resourceCachePath ) == true )
+			if( m_ResourceCache.ContainsKey( resourceCachePath ) == true )
 			{
-				asset = m_ResourceCache[ resourceCachePath ].Get() ;
+				// キャッシュされているインスタンスを返す(参照カウントも増加する)
+				asset = m_ResourceCache[ resourceCachePath ].Load() ;
+
 				request.Asset = asset ;
 				onLoaded?.Invoke( asset ) ;
 				request.IsDone = true ;
+
 				yield break ;
 			}
 
 			//------------------------------------------------
 
 			m_AsyncProcessingCount ++ ;
+
+			ManifestInfo.AssetBundleCacheElement assetBundleCache = null ;
 
 			// アセットバンドルからロードを試みる
 			if( GetManifestNameAndAssetBundleName( path, out string manifestName, out string assetBundlePath, out string assetPath ) == true )
@@ -1127,14 +1117,20 @@ namespace AssetBundleHelper
 #if UNITY_EDITOR
 					if( m_UseLocalAssets == true )
 					{
-						// ローカルアセットからロードを試みる
+						// LocalAssets からロードを試みる(非同期)
 						asset = LoadLocalAsset( m_ManifestHash[ manifestName ].LocalAssetsRootPath, ToLocal( path ), type ) ;
 					}
 #endif
-					if( asset == null &&  string.IsNullOrEmpty( assetBundlePath ) == false && m_ManifestHash[ manifestName ].CorrectPath( ref assetBundlePath, ref assetPath ) == true )
+					if( asset == null &&  string.IsNullOrEmpty( assetBundlePath ) == false && m_ManifestHash[ manifestName ].CorrectPath( ref assetBundlePath, ref assetPath, out var isSingle ) == true )
 					{
-						// 非同期読み出し
-						yield return StartCoroutine( m_ManifestHash[ manifestName ].LoadAsset_Coroutine( assetBundlePath, assetPath, type, assetBundleCaching, false, keep, ( _ ) => { asset = _ ; }, ( _ ) => { error = _ ; }, request, this ) ) ;
+						// LocalAssetBundle StreamingAssets RemoteAssetBundle からロードを試みる(非同期)
+						yield return StartCoroutine( m_ManifestHash[ manifestName ].LoadAsset_Coroutine
+						(
+							assetBundlePath, assetPath, type, isSingle,
+							( _1, _2 ) => { asset = _1 ; assetBundleCache = _2 ; }, ( _ ) => { error = _ ; },
+							request,
+							this
+						) ) ;
 					}
 				}
 			}
@@ -1156,20 +1152,16 @@ namespace AssetBundleHelper
 			//------------------------------------------------
 
 			// 必要であればここでキャッシュに貯める
-			if( resourceCaching == true && m_ResourceCache != null && m_ResourceCache.ContainsKey( resourceCachePath ) == false )
+			if( cachingEnabled == true )
 			{
-//				Debug.Log( "--------------->キャッシュに追加:" + resourceCachePath ) ;
-				var element = new ResourceCacheElement( resourceCachePath, asset ) ;
-				m_ResourceCache.Add( resourceCachePath, element ) ;
-#if UNITY_EDITOR
-				m_ResourceCacheInfo.Add( element ) ;
-#endif
+				// アセット(リソース)キャッシュの追加
+				AddResourceCache( resourceCachePath, asset, assetBundleCache ) ;
 			}
 
 			//------------------------------------------------
 
-			request.Asset = asset ;
-			request.IsDone = true ;
+			request.Asset	= asset ;
+			request.IsDone	= true ;
 			onLoaded?.Invoke( asset ) ;
 
 			m_AsyncProcessingCount -- ;
@@ -1194,13 +1186,13 @@ namespace AssetBundleHelper
 			}
 
 			// 配列のジェネリックキャストは出来ないので単体にばらしてキャストする
-			UnityEngine.Object[] temporaryAssets = m_Instance.LoadAllAssets_Private( path, typeof( T ), cachingType ) ;
+			var temporaryAssets = m_Instance.LoadAllAssets_Private( path, typeof( T ), cachingType ) ;
 			if( temporaryAssets == null || temporaryAssets.Length == 0 )
 			{
 				return null ;
 			}
 
-			T[] assets = new T[ temporaryAssets.Length ] ;
+			var assets = new T[ temporaryAssets.Length ] ;
 			for( int i  = 0 ; i <  temporaryAssets.Length ; i ++ )
 			{
 				assets[ i ] = temporaryAssets[ i ] as T ;
@@ -1228,17 +1220,7 @@ namespace AssetBundleHelper
 		// アセットバンドル内の指定の型の全てのサブアセットを直接取得する(同期版)
 		private UnityEngine.Object[] LoadAllAssets_Private( string path, Type type, CachingTypes cachingType )
 		{
-			bool resourceCaching = false ;
-			bool assetBundleCaching = false ;
-
-			if( cachingType == CachingTypes.ResourceOnly || cachingType == CachingTypes.Same )
-			{
-				resourceCaching		= true ;
-			}
-			if( cachingType == CachingTypes.AssetBundleOnly || cachingType == CachingTypes.Same )
-			{
-				assetBundleCaching	= true ;
-			}
+			bool cachingEnabled = ( cachingType != CachingTypes.None ) ;
 
 			//------------------------------------------------
 
@@ -1248,7 +1230,8 @@ namespace AssetBundleHelper
 
 			string localAssetPath = ToLocal( path ) ;
 
-			UnityEngine.Object[] assets = null ;
+			UnityEngine.Object[]					assets				= null ;
+			ManifestInfo.AssetBundleCacheElement	assetBundleCache	= null ;	// 複数であってもキャッシュ情報インスタンスは１つ(ただしカウントはアセット数分増えている)
 
 			// アセットバンドルからロードを試みる
 			if( GetManifestNameAndAssetBundleName( path, out string manifestName, out string assetBundlePath, out string assetPath ) == true )
@@ -1260,26 +1243,32 @@ namespace AssetBundleHelper
 
 					if( m_UseLocalAssets == true )
 					{
-						// ローカルアセットバンドルパスからロードを試みる
+						// LocalAssets からロードを試みる(同期)
 						temporaryAssets = LoadLocalAllAssets( m_ManifestHash[ manifestName ].LocalAssetsRootPath, localAssetPath, type ) ;
 						if( temporaryAssets != null && temporaryAssets.Length >  0 )
 						{
 							for( int i  = 0 ; i <  temporaryAssets.Length ; i ++ )
 							{
-								resourceCachePath = path + "/" + temporaryAssets[ i ].name + ":" + temporaryAssets[ i ].GetType().ToString() ;
-								if( m_ResourceCache != null && m_ResourceCache.ContainsKey( resourceCachePath ) == true )
+								resourceCachePath = $"{path}/{temporaryAssets[ i ].name}:{temporaryAssets[ i ].GetType()}" ;
+								if( m_ResourceCache.ContainsKey( resourceCachePath ) == true )
 								{
-									// キャッシュにあればそれを返す
-									temporaryAssets[ i ] = m_ResourceCache[ resourceCachePath ].Get() ;
+									// キャッシュされているインスタンスを返す(参照カウントも増加する)
+									temporaryAssets[ i ] = m_ResourceCache[ resourceCachePath ].Load() ;
 								}
 							}
 							assets = temporaryAssets ;
 						}
 					}
 #endif
-					if( ( assets == null || assets.Length == 0 ) && string.IsNullOrEmpty( assetBundlePath ) == false && m_ManifestHash[ manifestName ].CorrectPath( ref assetBundlePath, ref assetPath ) == true )
+					if( ( assets == null || assets.Length == 0 ) && string.IsNullOrEmpty( assetBundlePath ) == false && m_ManifestHash[ manifestName ].CorrectPath( ref assetBundlePath, ref assetPath, out _ ) == true )
 					{
-						assets = m_ManifestHash[ manifestName ].LoadAllAssets( assetBundlePath, type, assetBundleCaching, false, localAssetPath, this ) ;
+						// LocalAssetBundle StreamingAssets RemoteAssetBundle からロードを試みる(同期)
+						( assets, assetBundleCache ) = m_ManifestHash[ manifestName ].LoadAllAssets
+						(
+							assetBundlePath, type,
+							localAssetPath,
+							this
+						) ;
 					}
 				}
 			}
@@ -1293,19 +1282,15 @@ namespace AssetBundleHelper
 			//------------------------------------------------
 
 			// 必要であればここでキャッシュに貯める
-			if( resourceCaching == true && m_ResourceCache != null )
+			if( cachingEnabled == true )
 			{
 				foreach( var asset in assets )
 				{
-					resourceCachePath = path + "/" + asset.name + ":" + asset.GetType().ToString() ;
+					resourceCachePath = $"{path}/{asset.name}:{asset.GetType()}" ;
 					if( m_ResourceCache.ContainsKey( resourceCachePath ) == false )
 					{
-//						Debug.Log( "--------------->キャッシュに追加:" + resourceCachePath ) ;
-						var element = new ResourceCacheElement( resourceCachePath, asset ) ;
-						m_ResourceCache.Add( resourceCachePath, element ) ;
-#if UNITY_EDITOR
-						m_ResourceCacheInfo.Add( element ) ;
-#endif
+						// アセット(リソース)キャッシュの追加
+						AddResourceCache( resourceCachePath, asset, assetBundleCache ) ;
 					}
 				}
 			}
@@ -1343,7 +1328,7 @@ namespace AssetBundleHelper
 				{
 					if( onLoaded != null && temporaryAssets != null && temporaryAssets.Length >  0 )
 					{
-						T[] assets = new T[ temporaryAssets.Length ] ;
+						var assets = new T[ temporaryAssets.Length ] ;
 						for( int i  = 0 ; i <  temporaryAssets.Length ; i ++ )
 						{
 							assets[ i ] = temporaryAssets[ i ] as T ;
@@ -1382,17 +1367,7 @@ namespace AssetBundleHelper
 		// アセットに含まれる全てのサブアセットを取得する(非同期版)
 		private IEnumerator LoadAllAssetsAsync_Private( string path, Type type, Action<UnityEngine.Object[]> onLoaded, CachingTypes cachingType, bool keep, Request request )
 		{
-			bool resourceCaching = false ;
-			bool assetBundleCaching = false ;
-
-			if( cachingType == CachingTypes.ResourceOnly || cachingType == CachingTypes.Same )
-			{
-				resourceCaching		= true ;
-			}
-			if( cachingType == CachingTypes.AssetBundleOnly || cachingType == CachingTypes.Same )
-			{
-				assetBundleCaching	= true ;
-			}
+			bool cachingEnabled = ( cachingType != CachingTypes.None ) ;
 
 			//------------------------------------------------
 
@@ -1404,7 +1379,9 @@ namespace AssetBundleHelper
 
 			m_AsyncProcessingCount ++ ;
 
-			UnityEngine.Object[] assets = null ;
+			UnityEngine.Object[]					assets				= null ;
+			ManifestInfo.AssetBundleCacheElement	assetBundleCache	= null ;
+
 			string error = string.Empty ;
 
 			// アセットバンドルからロードを試みる
@@ -1417,26 +1394,34 @@ namespace AssetBundleHelper
 
 					if( m_UseLocalAssets == true )
 					{
-						// ローカルアセットバンドルパスからロードを試みる
+						// LocalAssets からロードを試みる(非同期)
 						temporaryAssets = LoadLocalAllAssets( m_ManifestHash[ manifestName ].LocalAssetsRootPath, localAssetPath, type ) ;
 						if( temporaryAssets != null && temporaryAssets.Length >  0 )
 						{
 							for( int  i = 0 ; i <  temporaryAssets.Length ; i ++ )
 							{
-								resourceCachePath = path + "/" + temporaryAssets[ i ].name + ":" + temporaryAssets[ i ].GetType().ToString() ;
-								if( m_ResourceCache != null && m_ResourceCache.ContainsKey( resourceCachePath ) == true )
+								resourceCachePath = $"{path}/{temporaryAssets[ i ].name}:{temporaryAssets[ i ].GetType()}" ;
+								if( m_ResourceCache.ContainsKey( resourceCachePath ) == true )
 								{
-									// キャッシュにあればそれを返す
-									temporaryAssets[ i ] = m_ResourceCache[ resourceCachePath ].Get() ;
+									// キャッシュされているインスタンスを返す(参照カウントも増加する)
+									temporaryAssets[ i ] = m_ResourceCache[ resourceCachePath ].Load() ;
 								}
 							}
 							assets = temporaryAssets ;
 						}
 					}
 #endif
-					if( ( assets == null || assets.Length == 0 ) &&  string.IsNullOrEmpty( assetBundlePath ) == false && m_ManifestHash[ manifestName ].CorrectPath( ref assetBundlePath, ref assetPath ) == true )
+					if( ( assets == null || assets.Length == 0 ) &&  string.IsNullOrEmpty( assetBundlePath ) == false && m_ManifestHash[ manifestName ].CorrectPath( ref assetBundlePath, ref assetPath, out _ ) == true )
 					{
-						yield return StartCoroutine( m_ManifestHash[ manifestName ].LoadAllAssets_Coroutine( assetBundlePath, type, assetBundleCaching, false, keep, ( _ ) => { assets = _ ; }, ( _ ) => { error = _ ; }, request, localAssetPath, this ) ) ;
+						// LocalAssetBundle StreamingAssets RemoteAssetBundle からロードを試みる(非同期)
+						yield return StartCoroutine( m_ManifestHash[ manifestName ].LoadAllAssets_Coroutine
+						(
+							assetBundlePath, type,
+							( _1, _2 ) => { assets = _1 ; assetBundleCache = _2 ; }, ( _ ) => { error = _ ; },
+							request,
+							localAssetPath,
+							this
+						) ) ;
 					}
 				}
 			}
@@ -1458,19 +1443,17 @@ namespace AssetBundleHelper
 			//------------------------------------------------
 
 			// 必要であればここでキャッシュに貯める
-			if( resourceCaching == true && m_ResourceCache != null )
+			if( cachingEnabled == true )
 			{
+				// 参照カウントを増加させる
+
 				foreach( var asset in assets )
 				{
-					resourceCachePath = path + "/" + asset.name + ":" + asset.GetType().ToString() ;
+					resourceCachePath = $"{path}/{asset.name}:{asset.GetType()}" ;
 					if( m_ResourceCache.ContainsKey( resourceCachePath ) == false )
 					{
-//						Debug.Log( "--------------->キャッシュに追加:" + resourceCachePath ) ;
-						var element = new ResourceCacheElement( resourceCachePath, asset ) ;
-						m_ResourceCache.Add( resourceCachePath, element ) ;
-#if UNITY_EDITOR
-						m_ResourceCacheInfo.Add( element ) ;
-#endif
+						// アセット(リソース)キャッシュの追加
+						AddResourceCache( resourceCachePath, asset, assetBundleCache ) ;
 					}
 				}
 			}
@@ -1525,36 +1508,28 @@ namespace AssetBundleHelper
 		// アセットに含まれるサブアセットを取得する(同期版)
 		private UnityEngine.Object LoadSubAsset_Private( string path, string subAssetName, Type type, CachingTypes cachingType )
 		{
-			bool resourceCaching = false ;
-			bool assetBundleCaching = false ;
-
-			if( cachingType == CachingTypes.ResourceOnly || cachingType == CachingTypes.Same )
-			{
-				resourceCaching		= true ;
-			}
-			if( cachingType == CachingTypes.AssetBundleOnly || cachingType == CachingTypes.Same )
-			{
-				assetBundleCaching	= true ;
-			}
+			bool cachingEnabled = ( cachingType != CachingTypes.None ) ;
 
 			//------------------------------------------------
 
 			// 同名型違いが存在するため型名を最後に付与する
-			string resourceCachePath = path + "/" + subAssetName + ":" + type.ToString() ;
+			string resourceCachePath = $"{path}/{subAssetName}:{type}" ;
 
 			//--------------
 
 			// キャッシュにあればそれを返す
-			if( m_ResourceCache != null && m_ResourceCache.ContainsKey( resourceCachePath ) == true )
+			if( m_ResourceCache.ContainsKey( resourceCachePath ) == true )
 			{
-				return m_ResourceCache[ resourceCachePath ].Get() ;
+				// キャッシュされているインスタンスを返す(参照カウントも増加する)
+				return m_ResourceCache[ resourceCachePath ].Load() ;
 			}
 
 			//------------------------------------------------
 
 			string localAssetPath = ToLocal( path ) ;
 
-			UnityEngine.Object asset = null ;
+			UnityEngine.Object						asset				= null ;
+			ManifestInfo.AssetBundleCacheElement	assetBundleCache	= null ;
 
 			// アセットバンドルからロードを試みる
 			if( GetManifestNameAndAssetBundleName( path, out string manifestName, out string assetBundlePath, out string assetPath ) == true )
@@ -1564,13 +1539,19 @@ namespace AssetBundleHelper
 #if UNITY_EDITOR
 					if( m_UseLocalAssets == true )
 					{
-						// ローカルアセットからロードを試みる
+						// LocalAssets からロードを試みる(同期)
 						asset = LoadLocalSubAsset( m_ManifestHash[ manifestName ].LocalAssetsRootPath, localAssetPath, subAssetName, type ) ;
 					}
 #endif
-					if( asset == null && string.IsNullOrEmpty( assetBundlePath ) == false && m_ManifestHash[ manifestName ].CorrectPath( ref assetBundlePath, ref assetPath ) == true )
+					if( asset == null && string.IsNullOrEmpty( assetBundlePath ) == false && m_ManifestHash[ manifestName ].CorrectPath( ref assetBundlePath, ref assetPath, out var isSingle ) == true )
 					{
-						asset = m_ManifestHash[ manifestName ].LoadSubAsset( assetBundlePath, assetPath, subAssetName, type, assetBundleCaching, false, localAssetPath, this ) ;
+						// LocalAssetBundle StreamingAssets RemoteAssetBundle からロードを試みる(同期)
+						( asset, assetBundleCache ) = m_ManifestHash[ manifestName ].LoadSubAsset
+						(
+							assetBundlePath, assetPath, subAssetName, type, isSingle,
+							localAssetPath,
+							this
+						) ;
 					}
 				}
 			}
@@ -1584,14 +1565,10 @@ namespace AssetBundleHelper
 			//------------------------------------------------
 
 			// 必要であればここでキャッシュに貯める
-			if( resourceCaching == true && m_ResourceCache != null && m_ResourceCache.ContainsKey( resourceCachePath ) == false )
+			if( cachingEnabled == true )
 			{
-//				Debug.Log( "--------------->キャッシュに追加:" + resourceCachePath ) ;
-				var element = new ResourceCacheElement( resourceCachePath, asset ) ;
-				m_ResourceCache.Add( resourceCachePath, element ) ;
-#if UNITY_EDITOR
-				m_ResourceCacheInfo.Add( element ) ;
-#endif
+				// アセット(リソース)キャッシュの追加
+				AddResourceCache( resourceCachePath, asset, assetBundleCache ) ;
 			}
 
 			//------------------------------------------------
@@ -1650,34 +1627,27 @@ namespace AssetBundleHelper
 		// アセットに含まれるサブアセットを取得する(非同期版)
 		private IEnumerator LoadSubAssetAsync_Private( string path, string subAssetName, Type type, Action<UnityEngine.Object> onLoaded, CachingTypes cachingType, bool keep, Request request )
 		{
-			bool resourceCaching = false ;
-			bool assetBundleCaching = false ;
-
-			if( cachingType == CachingTypes.ResourceOnly || cachingType == CachingTypes.Same )
-			{
-				resourceCaching		= true ;
-			}
-			if( cachingType == CachingTypes.AssetBundleOnly || cachingType == CachingTypes.Same )
-			{
-				assetBundleCaching	= true ;
-			}
+			bool cachingEnabled = ( cachingType != CachingTypes.None ) ;
 
 			//------------------------------------------------
 
 			// 同名型違いが存在するため型名を最後に付与する
-			string resourceCachePath = path + "/" + subAssetName + ":" + type.ToString() ;
+			string resourceCachePath = $"{path}/{subAssetName}:{type}" ;
 
 			//------------------------------------------------
 
 			UnityEngine.Object asset = null ;
 
 			// キャッシュにあればそれを返す
-			if( m_ResourceCache != null && m_ResourceCache.ContainsKey( resourceCachePath ) == true )
+			if( m_ResourceCache.ContainsKey( resourceCachePath ) == true )
 			{
-				asset = m_ResourceCache[ resourceCachePath ].Get() ;
+				// キャッシュされているインスタンスを返す(参照カウントも増加する)
+				asset = m_ResourceCache[ resourceCachePath ].Load() ;
+
 				request.Asset = asset ;
 				request.IsDone = true ;
 				onLoaded?.Invoke( asset ) ;
+
 				yield break ;
 			}
 
@@ -1687,6 +1657,7 @@ namespace AssetBundleHelper
 
 			string localAssetPath = ToLocal( path ) ;
 
+			ManifestInfo.AssetBundleCacheElement assetBundleCache = null ;
 			string error = string.Empty ;
 
 			// アセットバンドルからロードを試みる
@@ -1697,13 +1668,21 @@ namespace AssetBundleHelper
 #if UNITY_EDITOR
 					if( m_UseLocalAssets == true )
 					{
-						// ローカルアセットからロードを試みる
+						// LocalAssets からロードを試みる(非同期)
 						asset = LoadLocalSubAsset( m_ManifestHash[ manifestName ].LocalAssetsRootPath, localAssetPath, subAssetName, type ) ;
 					}
 #endif
-					if( asset == null && string.IsNullOrEmpty( assetBundlePath ) == false && m_ManifestHash[ manifestName ].CorrectPath( ref assetBundlePath, ref assetPath ) == true )
+					if( asset == null && string.IsNullOrEmpty( assetBundlePath ) == false && m_ManifestHash[ manifestName ].CorrectPath( ref assetBundlePath, ref assetPath, out var isSingle ) == true )
 					{
-						yield return StartCoroutine( m_ManifestHash[ manifestName ].LoadSubAsset_Coroutine( assetBundlePath, assetPath, subAssetName, type, assetBundleCaching, false, keep, ( _ ) => { asset = _ ; }, ( _ ) => { error = _ ; }, request, localAssetPath, this ) ) ;
+						// LocalAssetBundle StreamingAssets RemoteAssetBundle からロードを試みる(非同期)
+						yield return StartCoroutine( m_ManifestHash[ manifestName ].LoadSubAsset_Coroutine
+						(
+							assetBundlePath, assetPath, subAssetName, type, isSingle,
+							( _1, _2 ) => { asset = _1 ; assetBundleCache = _2 ; }, ( _ ) => { error = _ ; },
+							request,
+							localAssetPath,
+							this
+						) ) ;
 					}
 				}
 			}
@@ -1725,14 +1704,10 @@ namespace AssetBundleHelper
 			//------------------------------------------------
 
 			// 必要であればここでキャッシュに貯める
-			if( resourceCaching == true && m_ResourceCache != null && m_ResourceCache.ContainsKey( resourceCachePath ) == false )
+			if( cachingEnabled == true )
 			{
-//				Debug.Log( "--------------->キャッシュに追加:" + resourceCachePath ) ;
-				var element = new ResourceCacheElement( resourceCachePath, asset ) ;
-				m_ResourceCache.Add( resourceCachePath, element ) ;
-#if UNITY_EDITOR
-				m_ResourceCacheInfo.Add( element ) ;
-#endif
+				// アセット(リソース)キャッシュの追加
+				AddResourceCache( resourceCachePath, asset, assetBundleCache ) ;
 			}
 
 			//------------------------------------------------
@@ -1763,13 +1738,13 @@ namespace AssetBundleHelper
 			}
 
 			// ジェネリック配列へのキャストは出来ないので配列の個々単位でにキャストする必要がある
-			UnityEngine.Object[] temporaryAssets = m_Instance.LoadAllSubAssets_Private( path, typeof( T ), cachingType ) ;
+			var temporaryAssets = m_Instance.LoadAllSubAssets_Private( path, typeof( T ), cachingType ) ;
 			if( temporaryAssets == null || temporaryAssets.Length == 0 )
 			{
 				return null ;
 			}
 
-			T[] assets = new T[ temporaryAssets.Length ] ;
+			var assets = new T[ temporaryAssets.Length ] ;
 			for( int i  = 0 ; i <  temporaryAssets.Length ; i ++ )
 			{
 				assets[ i ] = temporaryAssets[ i ] as T ;
@@ -1796,17 +1771,7 @@ namespace AssetBundleHelper
 		// アセットバンドル内の指定の型の全てのサブアセットを直接取得する(同期版)
 		private UnityEngine.Object[] LoadAllSubAssets_Private( string path, Type type, CachingTypes cachingType )
 		{
-			bool resourceCaching = false ;
-			bool assetBundleCaching = false ;
-
-			if( cachingType == CachingTypes.ResourceOnly || cachingType == CachingTypes.Same )
-			{
-				resourceCaching		= true ;
-			}
-			if( cachingType == CachingTypes.AssetBundleOnly || cachingType == CachingTypes.Same )
-			{
-				assetBundleCaching	= true ;
-			}
+			bool cachingEnabled = ( cachingType != CachingTypes.None ) ;
 
 			//------------------------------------------------
 
@@ -1814,7 +1779,8 @@ namespace AssetBundleHelper
 			
 			//------------------------------------------------
 
-			UnityEngine.Object[] assets = null ;
+			UnityEngine.Object[]					assets				= null ;
+			ManifestInfo.AssetBundleCacheElement	assetBundleCache	= null ;
 
 			string localAssetPath = ToLocal( path ) ;
 
@@ -1828,26 +1794,32 @@ namespace AssetBundleHelper
 
 					if( m_UseLocalAssets == true && ( assets == null || assets.Length == 0 ) )
 					{
-						// ローカルアセットバンドルパスからロードを試みる
+						// LocalAssets からロードを試みる(同期)
 						temporaryAssets = LoadLocalAllSubAssets( m_ManifestHash[ manifestName ].LocalAssetsRootPath, localAssetPath, type ) ;
 						if( temporaryAssets != null && temporaryAssets.Length >  0 )
 						{
 							for( int i  = 0 ; i <  temporaryAssets.Length ; i ++ )
 							{
-								resourceCachePath = path + "/" + temporaryAssets[ i ].name + ":" + type.ToString() ;
-								if( m_ResourceCache != null && m_ResourceCache.ContainsKey( resourceCachePath ) == true )
+								resourceCachePath = $"{path}/{temporaryAssets[ i ].name}:{type}" ;
+								if( m_ResourceCache.ContainsKey( resourceCachePath ) == true )
 								{
-									// キャッシュにあればそれを返す
-									temporaryAssets[ i ] = m_ResourceCache[ resourceCachePath ].Get() ;
+									// キャッシュされているインスタンスを返す(参照カウントも増加する)
+									temporaryAssets[ i ] = m_ResourceCache[ resourceCachePath ].Load() ;
 								}
 							}
 							assets = temporaryAssets ;
 						}
 					}
 #endif
-					if( ( assets == null || assets.Length == 0 ) && string.IsNullOrEmpty( assetBundlePath ) == false && m_ManifestHash[ manifestName ].CorrectPath( ref assetBundlePath, ref assetPath ) == true )
+					if( ( assets == null || assets.Length == 0 ) && string.IsNullOrEmpty( assetBundlePath ) == false && m_ManifestHash[ manifestName ].CorrectPath( ref assetBundlePath, ref assetPath, out var isSingle ) == true )
 					{
-						assets = m_ManifestHash[ manifestName ].LoadAllSubAssets( assetBundlePath, assetPath, type, assetBundleCaching, false, localAssetPath, this ) ;
+						// LocalAssetBundle StreamingAssets RemoteAssetBundle からロードを試みる(同期)
+						( assets, assetBundleCache ) = m_ManifestHash[ manifestName ].LoadAllSubAssets
+						(
+							assetBundlePath, assetPath, type, isSingle,
+							localAssetPath,
+							this
+						) ;
 					}
 				}
 			}
@@ -1861,19 +1833,15 @@ namespace AssetBundleHelper
 			//------------------------------------------------
 
 			// 必要であればここでキャッシュに貯める
-			if( resourceCaching == true && m_ResourceCache != null )
+			if( cachingEnabled == true )
 			{
 				foreach( var asset in assets )
 				{
-					resourceCachePath = path + "/" + asset.name + ":" + type.ToString() ;
+					resourceCachePath = $"{path}/{asset.name}:{type}" ;
 					if( m_ResourceCache.ContainsKey( resourceCachePath ) == false )
 					{
-//						Debug.Log( "--------------->キャッシュに追加:" + resourceCachePath ) ;
-						var element = new ResourceCacheElement( resourceCachePath, asset ) ;
-						m_ResourceCache.Add( resourceCachePath, element ) ;
-#if UNITY_EDITOR
-						m_ResourceCacheInfo.Add( element ) ;
-#endif
+						// アセット(リソース)キャッシュの追加
+						AddResourceCache( resourceCachePath, asset, assetBundleCache ) ;
 					}
 				}
 			}
@@ -1910,7 +1878,7 @@ namespace AssetBundleHelper
 				{
 					if( onLoaded != null && temporaryAssets != null && temporaryAssets.Length >  0 )
 					{
-						T[] assets = new T[ temporaryAssets.Length ] ;
+						var assets = new T[ temporaryAssets.Length ] ;
 						for( int i  = 0 ; i <  temporaryAssets.Length ; i ++ )
 						{
 							assets[ i ] = temporaryAssets[ i ] as T ;
@@ -1948,17 +1916,7 @@ namespace AssetBundleHelper
 		// アセットに含まれる全てのサブアセットを取得する(非同期版)
 		private IEnumerator LoadAllSubAssetsAsync_Private( string path, Type type, Action<UnityEngine.Object[]> onLoaded, CachingTypes cachingType, bool keep, Request request )
 		{
-			bool resourceCaching = false ;
-			bool assetBundleCaching = false ;
-
-			if( cachingType == CachingTypes.ResourceOnly || cachingType == CachingTypes.Same )
-			{
-				resourceCaching		= true ;
-			}
-			if( cachingType == CachingTypes.AssetBundleOnly || cachingType == CachingTypes.Same )
-			{
-				assetBundleCaching	= true ;
-			}
+			bool cachingEnabled = ( cachingType != CachingTypes.None ) ;
 
 			//------------------------------------------------
 
@@ -1968,7 +1926,8 @@ namespace AssetBundleHelper
 
 			m_AsyncProcessingCount ++ ;
 
-			UnityEngine.Object[] assets = null ;
+			UnityEngine.Object[]					assets				= null ;
+			ManifestInfo.AssetBundleCacheElement	assetBundleCache	= null ; 
 			string error = string.Empty ;
 
 			string localAssetPath = ToLocal( path ) ;
@@ -1983,26 +1942,34 @@ namespace AssetBundleHelper
 
 					if( m_UseLocalAssets == true )
 					{
-						// ローカルアセットバンドルパスからロードを試みる
+						// LocalAssets からロードを試みる(非同期)
 						temporaryAssets = LoadLocalAllSubAssets( m_ManifestHash[ manifestName ].LocalAssetsRootPath, localAssetPath, type ) ;
 						if( temporaryAssets != null && temporaryAssets.Length >  0 )
 						{
 							for( int  i = 0 ; i <  temporaryAssets.Length ; i ++ )
 							{
-								resourceCachePath = path + "/" + temporaryAssets[ i ].name + ":" + type.ToString() ;
-								if( m_ResourceCache != null && m_ResourceCache.ContainsKey( resourceCachePath ) == true )
+								resourceCachePath = $"{path}/{temporaryAssets[ i ].name}:{type}" ;
+								if( m_ResourceCache.ContainsKey( resourceCachePath ) == true )
 								{
-									// キャッシュにあればそれを返す
-									temporaryAssets[ i ] = m_ResourceCache[ resourceCachePath ].Get() ;
+									// キャッシュされているインスタンスを返す(参照カウントも増加する)
+									temporaryAssets[ i ] = m_ResourceCache[ resourceCachePath ].Load() ;
 								}
 							}
 							assets = temporaryAssets ;
 						}
 					}
 #endif
-					if( ( assets == null || assets.Length == 0 ) && string.IsNullOrEmpty( assetBundlePath ) == false && m_ManifestHash[ manifestName ].CorrectPath( ref assetBundlePath, ref assetPath ) == true )
+					if( ( assets == null || assets.Length == 0 ) && string.IsNullOrEmpty( assetBundlePath ) == false && m_ManifestHash[ manifestName ].CorrectPath( ref assetBundlePath, ref assetPath, out var isSingle ) == true )
 					{
-						yield return StartCoroutine( m_ManifestHash[ manifestName ].LoadAllSubAssets_Coroutine( assetBundlePath, assetPath, type, assetBundleCaching, false, keep, ( _ ) => { assets = _ ; }, ( _ ) => { error = _ ; }, request, localAssetPath, this ) ) ;
+						// LocalAssetBundle StreamingAssets RemoteAssetBundle からロードを試みる(非同期)
+						yield return StartCoroutine( m_ManifestHash[ manifestName ].LoadAllSubAssets_Coroutine
+						(
+							assetBundlePath, assetPath, type, isSingle,
+							( _1, _2 ) => { assets = _1 ; assetBundleCache = _2 ; }, ( _ ) => { error = _ ; },
+							request,
+							localAssetPath,
+							this
+						) ) ;
 					}
 				}
 			}
@@ -2024,19 +1991,15 @@ namespace AssetBundleHelper
 			//------------------------------------------------
 
 			// 必要であればここでキャッシュに貯める
-			if( resourceCaching == true && m_ResourceCache != null )
+			if( cachingEnabled == true )
 			{
 				foreach( var asset in assets )
 				{
-					resourceCachePath = path + "/" + asset.name + ":" + type.ToString() ;
+					resourceCachePath = $"{path}/{asset.name}:{type}" ;
 					if( m_ResourceCache.ContainsKey( resourceCachePath ) == false )
 					{
-//						Debug.Log( "--------------->キャッシュに追加:" + resourceCachePath ) ;
-						var element = new ResourceCacheElement( resourceCachePath, asset ) ;
-						m_ResourceCache.Add( resourceCachePath, element ) ;
-#if UNITY_EDITOR
-						m_ResourceCacheInfo.Add( element ) ;
-#endif
+						// アセット(リソース)キャッシュの追加
+						AddResourceCache( resourceCachePath, asset, assetBundleCache ) ;
 					}
 				}
 			}
@@ -2048,6 +2011,45 @@ namespace AssetBundleHelper
 			onLoaded?.Invoke( assets ) ;
 
 			m_AsyncProcessingCount -- ;
+		}
+
+		//-----------------------------------------------------------
+
+		/// <summary>
+		/// アセット(リソース)を破棄する
+		/// </summary>
+		/// <param name="asset"></param>
+		/// <returns></returns>
+		public static bool FreeAsset( UnityEngine.Object asset, bool isForce = false )
+		{
+			if( m_Instance == null || asset == null )
+			{
+				return false ;
+			}
+			return m_Instance.FreeAsset_Private( asset, isForce ) ;
+		}
+
+		// アセット(リソース)を破棄する
+		private bool FreeAsset_Private( UnityEngine.Object asset, bool isForce )
+		{
+			if( m_ResourceCacheDetector.ContainsKey( asset ) == false )
+			{
+				// キャッシユされているものではない
+				return false ;
+			}
+
+			//----------------------------------
+
+			var resourceCache = m_ResourceCacheDetector[ asset ] ;
+
+			// アセット(リソース)の参照カウントを減少させる
+			if( resourceCache.Free( isForce ) == true )
+			{
+				// アセット(リソース)の参照カウントが０になったのでアセット(リソース)のキャッシュを削除する
+				RemoveResourceCache( resourceCache.Path ) ;
+			}
+
+			return true ;
 		}
 		
 		//---------------------------------------------------------------------------
@@ -2216,7 +2218,9 @@ namespace AssetBundleHelper
 			m_AsyncProcessingCount ++ ;
 
 			bool			result = false ;
-			AssetBundle		assetBundle = null ;
+
+			AssetBundle								assetBundle			= null ;
+			ManifestInfo.AssetBundleCacheElement	assetBundleCache	= null ;
 
 			UnityEngine.Object[] targets = null ;
 			string error = string.Empty ;
@@ -2229,7 +2233,7 @@ namespace AssetBundleHelper
 #if UNITY_EDITOR
 					if( m_UseLocalAssets == true )
 					{
-						// ローカルアセットからロードを試みる
+						// LocalAssets からロードを試みる(非同期)
 						error = string.Empty ;
 						yield return StartCoroutine( OpenLocalSceneAsync( m_ManifestHash[ manifestName ].LocalAssetsRootPath, path, sceneName, type, mode, ( _ ) => { error = _ ; } ) ) ;
 						result = string.IsNullOrEmpty( error ) ;
@@ -2240,9 +2244,17 @@ namespace AssetBundleHelper
 						}
 					}
 #endif
-					if( result == false && string.IsNullOrEmpty( assetBundlePath ) == false && m_ManifestHash[ manifestName ].CorrectPath( ref assetBundlePath, ref assetPath ) == true )
+					if( result == false && string.IsNullOrEmpty( assetBundlePath ) == false && m_ManifestHash[ manifestName ].CorrectPath( ref assetBundlePath, ref assetPath, out _ ) == true )
 					{
-						yield return StartCoroutine( m_ManifestHash[ manifestName ].LoadAssetBundle_Coroutine( assetBundlePath, false, false, keep, ( _ ) => { assetBundle = _ ; }, ( _ ) => { error = _ ; }, request, this ) ) ;
+						// LocalAssetBundle StreamingAssets RemoteAssetBundle からロードを試みる(非同期)
+						yield return StartCoroutine( m_ManifestHash[ manifestName ].LoadAssetBundle_Coroutine
+						(
+							assetBundlePath,
+							( _1, _2 ) => { assetBundle = _1 ; assetBundleCache = _2 ; }, ( _ ) => { error = _ ; },
+							request,
+							this
+						) ) ;
+
 						if( assetBundle != null )
 						{
 							if( assetBundle.isStreamedSceneAssetBundle == true )
@@ -2261,7 +2273,7 @@ namespace AssetBundleHelper
 							if( result == false )
 							{
 								// 成功の場合は自動破棄リストに追加する(Unload(false))
-								m_ManifestHash[ manifestName ].RemoveAssetBundleCacheForced( assetBundlePath ) ;
+								m_ManifestHash[ manifestName ].RemoveAssetBundleCacheForced( assetBundlePath, false ) ;
 							}
 							else
 							{
@@ -2288,6 +2300,8 @@ namespace AssetBundleHelper
 			}
 
 			//------------------------------------------------
+
+			// シーンに関しては原則破棄後に Resources.UnloadUnusedAssets() が実行されるため AssetBundle をキャッシュに貯めるという事はしない
 
 			request.Assets = targets ;
 			request.IsDone = true ;
@@ -2361,7 +2375,7 @@ namespace AssetBundleHelper
 			// 指定の型のコンポーネントを探してインスタンスを取得する
 			var fullTargets = new List<UnityEngine.Object>() ;
 
-			GameObject[] gos = scene.GetRootGameObjects() ;
+			var gos = scene.GetRootGameObjects() ;
 			if( gos != null && gos.Length >  0 )
 			{
 				UnityEngine.Object[] components ;
@@ -2423,31 +2437,42 @@ namespace AssetBundleHelper
 		/// <param name="path"></param>
 		/// <param name="retain"></param>
 		/// <returns></returns>
-		public static bool LoadAssetBundle( string path, bool retain = false )
+		public static AssetBundle LoadAssetBundle( string path )
 		{
 			if( m_Instance == null )
 			{
-				return false ;
+				return null ;
 			}
-			return m_Instance.LoadAssetBundle_Private( path, retain ) ;
+			return m_Instance.LoadAssetBundle_Private( path ) ;
 		}
 
 		// アセットバンドルを展開する(同期版)
-		private bool LoadAssetBundle_Private( string path, bool retain )
+		private AssetBundle LoadAssetBundle_Private( string path )
 		{
+			// 注意：アセットバンドル自体は原則キャッシュに溜まりシーンの切替時に強制的に破棄される
+			// 　　　NoCaching にした場合のみキャッシュに貯めるという事はせず解放の責任がエンドユーザーに任される
+			// 　　　キャッシュにためた場合はリリースメソッドにより参照カウントを下げて破棄する事が可能
+			// 　　　特例としてこのリリースメソッドのみ参照カウントが０になった際にアセットの強制破棄を行うかどうかも選択する事が出来る
+
+			AssetBundle								assetBundle			= null ;
+//			ManifestInfo.AssetBundleCacheElement	assetBundleCache	= null ;
+
 			if( GetManifestNameAndAssetBundleName( path, out string manifestName, out string assetBundlePath, out string assetPath ) == true )
 			{
 				if( string.IsNullOrEmpty( manifestName ) == false && m_ManifestHash.ContainsKey( manifestName ) == true )
 				{
-					if( string.IsNullOrEmpty( assetBundlePath ) == false && m_ManifestHash[ manifestName ].CorrectPath( ref assetBundlePath, ref assetPath ) == true )
+					if( string.IsNullOrEmpty( assetBundlePath ) == false && m_ManifestHash[ manifestName ].CorrectPath( ref assetBundlePath, ref assetPath, out _ ) == true )
 					{
-						return m_ManifestHash[ manifestName ].LoadAssetBundle( assetBundlePath, true, retain, m_Instance ) != null ;
+						( assetBundle, _ ) = m_ManifestHash[ manifestName ].LoadAssetBundle
+						(
+							assetBundlePath,
+							m_Instance
+						) ;
 					}
 				}
 			}
 
-			// 失敗
-			return false ;
+			return assetBundle ;
 		}
 
 		//-----------------------------------
@@ -2459,7 +2484,7 @@ namespace AssetBundleHelper
 		/// <param name="onLoaded">アセットバンドルのインスタンスを取得するコールバック</param>
 		/// <param name="keep">キャッシュオーバー時の動作(true=キャッシュオーバー時に保持する・false=キャッシュオーバー時に破棄する)</param>
 		/// <returns>列挙子</returns>
-		public static Request LoadAssetBundleAsync( string path, bool isRetain = false, bool keep = false )
+		public static Request LoadAssetBundleAsync( string path )
 		{
 			// 必ず自前で Unload を行わなければならない
 			if( m_Instance == null )
@@ -2469,12 +2494,12 @@ namespace AssetBundleHelper
 			}
 
 			var request = new Request( m_Instance ) ;
-			m_Instance.StartCoroutine( m_Instance.LoadAssetBundleAsync_Private( path, isRetain, keep, request ) ) ;
+			m_Instance.StartCoroutine( m_Instance.LoadAssetBundleAsync_Private( path, request ) ) ;
 			return request ;
 		}
 
 		// アセットバンドルを展開する(非同期版)
-		private IEnumerator LoadAssetBundleAsync_Private( string path, bool isRetain, bool keep, Request request )
+		private IEnumerator LoadAssetBundleAsync_Private( string path, Request request )
 		{
 			m_AsyncProcessingCount ++ ;
 
@@ -2485,9 +2510,15 @@ namespace AssetBundleHelper
 			{
 				if( string.IsNullOrEmpty( manifestName ) == false && m_ManifestHash.ContainsKey( manifestName ) == true )
 				{
-					if( string.IsNullOrEmpty( assetBundlePath ) == false && m_ManifestHash[ manifestName ].CorrectPath( ref assetBundlePath, ref assetPath ) == true )
+					if( string.IsNullOrEmpty( assetBundlePath ) == false && m_ManifestHash[ manifestName ].CorrectPath( ref assetBundlePath, ref assetPath, out _ ) == true )
 					{
-						yield return StartCoroutine( m_ManifestHash[ manifestName ].LoadAssetBundle_Coroutine( assetBundlePath, true, isRetain, keep, null, ( _ ) => { error = _ ; }, request, this ) ) ;
+						yield return StartCoroutine( m_ManifestHash[ manifestName ].LoadAssetBundle_Coroutine
+						(
+							assetBundlePath,
+							null, ( _ ) => { error = _ ; },
+							request,
+							this
+						) ) ;
 					}
 				}
 			}
@@ -2503,10 +2534,14 @@ namespace AssetBundleHelper
 
 			request.IsDone = true ;
 
+			// アセットバンドルに関しては強制的にキャッシュに貯める
+
 			m_AsyncProcessingCount -- ;
 		}
 
 		//-----------------------------------
+
+		// 将来的に引数にインスタンス版を用意する可能性が高い
 
 		/// <summary>
 		/// アセットバンドルを破棄する(同期版)
@@ -2530,9 +2565,9 @@ namespace AssetBundleHelper
 			{
 				if( string.IsNullOrEmpty( manifestName ) == false && m_ManifestHash.ContainsKey( manifestName ) == true )
 				{
-					if( string.IsNullOrEmpty( assetBundlePath ) == false && m_ManifestHash[ manifestName ].CorrectPath( ref assetBundlePath, ref assetPath ) == true )
+					if( string.IsNullOrEmpty( assetBundlePath ) == false && m_ManifestHash[ manifestName ].CorrectPath( ref assetBundlePath, ref assetPath, out _ ) == true )
 					{
-						return m_ManifestHash[ manifestName ].RemoveAssetBundleCacheForced( assetBundlePath ) ;
+						return m_ManifestHash[ manifestName ].RemoveAssetBundleCacheForced( assetBundlePath, true ) ;
 					}
 				}
 			}
@@ -2543,7 +2578,39 @@ namespace AssetBundleHelper
 
 		//-----------------------------------------------------------
 
-		//-----------------------------------
+		/// <summary>
+		/// 通常のメモリ展開アセットバンドルの破棄でアセットバンドルが破棄されないようにするかどうかの設定を行う
+		/// </summary>
+		/// <param name="isRetain"></param>
+		/// <returns></returns>
+		public static bool SetAssetBundleRetaining( string path, bool isRetain, bool withAssets = true )
+		{
+			if( m_Instance == null )
+			{
+				return false ;
+			}
+			return m_Instance.SetAssetBundleRetaining_Private( path, isRetain, withAssets ) ;
+		}
+
+		// 通常のメモリ展開アセットバンドルの破棄でアセットバンドルが破棄されないようにするかどうかの設定を行う
+		private bool SetAssetBundleRetaining_Private( string path, bool isRetain, bool withAssets )
+		{
+			if( GetManifestNameAndAssetBundleName( path, out string manifestName, out string assetBundlePath, out string assetPath ) == true )
+			{
+				if( string.IsNullOrEmpty( manifestName ) == false && m_ManifestHash.ContainsKey( manifestName ) == true )
+				{
+					if( string.IsNullOrEmpty( assetBundlePath ) == false && m_ManifestHash[ manifestName ].CorrectPath( ref assetBundlePath, ref assetPath, out _ ) == true )
+					{
+						return m_ManifestHash[ manifestName ].SetAssetBundleRetaining( assetBundlePath, isRetain, withAssets ) ;
+					}
+				}
+			}
+
+			// 失敗
+			return false ;
+		}
+
+		//-----------------------------------------------------------
 
 		/// <summary>
 		/// アセットバンドルをストレージキャッシュから削除する
@@ -2568,7 +2635,7 @@ namespace AssetBundleHelper
 			{
 				if( string.IsNullOrEmpty( manifestName ) == false && m_ManifestHash.ContainsKey( manifestName ) == true )
 				{
-					if( string.IsNullOrEmpty( assetBundlePath ) == false && m_ManifestHash[ manifestName ].CorrectPath( ref assetBundlePath, ref assetPath ) == true )
+					if( string.IsNullOrEmpty( assetBundlePath ) == false && m_ManifestHash[ manifestName ].CorrectPath( ref assetBundlePath, ref assetPath, out _ ) == true )
 					{
 						return m_ManifestHash[ manifestName ].DeleteAssetBundleFromStorageCache( assetBundlePath, this ) ;
 					}
@@ -2603,6 +2670,7 @@ namespace AssetBundleHelper
 				if( string.IsNullOrEmpty( manifestName ) == false && m_ManifestHash.ContainsKey( manifestName ) == true )
 				{
 #if UNITY_EDITOR
+					// LocalAssets
 					if( m_UseLocalAssets == true )
 					{
 						if( ContainsLocalAsset( m_ManifestHash[ manifestName ].LocalAssetsRootPath, ToLocal( path ) ) == true )
@@ -2611,7 +2679,8 @@ namespace AssetBundleHelper
 						}
 					}
 #endif
-					if( string.IsNullOrEmpty( assetBundlePath ) == false && m_ManifestHash[ manifestName ].CorrectPath( ref assetBundlePath, ref assetPath ) == true)
+					// LocalAssetBundle StreamingAssets RemoteAssetBundle
+					if( string.IsNullOrEmpty( assetBundlePath ) == false && m_ManifestHash[ manifestName ].CorrectPath( ref assetBundlePath, ref assetPath, out _ ) == true)
 					{
 						return m_ManifestHash[ manifestName ].Contains( assetBundlePath ) ;
 					}
@@ -2645,7 +2714,7 @@ namespace AssetBundleHelper
 				if( string.IsNullOrEmpty( manifestName ) == false && m_ManifestHash.ContainsKey( manifestName ) == true )
 				{
 #if UNITY_EDITOR
-					// ローカルアセットで確認する
+					// LocalAssets
 					if( m_UseLocalAssets == true )
 					{
 						if( ContainsLocalAsset( m_ManifestHash[ manifestName ].LocalAssetsRootPath, ToLocal( path ) ) == true )
@@ -2654,7 +2723,8 @@ namespace AssetBundleHelper
 						}
 					}
 #endif
-					if( string.IsNullOrEmpty( assetBundlePath ) == false && m_ManifestHash[ manifestName ].CorrectPath( ref assetBundlePath, ref assetPath ) == true )
+					// LocalAssetBundle StreamingAssets RemoteAssetBundle
+ 					if( string.IsNullOrEmpty( assetBundlePath ) == false && m_ManifestHash[ manifestName ].CorrectPath( ref assetBundlePath, ref assetPath, out _ ) == true )
 					{
 						return m_ManifestHash[ manifestName ].Exists( assetBundlePath ) ;
 					}
@@ -2686,12 +2756,13 @@ namespace AssetBundleHelper
 			{
 				if( string.IsNullOrEmpty( manifestName ) == false && m_ManifestHash.ContainsKey( manifestName ) == true )
 				{
-					if( string.IsNullOrEmpty( assetBundlePath ) == false && m_ManifestHash[ manifestName ].CorrectPath( ref assetBundlePath, ref assetPath ) == true )
+					if( string.IsNullOrEmpty( assetBundlePath ) == false && m_ManifestHash[ manifestName ].CorrectPath( ref assetBundlePath, ref assetPath, out _ ) == true )
 					{
 						return m_ManifestHash[ manifestName ].GetSize( assetBundlePath ) ;
 					}
 				}
 			}
+
 			return -1 ;
 		}
 
@@ -2719,12 +2790,13 @@ namespace AssetBundleHelper
 			{
 				if( string.IsNullOrEmpty( manifestName ) == false && m_ManifestHash.ContainsKey( manifestName ) == true )
 				{
-					if( string.IsNullOrEmpty( assetBundlePath ) == false && m_ManifestHash[ manifestName ].CorrectPath( ref assetBundlePath, ref assetPath ) == true )
+					if( string.IsNullOrEmpty( assetBundlePath ) == false && m_ManifestHash[ manifestName ].CorrectPath( ref assetBundlePath, ref assetPath, out _ ) == true )
 					{
 						return m_ManifestHash[ manifestName ].SetKeepFlag( assetBundlePath, keep ) ;
 					}
 				}
 			}
+
 			return false ;
 		}
 
@@ -2756,12 +2828,13 @@ namespace AssetBundleHelper
 #if UNITY_EDITOR
 					if( m_UseLocalAssets == true )
 					{
-						// ローカルアセットからファイルパス取得を試みる
+						// LocalAssets からパス取得を試みる(同期)
 						filePath = GetLocalAssetFilePath( m_ManifestHash[ manifestName ].LocalAssetsRootPath, ToLocal( path ) ) ;
 					}
 #endif
-					if( string.IsNullOrEmpty( filePath ) == true && string.IsNullOrEmpty( assetBundlePath ) == false && m_ManifestHash[ manifestName ].CorrectPath( ref assetBundlePath, ref assetPath ) == true )
+					if( string.IsNullOrEmpty( filePath ) == true && string.IsNullOrEmpty( assetBundlePath ) == false && m_ManifestHash[ manifestName ].CorrectPath( ref assetBundlePath, ref assetPath, out _ ) == true )
 					{
+						// LocalAssetBundle StreamingAssets RemoteAssetBundle からパス取得を試みる(同期)
 						filePath = m_ManifestHash[ manifestName ].GetAssetFilePath( assetBundlePath, m_Instance ) ;
 					}
 				}

@@ -11,6 +11,7 @@ using UnityEngine ;
 
 using StorageHelper ;
 
+
 /// <summary>
 /// アセットバンドルヘルパーパッケージ
 /// </summary>
@@ -30,19 +31,19 @@ namespace AssetBundleHelper
 		{
 			if( string.IsNullOrEmpty( fileName ) == true )
 			{
-				return "" ;
+				return string.Empty ;
 			}
 
-			byte[] data = Encoding.UTF8.GetBytes( fileName ) ;
+			var data = Encoding.UTF8.GetBytes( fileName ) ;
 			return GetHash( data ) ;
 		}
 
 		// ハッシュコードを計算する
 		private static string GetHash( byte[] data )
 		{
-			byte[] hash = m_HashGenerator.ComputeHash( data ) ;
+			var hash = m_HashGenerator.ComputeHash( data ) ;
 
-			string text = "" ;
+			string text = string.Empty ;
 			foreach( var code in hash )
 			{
 				text += code.ToString( "x2" ) ;
@@ -63,8 +64,9 @@ namespace AssetBundleHelper
 
 			if( string.IsNullOrEmpty( fileName ) == false )
 			{
-				path = path + "/" + fileName ;
+				path = $"{path}/{fileName}" ;
 			}
+
 			return path ;
 		}
 
@@ -88,7 +90,7 @@ namespace AssetBundleHelper
 
 		private static string File_LoadText( string fullPath )
 		{
-			byte[] data = File_Load( fullPath ) ;
+			var data = File_Load( fullPath ) ;
 			if( data == null )
 			{
 				return null ;

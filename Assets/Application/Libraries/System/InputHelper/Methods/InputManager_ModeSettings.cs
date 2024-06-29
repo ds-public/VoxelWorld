@@ -110,37 +110,23 @@ namespace InputHelper
 		}
 
 		//-------------------------------------------------------------------------------------------
+		// コンポーネントなので public フィールドを使ってはいけない(インスタンスが生成された際にデフォルト値で初期化されてしまい事前に設定した値は無効化される)
+
+		/// <summary>
+		/// カーソルの制御状態
+		/// </summary>
+		public static bool CursorProcessing => m_CursorProcessing ;
 
 		// カーソルの制御状態
-		public bool CursorProcessing = true ;
+		private static bool m_CursorProcessing = true ;
 
 		/// <summary>
 		/// カーソルの制御の有無を設定する
 		/// </summary>
 		/// <returns></returns>
-		public static bool SetCursorProcessing( bool state )
+		public static void SetCursorProcessing( bool state )
 		{
-			if( m_Instance == null )
-			{
-				// 失敗
-				return false ;
-			}
-
-			m_Instance.CursorProcessing = state ;
-
-			return true ;
-		}
-
-		/// <summary>
-		/// カーソルの制御の有無
-		/// </summary>
-		public static bool GetCursorProcessing()
-		{
-			if( m_Instance == null )
-			{
-				return false ;
-			}
-			return m_Instance.CursorProcessing ;
+			m_CursorProcessing = state ;
 		}
 
 		//---------------
@@ -151,8 +137,13 @@ namespace InputHelper
 		// システム制御のカーソルの表示状態
 		private bool m_SystemCursorVisible = true ;
 
-		// カーソルの表示状態
-		public bool CursorVisible = true ;
+		/// <summary>
+		/// カーソルの表示状態(public のフィールドにしてはいけない)
+		/// </summary>
+		public bool CursorVisible => m_CursorVisible ;
+
+		// カーソルの表示状態(public のフィールドにしてはいけない)
+		private bool m_CursorVisible = true ;
 
 		/// <summary>
 		/// カーソルの表示状態のを設定する
@@ -166,21 +157,9 @@ namespace InputHelper
 				return false ;
 			}
 
-			m_Instance.CursorVisible = state ;
+			m_Instance.m_CursorVisible = state ;
 
 			return true ;
-		}
-
-		/// <summary>
-		/// カーソルの表示状態を取得する
-		/// </summary>
-		public static bool GetCursorVisible()
-		{
-			if( m_Instance == null )
-			{
-				return true ;
-			}
-			return m_Instance.CursorVisible ;
 		}
 	}
 }

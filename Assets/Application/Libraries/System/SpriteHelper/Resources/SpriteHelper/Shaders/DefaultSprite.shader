@@ -1,4 +1,4 @@
-Shader "MeshHelper/Default2D"
+Shader "SpriteHelper/DefaultSprite"
 {
 	Properties
 	{
@@ -63,7 +63,7 @@ Shader "MeshHelper/Default2D"
 				struct v2f
 				{
 					float4 vertex : SV_POSITION ;
-					half2 texcoord : TEXCOORD0 ;
+					half2  texcoord : TEXCOORD0 ;
 					fixed4 color : COLOR ;
 				} ;
 	

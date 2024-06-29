@@ -10,12 +10,11 @@ using UnityEngine.U2D ;
 // 要 AssetBundleHelper パッケージ
 using AssetBundleHelper ;
 
-using uGUIHelper ;
 
 namespace DSW
 {
 	/// <summary>
-	/// アセットクラス(アセット全般の読み出しに使用する) Version 2022/10/04 0
+	/// アセットクラス(アセット全般の読み出しに使用する) Version 2024/05/08 0
 	/// </summary>
 	public class Asset : ExMonoBehaviour
 	{
@@ -36,10 +35,24 @@ namespace DSW
 		/// </summary>
 		public enum CachingTypes
 		{
+			/// <summary>
+			/// キャッシュ機構を使用しない
+			/// </summary>
 			None			= 0,	// キャッシュしない
+
+			[Obsolete( "Use ReferenceCount")]
 			ResourceOnly	= 1,	// リソースのみキャッシャする
+
+			[Obsolete( "Use ReferenceCount")]
 			AssetBundleOnly	= 2,	// アセットバンドルのみキャッシュする
+
+			[Obsolete( "Use ReferenceCount")]
 			Same			= 3,	// リソース・アセットバンドルともにキャッシュする
+
+			/// <summary>
+			/// 参照カウント方式でキャッシュする
+			/// </summary>
+			ReferenceCount	= 4,	// 参照カウント方式でキャッシュする
 		}
 
 		// 注意：アセットバンドルから展開させるリソースのインスタンスについて
@@ -81,10 +94,10 @@ namespace DSW
 		/// <param name="path"></param>
 		/// <param name="cachingType"></param>
 		/// <returns></returns>
-		public static ( string, Type )[] GetAllPaths( string path, CachingTypes cachingType = CachingTypes.None, bool isOriginal = false )
+		public static ( string, Type )[] GetAllPaths( string path, bool isOriginal = false )
 		{
 			// 同期版で失敗してもエラーダイアログは表示されないので同期ロードは成功前提です
-			return AssetBundleManager.GetAllAssetPaths( path, ( AssetBundleManager.CachingTypes )cachingType, isOriginal ) ;
+			return AssetBundleManager.GetAllAssetPaths( path, isOriginal ) ;
 		}
 
 		/// <summary>
@@ -95,12 +108,12 @@ namespace DSW
 		/// <param name="asset">読み出されたアセットのインスタンスを格納する要素数１以上の任意のコンポーネント型の配列</param>
 		/// <param name="caching">読み出されたアセットをメモリキャッシュにためるかどうか</param>
 		/// <returns>列挙子</returns>
-		public static async UniTask<( string, Type )[]> GetAllPathsAsync( string path, CachingTypes cachingType = CachingTypes.None, bool isNoDialog = false, bool isOriginal = false )
+		public static async UniTask<( string, Type )[]> GetAllPathsAsync( string path, bool isNoDialog = false, bool isOriginal = false )
 		{
 			( string, Type )[] allAssetPaths = null ;
 
 			// 高速化のためまず同期ロードを行う
-			allAssetPaths = AssetBundleManager.GetAllAssetPaths( path, ( AssetBundleManager.CachingTypes )cachingType, isOriginal ) ;
+			allAssetPaths = AssetBundleManager.GetAllAssetPaths( path, isOriginal ) ;
 			if( allAssetPaths != null )
 			{
 				// 成功(awaitを実行させない)
@@ -111,7 +124,7 @@ namespace DSW
 			while( true )
 			{
 				allAssetPaths = null ;
-				var assetRequest = AssetBundleManager.GetAllAssetPathsAsync( path, ( _ ) => { allAssetPaths = _ ; }, ( AssetBundleManager.CachingTypes )cachingType, false, isOriginal ) ;
+				var assetRequest = AssetBundleManager.GetAllAssetPathsAsync( path, ( _ ) => { allAssetPaths = _ ; }, false, isOriginal ) ;
 				await assetRequest ;
 	
 				if( allAssetPaths != null )
@@ -147,10 +160,10 @@ namespace DSW
 		/// <param name="path"></param>
 		/// <param name="cachingType"></param>
 		/// <returns></returns>
-		public static string[] GetAllPaths( string path, Type type, CachingTypes cachingType = CachingTypes.None, bool isOriginal = false )
+		public static string[] GetAllPaths( string path, Type type, bool isOriginal = false )
 		{
 			// 同期版で失敗してもエラーダイアログは表示されないので同期ロードは成功前提です
-			return AssetBundleManager.GetAllAssetPaths( path, type, ( AssetBundleManager.CachingTypes )cachingType, isOriginal ) ;
+			return AssetBundleManager.GetAllAssetPaths( path, type, isOriginal ) ;
 		}
 
 		/// <summary>
@@ -161,12 +174,12 @@ namespace DSW
 		/// <param name="asset">読み出されたアセットのインスタンスを格納する要素数１以上の任意のコンポーネント型の配列</param>
 		/// <param name="caching">読み出されたアセットをメモリキャッシュにためるかどうか</param>
 		/// <returns>列挙子</returns>
-		public static async UniTask<string[]> GetAllPathsAsync( string path, Type type, CachingTypes cachingType = CachingTypes.None, bool isNoDialog = false, bool isOriginal = false )
+		public static async UniTask<string[]> GetAllPathsAsync( string path, Type type, bool isNoDialog = false, bool isOriginal = false )
 		{
 			string[] allAssetPaths = null ;
 
 			// 高速化のためまず同期ロードを行う
-			allAssetPaths = AssetBundleManager.GetAllAssetPaths( path, type, ( AssetBundleManager.CachingTypes )cachingType, isOriginal ) ;
+			allAssetPaths = AssetBundleManager.GetAllAssetPaths( path, type, isOriginal ) ;
 			if( allAssetPaths != null )
 			{
 				// 成功(awaitを実行させない)
@@ -177,7 +190,7 @@ namespace DSW
 			while( true )
 			{
 				allAssetPaths = null ;
-				var assetRequest = AssetBundleManager.GetAllAssetPathsAsync( path, type, ( _ ) => { allAssetPaths = _ ; }, ( AssetBundleManager.CachingTypes )cachingType, false, isOriginal ) ;
+				var assetRequest = AssetBundleManager.GetAllAssetPathsAsync( path, type, ( _ ) => { allAssetPaths = _ ; }, false, isOriginal ) ;
 				await assetRequest ;
 	
 				if( allAssetPaths != null )
@@ -221,7 +234,7 @@ namespace DSW
 		public static T Load<T>( string path, CachingTypes cachingType = CachingTypes.None ) where T : UnityEngine.Object
 		{
 			// 同期ロードで失敗してもエラーダイアログは表示されないので同期ロードは成功前提です
-			T result = AssetBundleManager.LoadAsset<T>( path, ( AssetBundleManager.CachingTypes )cachingType ) ;
+			var result = AssetBundleManager.LoadAsset<T>( path, ( AssetBundleManager.CachingTypes )cachingType ) ;
 #if UNITY_EDITOR
 			if( result == null )
 			{
@@ -241,7 +254,7 @@ namespace DSW
 		public static UnityEngine.Object Load( string path, Type type, CachingTypes cachingType = CachingTypes.None )
 		{
 			// 同期ロードで失敗してもエラーダイアログは表示されないので同期ロードは成功前提です
-			UnityEngine.Object result = AssetBundleManager.LoadAsset( path, type, ( AssetBundleManager.CachingTypes )cachingType ) ;
+			var result = AssetBundleManager.LoadAsset( path, type, ( AssetBundleManager.CachingTypes )cachingType ) ;
 #if UNITY_EDITOR
 			if( result == null )
 			{
@@ -264,7 +277,7 @@ namespace DSW
 		public static async UniTask<T> LoadAsync<T>( string path, CachingTypes cachingType = CachingTypes.None, bool isNoDialog = false ) where T : UnityEngine.Object
 		{
 			// 高速化のためまず同期ロードを行う
-			T result = AssetBundleManager.LoadAsset<T>( path, ( AssetBundleManager.CachingTypes )cachingType ) ;
+			var result = AssetBundleManager.LoadAsset<T>( path, ( AssetBundleManager.CachingTypes )cachingType ) ;
 			if( result != null )
 			{
 				// 成功(awaitを実行させない)
@@ -344,7 +357,7 @@ namespace DSW
 		public static T[] LoadAll<T>( string path, CachingTypes cachingType = CachingTypes.None ) where T : UnityEngine.Object
 		{
 			// 同期ロードで失敗してもエラーダイアログは表示されないので同期ロードは成功前提です
-			T[] result = AssetBundleManager.LoadAllAssets<T>( path, ( AssetBundleManager.CachingTypes )cachingType ) ;
+			var result = AssetBundleManager.LoadAllAssets<T>( path, ( AssetBundleManager.CachingTypes )cachingType ) ;
 #if UNITY_EDITOR
 			if( result == null )
 			{
@@ -364,7 +377,7 @@ namespace DSW
 		public static UnityEngine.Object[] LoadAll( string path, Type type, CachingTypes cachingType = CachingTypes.None )
 		{
 			// 同期ロードで失敗してもエラーダイアログは表示されないので同期ロードは成功前提です
-			UnityEngine.Object[] result = AssetBundleManager.LoadAllAssets( path, type, ( AssetBundleManager.CachingTypes )cachingType ) ;
+			var result = AssetBundleManager.LoadAllAssets( path, type, ( AssetBundleManager.CachingTypes )cachingType ) ;
 #if UNITY_EDITOR
 			if( result == null )
 			{
@@ -388,7 +401,7 @@ namespace DSW
 		public static async UniTask<T[]> LoadAllAsync<T>( string path, CachingTypes cachingType = CachingTypes.None, bool isNoDialog = false ) where T : UnityEngine.Object
 		{
 			// 高速化のためまず同期ロードを行う
-			T[] result = AssetBundleManager.LoadAllAssets<T>( path, ( AssetBundleManager.CachingTypes )cachingType ) ;
+			var result = AssetBundleManager.LoadAllAssets<T>( path, ( AssetBundleManager.CachingTypes )cachingType ) ;
 			if( result != null )
 			{
 				// 成功(awaitを実行させない)
@@ -396,7 +409,7 @@ namespace DSW
 			}
 
 			// 非同期ロードを行う
-			UnityEngine.Object[] assets = await LoadAllAsync( path, typeof( T ), cachingType, isNoDialog ) ;
+			var assets = await LoadAllAsync( path, typeof( T ), cachingType, isNoDialog ) ;
 			if( assets == null )
 			{
 				return null ;
@@ -481,7 +494,7 @@ namespace DSW
 		public static T LoadSub<T>( string path, string subAssetName, CachingTypes cachingType = CachingTypes.None ) where T : UnityEngine.Object
 		{
 			// 同期ロードで失敗してもエラーダイアログは表示されないので同期ロードは成功前提です
-			T result = AssetBundleManager.LoadSubAsset<T>( path, subAssetName, ( AssetBundleManager.CachingTypes )cachingType ) ;
+			var result = AssetBundleManager.LoadSubAsset<T>( path, subAssetName, ( AssetBundleManager.CachingTypes )cachingType ) ;
 #if UNITY_EDITOR
 			if( result == null )
 			{
@@ -502,7 +515,7 @@ namespace DSW
 		public static UnityEngine.Object LoadSub( string path, string subAssetName, Type type, CachingTypes cachingType = CachingTypes.None )
 		{
 			// 同期ロードで失敗してもエラーダイアログは表示されないので同期ロードは成功前提です
-			UnityEngine.Object result = AssetBundleManager.LoadSubAsset( path, subAssetName, type, ( AssetBundleManager.CachingTypes )cachingType ) ;
+			var result = AssetBundleManager.LoadSubAsset( path, subAssetName, type, ( AssetBundleManager.CachingTypes )cachingType ) ;
 #if UNITY_EDITOR
 			if( result == null )
 			{
@@ -527,7 +540,7 @@ namespace DSW
 		public static async UniTask<T> LoadSubAsync<T>( string path, string subAssetName, CachingTypes cachingType = CachingTypes.None, bool isNoDialog = false ) where T : UnityEngine.Object
 		{
 			// 高速化のためまず同期ロードを行う
-			T result = AssetBundleManager.LoadSubAsset<T>( path, subAssetName, ( AssetBundleManager.CachingTypes )cachingType ) ;
+			var result = AssetBundleManager.LoadSubAsset<T>( path, subAssetName, ( AssetBundleManager.CachingTypes )cachingType ) ;
 			if( result != null )
 			{
 				// 成功(awaitを実行させない)
@@ -535,7 +548,7 @@ namespace DSW
 			}
 
 			// 非同期ロード
-			UnityEngine.Object asset = await LoadSubAsync( path, subAssetName, typeof( T ), cachingType, isNoDialog ) ;
+			var asset = await LoadSubAsync( path, subAssetName, typeof( T ), cachingType, isNoDialog ) ;
 			return asset == null ? null : asset as T ;
 		}
 
@@ -609,7 +622,7 @@ namespace DSW
 		public static T[] LoadAllSub<T>( string path, CachingTypes cachingType = CachingTypes.None ) where T : UnityEngine.Object
 		{
 			// 同期ロードで失敗してもエラーダイアログは表示されないので同期ロードは成功前提です
-			T[] result = AssetBundleManager.LoadAllSubAssets<T>( path, ( AssetBundleManager.CachingTypes )cachingType ) ;
+			var result = AssetBundleManager.LoadAllSubAssets<T>( path, ( AssetBundleManager.CachingTypes )cachingType ) ;
 #if UNITY_EDITOR
 			if( result == null )
 			{
@@ -629,7 +642,7 @@ namespace DSW
 		public static UnityEngine.Object[] LoadAllSub( string path, Type type, CachingTypes cachingType = CachingTypes.None )
 		{
 			// 同期ロードで失敗してもエラーダイアログは表示されないので同期ロードは成功前提です
-			UnityEngine.Object[] result = AssetBundleManager.LoadAllSubAssets( path, type, ( AssetBundleManager.CachingTypes )cachingType ) ;
+			var result = AssetBundleManager.LoadAllSubAssets( path, type, ( AssetBundleManager.CachingTypes )cachingType ) ;
 #if UNITY_EDITOR
 			if( result == null )
 			{
@@ -653,7 +666,7 @@ namespace DSW
 		public static async UniTask<T[]> LoadAllSubAsync<T>( string path, CachingTypes cachingType = CachingTypes.None, bool isNoDialog = false ) where T : UnityEngine.Object
 		{
 			// 高速化のためまず同期ロードを行う
-			T[] result = AssetBundleManager.LoadAllSubAssets<T>( path, ( AssetBundleManager.CachingTypes )cachingType ) ;
+			var result = AssetBundleManager.LoadAllSubAssets<T>( path, ( AssetBundleManager.CachingTypes )cachingType ) ;
 			if( result != null )
 			{
 				// 成功(awaitを実行させない)
@@ -661,7 +674,7 @@ namespace DSW
 			}
 
 			// 非同期ロード
-			UnityEngine.Object[] assets = await LoadAllSubAsync( path, typeof( T ), cachingType, isNoDialog ) ;
+			var assets = await LoadAllSubAsync( path, typeof( T ), cachingType, isNoDialog ) ;
 			if( assets == null )
 			{
 				return null ;
@@ -732,6 +745,16 @@ namespace DSW
 			}
 		}
 
+		/// <summary>
+		/// アセット(リソース)を破棄する
+		/// </summary>
+		/// <param name="asset"></param>
+		/// <returns></returns>
+		public static bool Free( UnityEngine.Object asset, bool isForce = false )
+		{
+			return AssetBundleManager.FreeAsset( asset, isForce ) ;
+		}
+
 		//-------------------------------------------------------------------------------------------
 
 		// Scene
@@ -760,13 +783,13 @@ namespace DSW
 		/// <returns></returns>
 		public static async UniTask<T[]> LoadSceneAsync<T>( string path, string targetName = null, string sceneName = null, bool isNoDialog = false ) where T : UnityEngine.Object
 		{
-			UnityEngine.Object[] targets = await LoadOrAddSceneAsync_Private( path, typeof( T ), targetName, sceneName, isNoDialog, 0 ) ;
+			var targets = await LoadOrAddSceneAsync_Private( path, typeof( T ), targetName, sceneName, isNoDialog, 0 ) ;
 			if( targets == null )
 			{
 				return null ;
 			}
 
-			T[] result = new T[ targets.Length ] ;
+			var result = new T[ targets.Length ] ;
 			for( int i  = 0 ; i <  targets.Length ; i ++ )
 			{
 				result[ i ] = targets[ i ] as T ;
@@ -816,13 +839,13 @@ namespace DSW
 		/// <returns></returns>
 		public static async UniTask<T[]> AddSceneAsync<T>( string path, string targetName = null, string sceneName = null, bool isNoDialog = false ) where T : UnityEngine.Object
 		{
-			UnityEngine.Object[] targets = await LoadOrAddSceneAsync_Private( path, typeof( T ), targetName, sceneName, isNoDialog, 1 ) ;
+			var targets = await LoadOrAddSceneAsync_Private( path, typeof( T ), targetName, sceneName, isNoDialog, 1 ) ;
 			if( targets == null )
 			{
 				return null ;
 			}
 
-			T[] result = new T[ targets.Length ] ;
+			var result = new T[ targets.Length ] ;
 			for( int i  = 0 ; i <  targets.Length ; i ++ )
 			{
 				result[ i ] = targets[ i ] as T ;
@@ -1040,13 +1063,25 @@ namespace DSW
 		}
 
 		/// <summary>
+		/// シーンが変わってもメモリ展開済みアセットバンドルを破棄しないようにする
+		/// </summary>
+		/// <param name="path"></param>
+		/// <param name="isRetain"></param>
+		/// <param name="withAssets"></param>
+		/// <returns></returns>
+		public static bool SetAssetBundleRetaining( string path, bool isRetain, bool withAssets = true )
+		{
+			return AssetBundleManager.SetAssetBundleRetaining( path, isRetain, withAssets ) ;
+		}
+
+		/// <summary>
 		/// アセットバンドルをメモリに展開する(同期)
 		/// </summary>
 		/// <param name="path"></param>
 		/// <returns></returns>
-		public static bool LoadAssetBundle( string path, bool isRetain = false )
+		public static bool LoadAssetBundle( string path )
 		{
-			return AssetBundleManager.LoadAssetBundle( path, isRetain ) ;
+			return AssetBundleManager.LoadAssetBundle( path ) ;
 		}
 
 		/// <summary>
@@ -1057,12 +1092,12 @@ namespace DSW
 		/// <param name="isNoDialog"></param>
 		/// <param name="onProgress"></param>
 		/// <returns></returns>
-		public static async UniTask<bool> LoadAssetBundleAsync( string path, bool isRetain = false, bool keep = false, bool isNoDialog = false, Action<float> onProgress = null )
+		public static async UniTask<bool> LoadAssetBundleAsync( string path, bool isNoDialog = false, Action<float> onProgress = null )
 		{
 			float progress = 0 ;
 			while( true )
 			{
-				var assetRequest = AssetBundleManager.LoadAssetBundleAsync( path, isRetain, keep ) ;
+				var assetRequest = AssetBundleManager.LoadAssetBundleAsync( path ) ;
 				while( true )
 				{
 					if( progress != assetRequest.Progress )
@@ -1300,19 +1335,10 @@ namespace DSW
 		/// メモリリソースキャッシュをクリアする
 		/// </summary>
 		/// <returns>結果(true=成功・false=失敗)</returns>
-		public static bool ClearResourceCache( bool noMarkingOnly, string message = "" )
+		public static bool ClearResourceCache( string message = "", bool useUnloadUnusedAssets = true )
 		{
 			Debug.Log( "<color=#00FFFF>[AssetBundleManager] シーン遷移によりキャッシュをクリアします : " + message + "</color>" ) ;
-			return AssetBundleManager.ClearResourceCache( noMarkingOnly, false ) ;
-		}
-
-		/// <summary>
-		/// メモリリソースキャッシュのマークのみクリアする
-		/// </summary>
-		/// <returns></returns>
-		public static bool ClearResourceCacheMarks()
-		{
-			return AssetBundleManager.ClearResourceCacheMarks() ;
+			return AssetBundleManager.ClearResourceCache( false, useUnloadUnusedAssets: useUnloadUnusedAssets ) ;
 		}
 
 		/// <summary>
@@ -1333,10 +1359,10 @@ namespace DSW
 		/// <param name="chachingType"></param>
 		/// <param name="isNoDialog"></param>
 		/// <returns></returns>
-		[Obsolete("Use LoadAtlas()")]
+		[Obsolete( "Use LoadAtlas()" )]
 		public static Dictionary<string,Sprite> LoadSpriteSet( string path, CachingTypes cachingType = CachingTypes.None )
 		{
-			Sprite[] sprites = Asset.LoadAllSub<Sprite>( path, cachingType ) ;
+			var sprites = Asset.LoadAllSub<Sprite>( path, cachingType ) ;
 			if( sprites == null || sprites.Length == 0 )
 			{
 				return null ;
@@ -1365,10 +1391,10 @@ namespace DSW
 		/// <param name="chachingType"></param>
 		/// <param name="isNoDialog"></param>
 		/// <returns></returns>
-		[Obsolete("Use LoadAtlasAsync()")]
+		[Obsolete( "Use LoadAtlasAsync()" )]
 		public static async UniTask<Dictionary<string,Sprite>> LoadSpriteSetAsync( string path, CachingTypes cachingType = CachingTypes.None, bool isNoDialog = false )
 		{
-			Sprite[] sprites = await Asset.LoadAllSubAsync<Sprite>( path, cachingType, isNoDialog ) ;
+			var sprites = await Asset.LoadAllSubAsync<Sprite>( path, cachingType, isNoDialog ) ;
 			if( sprites == null || sprites.Length == 0 )
 			{
 				return null ;
@@ -1401,14 +1427,14 @@ namespace DSW
 		/// <returns></returns>
 		public static Dictionary<string,Sprite> LoadAtlas( string path, CachingTypes cachingType = CachingTypes.None )
 		{
-			SpriteAtlas spriteAtlas = Asset.Load<SpriteAtlas>( path, cachingType ) ;
+			var spriteAtlas = Asset.Load<SpriteAtlas>( path, cachingType ) ;
 			if( spriteAtlas == null || spriteAtlas.spriteCount == 0 )
 			{
 				return null ;
 			}
 
 			int count = spriteAtlas.spriteCount ;
-			Sprite[] sprites = new Sprite[ count ] ;
+			var sprites = new Sprite[ count ] ;
 			spriteAtlas.GetSprites( sprites ) ;
 
 			var spriteSet = new Dictionary<string, Sprite>() ;
@@ -1438,14 +1464,14 @@ namespace DSW
 		/// <returns></returns>
 		public static async UniTask<Dictionary<string,Sprite>> LoadAtlasAsync( string path, CachingTypes cachingType = CachingTypes.None, bool isNoDialog = false )
 		{
-			SpriteAtlas spriteAtlas = await Asset.LoadAsync<SpriteAtlas>( path, cachingType, isNoDialog ) ;
+			var spriteAtlas = await Asset.LoadAsync<SpriteAtlas>( path, cachingType, isNoDialog ) ;
 			if( spriteAtlas == null || spriteAtlas.spriteCount == 0 )
 			{
 				return null ;
 			}
 
 			int count = spriteAtlas.spriteCount ;
-			Sprite[] sprites = new Sprite[ count ] ;
+			var sprites = new Sprite[ count ] ;
 			spriteAtlas.GetSprites( sprites ) ;
 
 			var spriteSet = new Dictionary<string, Sprite>() ;

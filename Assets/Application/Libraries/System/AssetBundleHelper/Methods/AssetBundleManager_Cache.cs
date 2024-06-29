@@ -4,6 +4,7 @@ using System.Linq ;
 
 using UnityEngine ;
 
+
 /// <summary>
 /// アセットバンドルヘルパーパッケージ
 /// </summary>
@@ -19,10 +20,45 @@ namespace AssetBundleHelper
 		/// </summary>
 		public enum CachingTypes
 		{
+			/// <summary>
+			/// キャッシュコントロールはしない
+			/// </summary>
 			None			= 0,	// キャッシュしない
+
+			[Obsolete( "Use ReferenceCount")]
 			ResourceOnly	= 1,	// リソースのみキャッシャする
+
+			[Obsolete( "Use ReferenceCount")]
 			AssetBundleOnly	= 2,	// アセットバンドルのみキャッシュする
+
+			[Obsolete( "Use ReferenceCount")]
 			Same			= 3,	// リソース・アセットバンドルともにキャッシュする
+
+			/// <summary>
+			/// 参照カウント方式でキャッシュコントロールを行う
+			/// </summary>
+			ReferenceCount	= 4,	// 参照カウント方式でキャッシュする
+		}
+
+		/// <summary>
+		/// メモリ展開アセットバンドルの破棄動作のタイプ
+		/// </summary>
+		public enum CacheReleaseTypes
+		{
+			/// <summary>
+			/// 参照カウントでコントロールされていない且つ維持設定になっていないメモリ展開アセットバンドルを破棄する
+			/// </summary>
+			Limited,
+
+			/// <summary>
+			/// 維持設定になっていないメモリ展開アセットバンドルを破棄する
+			/// </summary>
+			Standard,
+
+			/// <summary>
+			/// 全てのメモリ展開アセットバンドルを破棄する
+			/// </summary>
+			Perfect,
 		}
 
 		// 注意：アセットバンドルから展開させるリソースのインスタンスについて
@@ -57,47 +93,100 @@ namespace AssetBundleHelper
 		//-----------------------------------------------------------
 
 		/// <summary>
-		/// リソースキャッシュ
+		/// アセット(リソース)キャッシュ
 		/// </summary>
 		[Serializable]
 		public class ResourceCacheElement
 		{
-			public	string				Path ;			// デバッグ表示用のパス
+			/// <summary>
+			/// アセット(リソース)のパス
+			/// </summary>
+			public	string											Path ;			// デバッグ表示用のパス
 
+			//--------------
+
+			/// <summary>
+			/// キャッシュしているアセット(リソース)のインスタンス
+			/// </summary>
 			[NonSerialized]
-			public	UnityEngine.Object	Resource ;
+			public	UnityEngine.Object								Resource ;
 
-			public	bool				Mark ;			// スイープコントロール用のマーク
+
+			/// <summary>
+			/// アセット(リソース)自体の参照カウント
+			/// </summary>
+			public	int												ReferenceCount ;
+
+
+			/// <summary>
+			/// アセット(リソース)が属しているアセットバンドル
+			/// </summary>
+			[NonSerialized]
+			public	ManifestInfo.AssetBundleCacheElement			AssetBundleCache ;
+
+			//----------------------------------------------------------
 
 			/// <summary>
 			/// コンストラクタ
 			/// </summary>
 			/// <param name="path"></param>
 			/// <param name="resource"></param>
-			public ResourceCacheElement( string path, UnityEngine.Object resource )
+			public ResourceCacheElement( string path, UnityEngine.Object resource, ManifestInfo.AssetBundleCacheElement assetBundleCache )
 			{
-				Path		= path ;
-				Resource	= resource ;
-
-				Mark		= true ;
+				Path				= path ;
+				Resource			= resource ;
+				ReferenceCount		= 1 ;	// 参照カウントは１
+				AssetBundleCache	= assetBundleCache ;
 			}
 
-			public UnityEngine.Object Get()
+			/// <summary>
+			/// キャッシュされているアセット(リソース)を取得する
+			/// </summary>
+			/// <returns></returns>
+			public UnityEngine.Object Load()
 			{
-				Mark = true ;
+				// 参照カウントを増加させる
+				ReferenceCount ++ ;
 
-//				Debug.Log( "------------->キャッシュにヒット:" + Path ) ;
 				return Resource ;
+			}
+
+			/// <summary>
+			/// 
+			/// </summary>
+			/// <returns></returns>
+			public bool Free( bool isForce )
+			{
+				if( ReferenceCount <= 0 )
+				{
+					Debug.LogWarning( "参照カウントが異常です Path = " + Path ) ;
+					return false ;
+				}
+
+				//---------------------------------
+
+				// 参照カウントを減少させる
+				if( isForce == false )
+				{
+					ReferenceCount -- ;
+				}
+				else
+				{
+					ReferenceCount = 0 ;
+				}
+
+				// 参照カウントが０になったらキャッシュから削除する必要がある
+				return ( ReferenceCount == 0 ) ;
 			}
 		}
 
 		/// <summary>
-		/// リソースのキャッシュ
+		/// アセット(リソース)のキャッシュ
 		/// </summary>
 		private Dictionary<string,ResourceCacheElement> m_ResourceCache ;
 
 		/// <summary>
-		/// リソースキャッシュ
+		/// アセット(リソース)キャッシュ
 		/// </summary>
 		internal protected Dictionary<string,ResourceCacheElement> ResourceCache
 		{
@@ -107,62 +196,53 @@ namespace AssetBundleHelper
 			}
 		}
 
-		//-----------------------------------------------------------
+		private protected Dictionary<UnityEngine.Object,ResourceCacheElement> m_ResourceCacheDetector ;
 
-		/// <summary>
-		/// リソースキャッシュを有効にするかどうか(デフォルトは有効)
-		/// </summary>
-		public static bool ResourceCacheEnabled
+
+		//-------------------------------------------------------------------------------------------
+
+		// アセット(リソース)キャッシュを追加する
+		private ResourceCacheElement AddResourceCache( string resourceCachePath, UnityEngine.Object asset, ManifestInfo.AssetBundleCacheElement assetBundleCache )
 		{
-			get
-			{
-				if( m_Instance == null )
-				{
-					return false ;
-				}
+			// 新規でアセット(リソース)キャッシュが生成された分、アセットバンドルの参照カウントを増加させる
+			assetBundleCache?.IncrementCachingReferenceCount( 1 ) ;	// LocalAssets からロードしている場合はインスタンスは null である
 
-				return m_Instance.ResourceCacheEnabled_Private ;
-			}
-			set
-			{
-				if( m_Instance != null )
-				{
-					m_Instance.ResourceCacheEnabled_Private = value ;
-				}
-			}
+			//----------------------------------
+
+			var resourceCache = new ResourceCacheElement( resourceCachePath, asset, assetBundleCache ) ;
+
+			m_ResourceCache.Add( resourceCachePath, resourceCache ) ;
+			m_ResourceCacheDetector.Add( asset, resourceCache ) ;
+#if UNITY_EDITOR
+			m_ResourceCacheViewer.Add( resourceCache ) ;
+#endif
+			//----------------------------------
+
+			return resourceCache ;
 		}
-		
-		private bool ResourceCacheEnabled_Private
+
+		// アセット(リソース)キャッシュを削除する
+		private void RemoveResourceCache( string resourceCachePath )
 		{
-			get
+			if( m_ResourceCache.ContainsKey( resourceCachePath ) == false )
 			{
-				return !( m_ResourceCache == null ) ;
+				// キャッシュには存在していない
+				return ;
 			}
-			set
-			{
-				if( value == true )
-				{
-					if( m_ResourceCache == null )
-					{
-						m_ResourceCache		= new Dictionary<string, ResourceCacheElement>() ;
+
+			//----------------------------------
+
+			var resourceCache = m_ResourceCache[ resourceCachePath ] ;
+
+			m_ResourceCache.Remove( resourceCachePath ) ;
+			m_ResourceCacheDetector.Remove( resourceCache.Resource ) ;
 #if UNITY_EDITOR
-						m_ResourceCacheInfo	= new List<ResourceCacheElement>() ;
+			m_ResourceCacheViewer.Remove( resourceCache ) ;
 #endif
-					}
-				}
-				else
-				{
-					if( m_ResourceCache != null )
-					{
-						m_ResourceCache.Clear() ;
-						m_ResourceCache  = null ;
-#if UNITY_EDITOR
-						m_ResourceCacheInfo.Clear() ;
-						m_ResourceCacheInfo  = null ;
-#endif
-					}
-				}
-			}
+			//----------------------------------
+
+			// アセットバンドル側の参照カウントを減少させる
+			resourceCache.AssetBundleCache?.DecrementCachingReferenceCount( 1, true ) ;	// LocalAssets からロードしている場合はインスタンスは null である
 		}
 
 		//-------------------------------------------------------------------
@@ -171,126 +251,68 @@ namespace AssetBundleHelper
 		/// リソースキャッシュをクリアする
 		/// </summary>
 		/// <returns>結果(true=成功・false=失敗)</returns>
-		public static bool ClearResourceCache( bool noMarkingOnly, bool unloadUnusedAssets )
+		public static bool ClearResourceCache( bool isPerfect, bool useUnloadUnusedAssets )
 		{
 			if( m_Instance == null )
 			{
 				return false ;
 			}
 
-			return m_Instance.ClearResourceCache_Private( noMarkingOnly, unloadUnusedAssets ) ;
+			return m_Instance.ClearResourceCache_Private( isPerfect, useUnloadUnusedAssets ) ;
 		}
 
 		// リソースキャッシュをクリアする
-		private bool ClearResourceCache_Private( bool noMarkingOnly, bool unloadUnusedAssets )
+		private bool ClearResourceCache_Private( bool isPerfect, bool useUnloadUnusedAssets )
 		{
-			// アセットバンドルキャッシュをクリア
-			if( m_ManifestInfo == null || m_ManifestInfo.Count >  0 )
-			{
-				foreach( var manifestInfo in m_ManifestInfo )
-				{
-					// 各マニフェストのアセットバンドルキャッシュもクリアする
-					manifestInfo.ClearAssetBundleCache( true, noMarkingOnly ) ;
-				}
-			}
-
-			//----------------------------------
-
 			// リソースキャッシュをクリア
 			if( m_ResourceCache != null && m_ResourceCache.Count >  0 )
 			{
 #if UNITY_EDITOR
 				Debug.Log( "<color=#FF80FF>[AssetBundleManager] キャッシュからクリア対象となる展開済みリソース数 = " + m_ResourceCache.Count + "</color>" ) ;
 #endif
-				if( noMarkingOnly == false )
+				// ResourceCache が AssetBundleCache に紐づいている(参照カウントで管理されている)場合は、
+				// AssetBundleCache の参照カウントを下げて、AssetBundleCache の参照カウントが 0 になったら AssetBundleCache を破棄する
+				foreach( var resourceCache in m_ResourceCache.Values )
 				{
-					// 全て消去する
-					m_ResourceCache.Clear() ;
-#if UNITY_EDITOR
-					m_ResourceCacheInfo.Clear() ;
-#endif
+					// 注意：UseeLocalAssets が true である場合、ReferenceCount を使用しても AssetBundleCache が貯まる事は無い(AssetBundleCache が null のケースがある)
+					resourceCache.AssetBundleCache?.DecrementCachingReferenceCount( 1, true ) ;
 				}
-				else
-				{
-					// マークが付いていないもののみ消去する
-					var paths = new List<string>() ;
-					foreach( var element in m_ResourceCache )
-					{
-						if( element.Value.Mark == false )
-						{
-							paths.Add( element.Key ) ;
-						}
-					}
 
-					if( paths.Count >  0 )
-					{
-						foreach( var path in paths )
-						{
+				m_ResourceCache.Clear() ;
+				m_ResourceCacheDetector.Clear() ;
 #if UNITY_EDITOR
-							m_ResourceCacheInfo.Remove( m_ResourceCache[ path ] ) ;
+				m_ResourceCacheViewer.Clear() ;
 #endif
-							m_ResourceCache.Remove( path ) ;
-						}
-					}
+			}
+
+			//----------------------------------------------------------
+
+            CacheReleaseTypes cacheReleaseType = ( isPerfect == false ? CacheReleaseTypes.Standard : CacheReleaseTypes.Perfect ) ;
+            
+			// アセットバンドルキャッシュをクリア
+			if( m_ManifestInfo == null || m_ManifestInfo.Count >  0 )
+			{
+				foreach( var manifestInfo in m_ManifestInfo )
+				{
+					// 各マニフェストのアセットバンドルキャッシュもクリアする
+					manifestInfo.ClearAssetBundleCache( cacheReleaseType ) ;
 				}
 			}
 
 			//----------------------------------------------------------
 
 			// ランタイムでのリソースキャッシュをクリア
-			if( unloadUnusedAssets == true )
+			if( useUnloadUnusedAssets == true )
 			{
 #if UNITY_EDITOR
 				Debug.Log( "<color=#FF80FF>[AssetBundleManager] *** Resources.UnloadUnusedAssets() が実行されました ***</color>" ) ;
 #endif
-				Resources.UnloadUnusedAssets() ;
+				Resources.UnloadUnusedAssets() ;	// 非同期で実行する
 				System.GC.Collect() ;
 			}
 
 			return true ;
 		}
-
-
-
-		/// <summary>
-		/// リソースキャッシュのマークをクリアする
-		/// </summary>
-		/// <returns>結果(true=成功・false=失敗)</returns>
-		public static bool ClearResourceCacheMarks()
-		{
-			if( m_Instance == null )
-			{
-				return false ;
-			}
-
-			return m_Instance.ClearResourceCacheMarks_Private() ;
-		}
-
-		// リソースキャッシュのマークをクリアする
-		private bool ClearResourceCacheMarks_Private()
-		{
-			// アセットバンドルキャッシュのマークをクリア
-			if( m_ManifestInfo == null || m_ManifestInfo.Count >  0 )
-			{
-				foreach( var manifestInfo in m_ManifestInfo )
-				{
-					// 各マニフェストのアセットバンドルキャッシュもクリアする
-					manifestInfo.ClearAssetBundleCacheMarks() ;
-				}
-			}
-
-			// リソースキャッシュのマークをクリアする
-			if( m_ResourceCache != null && m_ResourceCache.Count >  0 )
-			{
-				foreach( var element in m_ResourceCache )
-				{
-					element.Value.Mark = false ;
-				}
-			}
-
-			return true ;
-		}
-
 
 		//---------------------------------------------------------------------------------------------------------
 
@@ -348,6 +370,5 @@ namespace AssetBundleHelper
 		}
 
 		//-------------------------------------------------------------------
-
 	}
 }

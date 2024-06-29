@@ -7,13 +7,14 @@ using System.Collections.Generic ;
 using UnityEditor ;
 #endif
 
+
 /// <summary>
 /// シーンマネージメントヘルパーパッケージ
 /// </summary>
 namespace SceneManagementHelper
 {
 	/// <summary>
-	/// エンハンスドシーンマネージャクラス Version 2022/07/13 0
+	/// エンハンスドシーンマネージャクラス Version 2024/05/30 0
 	/// </summary>
 	public class EnhancedSceneManager : MonoBehaviour
 	{
@@ -21,16 +22,14 @@ namespace SceneManagementHelper
 		/// <summary>
 		/// EnhancedSceneManager を生成
 		/// </summary>
-		[MenuItem("GameObject/Helper/SceneManagementHelper/EnhancedSceneManager", false, 24)]
+		[MenuItem( "GameObject/Helper/SceneManagementHelper/EnhancedSceneManager", false, 24 )]
 		public static void CreateEnhancedSceneManager()
 		{
-			GameObject go = new GameObject( "EnhancedSceneManager" ) ;
+			var go = new GameObject( "EnhancedSceneManager" ) ;
 		
-			Transform t = go.transform ;
-			t.SetParent( null ) ;
-			t.localPosition = Vector3.zero ;
-			t.localRotation = Quaternion.identity ;
-			t.localScale = Vector3.one ;
+			go.transform.SetParent( null ) ;
+			go.transform.SetLocalPositionAndRotation( Vector2.zero, Quaternion.identity ) ;
+			go.transform.localScale = Vector3.one ;
 		
 			go.AddComponent<EnhancedSceneManager>() ;
 			Selection.activeGameObject = go ;
@@ -71,7 +70,7 @@ namespace SceneManagementHelper
 			m_Instance = GameObject.FindAnyObjectByType<EnhancedSceneManager>() ;
 			if( m_Instance == null )
 			{
-				GameObject go = new GameObject( "EnhancedSceneManager" ) ;
+				var go = new GameObject( "EnhancedSceneManager" ) ;
 				if( parent != null )
 				{
 					go.transform.SetParent( parent, false ) ;
@@ -114,7 +113,7 @@ namespace SceneManagementHelper
 				return ;
 			}
 		
-			EnhancedSceneManager instanceOther = GameObject.FindAnyObjectByType<EnhancedSceneManager>() ;
+			var instanceOther = GameObject.FindAnyObjectByType<EnhancedSceneManager>() ;
 			if( instanceOther != null )
 			{
 				if( instanceOther != this )
@@ -138,14 +137,13 @@ namespace SceneManagementHelper
 			//-----------------------------
 		
 			// 原点じゃないと気持ち悪い
-			gameObject.transform.localPosition = Vector3.zero ;
-			gameObject.transform.localRotation = Quaternion.identity ;
+			gameObject.transform.SetLocalPositionAndRotation( Vector3.zero, Quaternion.identity ) ;
 			gameObject.transform.localScale = Vector3.one ;
 		
 			//-----------------------------
 
 			// 履歴用のメモリを確保する
-			m_History = new List<string>()
+			m_History = new ()
 			{
 				UnityEngine.SceneManagement.SceneManager.GetActiveScene().name	// 現在のシーンを最初に履歴に格納する
 			} ;
@@ -169,7 +167,7 @@ namespace SceneManagementHelper
 		//-----------------------------------------------------------------
 
 		// シーン間の受け渡し用のパラメータ
-		private readonly Dictionary<string,System.Object> m_Parameter = new Dictionary<string,System.Object>() ;
+		private readonly Dictionary<string,System.Object> m_Parameter = new () ;
 
 		/// <summary>
 		/// シーンロードの履歴(ReadOnlyにすると
@@ -247,7 +245,7 @@ namespace SceneManagementHelper
 				return default ;
 			}
 
-			T value = ( T )m_Parameter[ label ] ;
+			var value = ( T )m_Parameter[ label ] ;
 
 			if( clear == true )
 			{
@@ -281,7 +279,7 @@ namespace SceneManagementHelper
 				return null ;
 			}
 
-			System.Object value = m_Parameter[ label ] ;
+			var value = m_Parameter[ label ] ;
 
 			if( clear == true )
 			{
@@ -296,18 +294,18 @@ namespace SceneManagementHelper
 		/// </summary>
 		/// <param name="label">受け渡しパラメータの識別名</param>
 		/// <returns>結果(true=存在する・false=存在しない)</returns>
-		public static bool ContainsParameter( string label )
+		public static bool HasParameter( string label )
 		{
 			if( m_Instance == null )
 			{
 				return false ;
 			}
 
-			return m_Instance.ContainsParameter_Private( label ) ;
+			return m_Instance.HasParameter_Private( label ) ;
 		}
 
 		// シーン間の受け渡しパラメータの存在を確認する
-		private bool ContainsParameter_Private( string label )
+		private bool HasParameter_Private( string label )
 		{
 			if( m_Parameter.ContainsKey( label ) == false )
 			{
@@ -322,18 +320,18 @@ namespace SceneManagementHelper
 		/// </summary>
 		/// <param name="label">受け渡しパラメータの識別名</param>
 		/// <returns>結果(true=存在する・false=存在しない)</returns>
-		public static bool ContainsParameter<T>( string label )
+		public static bool HasParameter<T>( string label )
 		{
 			if( m_Instance == null )
 			{
 				return false ;
 			}
 
-			return m_Instance.ContainsParameter_Private<T>( label ) ;
+			return m_Instance.HasParameter_Private<T>( label ) ;
 		}
 
 		// シーン間の受け渡しパラメータの存在を確認する
-		private bool ContainsParameter_Private<T>( string label )
+		private bool HasParameter_Private<T>( string label )
 		{
 			if( m_Parameter.ContainsKey( label ) == false )
 			{
@@ -508,7 +506,7 @@ namespace SceneManagementHelper
 					if( onLoaded != null )
 					{
 						int i, l = temporaryTargets.Length ;
-						T[] targets = new T[ l ] ;
+						var targets = new T[ l ] ;
 						for( i  = 0 ; i <  l ; i ++ )
 						{
 							targets[ i ] = temporaryTargets[ i ] as T ;
@@ -535,7 +533,7 @@ namespace SceneManagementHelper
 				Create() ;
 			}
 
-			Request request = new Request( m_Instance ) ;
+			var request = new Request( m_Instance ) ;
 			m_Instance.StartCoroutine( m_Instance.LoadOrAddAsync_Private( sceneName, null, null, null, label, value, UnityEngine.SceneManagement.LoadSceneMode.Single, true, request ) ) ;
 			return request ;
 		}
@@ -557,7 +555,7 @@ namespace SceneManagementHelper
 				Create() ;
 			}
 
-			Request request = new Request( m_Instance ) ;
+			var request = new Request( m_Instance ) ;
 			m_Instance.StartCoroutine( m_Instance.LoadOrAddAsync_Private
 			(
 				sceneName, typeof( T ),
@@ -566,7 +564,7 @@ namespace SceneManagementHelper
 					if( onLoaded != null )
 					{
 						int i, l = temporaryTargets.Length ;
-						T[] targets = new T[ l ] ;
+						var targets = new T[ l ] ;
 						for( i  = 0 ; i <  l ; i ++ )
 						{
 							targets[ i ] = temporaryTargets[ i ] as T ;
@@ -622,7 +620,7 @@ namespace SceneManagementHelper
 					if( onLoaded != null )
 					{
 						int i, l = temporaryTargets.Length ;
-						T[] targets = new T[ l ] ;
+						var targets = new T[ l ] ;
 						for( i  = 0 ; i <  l ; i ++ )
 						{
 							targets[ i ] = temporaryTargets[ i ] as T ;
@@ -648,7 +646,7 @@ namespace SceneManagementHelper
 				Create() ;
 			}
 
-			Request request = new Request( m_Instance ) ;
+			var request = new Request( m_Instance ) ;
 			m_Instance.StartCoroutine( m_Instance.LoadOrAddAsync_Private( sceneName, null, null, null, label, value, UnityEngine.SceneManagement.LoadSceneMode.Additive, false, request ) ) ;
 			return request ;
 		}
@@ -669,7 +667,7 @@ namespace SceneManagementHelper
 				Create() ;
 			}
 
-			Request request = new Request( m_Instance ) ;
+			var request = new Request( m_Instance ) ;
 			m_Instance.StartCoroutine( m_Instance.LoadOrAddAsync_Private
 			(
 				sceneName, typeof( T ),
@@ -678,7 +676,7 @@ namespace SceneManagementHelper
 					if( onLoaded != null )
 					{
 						int i, l = temporaryTargets.Length ;
-						T[] targets = new T[ l ] ;
+						var targets = new T[ l ] ;
 						for( i  = 0 ; i <  l ; i ++ )
 						{
 							targets[ i ] = temporaryTargets[ i ] as T ;
@@ -750,7 +748,7 @@ namespace SceneManagementHelper
 					if( onLoaded != null )
 					{
 						int i, l = temporaryTargets.Length ;
-						T[] targets = new T[ l ] ;
+						var targets = new T[ l ] ;
 						for( i  = 0 ; i <  l ; i ++ )
 						{
 							targets[ i ] = temporaryTargets[ i ] as T ;
@@ -775,7 +773,7 @@ namespace SceneManagementHelper
 				Create() ;
 			}
 
-			Request request = new Request( m_Instance ) ;
+			var request = new Request( m_Instance ) ;
 
 			if( m_Instance.m_History.Count <= 1 )
 			{
@@ -807,7 +805,7 @@ namespace SceneManagementHelper
 				Create() ;
 			}
 
-			Request request = new Request( m_Instance ) ;
+			var request = new Request( m_Instance ) ;
 
 			if( m_Instance.m_History.Count <= 1 )
 			{
@@ -827,7 +825,7 @@ namespace SceneManagementHelper
 					if( onLoaded != null )
 					{
 						int i, l = temporaryTargets.Length ;
-						T[] targets = new T[ l ] ;
+						var targets = new T[ l ] ;
 						for( i  = 0 ; i <  l ; i ++ )
 						{
 							targets[ i ] = temporaryTargets[ i ] as T ;
@@ -871,7 +869,7 @@ namespace SceneManagementHelper
 
 			//------------------------------------------------------------------------------------------
 
-			UnityEngine.SceneManagement.Scene scene = UnityEngine.SceneManagement.SceneManager.GetSceneByName( sceneName ) ;
+			var scene = UnityEngine.SceneManagement.SceneManager.GetSceneByName( sceneName ) ;
 			if( scene.IsValid() == false || scene.isLoaded == false )
 			{
 				return false ;
@@ -931,7 +929,7 @@ namespace SceneManagementHelper
 			
 			//------------------------------------------------------------------------------------------
 
-			UnityEngine.SceneManagement.Scene scene = UnityEngine.SceneManagement.SceneManager.GetSceneByName( sceneName ) ;
+			var scene = UnityEngine.SceneManagement.SceneManager.GetSceneByName( sceneName ) ;
 			if( scene.IsValid() == false )
 			{
 				request.Error = "Could not load." ;
@@ -954,10 +952,10 @@ namespace SceneManagementHelper
 		private void GetInstance_Private( UnityEngine.SceneManagement.Scene scene, Type type, Action<UnityEngine.Object[]> onLoaded, string targetName, Request request )
 		{
 			// 指定の型のコンポーネントを探してインスタンスを取得する
-			List<UnityEngine.Component> targets = new List<UnityEngine.Component>() ;
+			var targets = new List<UnityEngine.Component>() ;
 			UnityEngine.Component[] temporaryTargets ;
 
-			GameObject[] gos = scene.GetRootGameObjects() ;
+			var gos = scene.GetRootGameObjects() ;
 			if( gos != null && gos.Length >  0 )
 			{
 				foreach( var go in gos )
@@ -988,7 +986,7 @@ namespace SceneManagementHelper
 			if( string.IsNullOrEmpty( targetName ) == false )
 			{
 				// 名前によるフィルタ有り
-				List<UnityEngine.Component> filteredTargets = new List<UnityEngine.Component>() ;
+				var filteredTargets = new List<UnityEngine.Component>() ;
 				foreach( var target in targets )
 				{
 					if( target.name == targetName )
@@ -1019,7 +1017,7 @@ namespace SceneManagementHelper
 		/// <returns></returns>
 		public static bool IsLoaded( string sceneName )
 		{
-			UnityEngine.SceneManagement.Scene scene = UnityEngine.SceneManagement.SceneManager.GetSceneByName( sceneName ) ;
+			var scene = UnityEngine.SceneManagement.SceneManager.GetSceneByName( sceneName ) ;
 			
 			return scene.isLoaded ;
 		}
@@ -1051,7 +1049,7 @@ namespace SceneManagementHelper
 				return false ;
 			}
 			
-			UnityEngine.SceneManagement.Scene scene = UnityEngine.SceneManagement.SceneManager.GetSceneByName( sceneName ) ;
+			var scene = UnityEngine.SceneManagement.SceneManager.GetSceneByName( sceneName ) ;
 			if( scene.isLoaded == false )
 			{
 				// そのようなシーンは実際は存在しない
@@ -1086,7 +1084,7 @@ namespace SceneManagementHelper
 				Create() ;
 			}
 
-			Request request = new Request( m_Instance ) ;
+			var request = new Request( m_Instance ) ;
 			m_Instance.StartCoroutine( m_Instance.RemoveAsync_Private( sceneName, onResult, label, value, request ) ) ;
 			return request ;
 		}
@@ -1101,7 +1099,7 @@ namespace SceneManagementHelper
 				yield break ;
 			}
 			
-			UnityEngine.SceneManagement.Scene scene = UnityEngine.SceneManagement.SceneManager.GetSceneByName( sceneName ) ;
+			var scene = UnityEngine.SceneManagement.SceneManager.GetSceneByName( sceneName ) ;
 			if( scene.isLoaded == false )
 			{
 				// そのようなシーンは実際は存在しない
@@ -1116,7 +1114,7 @@ namespace SceneManagementHelper
 			}
 
 			// 最後にロードしたシーンを破棄しようとすると警告が出る
-			AsyncOperation asyncOperation = UnityEngine.SceneManagement.SceneManager.UnloadSceneAsync( sceneName ) ;
+			var asyncOperation = UnityEngine.SceneManagement.SceneManager.UnloadSceneAsync( sceneName ) ;
 			yield return asyncOperation ;
 
 			if( asyncOperation != null && asyncOperation.isDone == true )

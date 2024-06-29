@@ -15,7 +15,7 @@ using UnityEditorInternal ;
 namespace SpriteHelper
 {
 	/// <summary>
-	/// スプライト制御クラス  Version 2023/12/31
+	/// スプライト制御クラス  Version 2024/05/20
 	/// </summary>
 	[ExecuteAlways]
 	[DisallowMultipleComponent]
@@ -117,14 +117,14 @@ namespace SpriteHelper
 			// カメラ追加
 			var go = new GameObject( "SpriteCamera" ) ;
 			go.transform.SetParent( transform, false ) ;
-			go.transform.SetLocalPositionAndRotation( new Vector3(  0,  0, -1 ), Quaternion.identity ) ;
+			go.transform.SetLocalPositionAndRotation( new Vector3(  0,  0, -1000 ), Quaternion.identity ) ;
 
 			var camera = go.AddComponent<Camera>() ;
 			camera.clearFlags = CameraClearFlags.SolidColor ;
-			camera.backgroundColor = Color.blue ;
+			camera.backgroundColor = new Color32(  64,  64,  64, 255 ) ;
 			camera.orthographic  = true ;
 			camera.nearClipPlane =    0.1f ;
-			camera.farClipPlane  = 2560.0f ;
+			camera.farClipPlane  = 2000.0f ;
 
 			//----------------------------------
 
@@ -1153,7 +1153,7 @@ namespace SpriteHelper
 			//----------------------------------------------------------
 			// ピボットの反映
 
-			m_Camera.transform.localPosition = new Vector3( - viewportW * m_Pivot.x, - viewportH * m_Pivot.y, -1 ) ;
+			m_Camera.transform.localPosition = new Vector3( - viewportW * m_Pivot.x, - viewportH * m_Pivot.y, m_Camera.transform.localPosition.z ) ;
 
 			//----------------------------------------------------------
 			// 解像度を更新

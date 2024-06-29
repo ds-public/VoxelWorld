@@ -5,13 +5,11 @@ using System.Collections.Generic ;
 using System.Security.Cryptography ;
 
 using UnityEngine ;
-using UnityEngine.Networking ;
 
 #if UNITY_EDITOR
 using UnityEditor ;
 #endif
 
-using StorageHelper ;
 
 /// <summary>
 /// アセットバンドルヘルパーパッケージ
@@ -88,7 +86,7 @@ namespace AssetBundleHelper
 					return null ;
 				}
 
-				T[] assets = new T[ Assets.Length ] ;
+				var assets = new T[ Assets.Length ] ;
 				for( int i  = 0 ; i <  Assets.Length ; i ++ )
 				{
 					assets[ i ] = Assets[ i ] as T ;

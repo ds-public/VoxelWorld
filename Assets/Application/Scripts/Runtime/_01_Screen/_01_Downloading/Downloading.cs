@@ -40,7 +40,7 @@ namespace DSW.Screens
 
 		//-------------------------------------------------------------------------------------------
 
-		override protected void OnAwake()
+		protected override void OnAwake()
 		{
 			// 最初に見えてはいけない表示物を非表示にする
 			m_LorePanel.View.SetActive( false ) ;
@@ -48,7 +48,7 @@ namespace DSW.Screens
 			m_ProgressPanel.View.SetActive( false ) ;
 		}
 
-		override protected async UniTask OnStart()
+		protected override async UniTask OnStart()
 		{
 			//----------------------------------------------------------
 			// 画面が暗転中にこの画面の準備を整える

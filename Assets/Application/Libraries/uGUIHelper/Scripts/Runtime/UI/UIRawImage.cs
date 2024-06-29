@@ -995,7 +995,7 @@ namespace uGUIHelper
 				(
 					identifiers[ 0 ].Identifier,		// 描画元のレンダーテクスチャの識別子(最初は画面キャプチャーしたレンダーテクスチャ)
 					identifiers[ 1 ].Identifier,		// 描画先のレンダーテクスチャの識別子
-					BlurFilterMaterial,						// マテリアル(シェーダー)
+					BlurFilterMaterial,					// マテリアル(シェーダー)
 					0									// シェーダーのパス
 				) ;
 

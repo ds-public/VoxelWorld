@@ -1,7 +1,7 @@
 {"AssetBundleFiles":[
-{"Path":"Materials","Size":34707,"Crc":381374093},
-{"Path":"Shaders","Size":17720,"Crc":2674926512},
-{"Path":"Sounds/BGM/008_Lobby","Size":6029744,"Crc":380463064},
-{"Path":"Sounds/BGM/010_World","Size":5146443,"Crc":2706422067},
-{"Path":"Textures","Size":36326,"Crc":3451052189}
+{"Path":"Materials","Size":34707,"Hash":"55a8d2a0c7bebaa6472f52460e8f7e24","Crc":381374093},
+{"Path":"Shaders","Size":17720,"Hash":"7fb3bece9ecfe1091b5800c73abe9578","Crc":2674926512},
+{"Path":"Sounds/BGM/008_Lobby","Size":6029744,"Hash":"fe3aba3f9f4cb0c022e226a5e5b7460a","Crc":380463064},
+{"Path":"Sounds/BGM/010_World","Size":5146443,"Hash":"e3e610944247a99ac9987e2884fdb6ca","Crc":2706422067},
+{"Path":"Textures","Size":36326,"Hash":"c68269b4bd636a88f2ac2d1320d964bc","Crc":3451052189}
 ]}

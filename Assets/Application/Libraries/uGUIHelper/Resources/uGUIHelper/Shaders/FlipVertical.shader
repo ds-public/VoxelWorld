@@ -44,10 +44,10 @@ Shader "Hidden/UI/FlipVertical"
 				return o;
 			}
 
-			fixed4 frag (v2f i) : SV_Target
+			fixed4 frag ( v2f i ) : SV_Target
 			{
-				fixed4 col = tex2D(_MainTex, i.uv);
-				return col;
+				fixed4 color = tex2D( _MainTex, i.uv ) ;
+				return color ;
 			}
 			ENDCG
 		}

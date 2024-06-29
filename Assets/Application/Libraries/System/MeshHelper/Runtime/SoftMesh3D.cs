@@ -13,7 +13,7 @@ using UnityEditorInternal ;
 namespace MeshHelper
 {
 	/// <summary>
-	/// ３Ｄメッシュ Version 2024/03/26
+	/// ３Ｄメッシュ Version 2024/06/14
 	/// </summary>
 	[ExecuteAlways]
 	[DisallowMultipleComponent]
@@ -29,7 +29,7 @@ namespace MeshHelper
 //		[MenuItem( "MeshHelper/Add a SoftMesh3D" )]					// メニューから
 		public static void CreateSoftMesh3D()
 		{
-			GameObject go = Selection.activeGameObject ;
+			var go = Selection.activeGameObject ;
 			if( go == null )
 			{
 				return ;
@@ -44,7 +44,7 @@ namespace MeshHelper
 
 			var child = new GameObject( "SoftMesh3D" ) ;
 
-			Transform t = child.transform ;
+			var t = child.transform ;
 			t.SetParent( go.transform, false ) ;
 			t.SetLocalPositionAndRotation( Vector3.zero, Quaternion.identity ) ;
 			t.localScale = Vector3.one ;
@@ -188,6 +188,8 @@ namespace MeshHelper
 					CleanupAtlasSprites() ;
 
 					m_SpriteAtlas  = value ;
+
+					Sprite = null ;	// 選択中のスプライトも初期化する
 				}
 			}
 		}
@@ -214,7 +216,11 @@ namespace MeshHelper
 			{
 				if( m_SpriteSet != value )
 				{
+					// 基本的にはインスタンスは維持して中身の情報を入れ替えるのでここが呼ばれる事は無い
+
 					m_SpriteSet  = value ;
+
+					Sprite = null ;	// 選択中のスプライトも初期化する
 				}
 			}
 		}
@@ -1210,7 +1216,7 @@ namespace MeshHelper
 		/// <summary>
 		/// アクティブかどうか
 		/// </summary>
-		public bool ActiveeSelf
+		public bool ActiveSelf
 		{
 			get
 			{
@@ -1566,6 +1572,17 @@ namespace MeshHelper
 			else
 			{
 				m_Mesh.Clear() ;
+			}
+
+			// 頂点数に応じてインデックスのビット数に適切なものを設定する
+			if( aV.Length >= 65535 )
+			{
+				// タイリングでは必須といえる
+				m_Mesh.indexFormat = UnityEngine.Rendering.IndexFormat.UInt32 ;	// 頂点数の最大値を増やす
+			}
+			else
+			{
+				m_Mesh.indexFormat = UnityEngine.Rendering.IndexFormat.UInt16 ;
 			}
 
 			m_Mesh.name			= modelName ;

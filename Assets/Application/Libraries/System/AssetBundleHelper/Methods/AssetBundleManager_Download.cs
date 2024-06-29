@@ -4,6 +4,7 @@ using System.Collections.Generic ;
 
 using UnityEngine ;
 
+
 /// <summary>
 /// アセットバンドルヘルパーパッケージ
 /// </summary>
@@ -53,7 +54,7 @@ namespace AssetBundleHelper
 			{
 				if( string.IsNullOrEmpty( manifestName ) == false && m_ManifestHash.ContainsKey( manifestName ) == true )
 				{
-					if( string.IsNullOrEmpty( assetBundlePath ) == false && m_ManifestHash[ manifestName ].CorrectPath( ref assetBundlePath, ref assetPath ) == true )
+					if( string.IsNullOrEmpty( assetBundlePath ) == false && m_ManifestHash[ manifestName ].CorrectPath( ref assetBundlePath, ref assetPath, out _ ) == true )
 					{
 						return m_ManifestHash[ manifestName ].GetUri( assetBundlePath ) ;
 					}
@@ -93,7 +94,7 @@ namespace AssetBundleHelper
 			{
 				if( string.IsNullOrEmpty( manifestName ) == false && m_ManifestHash.ContainsKey( manifestName ) == true )
 				{
-					if( string.IsNullOrEmpty( assetBundlePath ) == false && m_ManifestHash[ manifestName ].CorrectPath( ref assetBundlePath, ref assetPath ) == true )
+					if( string.IsNullOrEmpty( assetBundlePath ) == false && m_ManifestHash[ manifestName ].CorrectPath( ref assetBundlePath, ref assetPath, out _ ) == true )
 					{
 						yield return StartCoroutine( m_ManifestHash[ manifestName ].DownloadAssetBundle_Coroutine
 						(
@@ -488,7 +489,7 @@ namespace AssetBundleHelper
 			{
 				if( string.IsNullOrEmpty( manifestName ) == false && m_ManifestHash.ContainsKey( manifestName ) == true )
 				{
-					if( string.IsNullOrEmpty( assetBundlePath ) == false && m_ManifestHash[ manifestName ].CorrectPath( ref assetBundlePath, ref assetPath ) == true )
+					if( string.IsNullOrEmpty( assetBundlePath ) == false && m_ManifestHash[ manifestName ].CorrectPath( ref assetBundlePath, ref assetPath, out _ ) == true )
 					{
 						yield return StartCoroutine
 						(

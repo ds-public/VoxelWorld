@@ -44,11 +44,19 @@ namespace SpriteHelper
 
 			DrawAtlas( component ) ;
 
+			if( component.SpriteAtlas != null || component.SpriteSet != null )
+			{
+				DrawFlipper( component ) ;
+			}
+
 			DrawCollider( component ) ;
 
 			DrawAnimator( component ) ;
-		}
 
+			//----------------------------------------------------------
+
+			serializedObject.ApplyModifiedProperties() ;
+		}
 	}
 }
 #endif

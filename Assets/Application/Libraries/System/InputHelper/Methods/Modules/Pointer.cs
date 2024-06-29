@@ -54,11 +54,11 @@ namespace InputHelper
 			}
 			set
 			{
-				if( m_Owner.CursorProcessing == true )
+				if( InputManager.CursorProcessing == true )
 				{
 					// InputManager でのカーソル制御は有効
 
-					m_Owner.CursorVisible = value ;
+					InputManager.SetCursorVisible( value ) ;
 				}
 				else
 				{

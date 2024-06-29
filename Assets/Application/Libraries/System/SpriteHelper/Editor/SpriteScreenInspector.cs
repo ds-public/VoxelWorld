@@ -310,7 +310,7 @@ namespace SpriteHelper
 
 		//-------------------------------------------------------------------------------------------
 		// Size
-
+/*
 		protected void DrawSize( SpriteController component )
 		{
 			var size = EditorGUILayout.Vector2Field( "Size", component.Size ) ;
@@ -321,9 +321,9 @@ namespace SpriteHelper
 				EditorUtility.SetDirty( component ) ;
 			}
 		}
-
+*/
 		//-------------------------------------------------------------------------------------------
-
+/*
 		// AtlasSprite の項目を描画する
 		protected void DrawAtlas( SpriteController component )
 		{
@@ -533,9 +533,9 @@ namespace SpriteHelper
 				}
 			}
 		}
-
+*/
 		//---------------
-
+/*
 		/// <summary>
 		/// エディター専用のスプライトアトラスからオリジナルパーツスプライトのインスタンスを取得する
 		/// </summary>
@@ -589,7 +589,8 @@ namespace SpriteHelper
 
 			return sprites.ToArray() ;
 		}
-
+*/
+/*
 		// スプライトセット情報を更新する
 		private void RefreshSpriteSet( SpriteController component, Texture atlasTexture )
 		{
@@ -634,10 +635,10 @@ namespace SpriteHelper
 				component.SpriteSet?.ClearSprites() ;
 			}
 		}
-
+*/
 		//-------------------------------------------------------------------------------------------
 		// Collider
-
+/*
 		private int		m_ColliderIndex			= 0 ;
 		private bool	m_ColliderRemoveAready	= false ;
 
@@ -764,11 +765,11 @@ namespace SpriteHelper
 				}
 			}
 		}
-
+*/
 
 		//-------------------------------------------------------------------------------------------
 		// Tween
-
+/*
 		// Tween の追加と削除
 		private string m_AddTweenIdentity = "" ;
 		private int    m_RemoveTweenIndex = 0 ;
@@ -915,10 +916,10 @@ namespace SpriteHelper
 				GUILayout.EndHorizontal() ;		// 横並び終了
 			}
 		}
-
+*/
 		//-----------------------------------------------------------
 		// Flipper
-
+/*
 		// Filipper の追加と削除
 		private string m_AddFlipperIdentity = "" ;
 		private int    m_RemoveFlipperIndex = 0 ;
@@ -1063,10 +1064,9 @@ namespace SpriteHelper
 				GUILayout.EndHorizontal() ;		// 横並び終了
 			}
 		}
-
-
+*/
 		//--------------------------------------------------------------------------
-
+/*
 		// アニメーターの生成破棄チェックボックスを描画する
 		protected void DrawAnimator( SpriteController controller )
 		{
@@ -1086,9 +1086,9 @@ namespace SpriteHelper
 			}
 			GUILayout.EndHorizontal() ;		// 横並び終了
 		}
-
+*/
 		//--------------------------------------------------------------------------
-
+/*
 		private static readonly Dictionary<string,string> m_Japanese_Message = new ()
 		{
 			{ "RemoveTweenOK?",		"Tween [ %1 ] を削除してもよろしいですか？" },
@@ -1127,6 +1127,7 @@ namespace SpriteHelper
 				return m_English_Message[ label ] ;
 			}
 		}
+*/
 	}
 }
 

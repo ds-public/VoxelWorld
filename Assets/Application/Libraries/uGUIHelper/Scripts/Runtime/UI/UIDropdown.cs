@@ -8,6 +8,7 @@ using System.Collections.Generic ;
 
 using TMPro ;
 
+
 namespace uGUIHelper
 {
 	/// <summary>
@@ -57,11 +58,19 @@ namespace uGUIHelper
 			}
 		}
 
+        //------------------------------------------------------------------------------------
+
+        // コールバックを一時的に無効化する
+        private bool m_DisableCallback ;
+
+        //--------------------------------------------------------------------------------------
+
+
 		/// <summary>
 		/// 各派生クラスでの初期化処理を行う（メニューまたは AddView から生成される場合のみ実行れる）
 		/// </summary>
 		/// <param name="option"></param>
-		override protected void OnBuild( string option = "" )
+		protected override void OnBuild( string option = "" )
 		{
 			var dropdown = CTMP_Dropdown != null ? CTMP_Dropdown : gameObject.AddComponent<TMP_Dropdown>() ;
 			if( dropdown == null )
@@ -221,6 +230,12 @@ namespace uGUIHelper
 		// 内部リスナー登録
 		private void OnValueChangedInner( int value )
 		{
+            if( m_DisableCallback == true )
+            {
+                // コールバック無効
+                return ;
+            }
+
 			if( OnValueChangedAction != null || OnValueChangedDelegate != null )
 			{
 				string identity = Identity ;
@@ -295,6 +310,8 @@ namespace uGUIHelper
 
 			int activeValue = dropdown.value ;
 
+            m_DisableCallback = true ;
+
 			dropdown.value = 0 ;
 			dropdown.ClearOptions() ;
 
@@ -317,6 +334,8 @@ namespace uGUIHelper
 			{
 				activeValue  = initailValue ;
 			}
+
+            m_DisableCallback = false ;
 
 			dropdown.value  = activeValue ;
 

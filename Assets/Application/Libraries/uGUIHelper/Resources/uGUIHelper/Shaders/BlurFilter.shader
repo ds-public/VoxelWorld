@@ -1,196 +1,94 @@
 Shader "Hidden/UI/BlurFilter"
 {
-    Properties
-    {
-       [PerRendererData]  _MainTex("Main Texture", 2D) = "white" {}
-    }
+	Properties
+	{
+	   [PerRendererData]  _MainTex( "Main Texture", 2D ) = "white" {}
+	}
+	SubShader
+	{
+		CGINCLUDE
+		#pragma vertex vert
+		#pragma fragment frag
+			
+		#include "UnityCG.cginc"
 
-    SubShader
-    {
-        Tags
-        {
-            "RenderType" = "Opaque"
-            "RenderPipeline" = "UniversalPipeline"
-        }
+		sampler2D _MainTex ;
+		float4 _MainTex_ST ;
+		float4 _MainTex_TexelSize ;
 
-        Pass
-        {
-            Name "BlurFilter - Sampling"
-            ZTest Always
-            ZWrite Off
-            Cull Back
-            Blend One Zero
+		struct appdata
+		{
+			float4 vertex : POSITION ;
+			float2 uv : TEXCOORD0;
+		} ;
 
-            HLSLPROGRAM
-            #pragma target 2.0
+		struct v2f
+		{
+			float4 vertex : SV_POSITION ;
+			float2 uv : TEXCOORD0 ;
+		} ;
 
-            #pragma vertex vert
-            #pragma fragment frag
+		// メインテクスチャからサンプリングしてRGBのみ返す
+		half3 sampleMain( float2 uv )
+		{
+			return tex2D( _MainTex, uv ).rgb ;
+		}
 
-            #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"
-            #include "BlurFilter.hlsl"
+		// 対角線上の4点からサンプリングした色の平均値を返す
+		half3 sampleBox ( float2 uv, float delta )
+		{
+			float4 offset = _MainTex_TexelSize.xyxy * float2( -delta, delta ).xxyy ;
+			half3 sum = sampleMain( uv + offset.xy ) + sampleMain( uv + offset.zy ) + sampleMain( uv + offset.xw ) + sampleMain( uv + offset.zw ) ;
+			return sum * 0.25 ;
+		}
 
-            TEXTURE2D(_MainTex); SAMPLER(sampler_MainTex);
-            float4 _MainTex_TexelSize;
-            float _SamplingDelta;
+		// 頂点シェーダは各パスで共通
+		v2f vert ( appdata v )
+		{
+			v2f o ;
+			o.vertex = UnityObjectToClipPos( v.vertex ) ;
+			o.uv = TRANSFORM_TEX( v.uv, _MainTex ) ;
+			return o ;
+		}
 
-            struct Attributes
-            {
-                float4 positionOS : POSITION;
-                float2 uv         : TEXCOORD0;
+		ENDCG
 
-                UNITY_VERTEX_INPUT_INSTANCE_ID
-            };
+		Cull Off
+		ZTest Always
+		ZWrite Off
 
-            struct Varyings
-            {
-                float4 positionCS : SV_POSITION;
+		Tags { "RenderType"="Opaque" }
 
-            	float2 uv0        : TEXCOORD0;
-                float4 uv1        : TEXCOORD1;
-                float4 uv2        : TEXCOORD2;
-                float4 uv3        : TEXCOORD3;
-                float4 uv4        : TEXCOORD4;
+		// ダウンサンプリング用のパス
+		Pass
+		{
+			CGPROGRAM
 
-                UNITY_VERTEX_INPUT_INSTANCE_ID
-                UNITY_VERTEX_OUTPUT_STEREO
-            };
+			// ダウンサンプリング時には1ピクセル分ずらした対角線上の4点からサンプリング
+			fixed4 frag ( v2f i ) : SV_Target
+			{
+				half4 color = 1 ;
+				color.rgb = sampleBox( i.uv, 1.0 ) ;
+				return color ;
+			}
 
-            Varyings vert(Attributes input)
-            {
-                Varyings output = (Varyings)0;
+			ENDCG
+		}
 
-                UNITY_SETUP_INSTANCE_ID(input);
-                UNITY_TRANSFER_INSTANCE_ID(input, output);
-                UNITY_INITIALIZE_VERTEX_OUTPUT_STEREO(output);
+		// アップサンプリング用のパス
+		Pass
+		{
+			CGPROGRAM
 
-                // position
-                const float3 positionWS = TransformObjectToWorld(input.positionOS.xyz);
-                output.positionCS = TransformWorldToHClip(positionWS);
+			// アップサンプリング時には0.5ピクセル分ずらした対角線上の4点からサンプリング
+			fixed4 frag ( v2f i ) : SV_Target
+			{
+				half4 color = 1 ;
+				color.rgb = sampleBox( i.uv, 0.5 ) ;
+				return color ;
+			}
 
-                // uv
-                BoxFilteringUV(
-                    input.uv,
-                    _SamplingDelta,
-                    _MainTex_TexelSize,
-                    output.uv0,
-                    output.uv1,
-                    output.uv2,
-                    output.uv3,
-                    output.uv4
-                );
-
-                return output;
-            }
-
-            half4 frag(Varyings input) : SV_Target
-            {
-                UNITY_SETUP_STEREO_EYE_INDEX_POST_VERTEX(input);
-                return half4(BoxFilteringSampling(
-                    input.uv0,
-                    input.uv1,
-                    input.uv2,
-                    input.uv3,
-                    input.uv4,
-                    TEXTURE2D_ARGS(_MainTex, sampler_MainTex)
-                ).rgb, 1.0h);
-            }
-            ENDHLSL
-        }
-
-        Pass
-        {
-            Name "BlurFilter - Sampling Final"
-            ZTest Always
-            ZWrite Off
-            Cull Back
-            Blend One Zero
-
-            HLSLPROGRAM
-            #pragma target 2.0
-
-            #pragma vertex vert
-            #pragma fragment frag
-
-            #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"
-            #include "BlurFilter.hlsl"
-
-            TEXTURE2D(_MainTex); SAMPLER(sampler_MainTex);
-            float4 _MainTex_TexelSize;
-            float _SamplingDelta;
-
-            struct Attributes
-            {
-                float4 positionOS : POSITION;
-                float2 uv         : TEXCOORD0;
-
-                UNITY_VERTEX_INPUT_INSTANCE_ID
-            };
-
-            struct Varyings
-            {
-                float4 positionCS : SV_POSITION;
-
-            	float2 uv0        : TEXCOORD0;
-                float4 uv1        : TEXCOORD1;
-                float4 uv2        : TEXCOORD2;
-                float4 uv3        : TEXCOORD3;
-                float4 uv4        : TEXCOORD4;
-
-                UNITY_VERTEX_INPUT_INSTANCE_ID
-                UNITY_VERTEX_OUTPUT_STEREO
-            };
-
-            Varyings vert(Attributes input)
-            {
-                Varyings output = (Varyings)0;
-
-                UNITY_SETUP_INSTANCE_ID(input);
-                UNITY_TRANSFER_INSTANCE_ID(input, output);
-                UNITY_INITIALIZE_VERTEX_OUTPUT_STEREO(output);
-
-                // position
-                const float3 positionWS = TransformObjectToWorld(input.positionOS.xyz);
-                output.positionCS = TransformWorldToHClip(positionWS);
-
-                // uv
-            #if UNITY_UV_STARTS_AT_TOP
-                float2 uv;
-                uv.x = input.uv.x;
-                uv.y = 1.0f - input.uv.y;
-            #else
-                const float2 uv = input.uv;
-            #endif
-
-                BoxFilteringUV(
-                    uv,
-                    _SamplingDelta,
-                    _MainTex_TexelSize,
-                    output.uv0,
-                    output.uv1,
-                    output.uv2,
-                    output.uv3,
-                    output.uv4
-                );
-
-                return output;
-            }
-
-            half4 frag(Varyings input) : SV_Target
-            {
-                UNITY_SETUP_STEREO_EYE_INDEX_POST_VERTEX(input);
-                return half4(BoxFilteringSampling(
-                    input.uv0,
-                    input.uv1,
-                    input.uv2,
-                    input.uv3,
-                    input.uv4,
-                    TEXTURE2D_ARGS(_MainTex, sampler_MainTex)
-                ).rgb, 1.0h);
-            }
-            ENDHLSL
-        }
-    }
-
-    FallBack "Hidden/Universal Render Pipeline/FallbackError"
+			ENDCG
+		}
+	}
 }

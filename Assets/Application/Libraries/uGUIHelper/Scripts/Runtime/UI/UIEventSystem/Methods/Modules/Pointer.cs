@@ -54,11 +54,11 @@ namespace uGUIHelper.InputAdapter
 			}
 			set
 			{
-				if( m_Owner.CursorProcessing == true )
+				if( UIEventSystem.CursorProcessing == true )
 				{
 					// InputManager でのカーソル制御は有効
 
-					m_Owner.CursorVisible = value ;
+					UIEventSystem.SetCursorVisible( value ) ;
 				}
 				else
 				{
