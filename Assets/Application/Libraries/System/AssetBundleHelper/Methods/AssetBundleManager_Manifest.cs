@@ -1108,6 +1108,7 @@ namespace AssetBundleHelper
 #endif
 					//--------------------------------------------------------
 
+					Debug.Log( crcJsonText ) ;
 					var json = JsonUtility.FromJson<JsonDeserializer>( crcJsonText ) ;
 					if( json != null )
 					{

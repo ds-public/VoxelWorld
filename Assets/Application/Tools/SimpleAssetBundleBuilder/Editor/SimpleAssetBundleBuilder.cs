@@ -17,7 +17,7 @@ using UnityEditor.SceneManagement ;
 namespace Tools.ForAssetBundle
 {
 	/// <summary>
-	/// アセットバンドルビルダークラス(エディター用) Version 2024/04/26 0
+	/// アセットバンドルビルダークラス(エディター用) Version 2024/06/29 0
 	/// </summary>
 	public class SimpleAssetBundleBuilder : EditorWindow
 	{
@@ -904,8 +904,8 @@ namespace Tools.ForAssetBundle
 				return ( null, null ) ;
 			}
 
-			text = text.Replace( "\n", "\x0A" ) ;
 			text = text.Replace( "\x0D\x0A", "\x0A" ) ;
+			text = text.Replace( "\x0D", "\x0A" ) ;	// CR のみのケースが存在する
 
 			var elements = text.Split( '\x0A' ) ;
 			if( elements == null || elements.Length == 0 )
@@ -2205,15 +2205,7 @@ namespace Tools.ForAssetBundle
 
 			//-------------------------------------------------------------------------------
 
-			// バージョンファイルを出力する
-			if( m_GenerateVersionFile == true )
-			{
-				DateTime dt = DateTime.Now ;
-				string version = "Last Update : " + dt.ToString( "yyyy/MM/dd HH:mm:ss" ) ;
-//				Debug.Log( "パス:" +  m_AssetBundleRootFolderPath + GetAssetBundleRootName() + ".txt" ) ;
-				Debug.Log( "<color=#00FFFF>" + version + "</color>" ) ;
-				File.WriteAllText( m_AssetBundleRootFolderPath + GetAssetBundleRootName() + ".txt", version ) ;
-			}
+			bool isDifference = false ;
 
 			// ＣＲＣファイルを出力する(CSV版)
 			if( m_GenerateCrcFile_Csv == true || m_GenerateCrcFile_Json == true )
@@ -2231,8 +2223,8 @@ namespace Tools.ForAssetBundle
 					{
 						// 分解して情報を格納する
 
-						text = text.Replace( "\n", "\x0A" ) ;
 						text = text.Replace( "\x0D\x0A", "\x0A" ) ;
+						text = text.Replace( "\x0D", "\x0A" ) ;		// CR のみのケースが存在する
 
 						var lines = text.Split( '\x0A' ) ;
 						if( lines != null && lines.Length >  0 )
@@ -2479,6 +2471,9 @@ namespace Tools.ForAssetBundle
 
 						Debug.Log( "<color=#FFFFFF>=======================================</color>" ) ;
 						Debug.Log( differenceFull.ToString() ) ;
+
+						// 変化があった
+						isDifference = true ;
 					}
 					else
 					{
@@ -2486,6 +2481,23 @@ namespace Tools.ForAssetBundle
 					}
 				}
 			}
+
+			// バージョンファイルを出力する
+			if( m_GenerateVersionFile == true )
+			{
+				DateTime dt = DateTime.Now ;
+				string version = "Last Update : " + dt.ToString( "yyyy/MM/dd HH:mm:ss" ) ;
+//				Debug.Log( "パス:" +  m_AssetBundleRootFolderPath + GetAssetBundleRootName() + ".txt" ) ;
+				Debug.Log( "<color=#00FFFF>" + version + "</color>" ) ;
+
+				string versionFilePath = m_AssetBundleRootFolderPath + GetAssetBundleRootName() + ".txt" ;
+
+				if( File.Exists( versionFilePath ) == false || isDifference == true )
+				{
+					File.WriteAllText( versionFilePath, version ) ;
+				}
+			}
+
 
 			//-------------------------------------------------------------------------------
 
@@ -2755,8 +2767,8 @@ namespace Tools.ForAssetBundle
 				return string.Empty ;
 			}
 
-			text = text.Replace( "\n", "\x0A" ) ;
 			text = text.Replace( "\x0A\x0D", "\x0A" ) ;
+			text = text.Replace( "\x0D", "\x0A" ) ;	// CR のみのケースが存在する
 
 			var lines = text.Split( '\x0A' ) ;
 			if( lines == null || lines.Length == 0 )
@@ -2804,6 +2816,7 @@ namespace Tools.ForAssetBundle
 				{
 					// 該当項目発見
 					t = i ;
+					break ;	// AssetFileHash: の後の最初の Hash:
 				}
 			}
 
@@ -3163,8 +3176,8 @@ namespace Tools.ForAssetBundle
 
 			//-------------------------------------------------
 
-			code = code.Replace( "\n", "\x0A" ) ;
 			code = code.Replace( "\x0D\x0A", "\x0A" ) ;
+			code = code.Replace( "\x0D", "\x0A" ) ;		// CR のみのケースが存在する
 
 			var line = code.Split( '\x0A' ) ;
 			int i, l = line.Length ;
