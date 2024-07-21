@@ -218,7 +218,7 @@ namespace DSW
 			//----------------------------------
 
 			// 通信スレッドのコールバックを呼ぶ
-			m_OnDisconnected?.Invoke(  e.Code, e.Reason ) ;
+			m_OnDisconnected?.Invoke( e.Code, e.Reason ) ;
 
 			if( m_MainThreadContext != null )
 			{
@@ -242,6 +242,9 @@ namespace DSW
 		// 異常が発生した際に呼び出される
 		private void OnError(  object sender, ErrorEventArgs e )
 		{
+			Debug.Log( "<color=#FF7F00>エラーが発生したよ</color>" ) ;
+
+
 			// 通信スレッドのコールバックを呼ぶ
 			m_OnError?.Invoke( e.Message ) ;
 			

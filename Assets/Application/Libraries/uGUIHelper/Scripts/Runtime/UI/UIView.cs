@@ -27,7 +27,7 @@ namespace uGUIHelper
 	/// </summary>
 	public class UIView : UIBehaviour
 	{
-		public const string Version = "Version 2024/06/17 0" ;
+		public const string Version = "Version 2024/07/21 0" ;
 
 		// ソースコード
 		// https://bitbucket.org/Unity-Technologies/ui/src/2019.1/
@@ -2810,7 +2810,7 @@ namespace uGUIHelper
 				}
 				else
 				{
-					CanvasGroup canvasGroup = GetCanvasGroup() ;
+					var canvasGroup = GetCanvasGroup() ;
 					if( canvasGroup == null )
 					{
 						return 1.0f ;
@@ -2822,7 +2822,7 @@ namespace uGUIHelper
 			{
 				m_LocalAlpha = value ;
 
-				CanvasGroup canvasGroup = GetCanvasGroup() ;
+				var canvasGroup = GetCanvasGroup() ;
 				if( canvasGroup == null )
 				{
 					return ;
@@ -2874,13 +2874,14 @@ namespace uGUIHelper
 		/// </summary>
 		public enum MaterialTypes
 		{
-			Default			= 0,
+			Default         = 0,
 			Additional		= 1,
-			Grayscale		= 2,
-			Sepia			= 3,
-			Interpolation	= 4,
-			Mosaic			= 5,
-			Blur			= 6,
+			Multiply        = 2,
+			Grayscale		= 3,
+			Sepia			= 4,
+			Interpolation	= 5,
+			Mosaic			= 6,
+			Blur			= 7,
 		}
 
 		[SerializeField][HideInInspector]
@@ -2899,6 +2900,8 @@ namespace uGUIHelper
 			{
 				if( m_MaterialType != value )
 				{
+					var beforeMaterialType = m_MaterialType ;
+
 					m_MaterialType  = value ;
 
 					var graphic = GetGraphic() ;
@@ -2911,7 +2914,27 @@ namespace uGUIHelper
 
 					if( m_ActiveMaterial != null )
 					{
-						DestroyImmediate( m_ActiveMaterial ) ;
+						bool isAsset =
+						(
+							beforeMaterialType == MaterialTypes.Default		||
+							beforeMaterialType == MaterialTypes.Additional	||
+							beforeMaterialType == MaterialTypes.Multiply	||
+							beforeMaterialType == MaterialTypes.Grayscale
+						) ;
+
+						// マテリアルが直接アセットファイルのインスタンスを指している場合は破棄は実行しない
+						if( isAsset == false )
+						{
+							if( Application.isPlaying == false )
+							{
+								DestroyImmediate( m_ActiveMaterial ) ;
+							}
+							else
+							{
+								Destroy( m_ActiveMaterial ) ;
+							}
+						}
+
 						m_ActiveMaterial = null ;
 					}
 
@@ -2945,42 +2968,64 @@ namespace uGUIHelper
 		}
 
 		// カスタムマテリアルのインスタンスを取得する
+		// 注意：Overlay バージョンのマテリアル＆シェーダーは、
+		// 　　　Canvas の RenderMode を WorldSpace にして、Ｚソートを有効にした際に、
+		// 　　　Ｚ値が同一で、後から描画されるＵＩがＺテストによって正しく描画されない問題を回避するためのものだと思われる。
+		// 　　　※主にＶＲ系のＵＩを作る際に必要になったと朧気ながら記憶している。
 		private Material CreateCustomMaterial( MaterialTypes materialType )
 		{
 			Material material = null ;
 
+			string folderName = "Normal" ;
+			string additionalName = string.Empty ;
+			if( IsCanvasOverlay == true )
+			{
+				folderName     = "Overlay" ;
+				additionalName = "Overlay-" ;
+			}
+
+			//-----------------------------------------------------------
+
 			if( materialType == MaterialTypes.Additional )
 			{
 				// パラメータは無いためアセットファイル側のインスタンスを設定する(SharedMaterial)
-//				material = Instantiate( Resources.Load<Material>( "uGUIHelper/Shaders/Normal/UI-Additional" ) ) ;
-				material = Resources.Load<Material>( "uGUIHelper/Shaders/Normal/UI-Additional" ) ;
+				material = Resources.Load<Material>( $"uGUIHelper/Shaders/{folderName}/UI-{additionalName}Additional" ) ;
+			}
+			else
+			if( materialType == MaterialTypes.Multiply )
+			{
+				// パラメータは無いためアセットファイル側のインスタンスを設定する(SharedMaterial)
+				material = Resources.Load<Material>( $"uGUIHelper/Shaders/{folderName}/UI-{additionalName}Multiply" ) ;
 			}
 			else
 			if( materialType == MaterialTypes.Grayscale )
 			{
 				// パラメータは無いためアセットファイル側のインスタンスを設定する(SharedMaterial)
-//				material = Instantiate( Resources.Load<Material>( "uGUIHelper/Shaders/Normal/UI-Grayscale" ) ) ;
-				material = Resources.Load<Material>( "uGUIHelper/Shaders/Normal/UI-Grayscale" ) ;
+				material = Resources.Load<Material>( $"uGUIHelper/Shaders/{folderName}/UI-{additionalName}Grayscale" ) ;
 			}
 			else
 			if( materialType == MaterialTypes.Sepia )
 			{
-				material = Instantiate( Resources.Load<Material>( "uGUIHelper/Shaders/Normal/UI-Sepia" ) ) ;
+				// パラメータが存在するため Instantiate が必要
+				material = Instantiate( Resources.Load<Material>( $"uGUIHelper/Shaders/{folderName}/UI-{additionalName}Sepia" ) ) ;
 			}
 			else
 			if( materialType == MaterialTypes.Interpolation )
 			{
-				material = Instantiate( Resources.Load<Material>( "uGUIHelper/Shaders/Normal/UI-Interpolation" ) ) ;
+				// パラメータが存在するため Instantiate が必要
+				material = Instantiate( Resources.Load<Material>( $"uGUIHelper/Shaders/{folderName}/UI-{additionalName}Interpolation" ) ) ;
 			}
 			else
 			if( m_MaterialType == MaterialTypes.Mosaic )
 			{
-				material = Instantiate( Resources.Load<Material>( "uGUIHelper/Shaders/Normal/UI-Mosaic" ) ) ;
+				// パラメータが存在するため Instantiate が必要
+				material = Instantiate( Resources.Load<Material>( $"uGUIHelper/Shaders/{folderName}/UI-{additionalName}Mosaic" ) ) ;
 			}
 			else
 			if( materialType == MaterialTypes.Blur )
 			{
-				material = Instantiate( Resources.Load<Material>( "uGUIHelper/Shaders/Normal/UI-Blur" ) ) ;
+				// パラメータが存在するため Instantiate が必要
+				material = Instantiate( Resources.Load<Material>( $"uGUIHelper/Shaders/{folderName}/UI-{additionalName}Blur" ) ) ;
 			}
 
 			return material ;
@@ -3906,7 +3951,7 @@ namespace uGUIHelper
 		/// <param name="identity"></param>
 		public UIFlipper AddFlipper( string identity )
 		{
-			UIFlipper flipper = gameObject.AddComponent<UIFlipper>() ;
+			var flipper = gameObject.AddComponent<UIFlipper>() ;
 			flipper.Identity = identity ;
 
 			return flipper ;
@@ -3919,7 +3964,7 @@ namespace uGUIHelper
 		/// <param name="instance"></param>
 		public void RemoveFlipper( string identity, int instance = 0 )
 		{
-			UIFlipper[] flippers = GetComponents<UIFlipper>() ;
+			var flippers = GetComponents<UIFlipper>() ;
 			if( flippers == null || flippers.Length == 0 )
 			{
 				return ;
@@ -3959,7 +4004,7 @@ namespace uGUIHelper
 		/// <returns></returns>
 		public UIFlipper GetFlipper( string identity )
 		{
-			UIFlipper[] flippers = gameObject.GetComponents<UIFlipper>() ;
+			var flippers = gameObject.GetComponents<UIFlipper>() ;
 			if( flippers == null || flippers.Length == 0 )
 			{
 				return null ;
@@ -3988,7 +4033,7 @@ namespace uGUIHelper
 		/// <returns></returns>
 		public bool PlayFlipperDirect( string identity, bool destroyAtEnd = false, float speed = 0, float delay = -1, Action<string,UIFlipper> onFinishedAction = null )
 		{
-			UIFlipper flipper = GetFlipper( identity ) ;
+			var flipper = GetFlipper( identity ) ;
 			if( flipper == null )
 			{
 				return false ;
@@ -4020,7 +4065,7 @@ namespace uGUIHelper
 		/// <returns></returns>
 		public AsyncState PlayFlipper( string identity, bool destroyAtEnd = false, float speed = 0, float delay = -1 )
 		{
-			UIFlipper flipper = GetFlipper( identity ) ;
+			var flipper = GetFlipper( identity ) ;
 			if( flipper == null )
 			{
 				Debug.LogWarning( "Not found identity of flipper : " + identity ) ;
@@ -4073,7 +4118,7 @@ namespace uGUIHelper
 		/// <returns></returns>
 		public bool IsFlipperPlaying( string identity )
 		{
-			UIFlipper flipper = GetFlipper( identity ) ;
+			var flipper = GetFlipper( identity ) ;
 			if( flipper == null )
 			{
 				return false ;
@@ -4094,7 +4139,7 @@ namespace uGUIHelper
 		{
 			get
 			{
-				UIFlipper[] flippers = gameObject.GetComponents<UIFlipper>() ;
+				var flippers = gameObject.GetComponents<UIFlipper>() ;
 				if( flippers == null || flippers.Length == 0 )
 				{
 					return false ;
@@ -4119,7 +4164,7 @@ namespace uGUIHelper
 		/// <returns></returns>
 		public bool StopFlipper( string identity )
 		{
-			UIFlipper flipper = GetFlipper( identity ) ;
+			var flipper = GetFlipper( identity ) ;
 			if( flipper == null )
 			{
 				return false ;
@@ -4457,7 +4502,7 @@ namespace uGUIHelper
 
 				UICanvas canvas = null ;
 
-				Transform t = gameObject.transform ;
+				var t = gameObject.transform ;
 				for( i  =  0 ; i <  l ; i ++ )
 				{
 					if( t.gameObject.TryGetComponent<UICanvas>( out canvas ) == true )
@@ -4534,7 +4579,7 @@ namespace uGUIHelper
 			go.transform.SetParent( gameObject.transform, false ) ;
 		
 			// コンポーネントをアタッチする
-			T component = go.AddComponent<T>() ;
+			var component = go.AddComponent<T>() ;
 		
 			if( component == null )
 			{
@@ -10705,6 +10750,9 @@ namespace uGUIHelper
 		private readonly bool[]	m_MultiTouchState    = new bool[ 10 ] ;
 		private readonly int[]	m_MultiTouchFingerId = new int[ 10 ] ;
 
+		private bool[] m_MultiTouchEntries = new bool[ 10 ] ;
+		private Vector2[] m_MultiTouchPointers = new Vector2[ 10 ] ;
+
 		/// <summary>
 		/// レイキャストのブロックキングに関わらず現在のタッチ情報を取得する
 		/// </summary>
@@ -10714,8 +10762,6 @@ namespace uGUIHelper
 		{
 			int i, l ;
 			int states = 0 ;
-			bool[] entries = new bool[ 10 ] ;
-			Vector2[] pointers = new Vector2[ 10 ] ;
 
 			int j, c, e ;
 
@@ -10753,8 +10799,8 @@ namespace uGUIHelper
 								if( m_MultiTouchFingerId[ j ] == fingerId )
 								{
 									// 既に登録済み
-									entries[ j ] = true ;
-									pointers[ j ] = position ;
+									m_MultiTouchEntries[ j ] = true ;
+									m_MultiTouchPointers[ j ] = position ;
 									states |= ( 1 << j ) ;
 									break ;
 								}
@@ -10775,8 +10821,8 @@ namespace uGUIHelper
 							m_MultiTouchState[ e ] = true ;
 							m_MultiTouchFingerId[ e ] = fingerId ;
 
-							entries[ e ] = true ;
-							pointers[ e ] = position ;
+							m_MultiTouchEntries[ e ] = true ;
+							m_MultiTouchPointers[ e ] = position ;
 							states |= ( 1 << e ) ;
 						}
 					}
@@ -10786,7 +10832,7 @@ namespace uGUIHelper
 			// 新規登録または上書更新が無かったスロットを解放する
 			for( i  = 0 ; i <  l ; i ++ )
 			{
-				if( entries[ i ] == false )
+				if( m_MultiTouchEntries[ i ] == false )
 				{
 					m_MultiTouchState[ i ] = false ;
 				}
@@ -10794,13 +10840,13 @@ namespace uGUIHelper
 
 			if( states != 0 )
 			{
-				l = entries.Length ;
+				l = m_MultiTouchEntries.Length ;
 				for( i  = 0 ; i <  l ; i ++ )
 				{
-					if( entries[ i ] == true )
+					if( m_MultiTouchEntries[ i ] == true )
 					{
 						// 登録があったスロットのみローカル座標に変換する
-						pointers[ i ] = GetLocalPosition( pointers[ i ] ) ;
+						m_MultiTouchPointers[ i ] = GetLocalPosition( m_MultiTouchPointers[ i ] ) ;
 					}
 				}
 			}
@@ -10832,15 +10878,14 @@ namespace uGUIHelper
 						if( isHit == true )
 						{
 							states |= ( 1 << i ) ;
-							entries[ i ] = true ;
-							pointers[ i ] = GetLocalPosition( position ) ;
+							m_MultiTouchEntries[ i ] = true ;
+							m_MultiTouchPointers[ i ] = GetLocalPosition( position ) ;
 
 							c ++ ;
 							j = i ;
 						}
 					}
 				}
-
 
 				//-----------------------------------------------------------------------------------------
 				// ピンチ動作のエミュレート(強制的に２点タッチに変える)
@@ -10863,13 +10908,13 @@ namespace uGUIHelper
 					{
 						j ++ ;
 						states |= ( 1 << j ) ;
-						pointers[ j ] = new Vector2( - pointers[ j - 1 ].x, pointers[ j - 1 ].y ) ;
+						m_MultiTouchPointers[ j ] = new Vector2( - m_MultiTouchPointers[ j - 1 ].x, m_MultiTouchPointers[ j - 1 ].y ) ;
 					}
 					if( ( InputAdapter.UIEventSystem.GetKey( InputAdapter.KeyCodes.LeftControl ) == true || InputAdapter.UIEventSystem.GetKey( InputAdapter.KeyCodes.RightControl ) == true ) && InputAdapter.UIEventSystem.GetKey( InputAdapter.KeyCodes.Y ) == true )
 					{
 						j ++ ;
 						states |= ( 1 << j ) ;
-						pointers[ j ] = new Vector2( pointers[ j - 1 ].x, - pointers[ j - 1 ].y ) ;
+						m_MultiTouchPointers[ j ] = new Vector2( m_MultiTouchPointers[ j - 1 ].x, - m_MultiTouchPointers[ j - 1 ].y ) ;
 					}
 				}
 				else
@@ -10881,7 +10926,7 @@ namespace uGUIHelper
 
 			//----------------------------------------------------------
 
-			return ( states, pointers ) ;
+			return ( states, m_MultiTouchPointers ) ;
 		}
 
 #if UNITY_EDITOR

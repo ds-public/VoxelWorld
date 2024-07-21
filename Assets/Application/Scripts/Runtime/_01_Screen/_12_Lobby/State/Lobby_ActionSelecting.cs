@@ -42,6 +42,9 @@ namespace DSW.Screens
 			PlayerData.ServerAddress	= serverAddress ;
 			PlayerData.ServerPortNumber	= serverPortNumber ;
 
+
+			Debug.Log( "<color=#FF00FF>サーバーの待ち受けポート番号 : " + serverPortNumber + "</color>" ) ;
+
 			// フェードアウト
 			await m_ModeSettingPanel.FadeOut() ;
 

@@ -15,11 +15,11 @@ using UnityEditorInternal ;
 namespace SpriteHelper
 {
 	/// <summary>
-	/// スプライト制御クラス  Version 2024/05/21
+	/// スプライト制御クラス  Version 2024/07/18
 	/// </summary>
 	[ExecuteAlways]
 	[DisallowMultipleComponent]
-	[RequireComponent( typeof( SpriteRenderer ) )]
+	[RequireComponent( typeof( SpriteDrawer ) )]
 	public partial class SpriteImage : SpriteBasis
 	{
 #if UNITY_EDITOR
@@ -86,8 +86,8 @@ namespace SpriteHelper
 		/// </summary>
 		public void SetDefault( bool useSample = false )
 		{
-			var spriteRenderer = CSpriteRenderer ;
-			if( spriteRenderer == null )
+			var spriteDrawer = CSpriteDrawer ;
+			if( spriteDrawer == null )
 			{
 				return ; 
 			}
@@ -103,7 +103,7 @@ namespace SpriteHelper
 			var sprites = Resources.LoadAll<Sprite>( "SpriteHelper/Textures/SpriteSet" ) ;
 			if( sprites != null && sprites.Length >  0 )
 			{
-				spriteRenderer.sprite = sprites[ 0 ] ;
+				spriteDrawer.Sprite = sprites[ 0 ] ;
 
 				SetSprites( sprites ) ;
 			}
@@ -111,27 +111,27 @@ namespace SpriteHelper
 			var material = Resources.Load<Material>( "SpriteHelper/Materials/DefaultSprite" ) ;
 			if( material != null )
 			{
-				spriteRenderer.sharedMaterial = material ;
+				spriteDrawer.Material = material ;
 			}
 		}
 
 		//-------------------------------------------------------------------------------------------
 
 		// インスタンスキャッシュ
-		protected SpriteRenderer	m_SpriteRenderer ;
+		protected SpriteDrawer	m_SpriteDrawer ;
 
 		/// <summary>
-		/// キャッシュされた SpriteRenderer を取得する
+		/// キャッシュされた SpriteDrawer を取得する
 		/// </summary>
-		public	SpriteRenderer	CSpriteRenderer
+		public	SpriteDrawer	CSpriteDrawer
 		{
 			get
 			{
-				if( m_SpriteRenderer == null )
+				if( m_SpriteDrawer == null )
 				{
-					TryGetComponent<SpriteRenderer>( out m_SpriteRenderer ) ;
+					TryGetComponent<SpriteDrawer>( out m_SpriteDrawer ) ;
 				}
-				return m_SpriteRenderer ;
+				return m_SpriteDrawer ;
 			}
 		}
 
@@ -144,13 +144,13 @@ namespace SpriteHelper
 		{
 			get
 			{
-				return CSpriteRenderer != null && CSpriteRenderer.enabled ;
+				return CSpriteDrawer != null && CSpriteDrawer.enabled ;
 			}
 			set
 			{
-				if( CSpriteRenderer != null )
+				if( CSpriteDrawer != null )
 				{
-					CSpriteRenderer.enabled = value ;
+					CSpriteDrawer.enabled = value ;
 				}
 			}
 		}
@@ -158,10 +158,6 @@ namespace SpriteHelper
 		//-------------------------------------------------------------------------------------------
 		// SpriteAtlas 限定
 		
-		// スプライトアトラス(Unity標準機能)
-		[SerializeField][HideInInspector]
-		private SpriteAtlas m_SpriteAtlas = null ;
-
 		/// <summary>
 		/// アトラススプライトのインスタンス
 		/// </summary>
@@ -169,30 +165,26 @@ namespace SpriteHelper
 		{
 			get
 			{
-				return m_SpriteAtlas ;
+				if( CSpriteDrawer == null )
+				{
+					return null ;
+				}
+
+				return CSpriteDrawer.SpriteAtlas ;
 			}
 			set
 			{
-				if( m_SpriteAtlas != value )
+				if( CSpriteDrawer == null )
 				{
-					// アトラス内スプライトのキャッシュをクリアする
-					CleanupAtlasSprites() ;
-
-					m_SpriteAtlas  = value ;
-
-					Sprite = null ;	// 選択中のスプライトも初期化する
+					return ;
 				}
+
+				CSpriteDrawer.SpriteAtlas = value ;
 			}
 		}
 
-		// SpriteAtlas から取得した Sprite は Destroy() が必要であるためキャッシュする
-		private Dictionary<string,Sprite> m_SpritesInAtlas ;
-
 		//-------------------------------------------------------------------------------------------
 		// SpriteSet 限定
-
-		[SerializeField][HideInInspector]
-		private SpriteSet m_SpriteSet = null ;
 
 		/// <summary>
 		/// スプライトセットのインスタンス
@@ -201,18 +193,21 @@ namespace SpriteHelper
 		{
 			get
 			{
-				return m_SpriteSet ;
+				if( CSpriteDrawer == null )
+				{
+					return null ;
+				}
+
+				return CSpriteDrawer.SpriteSet ;
 			}
 			set
 			{
-				// 基本的にはインスタンスは維持して中身の情報を入れ替えるのでここが呼ばれる事は無い
-
-				if( m_SpriteSet != value )
+				if( CSpriteDrawer == null )
 				{
-					m_SpriteSet  = value ;
-
-					Sprite = null ;	// 選択中のスプライトも初期化する
+					return ;
 				}
+
+				CSpriteDrawer.SpriteSet = value ;
 			}
 		}
 
@@ -223,107 +218,16 @@ namespace SpriteHelper
 		/// <returns></returns>
 		public bool SetSprites( Sprite[] sprites )
 		{
-			if( sprites == null || sprites.Length == 0 )
+			if( CSpriteDrawer == null )
 			{
 				return false ;
 			}
 
-			//----------------------------------------------------------
-			// SpriteSet
-
-			if( m_SpriteSet == null )
-			{
-				m_SpriteSet = new SpriteSet() ;
-			}
-			else
-			{
-				m_SpriteSet.ClearSprites() ;
-			}
-
-			m_SpriteSet.SetSprites( sprites ) ;
-
-			//----------------------------------------------------------
-
-			return true ;
+			return CSpriteDrawer.SetSprites( sprites ) ;
 		}
 
 		//-------------------------------------------------------------------------------------------
 
-		// アトラス内のスプライトをキャッシュにためつつ取得する
-		private Sprite GetSpriteInAtlasFromCache( string spriteName )
-		{
-			Sprite sprite ;
-
-			if( m_SpritesInAtlas != null )
-			{
-				if( m_SpritesInAtlas.Count >  0 )
-				{
-					if( m_SpritesInAtlas.ContainsKey( spriteName ) == true )
-					{
-						// 既にキャッシュに存在する
-						return m_SpritesInAtlas[ spriteName ] ;
-					}
-				}
-			}
-
-			//----------------------------------
-
-			// 実際のアトラスに存在するか確認する
-			sprite = m_SpriteAtlas.GetSprite( spriteName ) ;
-			if( sprite != null )
-			{
-				// GetSprite()で取得したSpriteオブジェクトの名前は「"～(Clone)"」のように
-				// なっているため、「"(Clone)"」が付かない名前に上書き
-				sprite.name = spriteName ;
-
-				// キャッシュを生成する
-				m_SpritesInAtlas ??= new Dictionary<string, Sprite>() ;
-
-				// 存在するのでキャッシュに貯める
-				m_SpritesInAtlas.Add( spriteName, sprite ) ;
-			}
-
-			return sprite ;
-		}
-
-		// アトラス内のスプライトをキャッシュにためつつ取得する
-		private Sprite[] GetSpritesInAtlas()
-		{
-			if( m_SpriteAtlas != null )
-			{
-				CleanupAtlasSprites() ;
-
-				int count = m_SpriteAtlas.spriteCount ;
-				if( count >  0 )
-				{
-					var sprites = new Sprite[ count ] ;
-					if( m_SpriteAtlas.GetSprites( sprites ) == count )
-					{
-						// キャッシュを生成する
-						m_SpritesInAtlas ??= new Dictionary<string, Sprite>() ;
-
-						string key = "(Clone)" ;
-
-						foreach( var sprite in sprites )
-						{
-							// 存在するのでキャッシュに貯める
-							string spriteName = sprite.name ;
-							if( spriteName.Contains( key ) == true )
-							{
-								spriteName = spriteName.Replace( key, string.Empty ) ;
-								sprite.name = spriteName ;
-							}
-
-							m_SpritesInAtlas.Add( spriteName, sprite ) ;
-						}
-
-						return sprites ;
-					}
-				}
-			}
-
-			return null ;
-		}
 
 		/// <summary>
 		/// アトラススプライト内のスプライトを表示する
@@ -333,47 +237,12 @@ namespace SpriteHelper
 		/// <returns>結果(true=成功・false=失敗)</returns>
 		public bool SetSpriteInAtlas( string spriteName, bool resize = false )
 		{
-			//----------------------------------------------------------
-			// SpriteAtlas
-
-			if( m_SpriteAtlas != null )
+			if( CSpriteDrawer == null )
 			{
-				Sprite sprite = GetSpriteInAtlasFromCache( spriteName ) ;
-				if( sprite != null )
-				{
-					Sprite = sprite ;
-
-//					if( resize == true )
-//					{
-//						SetNativeSize() ;
-//					}
-
-					return true ;
-				}
+				return false ;
 			}
 
-			//----------------------------------------------------------
-			// SpriteSet
-
-			if( m_SpriteSet != null )
-			{
-				Sprite sprite = m_SpriteSet[ spriteName ] ;
-				if( sprite != null )
-				{
-					Sprite = sprite ;
-
-//					if( resize == true )
-//					{
-//						SetNativeSize() ;
-//					}
-
-					return true ;
-				}
-			}
-
-			//----------------------------------------------------------
-
-			return false ;
+			return CSpriteDrawer.SetSpriteInAtlas( spriteName, resize ) ;
 		}
 
 		/// <summary>
@@ -383,33 +252,12 @@ namespace SpriteHelper
 		/// <returns>スプライトのインスタンス</returns>
 		public Sprite GetSpriteInAtlas( string spriteName )
 		{
-			//----------------------------------------------------------
-			// SpriteAtlas
-
-			if( m_SpriteAtlas != null )
+			if( CSpriteDrawer == null )
 			{
-				Sprite sprite = GetSpriteInAtlasFromCache( spriteName ) ;
-				if( sprite != null )
-				{
-					return sprite ;
-				}
+				return null ;
 			}
 
-			//----------------------------------------------------------
-			// SpriteSet
-
-			if( m_SpriteSet != null )
-			{
-				Sprite sprite = m_SpriteSet[ spriteName ] ;
-				if( sprite != null )
-				{
-					return sprite ;
-				}
-			}
-
-			//----------------------------------------------------------
-
-			return null ;
+			return CSpriteDrawer.GetSpriteInAtlas( spriteName ) ;
 		}
 
 		/// <summary>
@@ -419,25 +267,12 @@ namespace SpriteHelper
 		/// <returns>スプライトのインスタンス</returns>
 		public Sprite[] GetSprites()
 		{
-			//----------------------------------------------------------
-			// SpriteAtlas
-
-			if( m_SpriteAtlas != null )
+			if( CSpriteDrawer == null )
 			{
-				return GetSpritesInAtlas() ;
+				return null ;
 			}
 
-			//----------------------------------------------------------
-			// SpriteSet
-
-			if( m_SpriteSet != null )
-			{
-				return m_SpriteSet.GetSprites() ;
-			}
-
-			//----------------------------------------------------------
-
-			return null ;
+			return CSpriteDrawer.GetSprites() ;
 		}
 
 		/// <summary>
@@ -446,21 +281,12 @@ namespace SpriteHelper
 		/// <returns></returns>
 		public string[] GetSpriteNames()
 		{
-			var sprites = GetSprites() ;
-			if( sprites == null )
+			if( CSpriteDrawer == null )
 			{
 				return null ;
 			}
 
-			var spriteNames = new List<string>() ;
-
-			int i, l = sprites.Length ;
-			for( i  = 0 ; i <  l ; i ++ )
-			{
-				spriteNames.Add( sprites[ i ].name ) ;
-			}
-
-			return spriteNames.OrderBy( _ => _ ).ToArray() ;
+			return CSpriteDrawer.GetSpriteNames() ;
 		}
 
 		/// <summary>
@@ -469,25 +295,12 @@ namespace SpriteHelper
 		/// <returns></returns>
 		public int GetSpriteCount()
 		{
-			//----------------------------------------------------------
-			// SpriteAtlas
-
-			if( m_SpriteAtlas != null )
+			if( CSpriteDrawer == null )
 			{
-				return m_SpriteAtlas.spriteCount ;
+				return 0 ;
 			}
 
-			//----------------------------------------------------------
-			// SpriteSet
-
-			if( m_SpriteSet != null )
-			{
-				return m_SpriteSet.SpriteCount ;
-			}
-
-			//----------------------------------------------------------
-
-			return 0 ;
+			return CSpriteDrawer.GetSpriteCount() ;
 		}
 
 		/// <summary>
@@ -497,33 +310,12 @@ namespace SpriteHelper
 		/// <returns>横幅</returns>
 		public int GetWidthOfSpriteInAtlas( string spriteName )
 		{
-			//----------------------------------------------------------
-			// SpriteAtlas
-
-			if( m_SpriteAtlas != null )
+			if( CSpriteDrawer == null )
 			{
-				Sprite sprite = GetSpriteInAtlasFromCache( spriteName ) ;
-				if( sprite != null )
-				{
-					return ( int )sprite.rect.width ;
-				}
+				return 0 ;
 			}
 
-			//----------------------------------------------------------
-			// SpriteSet
-
-			if( m_SpriteSet != null )
-			{
-				Sprite sprite = m_SpriteSet[ spriteName ] ;
-				if( sprite != null )
-				{
-					return ( int )sprite.rect.width ;
-				}
-			}
-
-			//----------------------------------------------------------
-
-			return 0 ;
+			return CSpriteDrawer.GetWidthOfSpriteInAtlas( spriteName ) ;
 		}
 
 		/// <summary>
@@ -533,33 +325,12 @@ namespace SpriteHelper
 		/// <returns>縦幅</returns>
 		public int GetHeightOfSpriteInAtlas( string spriteName )
 		{
-			//----------------------------------------------------------
-			// SpriteAtlas
-
-			if( m_SpriteAtlas != null )
+			if( CSpriteDrawer == null )
 			{
-				Sprite sprite = GetSpriteInAtlasFromCache( spriteName ) ;
-				if( sprite != null )
-				{
-					return ( int )sprite.rect.height ;
-				}
+				return 0 ;
 			}
 
-			//----------------------------------------------------------
-			// SpriteSet
-
-			if( m_SpriteSet != null )
-			{
-				Sprite sprite = m_SpriteSet[ spriteName ] ;
-				if( sprite != null )
-				{
-					return ( int )sprite.rect.height ;
-				}
-			}
-
-			//----------------------------------------------------------
-
-			return 0 ;
+			return CSpriteDrawer.GetHeightOfSpriteInAtlas( spriteName ) ;
 		}
 
 		//-------------------------------------------------------------------------------------------
@@ -587,186 +358,129 @@ namespace SpriteHelper
 		{
 			get
 			{
-				return CSpriteRenderer != null ? CSpriteRenderer.sprite : null ;
+				return CSpriteDrawer != null ? CSpriteDrawer.Sprite : null ;
 			}
 			set
 			{
-				if( CSpriteRenderer != null )
+				if( CSpriteDrawer != null )
 				{
-					CSpriteRenderer.sprite = value ;
+					CSpriteDrawer.Sprite = value ;
 				}
 			}
 		}
 	
 		/// <summary>
-		/// カラー(ショートカット)
+		/// カラー
 		/// </summary>
 		public Color Color
 		{
 			get
 			{
-				return CSpriteRenderer != null ? CSpriteRenderer.color : Color.white ;
+				return CSpriteDrawer != null ? CSpriteDrawer.VertexColor : Color.white ;
 			}
 			set
 			{
-				if( CSpriteRenderer != null )
+				if( CSpriteDrawer != null )
 				{
-					CSpriteRenderer.color = value ;
+					CSpriteDrawer.VertexColor = value ;
 				}
 			}
 		}
 
 		/// <summary>
-		/// 透過度
+		/// アルファ
 		/// </summary>
 		public float Alpha
 		{
 			get
 			{
-				return CSpriteRenderer != null ? 0 : CSpriteRenderer.color.a ;
+				return CSpriteDrawer != null ? 0 : CSpriteDrawer.VertexColor.a ;
 			}
 			set
 			{
-				if( CSpriteRenderer != null )
+				if( CSpriteDrawer != null )
 				{
-					var color = CSpriteRenderer.color ;
+					var color = CSpriteDrawer.VertexColor ;
 					color.a = value ;
-					CSpriteRenderer.color = color ;
+					CSpriteDrawer.VertexColor = color ;
 				}
-
 			}
 		}
 
 		/// <summary>
-		/// カラー(ショートカット)
+		/// マテリアル(ショートカット)
+		/// </summary>
+		public Material Material
+		{
+			get
+			{
+				if( CSpriteDrawer == null )
+				{
+					return null ;
+				}
+
+				return CSpriteDrawer.DuplicatedMaterial ;
+			}
+			set
+			{
+				if( CSpriteDrawer == null )
+				{
+					return ;
+				}
+
+				CSpriteDrawer.Material = value ;
+			}
+		}
+
+		/// <summary>
+		/// マテリアルカラー
 		/// </summary>
 		public Color MaterialColor
 		{
 			get
 			{
-				if( CSpriteRenderer == null )
+				if( CSpriteDrawer == null )
 				{
 					return Color.white ;
 				}
 
-				if( m_DuplicatedMaterial == null )
-				{
-					// 複製なし
-					if( Application.isPlaying == false )
-					{
-						return CSpriteRenderer.sharedMaterial == null ? Color.white : CSpriteRenderer.sharedMaterial.color ;
-					}
-					else
-					{
-						return CSpriteRenderer.material == null ? Color.white : CSpriteRenderer.material.color ;
-					}
-				}
-				else
-				{
-					// 複製あり
-					return m_DuplicatedMaterial.color ;
-				}
+				return CSpriteDrawer.MaterialColor ;
 			}
 			set
 			{
-				if( CSpriteRenderer == null )
+				if( CSpriteDrawer == null )
 				{
 					return ;
 				}
 
-				if( m_DuplicatedMaterial == null )
-				{
-					// 複製なし
-					if( Application.isPlaying == false )
-					{
-						if( CSpriteRenderer.sharedMaterial != null )
-						{
-							m_DuplicatedMaterial = Instantiate( CSpriteRenderer.sharedMaterial ) ;
-							CSpriteRenderer.sharedMaterial = m_DuplicatedMaterial ;
-						}
-					}
-					else
-					{
-						if( CSpriteRenderer.material != null )
-						{
-							m_DuplicatedMaterial = Instantiate( CSpriteRenderer.material ) ;
-							CSpriteRenderer.material = m_DuplicatedMaterial ;
-						}
-					}
-				}
-
-				if( m_DuplicatedMaterial != null )
-				{
-					m_DuplicatedMaterial.color = value ;
-				}
+				CSpriteDrawer.MaterialColor = value ;
 			}
 		}
 
 		/// <summary>
-		/// 透過度
+		/// マテリアルアルファ
 		/// </summary>
 		public float MaterialAlpha
 		{
 			get
 			{
-				if( CSpriteRenderer == null )
+				if( CSpriteDrawer == null )
 				{
 					return 1 ;
 				}
 
-				if( m_DuplicatedMaterial == null )
-				{
-					// 複製なし
-					if( Application.isPlaying == false )
-					{
-						return CSpriteRenderer.sharedMaterial == null ? 1 : CSpriteRenderer.sharedMaterial.color.a ;
-					}
-					else
-					{
-						return CSpriteRenderer.material == null ? 1 : CSpriteRenderer.material.color.a ;
-					}
-				}
-				else
-				{
-					// 複製あり
-					return m_DuplicatedMaterial.color.a ;
-				}
+				return CSpriteDrawer.MaterialColor.a ;
 			}
 			set
 			{
-				if( CSpriteRenderer == null )
+				if( CSpriteDrawer == null )
 				{
 					return ;
 				}
 
-				if( m_DuplicatedMaterial == null )
-				{
-					// 複製なし
-
-					if( Application.isPlaying == false )
-					{
-						if( CSpriteRenderer.sharedMaterial != null )
-						{
-							m_DuplicatedMaterial = Instantiate( CSpriteRenderer.sharedMaterial ) ;
-							CSpriteRenderer.sharedMaterial = m_DuplicatedMaterial ;
-						}
-					}
-					else
-					{
-						if( CSpriteRenderer.material != null )
-						{
-							m_DuplicatedMaterial = Instantiate( CSpriteRenderer.material ) ;
-							CSpriteRenderer.material = m_DuplicatedMaterial ;
-						}
-					}
-				}
-
-				if( m_DuplicatedMaterial != null )
-				{
-					var color = m_DuplicatedMaterial.color ;
-					color.a = value ;
-					m_DuplicatedMaterial.color = color ;
-				}
+				var color = CSpriteDrawer.MaterialColor ;
+				color.a = value ;
+				CSpriteDrawer.MaterialColor = color ;
 			}
 		}
 
@@ -777,13 +491,13 @@ namespace SpriteHelper
 		{
 			get
 			{
-				return CSpriteRenderer != null && CSpriteRenderer.flipX ;
+				return CSpriteDrawer != null && CSpriteDrawer.FlipX ;
 			}
 			set
 			{
-				if( CSpriteRenderer != null )
+				if( CSpriteDrawer != null )
 				{
-					 CSpriteRenderer.flipX = value ;
+					 CSpriteDrawer.FlipX = value ;
 				}
 			}
 		}
@@ -795,79 +509,16 @@ namespace SpriteHelper
 		{
 			get
 			{
-				return CSpriteRenderer != null && CSpriteRenderer.flipY ;
+				return CSpriteDrawer != null && CSpriteDrawer.FlipY ;
 			}
 			set
 			{
-				if( CSpriteRenderer != null )
+				if( CSpriteDrawer != null )
 				{
-					 CSpriteRenderer.flipY = value ;
+					 CSpriteDrawer.FlipY = value ;
 				}
 			}
 		}
-
-		/// <summary>
-		/// 描画モード
-		/// </summary>
-		public SpriteDrawMode DrawMode
-		{
-			get
-			{
-				return CSpriteRenderer != null ? CSpriteRenderer.drawMode : SpriteDrawMode.Simple ;
-			}
-			set
-			{
-				if( CSpriteRenderer != null )
-				{
-					 CSpriteRenderer.drawMode = value ;
-				}
-			}
-		}
-
-		/// <summary>
-		/// 横幅
-		/// </summary>
-		public float BoundsWidth
-		{
-			get
-			{
-				return CSpriteRenderer != null ? CSpriteRenderer.bounds.size.x : 0 ;
-			}
-			set
-			{
-				if( CSpriteRenderer != null )
-				{
-					var bounds = CSpriteRenderer.bounds ;
-
-					bounds.size = new Vector2( value,  bounds.size.y ) ;
-
-					CSpriteRenderer.bounds = bounds ;
-				}
-			}
-		}
-
-		/// <summary>
-		/// 縦幅
-		/// </summary>
-		public float BoundsHeight
-		{
-			get
-			{
-				return CSpriteRenderer != null ? CSpriteRenderer.bounds.size.y : 0 ;
-			}
-			set
-			{
-				if( CSpriteRenderer != null )
-				{
-					var bounds = CSpriteRenderer.bounds ;
-
-					bounds.size = new Vector2( bounds.size.x, value ) ;
-
-					CSpriteRenderer.bounds = bounds ;
-				}
-			}
-		}
-
 
 		/// <summary>
 		/// 横幅
@@ -876,13 +527,13 @@ namespace SpriteHelper
 		{
 			get
 			{
-				return CSpriteRenderer != null ? CSpriteRenderer.size.x : 0 ;
+				return CSpriteDrawer != null ? CSpriteDrawer.Size.x : 0 ;
 			}
 			set
 			{
-				if( CSpriteRenderer != null )
+				if( CSpriteDrawer != null )
 				{
-					 CSpriteRenderer.size = new Vector2( value,  CSpriteRenderer.size.y ) ;
+					 CSpriteDrawer.Size = new Vector2( value,  CSpriteDrawer.Size.y ) ;
 				}
 			}
 		}
@@ -894,17 +545,17 @@ namespace SpriteHelper
 		{
 			get
 			{
-				return CSpriteRenderer != null ? CSpriteRenderer.size.y : 0 ;
+				return CSpriteDrawer != null ? CSpriteDrawer.Size.y : 0 ;
 			}
 			set
 			{
-				if( CSpriteRenderer != null )
+				if( CSpriteDrawer != null )
 				{
-					 CSpriteRenderer.size = new Vector2( CSpriteRenderer.size.x, value ) ;
+					 CSpriteDrawer.Size = new Vector2( CSpriteDrawer.Size.x, value ) ;
 				}
 			}
 		}
-
+#if false
 		/// <summary>
 		/// マスクインタラクション(スプライトの形にくり抜き制御・スプライトの内側か外側)
 		/// </summary>
@@ -922,7 +573,8 @@ namespace SpriteHelper
 				}
 			}
 		}
-
+#endif
+#if false
 		/// <summary>
 		/// ソートポイント(スプライト同士が同じ SortingLayer OrderInLayer であった時に、どこを基準にソートするか : Center = Center の Y 値が小さい方が手前・Pivot = Pivot の Y 値が小さい方が手前)
 		/// </summary>
@@ -940,107 +592,7 @@ namespace SpriteHelper
 				}
 			}
 		}
-
-		/// <summary>
-		/// マテリアル(ショートカット)
-		/// </summary>
-		public Material Material
-		{
-			get
-			{
-				if( CSpriteRenderer == null )
-				{
-					return null ;
-				}
-
-				if( m_DuplicatedMaterial == null )
-				{
-					// 複製なし
-
-					if( Application.isPlaying == false )
-					{
-						return  CSpriteRenderer.sharedMaterial ;
-					}
-					else
-					{
-						return  CSpriteRenderer.material ;
-					}
-				}
-				else
-				{
-					// 複製あり
-
-					return m_DuplicatedMaterial ;
-				}
-			}
-			set
-			{
-				if( CSpriteRenderer == null )
-				{
-					return ;
-				}
-
-				if( m_DuplicatedMaterial == null )
-				{
-					// 複製なし
-
-					if( Application.isPlaying == false )
-					{
-						CSpriteRenderer.sharedMaterial = value ;
-					}
-					else
-					{
-						CSpriteRenderer.material = value ;
-					}
-				}
-				else
-				{
-					// 複製あり
-
-					Color color = m_DuplicatedMaterial.color ;
-
-					if( Application.isPlaying == false )
-					{
-						DestroyImmediate( m_DuplicatedMaterial ) ;
-					}
-					else
-					{
-						Destroy( m_DuplicatedMaterial ) ;
-					}
-					m_DuplicatedMaterial = null ;
-
-					//--
-
-					if( value == null )
-					{
-						if( Application.isPlaying == false )
-						{
-							CSpriteRenderer.sharedMaterial = null ;
-						}
-						else
-						{
-							CSpriteRenderer.material = null ;
-						}
-					}
-					else
-					{
-						m_DuplicatedMaterial = Instantiate( value ) ;
-
-						if( Application.isPlaying == false )
-						{
-							CSpriteRenderer.sharedMaterial = m_DuplicatedMaterial ;
-						}
-						else
-						{
-							CSpriteRenderer.material = m_DuplicatedMaterial ;
-						}
-
-						m_DuplicatedMaterial.color = color ;
-					}
-				}
-			}
-		}
-
+#endif
 		/// <summary>
 		/// ソーティングレイヤー名
 		/// </summary>
@@ -1048,28 +600,21 @@ namespace SpriteHelper
 		{
 			get
 			{
-				if( CSpriteRenderer == null )
+				if( CSpriteDrawer == null )
 				{
 					return null ;
 				}
 
-				return CSpriteRenderer.sortingLayerName ;
+				return CSpriteDrawer.SortingLayerName ;
 			}
 			set
 			{
-				if( CSpriteRenderer == null )
+				if( CSpriteDrawer == null )
 				{
 					return ;
 				}
 
-				foreach( var layer in  UnityEngine.SortingLayer.layers )
-				{
-					if( layer.name == value )
-					{
-						// 発見(設定可能)
-						CSpriteRenderer.sortingLayerName = value ;
-					}
-				}
+				CSpriteDrawer.SortingLayerName = value ;
 			}
 		}
 
@@ -1080,50 +625,21 @@ namespace SpriteHelper
 		{
 			get
 			{
-				if( CSpriteRenderer == null )
+				if( CSpriteDrawer == null )
 				{
 					return -1 ;
 				}
 
-				string sortingLayerName = CSpriteRenderer.sortingLayerName ;
-
-				foreach( var layer in  UnityEngine.SortingLayer.layers )
-				{
-					if( layer.name == sortingLayerName )
-					{
-						// 発見
-						return layer.value ;
-					}
-				}
-
-				// 発見出来ず
-				return -1 ;
+				return CSpriteDrawer.SortingLayer ;
 			}
 			set
 			{
-				if( CSpriteRenderer == null )
+				if( CSpriteDrawer == null )
 				{
 					return ;
 				}
 
-				string sortingLayerName = string.Empty ;
-
-				foreach( var layer in  UnityEngine.SortingLayer.layers )
-				{
-					if( layer.value == value )
-					{
-						// 発見
-						sortingLayerName = layer.name ;
-					}
-				}
-
-				if( string.IsNullOrEmpty( sortingLayerName ) == true )
-				{
-					// 発見できず
-					return ;
-				}
-
-				CSpriteRenderer.sortingLayerName = sortingLayerName ;
+				CSpriteDrawer.SortingLayer = value ;
 			}
 		}
 
@@ -1134,21 +650,21 @@ namespace SpriteHelper
 		{
 			get
 			{
-				if( CSpriteRenderer == null )
+				if( CSpriteDrawer == null )
 				{
 					return 0 ;
 				}
 
-				return CSpriteRenderer.sortingOrder ;
+				return CSpriteDrawer.SortingOrder ;
 			}
 			set
 			{
-				if( CSpriteRenderer == null )
+				if( CSpriteDrawer == null )
 				{
 					return ;
 				}
 
-				CSpriteRenderer.sortingOrder = value ;
+				CSpriteDrawer.SortingOrder = value ;
 			}
 		}
 
@@ -1159,21 +675,21 @@ namespace SpriteHelper
 		{
 			get
 			{
-				if( CSpriteRenderer == null )
+				if( CSpriteDrawer == null )
 				{
 					return 0 ;
 				}
 
-				return CSpriteRenderer.sortingOrder ;
+				return CSpriteDrawer.SortingOrder ;
 			}
 			set
 			{
-				if( CSpriteRenderer == null )
+				if( CSpriteDrawer == null )
 				{
 					return ;
 				}
 
-				CSpriteRenderer.sortingOrder = value ;
+				CSpriteDrawer.SortingOrder = value ;
 			}
 		}
 
@@ -1195,78 +711,17 @@ namespace SpriteHelper
 
 		//-------------------------------------------------------------------------------------------
 
-		// 複製マテリアル
-		private Material m_DuplicatedMaterial ;
-
-
-		//-----------------------------------------------------------
-
 //		internal void OnEnable(){}
 
 //		internal void OnDisable(){}
 
-		internal void OnDestroy()
-		{
-			// アトラス内スプライトのキャッシュをクリアする
-			CleanupAtlasSprites() ;
-
-			//--------------
-
-			// マテリアルが複製されていたら破棄する
-			if( m_DuplicatedMaterial != null )
-			{
-				if( Application.isPlaying == false )
-				{
-					DestroyImmediate( m_DuplicatedMaterial ) ;
-				}
-				else
-				{
-					Destroy( m_DuplicatedMaterial ) ;
-				}
-				m_DuplicatedMaterial = null ;
-			}
-		}
-
-		// キャッシュされたアトラス内スプライト群を破棄する
-		private void CleanupAtlasSprites()
-		{
-			if( m_SpritesInAtlas != null )
-			{
-				if( m_SpritesInAtlas.Count >  0 )
-				{
-					if( Application.isPlaying == true )
-					{
-						foreach( var sprite in m_SpritesInAtlas )
-						{
-							if( sprite.Value != null )
-							{
-								Destroy( sprite.Value ) ;
-							}
-						}
-					}
-					else
-					{
-						foreach( var sprite in m_SpritesInAtlas )
-						{
-							if( sprite.Value != null )
-							{
-								DestroyImmediate( sprite.Value ) ;
-							}
-						}
-					}
-
-					m_SpritesInAtlas.Clear() ;
-				}
-
-				m_SpritesInAtlas = null ;
-			}
-		}
+//		internal void OnDestroy(){}
 
 		//-------------------------------------------------------------------------------------------
 
 		// 再生中のアニメーション名
 		[SerializeField]
-		protected string	m_PlayingAnimationName ;
+		protected string	m_PlayingAnimationName = "Default" ;
 
 		/// <summary>
 		/// 再生中のアニメーション名
@@ -1324,7 +779,7 @@ namespace SpriteHelper
 
 		// 自動でアニメーションを再生するかどうか
 		[SerializeField]
-		protected bool		m_AnimationPlayOnAwake ;
+		protected bool		m_AnimationPlayOnAwake = true ;
 
 		/// <summary>
 		/// 自動でアニメーションを再生するかどうか
@@ -1621,6 +1076,17 @@ namespace SpriteHelper
 							m_HashAnimations.Add( animation.AnimationName, animation ) ;
 						}
 					}
+				}
+			}
+
+			if( string.IsNullOrEmpty( m_PlayingAnimationName ) == true || m_HashAnimations.ContainsKey( m_PlayingAnimationName ) == false )
+			{
+				// 再生設定されているアニメーション名がどのアニメーション名にも該当しない場合
+				// １つ以上のアニメーションが登録されていたら
+				// 最初のアニメーション名に強制的に設定する
+				if( m_Animations.Count >  0 )
+				{
+					m_PlayingAnimationName = m_Animations[ 0 ].AnimationName ;
 				}
 			}
 		}
@@ -1959,7 +1425,7 @@ namespace SpriteHelper
 		// 再生するアニメーションを取得する
 		private AnimationDescriptor GetAnimation( string playingAnimationName )
 		{
-			if( ( m_SpriteAtlas != null || m_SpriteSet != null ) && m_HashAnimations != null && m_HashAnimations.Count >  0 )
+			if( m_HashAnimations != null && m_HashAnimations.Count >  0 )
 			{
 				if( string.IsNullOrEmpty( playingAnimationName ) == false && m_HashAnimations.ContainsKey( playingAnimationName ) == true )
 				{
@@ -1993,6 +1459,9 @@ namespace SpriteHelper
 				}
 			}
 		}
+
+		private Vector2 m_Offset ;
+		private Vector2 m_Size ;
 
 		internal void Update()
 		{
@@ -2040,6 +1509,25 @@ namespace SpriteHelper
 							}
 						}
 					}
+				}
+			}
+
+			//---------------------------------------------------------
+
+			// コライダーの更新
+			if( CSpriteDrawer != null && m_ColliderAdjustment == true )
+			{
+				if( CSpriteDrawer.Offset.Equals( m_Offset ) == false || CSpriteDrawer.Size.Equals( m_Size ) == false )
+				{
+					m_IsColliderDirty = true ;
+
+					m_Offset = CSpriteDrawer.Offset ;
+					m_Size	 = CSpriteDrawer.Size ;
+				}
+
+				if( m_IsColliderDirty == true )
+				{
+					AdjustCollider() ;
 				}
 			}
 		}
@@ -2096,6 +1584,8 @@ namespace SpriteHelper
 				var rigidbody2d = gameObject.AddComponent<Rigidbody2D>() ;
 				rigidbody2d.gravityScale = 0 ;
 			}
+
+			m_IsColliderDirty = true ;
 		}
 
 		/// <summary>
@@ -2129,6 +1619,72 @@ namespace SpriteHelper
 			{
 				Destroy( collider ) ;
 			}
+		}
+
+		//-------------------------------------------------------------------------------------------
+
+		private bool m_IsColliderDirty = true ;
+
+		/// <summary>
+		/// コライダーの自動調整
+		/// </summary>
+		[ SerializeField ][ HideInInspector ]
+		protected bool m_ColliderAdjustment = true ;
+
+		/// <summary>
+		/// コライダーの自動調整
+		/// </summary>
+		public    bool	 ColliderAdjustment
+		{
+			get
+			{
+				return m_ColliderAdjustment ;
+			}
+			set
+			{
+				if( m_ColliderAdjustment != value )
+				{
+					m_ColliderAdjustment	= value ;
+
+					if( m_ColliderAdjustment == true )
+					{
+						m_IsColliderDirty	= true ;
+					}
+				}
+			}
+		}
+
+		/// <summary>
+		/// コライダーの位置と大きさをメッシュと同じに合わせる
+		/// </summary>
+		public void AdjustCollider()
+		{
+			if( m_SpriteDrawer == null || m_Collider == null )
+			{
+				return ;
+			}
+
+			var offset = m_SpriteDrawer.Offset ;
+			var size   = m_SpriteDrawer.Size ;
+
+			float sx = size.x ;
+			float sy = size.y ;
+
+			if( m_Collider is BoxCollider2D )
+			{
+				var collider2D = m_Collider as BoxCollider2D ;
+				collider2D.offset	= new ( offset.x, offset.y ) ;
+				collider2D.size		= new ( sx, sy ) ;
+			}
+			else
+			if( m_Collider is CircleCollider2D )
+			{
+				var collider2D = m_Collider as CircleCollider2D ;
+				collider2D.offset	= new ( offset.x, offset.y ) ;
+				collider2D.radius	= Mathf.Min( sx, sy ) * 0.5f ;
+			}
+
+			m_IsColliderDirty = false ;
 		}
 
 		//----------
@@ -2220,30 +1776,12 @@ namespace SpriteHelper
 		{
 			get
 			{
-				if( CSpriteRenderer == null )
+				if( CSpriteDrawer == null )
 				{
 					return 0 ;
 				}
 
-				Material material ;
-				if( m_DuplicatedMaterial == null )
-				{
-					// 複製なし
-					if( Application.isPlaying == false )
-					{
-						material = CSpriteRenderer.sharedMaterial ;
-					}
-					else
-					{
-						material = CSpriteRenderer.material ;
-					}
-				}
-				else
-				{
-					// 複製あり
-					material = m_DuplicatedMaterial ;
-				}
-
+				Material material = CSpriteDrawer.DuplicatedMaterial ;
 				if( material == null )
 				{
 					return 0 ;
@@ -2262,40 +1800,16 @@ namespace SpriteHelper
 			}
 			set
 			{
-				if( CSpriteRenderer == null )
+				if( CSpriteDrawer == null )
 				{
 					return ;
 				}
 
-				Material material ;
-
-				if( m_DuplicatedMaterial == null )
-				{
-					// 複製なし
-					if( Application.isPlaying == false )
-					{
-						if( CSpriteRenderer.sharedMaterial != null )
-						{
-							m_DuplicatedMaterial = Instantiate( CSpriteRenderer.sharedMaterial ) ;
-							CSpriteRenderer.sharedMaterial = m_DuplicatedMaterial ;
-						}
-					}
-					else
-					{
-						if( CSpriteRenderer.material != null )
-						{
-							m_DuplicatedMaterial = Instantiate( CSpriteRenderer.material ) ;
-							CSpriteRenderer.material = m_DuplicatedMaterial ;
-						}
-					}
-				}
-
-				if( m_DuplicatedMaterial == null )
+				Material material = CSpriteDrawer.DuplicatedMaterial ;
+				if( material == null )
 				{
 					return ;
 				}
-
-				material = m_DuplicatedMaterial ;
 				
 				//---------------------------------
 
@@ -2317,30 +1831,12 @@ namespace SpriteHelper
 		{
 			get
 			{
-				if( CSpriteRenderer == null )
+				if( CSpriteDrawer == null )
 				{
 					return Color.white ;
 				}
 
-				Material material ;
-				if( m_DuplicatedMaterial == null )
-				{
-					// 複製なし
-					if( Application.isPlaying == false )
-					{
-						material = CSpriteRenderer.sharedMaterial ;
-					}
-					else
-					{
-						material = CSpriteRenderer.material ;
-					}
-				}
-				else
-				{
-					// 複製あり
-					material = m_DuplicatedMaterial ;
-				}
-
+				Material material = CSpriteDrawer.DuplicatedMaterial ;
 				if( material == null )
 				{
 					return Color.white ;
@@ -2359,41 +1855,17 @@ namespace SpriteHelper
 			}
 			set
 			{
-				if( CSpriteRenderer == null )
+				if( CSpriteDrawer == null )
 				{
 					return ;
 				}
 
-				Material material ;
-
-				if( m_DuplicatedMaterial == null )
-				{
-					// 複製なし
-					if( Application.isPlaying == false )
-					{
-						if( CSpriteRenderer.sharedMaterial != null )
-						{
-							m_DuplicatedMaterial = Instantiate( CSpriteRenderer.sharedMaterial ) ;
-							CSpriteRenderer.sharedMaterial = m_DuplicatedMaterial ;
-						}
-					}
-					else
-					{
-						if( CSpriteRenderer.material != null )
-						{
-							m_DuplicatedMaterial = Instantiate( CSpriteRenderer.material ) ;
-							CSpriteRenderer.material = m_DuplicatedMaterial ;
-						}
-					}
-				}
-
-				if( m_DuplicatedMaterial == null )
+				Material material = CSpriteDrawer.DuplicatedMaterial ;
+				if( material == null )
 				{
 					return ;
 				}
 
-				material = m_DuplicatedMaterial ;
-				
 				//---------------------------------
 
 				string key = "_InterpolationColor" ;

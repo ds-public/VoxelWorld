@@ -510,6 +510,14 @@ namespace SpriteHelper
 			{
 				animationNames.Insert( 0, "None" ) ;
 			}
+			else
+			{
+				if( string.IsNullOrEmpty( component.PlayingAnimationName ) == true || component.PlayingAnimationName == "None" )
+				{
+					// 未設定の場合は最初のアニメーション名を自動で設定する
+					component.PlayingAnimationName = animationNames[ 0 ] ;
+				}
+			}
 
 			int indexOld = 0 ;
 			int index = animationNames.IndexOf( component.PlayingAnimationName ) ;
@@ -1087,6 +1095,21 @@ namespace SpriteHelper
 					}
 					GUILayout.EndHorizontal() ;		// 横並び終了
 				}
+
+				// コライダーの自動調整
+				GUILayout.BeginHorizontal() ;	// 横並び
+				{
+					GUILayout.Label( " ", GUILayout.Width( 16f ) ) ;
+					bool colliderAdjustment = EditorGUILayout.Toggle( component.ColliderAdjustment, GUILayout.Width( 16f ) ) ;
+					if( colliderAdjustment != component.ColliderAdjustment )
+					{
+						Undo.RecordObject( component, "SpriteImage : Collider Adjustment Change" ) ;	// アンドウバッファに登録
+						component.ColliderAdjustment = colliderAdjustment ;
+						EditorUtility.SetDirty( component ) ;
+					}
+					GUILayout.Label( new GUIContent( "Collider Adjustment", "コライダーのサイズをメッシュのサイズに自動的に合わせるかどうか" ) ) ;
+				}
+				GUILayout.EndHorizontal() ;		// 横並び終了
 			}
 		}
 
@@ -1173,3 +1196,4 @@ namespace SpriteHelper
 }
 
 #endif
+

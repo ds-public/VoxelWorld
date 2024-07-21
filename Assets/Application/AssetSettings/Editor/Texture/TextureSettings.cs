@@ -14,7 +14,7 @@ using UnityEngine.U2D ;
 namespace AssetSettings
 {
 	/// <summary>
-	/// Texture の設定 Version 2023/06/03
+	/// Texture の設定 Version 2024/07/19
 	/// </summary>
 	public class TextureSettings : ImportProcessor
 	{
@@ -198,10 +198,24 @@ namespace AssetSettings
 			//------------------------------------------------------------------------------------------
 			// 再設定必要かどうかを確認しつつ必要であれば再設定を行う
 
+            bool isNotSprite = false ;
+
 			// タイプ
 			if( textureImporter.textureType != TextureImporterType.Sprite )
 			{
 				textureImporter.textureType  = TextureImporterType.Sprite ;
+				isDirty = true ;
+
+                isNotSprite = true ;
+			}
+
+            // モード
+            // TextureType が Texture を SPrite に変えた際に、
+            // SpriteImportModer はデフォルトで Multiple になってしまってウザいので、
+            // その場合は Single にする。
+			if( isNotSprite == true )
+			{
+				textureImporter.spriteImportMode  = SpriteImportMode.Single ;
 				isDirty = true ;
 			}
 

@@ -431,7 +431,9 @@ namespace DSW.World
 
 						await Progress.OffAsync() ;
 
-						int index = await Dialog.Open( "エラー", "サーバーへの接続に失敗しました", new string[]{ "リトライ", "あきらめる" } ) ;
+						string message = "サーバーへの接続に失敗しました" + "\n\n<color=#FFFF00>" + ErrorCode.ToString() + "</color>\n\n<color=#FF7F00>" + ErrorMessage + "</color>" ;
+
+						int index = await Dialog.Open( "エラー", message, new string[]{ "リトライ", "あきらめる" } ) ;
 						if( index == 0 )
 						{
 							// リトライ

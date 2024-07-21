@@ -31,16 +31,6 @@ namespace uGUIHelper.InputAdapter
 		/// </summary>
 		public const int		NumberOfButtons = 3 ;
 
-		/// <summary>
-		/// リピート開始までの時間(秒)
-		/// </summary>
-		public static float		RepeatStartingTime { get ; set ; } = 0.5f ;
-
-		/// <summary>
-		/// リピートする間隔の時間(秒)
-		/// </summary>
-		public static float		RepeatIntervalTime { get ; set ; } = 0.05f ;
-
 		//-----------------------------------
 
 		/// <summary>
@@ -69,105 +59,15 @@ namespace uGUIHelper.InputAdapter
 			}
 		}
 
-		//-----------------------------------
-
-		/// <summary>
-		/// ボタン用状態
-		/// </summary>
-		public class ButtonState
-		{
-			public bool		RepeatKeepFlag ;
-			public float	RepeatWakeTime ;
-			public float	RepeatLoopTime ;
-			public bool		IsRepeat ;
-			public bool		IsDown ;
-			public bool		IsUp ;
-		}
-
-		private static ButtonState[,] m_ButtonStates ;
-
 		//-----------------------------------------------------------
 
-		private static UIEventSystem m_Owner ;
-
 		/// <summary>
-		/// 初期化を行う
+		/// 毎フレーム更新(引数 isFixed は FixedUpdate からの呼び出しかどうか)
 		/// </summary>
-		public static void Initialize( UIEventSystem owner )
-		{
-			m_Owner = owner ;
+		public static void Update( bool fromFixedUpdate )
+			=> Mouse.Update( fromFixedUpdate ) ;
 
-			int length ;
-
-			// ボタン
-			length = NumberOfButtons ;
-			m_ButtonStates = new ButtonState[ length, 2 ] ;
-			for( int buttonIndex  = 0 ; buttonIndex <  length ; buttonIndex ++ )
-			{
-				m_ButtonStates[ buttonIndex, 0 ] = new ButtonState() ;
-				m_ButtonStates[ buttonIndex, 1 ] = new ButtonState() ;
-			}
-		}
-
-		/// <summary>
-		/// 毎フレーム更新
-		/// </summary>
-		public static void Update( bool isFixed )
-		{
-			int slotNumber = ( isFixed == false ? 0 : 1 ) ;
-
-			int buttonIndex ;
-
-			for( buttonIndex  = 0 ; buttonIndex <  NumberOfButtons ; buttonIndex ++ )
-			{
-				ButtonState state = m_ButtonStates[ buttonIndex, slotNumber ] ;
-
-				//---------------------------------
-
-				state.IsRepeat	= false ;
-				state.IsDown	= false ;
-				state.IsUp		= false ;
-
-				if( Mouse.GetButton( buttonIndex ) == true )
-				{
-					if( state.RepeatKeepFlag == false )
-					{
-						// リピート開始
-						state.IsRepeat	= true ;
-
-						state.RepeatKeepFlag = true ;
-						state.RepeatWakeTime = Time.realtimeSinceStartup ;
-						state.RepeatLoopTime = Time.realtimeSinceStartup ;
-
-						state.IsDown = true ;
-					}
-					else
-					{
-						// リピート最中
-						if( ( Time.realtimeSinceStartup - state.RepeatWakeTime ) >= RepeatStartingTime )
-						{
-							// リピート中
-							if( ( Time.realtimeSinceStartup - state.RepeatLoopTime ) >= RepeatIntervalTime )
-							{
-								state.RepeatLoopTime = Time.realtimeSinceStartup ;
-
-								state.IsRepeat = true ;
-							}
-						}
-					}
-				}
-				else
-				{
-					// リピート解除
-					if( state.RepeatKeepFlag == true )
-					{
-						state.IsUp = true ;
-
-						state.RepeatKeepFlag  = false ;
-					}
-				}
-			}
-		}
+		//-----------------------------------
 
 		/// <summary>
 		/// ポインターの位置
@@ -181,116 +81,30 @@ namespace uGUIHelper.InputAdapter
 		/// <param name="index"></param>
 		/// <returns></returns>
 		public static bool GetButton( int buttonIndex )
-		{
-			// modeEnabled を判定条件に入れないのは、マウスとキーボードを同時入力するケースを考慮するため
-			if( m_Owner == null || m_Owner.ControlEnabled == false )
-			{
-				// 無効
-				return false ;
-			}
-
-			if( buttonIndex <  0 || buttonIndex >= NumberOfButtons )
-			{
-				return false ;
-			}
-
-			return Mouse.GetButton( buttonIndex ) ;
-		}
+			=> Mouse.GetButton( buttonIndex ) ;
 
 		/// <summary>
 		/// ポインターが押されたかどうか
 		/// </summary>
 		/// <param name="index"></param>
 		/// <returns></returns>
-		public static bool GetButtonDown( int buttonIndex, bool isFixed = false )
-		{
-			// modeEnabled を判定条件に入れないのは、マウスとキーボードを同時入力するケースを考慮するため
-			if( m_Owner == null || m_Owner.ControlEnabled == false )
-			{
-				// 無効
-				return false ;
-			}
-
-			if( buttonIndex <  0 || buttonIndex >= NumberOfButtons )
-			{
-				return false ;
-			}
-
-			int slotNumber = ( isFixed == false ? 0 : 1 ) ;
-
-			return m_ButtonStates[ buttonIndex, slotNumber ].IsDown ;
-		}
+		public static bool GetButtonDown( int buttonIndex, bool fromFixedUpdate = false )
+			=> Mouse.GetButtonDown( buttonIndex, fromFixedUpdate ) ;
 
 		/// <summary>
 		/// ポインターが離されたかどうか
 		/// </summary>
 		/// <param name="index"></param>
 		/// <returns></returns>
-		public static bool GetButtonUp( int buttonIndex, bool isFixed = false )
-		{
-			// modeEnabled を判定条件に入れないのは、マウスとキーボードを同時入力するケースを考慮するため
-			if( m_Owner == null || m_Owner.ControlEnabled == false )
-			{
-				// 無効
-				return false ;
-			}
-
-			if( buttonIndex <  0 || buttonIndex >= NumberOfButtons )
-			{
-				return false ;
-			}
-
-			int slotNumber = ( isFixed == false ? 0 : 1 ) ;
-
-			return m_ButtonStates[ buttonIndex, slotNumber ].IsUp ;
-		}
-
-		/// <summary>
-		/// ポインターが押されているかどうか
-		/// </summary>
-		/// <param name="index"></param>
-		/// <returns></returns>
-		public static bool GetButton( int buttonIndex, bool isFixed = false )
-		{
-			// modeEnabled を判定条件に入れないのは、マウスとキーボードを同時入力するケースを考慮するため
-			if( m_Owner == null || m_Owner.ControlEnabled == false )
-			{
-				// 無効
-				return false ;
-			}
-
-			if( buttonIndex <  0 || buttonIndex >= NumberOfButtons )
-			{
-				return false ;
-			}
-
-			int slotNumber = ( isFixed == false ? 0 : 1 ) ;
-
-			return m_ButtonStates[ buttonIndex, slotNumber ].IsRepeat ;
-		}
+		public static bool GetButtonUp( int buttonIndex, bool fromFixedUpdate = false )
+			=> Mouse.GetButtonUp( buttonIndex, fromFixedUpdate ) ;
 
 		/// <summary>
 		/// リピート付きでポインターの状態を取得する
 		/// </summary>
 		/// <param name="index"></param>
 		/// <returns></returns>
-		public static bool GetButtonRepeat( int buttonIndex, bool isFixed = false )
-		{
-			// modeEnabled を判定条件に入れないのは、マウスとキーボードを同時入力するケースを考慮するため
-			if( m_Owner == null || m_Owner.ControlEnabled == false )
-			{
-				// 無効
-				return false ;
-			}
-
-			if( buttonIndex <  0 || buttonIndex >= NumberOfButtons )
-			{
-				return false ;
-			}
-
-			int slotNumber = ( isFixed == false ? 0 : 1 ) ;
-
-			return m_ButtonStates[ buttonIndex, slotNumber ].IsRepeat ;
-		}
+		public static bool GetButtonRepeat( int buttonIndex, bool fromFixedUpdate = false )
+			=> Mouse.GetButtonRepeat( buttonIndex, fromFixedUpdate ) ;
 	}
 }

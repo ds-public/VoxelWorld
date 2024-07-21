@@ -15,7 +15,7 @@ using UnityEditor ;
 namespace InputHelper
 {
 	/// <summary>
-	/// 入力操作クラス Version 2024/06/11 0
+	/// 入力操作クラス Version 2024/07/17 0
 	/// </summary>
 	[DefaultExecutionOrder( -90 )]
 	public partial class InputManager : MonoBehaviour
@@ -191,9 +191,6 @@ namespace InputHelper
 
 			// Moue の実装を生成する
 			Mouse.Initialize( inputSystemEnabled, this ) ;
-
-			// Pointer の実装を生成する
-			Pointer.Initialize( this ) ;
 
 			// GamePad の実装を生成する
 			GamePad.Initialize( inputSystemEnabled, this ) ;

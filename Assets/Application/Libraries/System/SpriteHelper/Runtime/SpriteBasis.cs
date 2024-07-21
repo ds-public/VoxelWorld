@@ -15,7 +15,7 @@ using UnityEditorInternal ;
 namespace SpriteHelper
 {
 	/// <summary>
-	/// スプライト制御クラス  Version 2024/05/14
+	/// スプライト制御クラス  Version 2024/07/18
 	/// </summary>
 //	[ExecuteAlways]
 	[DisallowMultipleComponent]
@@ -301,6 +301,23 @@ namespace SpriteHelper
 				transform.localRotation = Quaternion.Euler( euler.x, euler.y, value ) ;
 			}
 		}
+
+		/// <summary>
+		/// Ｚ軸回転
+		/// </summary>
+		public float Roll
+		{
+			get
+			{
+				return transform.localRotation.eulerAngles.z ;
+			}
+			set
+			{
+				transform.localRotation = Quaternion.Euler( 0, 0, value % 360 ) ;
+			}
+		}
+
+
 
 
 		/// <summary>

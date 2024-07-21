@@ -618,7 +618,7 @@ namespace DSW.Screens.LobbyClasses.UI
 			{
 				// シングル
 				serverAddress		= "localhost" ;
-				serverPortNumber	= m_SystemServerPortNumber ;
+				serverPortNumber	= m_ServerPortNumber ;
 			}
 			else
 			if( playMode == PlayerData.PlayModes.Multi )

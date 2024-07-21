@@ -188,9 +188,6 @@ namespace uGUIHelper.InputAdapter
 			// Moue の実装を生成する
 			Mouse.Initialize( inputSystemEnabled, this ) ;
 
-			// Pointer の実装を生成する
-			Pointer.Initialize( this ) ;
-
 			// GamePad の実装を生成する
 			GamePad.Initialize( inputSystemEnabled, this ) ;
 
@@ -705,17 +702,23 @@ namespace uGUIHelper.InputAdapter
 		// Hover と Press は独自に監視する
 
 		private GameObject						m_ActiveHover_GameObject ;
-		private GameObject						m_ActivePress_GameObject ;
+		private List<GameObject>				m_ActivePress_GameObjects = new () ;
+		private GameObject						m_ActivePress_MouseGameObject ;
+		private Dictionary<int,GameObject>		m_ActivePress_TouchGameObjects = new () ;
 
 		private readonly PointerEventData		m_CT_EventDataCurrentPosition = new ( EventSystem.current ) ;
 		private readonly List<RaycastResult>	m_CT_Results = new () ;
 		private GameObject						m_CT_GameObject ;
 
+		private List<int>						m_ActivePress_TouchRemoveFingerIds = new () ;
+
 		// Hover と Press の監視
 		private void ProcessHoverAndPress_OnApplicationFocus()
 		{
-			m_ActiveHover_GameObject = null ;
-			m_ActivePress_GameObject = null ;
+			m_ActiveHover_GameObject		= null ;
+			m_ActivePress_GameObjects.Clear() ;
+			m_ActivePress_MouseGameObject	= null ;
+			m_ActivePress_TouchGameObjects.Clear() ;
 
 			//----------------------------------
 
@@ -740,15 +743,13 @@ namespace uGUIHelper.InputAdapter
 		// Hover と Press の監視
 		private void ProcessHoverAndPress_Update()
 		{
-			//----------------------------------------------------------
-			// Raycast
+			//------------------------------------------------------------------------------------------
+			// Hover
 
+			// Raycast
 			m_CT_EventDataCurrentPosition.position = MousePosition ;
 			m_CT_Results.Clear() ;
 			EventSystem.current.RaycastAll( m_CT_EventDataCurrentPosition, m_CT_Results ) ;
-
-			//----------------------------------------------------------
-			// Hover
 
 			if( m_CT_Results.Count >= 1 )
 			{
@@ -762,23 +763,27 @@ namespace uGUIHelper.InputAdapter
 			//----------------------------------------------------------
 			// Press
 
-			int button ;
+			m_ActivePress_GameObjects.Clear() ;
 
 			//----------------------------------
-			// 押された
+			// Mouse
 
-			button = 0 ;
+			int button ;
+
+			button = 0 ;		// フラグ
 			for( int i  = 0 ; i <= 2 ; i ++ )
 			{
+				// Down
 				if( GetMouseButtonDown( i ) == true )
 				{
 					button |= ( 1 << i ) ;
 				}
 			}
 
+			// Down 時のみ
 			if( button != 0 )
 			{
-				button = 0 ;
+				button = 0 ;	// カウント
 				for( int i  = 0 ; i <= 2 ; i ++ )
 				{
 					if( GetMouseButton( i ) == true )
@@ -793,8 +798,7 @@ namespace uGUIHelper.InputAdapter
 					if( m_CT_Results.Count >= 1 )
 					{
 						// レイキャスト対象
-						m_ActivePress_GameObject = m_CT_Results[ 0 ].gameObject ;
-
+						m_ActivePress_MouseGameObject = m_CT_Results[ 0 ].gameObject ;
 						m_CT_GameObject = m_CT_Results[ 0 ].gameObject ;
 					}
 				}
@@ -834,7 +838,7 @@ namespace uGUIHelper.InputAdapter
 			//----------------------------------
 			// 離された
 
-			button = 0 ;
+			button = 0 ;		// フラグ
 			for( int i  = 0 ; i <= 2 ; i ++ )
 			{
 				if( GetMouseButtonUp( i ) == true )
@@ -845,7 +849,7 @@ namespace uGUIHelper.InputAdapter
 
 			if( button != 0 )
 			{
-				button = 0 ;
+				button = 0 ;	// カウント
 				for( int i  = 0 ; i <= 2 ; i ++ )
 				{
 					if( GetMouseButton( i ) == true )
@@ -857,9 +861,97 @@ namespace uGUIHelper.InputAdapter
 				if( button == 0 )
 				{
 					// 全て離された
-					m_ActivePress_GameObject = null ;
-
+					m_ActivePress_MouseGameObject = null ;
 					m_CT_GameObject = null ;
+				}
+			}
+
+			//------------------------------------------------------------------------------------------
+			// タッチまわりのレイキャスト状態を確認する
+
+			if( Input.touchCount >  0 )
+			{
+				int i, l = Input.touchCount ;
+
+				// fongerId に存在しないものになってしまった場合は削除する
+				if( m_ActivePress_TouchGameObjects.Count >  0 )
+				{
+					m_ActivePress_TouchRemoveFingerIds.Clear() ;
+					foreach( var activePress_TouchGameObject in m_ActivePress_TouchGameObjects )
+					{
+						for( i  = 0 ; i <  l ; i ++ )
+						{
+							var touch = Input.GetTouch( i ) ;
+							if( activePress_TouchGameObject.Key == touch.fingerId )
+							{
+								// これは削除しない
+								break ;
+							}
+						}
+
+						if( i >= l )
+						{
+							// これは現在のタッチではないので削除する対象
+							m_ActivePress_TouchRemoveFingerIds.Add( activePress_TouchGameObject.Key ) ;
+						}
+					}
+
+					if( m_ActivePress_TouchRemoveFingerIds.Count >  0 )
+					{
+						// いくつか消す対象が存在する
+						foreach( var activePress_TouchRemoveFingerId in m_ActivePress_TouchRemoveFingerIds )
+						{
+							// 存在しなくなったタッチによるレイキャストヒット対象情報を削除する
+							m_ActivePress_TouchGameObjects.Remove( activePress_TouchRemoveFingerId ) ;
+						}
+					}
+				}
+
+				// 追加の確認
+				for( i  = 0 ; i <  l ; i ++ )
+				{
+					var touch = Input.GetTouch( i ) ;
+
+					if( m_ActivePress_TouchGameObjects.ContainsKey( touch.fingerId ) == false )
+					{
+						// 初めてタッチされた際のみ追加される(まだ確定ではない)
+
+						// レイキャスト対象が存在するか確認する
+						m_CT_EventDataCurrentPosition.position = touch.position ;
+						m_CT_Results.Clear() ;
+						EventSystem.current.RaycastAll( m_CT_EventDataCurrentPosition, m_CT_Results ) ;
+
+						if( m_CT_Results.Count >= 1 )
+						{
+							// レイキャストにヒットするするものがあるので最初にヒットしたものを追加する
+							m_ActivePress_TouchGameObjects.Add( touch.fingerId, m_CT_Results[ 0 ].gameObject ) ;
+						}
+					}
+				}
+			}
+			else
+			{
+				// 全解放
+				m_ActivePress_TouchGameObjects.Clear() ;
+			}
+
+			//------------------------------------------------------------------------------------------
+			// 最後にマウスとタッチのレイキャストヒット対象情報を設定する
+
+			if( m_ActivePress_MouseGameObject != null )
+			{
+				m_ActivePress_GameObjects.Add( m_ActivePress_MouseGameObject ) ;
+			}
+
+			if( m_ActivePress_TouchGameObjects.Count >  0 )
+			{
+				// マウスとタッチで同じものが被る可能性があるので重複しないように追加する
+				foreach( var activePress_TouchGameObject in m_ActivePress_TouchGameObjects )
+				{
+					if( m_ActivePress_GameObjects.Contains( activePress_TouchGameObject.Value ) == false )
+					{
+						m_ActivePress_GameObjects.Add( activePress_TouchGameObject.Value ) ;
+					}
 				}
 			}
 		}
@@ -932,12 +1024,12 @@ namespace uGUIHelper.InputAdapter
 				return false ;
 			}
 
-			if( m_Instance.m_ActivePress_GameObject == null )
+			if( m_Instance.m_ActivePress_GameObjects == null || m_Instance.m_ActivePress_GameObjects.Count == 0 )
 			{
 				return false ;
 			}
 
-			return ( m_Instance.m_ActivePress_GameObject == target ) ;
+			return m_Instance.m_ActivePress_GameObjects.Contains( target ) ;
 		}
 	}
 }

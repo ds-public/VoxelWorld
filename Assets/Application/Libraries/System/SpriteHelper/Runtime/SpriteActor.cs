@@ -15,7 +15,7 @@ using UnityEditorInternal ;
 namespace SpriteHelper
 {
 	/// <summary>
-	/// スプライト制御クラス  Version 2024/05/21
+	/// スプライト制御クラス  Version 2024/07/18
 	/// </summary>
 	public partial class SpriteActor : SpriteImage
 	{

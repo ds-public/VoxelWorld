@@ -1,3 +1,5 @@
+#pragma warning disable IDE0270
+
 using System ;
 using System.Collections ;
 using System.Collections.Generic ;
@@ -7,9 +9,9 @@ using UnityEngine.UI ;
 
 namespace uGUIHelper
 {
-	[RequireComponent( typeof( UnityEngine.Canvas ) )]
-	[RequireComponent( typeof( UnityEngine.UI.CanvasScaler ) )]
-	[RequireComponent( typeof( UnityEngine.UI.GraphicRaycaster ) )]
+	[RequireComponent( typeof( Canvas ) )]
+	[RequireComponent( typeof( CanvasScaler ) )]
+	[RequireComponent( typeof( GraphicRaycaster ) )]
 
 	/// <summary>
 	/// uGUI:Canvas クラスの機能拡張コンポーネントクラス
@@ -54,9 +56,9 @@ namespace uGUIHelper
 				
 			canvas.renderMode = RenderMode.ScreenSpaceOverlay ;
 			canvas.pixelPerfect = true ;
-				
+			
 			canvas.sortingOrder = 0 ;	// 表示を強制的に更新するために初期化が必要
-				
+			
 			ResetRectTransform() ;
 
 			//------------------------------------------
@@ -258,9 +260,6 @@ namespace uGUIHelper
 		
 			canvas.additionalShaderChannels = acsc ;
 		}
-
-
-
 
 		//---------------------------------------------------------------------------
 
@@ -780,7 +779,7 @@ namespace uGUIHelper
 
 			//------------------------
 			
-			Canvas canvas = uiCanvas.GetCanvas() ;
+			var canvas = uiCanvas.GetCanvas() ;
 
 			canvas.renderMode = RenderMode.ScreenSpaceCamera ;
 			canvas.pixelPerfect = true ;
@@ -897,7 +896,7 @@ namespace uGUIHelper
 		{
 			get
 			{
-				CanvasGroup canvasGroup = GetCanvasGroup() ;
+				var canvasGroup = GetCanvasGroup() ;
 				if( canvasGroup == null )
 				{
 					return false ;
@@ -907,7 +906,7 @@ namespace uGUIHelper
 			}
 			set
 			{
-				CanvasGroup canvasGroup = GetCanvasGroup() ;
+				var canvasGroup = GetCanvasGroup() ;
 				if( canvasGroup == null )
 				{
 					return ;

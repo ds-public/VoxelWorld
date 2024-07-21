@@ -15,6 +15,10 @@ namespace InputHelper
 	/// </summary>
 	public partial class Mouse
 	{
+		private static InputManager m_Owner ;
+
+		//-------------------------------------------------------------------------------------------
+
 		/// <summary>
 		/// 左ボタン番号
 		/// </summary>
@@ -30,9 +34,88 @@ namespace InputHelper
 		/// </summary>
 		public const int		MB = 2 ;
 
+		/// <summary>
+		/// ボタンの数
+		/// </summary>
+		public const int		NumberOfButtons = 3 ;
+
+		/// <summary>
+		/// リピート開始までの時間(秒)
+		/// </summary>
+		public static float		RepeatStartingTime { get ; set ; } = 0.5f ;
+
+		/// <summary>
+		/// リピートする間隔の時間(秒)
+		/// </summary>
+		public static float		RepeatIntervalTime { get ; set ; } = 0.05f ;
+
+
 		//-------------------------------------------------------------------------------------------------------------------
 
-		private static InputManager m_Owner ;
+		/// <summary>
+		/// 実装インターフェース
+		/// </summary>
+		public interface IImplementation
+		{
+			/// <summary>
+			/// 初期化を行う
+			/// </summary>
+			void Initialize() ;
+
+			/// <summary>
+			/// フレーム毎の更新
+			/// </summary>
+			void Update( bool fromFixedUpdate ) ;
+
+			//-----------------------------------------------------------
+
+			/// <summary>
+			/// ポインターの位置
+			/// </summary>
+			Vector3 Position{ get ; }
+
+			/// <summary>
+			/// ボタンが押されているかどうかの判定
+			/// </summary>
+			/// <param name="buttonNumber"></param>
+			/// <returns></returns>
+			bool GetButton( int buttonNumber ) ;
+
+			/// <summary>
+			/// ボタンが押されたかどうかの判定
+			/// </summary>
+			/// <param name="buttonNumber"></param>
+			/// <returns></returns>
+			bool GetButtonDown( int buttonNumber, bool fromFixedUpdate ) ;
+
+			/// <summary>
+			/// ボタンが離されたどうかの判定
+			/// </summary>
+			/// <param name="buttonNumber"></param>
+			/// <returns></returns>
+			bool GetButtonUp( int buttonNumber, bool fromFixedUpdate ) ;
+
+			/// <summary>
+			/// リピート付きでボタンが押されているかどうかの判定
+			/// </summary>
+			/// <param name="buttonNumber"></param>
+			/// <param name="fromFixedUpdate"></param>
+			/// <returns></returns>
+			bool GetButtonRepeat( int buttonNumber, bool fromFixedUpdate ) ;
+
+			//----------------------------------
+
+			/// <summary>
+			/// ホイールの移動量
+			/// </summary>
+			Vector2 ScrollDelta{ get ; }
+		}
+
+		// 実装のインスタンス
+		private static IImplementation m_Implementation ;
+
+		//-------------------------------------------------------------------------------------------------------------------
+		// 公開メソッド
 
 		/// <summary>
 		/// 初期化を行う
@@ -53,52 +136,34 @@ namespace InputHelper
 				m_Implementation = new Implementation_NewVersion() ;
 			}
 #endif
+			m_Implementation.Initialize() ;
 		}
-
-		//-------------------------------------------------------------------------------------------
 
 		/// <summary>
-		/// 実装インターフェース
+		/// 毎フレーム実行する処理
 		/// </summary>
-		public interface IImplementation
+		/// <param name="buttonNumber"></param>
+		/// <returns></returns>
+		public static bool Update( bool fromFixedUpdate )
 		{
-			/// <summary>
-			/// ポインターの位置
-			/// </summary>
-			Vector3 Position{ get ; }
+			// modeEnabled を判定条件に入れないのは、マウスとキーボードを同時入力するケースを考慮するため
+			if( m_Owner == null || m_Owner.ControlEnabled == false )
+			{
+				// 無効
+				return false ;
+			}
 
-			/// <summary>
-			/// ボタンが押されているかどうかの判定
-			/// </summary>
-			/// <param name="buttonNumber"></param>
-			/// <returns></returns>
-			bool GetButton( int buttonNumber ) ;
+			if( m_Implementation == null )
+			{
+				throw new Exception( "Not implemented." ) ;
+			}
 
-			/// <summary>
-			/// ボタンが押されたかどうかの判定
-			/// </summary>
-			/// <param name="buttonNumber"></param>
-			/// <returns></returns>
-			bool GetButtonDown( int buttonNumber ) ;
+			m_Implementation.Update( fromFixedUpdate ) ;
 
-			/// <summary>
-			/// ボタンが離されたどうかの判定
-			/// </summary>
-			/// <param name="buttonNumber"></param>
-			/// <returns></returns>
-			bool GetButtonUp( int buttonNumber ) ;
-
-			/// <summary>
-			/// ホイールの移動量
-			/// </summary>
-			Vector2 ScrollDelta{ get ; }
+			return true ;
 		}
 
-		// 実装のインスタンス
-		private static IImplementation m_Implementation ;
-
-		//-------------------------------------------------------------------------------------------------------------------
-		// 公開メソッド
+		//--------------------------------------------------------------------------------------------
 
 		/// <summary>
 		/// ポインターの位置
@@ -111,6 +176,7 @@ namespace InputHelper
 				{
 					throw new Exception( "Not implemented." ) ;
 				}
+
 				return m_Implementation.Position ;
 			}
 		}
@@ -133,6 +199,7 @@ namespace InputHelper
 			{
 				throw new Exception( "Not implemented." ) ;
 			}
+
 			return m_Implementation.GetButton( buttonNumber ) ;
 		}
 
@@ -141,7 +208,7 @@ namespace InputHelper
 		/// </summary>
 		/// <param name="buttonNumber"></param>
 		/// <returns></returns>
-		public static bool GetButtonDown( int buttonNumber )
+		public static bool GetButtonDown( int buttonNumber, bool fromFixedUpdate = false )
 		{
 			// modeEnabled を判定条件に入れないのは、マウスとキーボードを同時入力するケースを考慮するため
 			if( m_Owner == null || m_Owner.ControlEnabled == false )
@@ -154,7 +221,8 @@ namespace InputHelper
 			{
 				throw new Exception( "Not implemented." ) ;
 			}
-			return m_Implementation.GetButtonDown( buttonNumber ) ;
+
+			return m_Implementation.GetButtonDown( buttonNumber, fromFixedUpdate ) ;
 		}
 
 		/// <summary>
@@ -162,7 +230,7 @@ namespace InputHelper
 		/// </summary>
 		/// <param name="buttonNumber"></param>
 		/// <returns></returns>
-		public static bool GetButtonUp( int buttonNumber )
+		public static bool GetButtonUp( int buttonNumber, bool fromFixedUpdate = false )
 		{
 			// modeEnabled を判定条件に入れないのは、マウスとキーボードを同時入力するケースを考慮するため
 			if( m_Owner == null || m_Owner.ControlEnabled == false )
@@ -175,8 +243,33 @@ namespace InputHelper
 			{
 				throw new Exception( "Not implemented." ) ;
 			}
-			return m_Implementation.GetButtonUp( buttonNumber ) ;
+
+			return m_Implementation.GetButtonUp( buttonNumber, fromFixedUpdate ) ;
 		}
+
+		/// <summary>
+		/// リピート付きでボタンが押されているかどうかの判定
+		/// </summary>
+		/// <param name="buttonNumber"></param>
+		/// <returns></returns>
+		public static bool GetButtonRepeat( int buttonNumber, bool fromFixedUpdate = false )
+		{
+			// modeEnabled を判定条件に入れないのは、マウスとキーボードを同時入力するケースを考慮するため
+			if( m_Owner == null || m_Owner.ControlEnabled == false )
+			{
+				// 無効
+				return false ;
+			}
+
+			if( m_Implementation == null )
+			{
+				throw new Exception( "Not implemented." ) ;
+			}
+
+			return m_Implementation.GetButtonRepeat( buttonNumber, fromFixedUpdate ) ;
+		}
+
+		//-----------------------------------------------------------
 
 		/// <summary>
 		/// ホイールの移動量
@@ -196,6 +289,7 @@ namespace InputHelper
 				{
 					throw new Exception( "Not implemented." ) ;
 				}
+
 				return m_Implementation.ScrollDelta ;
 			}
 		}

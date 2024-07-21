@@ -37,6 +37,21 @@ namespace DSW.World
 		// 切断されたかどうか
 		private bool		m_IsDisconnected ;
 
+
+		/// <summary>
+		/// エラーコード
+		/// </summary>
+		public	int			ErrorCode => m_ErrorCode ;
+		private int			m_ErrorCode ;
+
+
+		/// <summary>
+		/// エラーメッセージ
+		/// </summary>
+		public string		ErrorMessage	=> m_ErrorMessage ;
+		private string		m_ErrorMessage ;
+
+
 		//-------------------------------------------------------------------------------------------
 
 		// クライアントの処理を開始する
@@ -74,6 +89,9 @@ namespace DSW.World
 
 			// 接続できなかったもしくは切断されたかどうか
 			m_IsDisconnected = false ;
+
+			m_ErrorCode		= 0 ;
+			m_ErrorMessage	= string.Empty ;
 
 			// 非同期で接続を試みる
 			m_WebSocket.Connect( serverAddress, serverPortNumber, false ) ;
@@ -130,6 +148,11 @@ namespace DSW.World
 		// 切断
 		private void OnDisconnected_Main( int code, string reason )
 		{
+			Debug.Log( $"<color=#FF7F00>サーバーから切断された CODE = {code} 理由 = {reason}</color>" ) ;
+
+			m_ErrorCode		= code ;
+			m_ErrorMessage	= reason ;
+
 			// 接続できなかった・サーバーから切断された
 			m_IsDisconnected = true ;
 

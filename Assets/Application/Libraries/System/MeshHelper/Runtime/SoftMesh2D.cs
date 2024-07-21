@@ -14,7 +14,7 @@ using UnityEditorInternal ;
 namespace MeshHelper
 {
 	/// <summary>
-	/// ２Ｄメッシュ Version 2024/06/14
+	/// ２Ｄメッシュ Version 2024/07/18
 	/// </summary>
 	[ExecuteAlways]
 	[DisallowMultipleComponent]
@@ -53,7 +53,7 @@ namespace MeshHelper
 			var component = child.AddComponent<SoftMesh2D>() ;
 			component.SetDefault( true ) ;	// 初期状態に設定する
 
-            // 一番上に移動させる
+			// 一番上に移動させる
 			while( ComponentUtility.MoveComponentUp( component ) ){}
 
 			Selection.activeGameObject = child ;
@@ -816,29 +816,29 @@ namespace MeshHelper
 			}
 		}
 
-        /// <summary>
-        /// グリッドを設定する
-        /// </summary>
-        /// <param name="x"></param>
-        /// <param name="y"></param>
-        public void SetGrid( int x, int y )
-        {
-            if( x <= 0 )
-            {
-                x  = 1 ;
-            }
-            if( y <= 0 )
-            {
-                y  = 1 ;
-            }
+		/// <summary>
+		/// グリッドを設定する
+		/// </summary>
+		/// <param name="x"></param>
+		/// <param name="y"></param>
+		public void SetGrid( int x, int y )
+		{
+			if( x <= 0 )
+			{
+				x  = 1 ;
+			}
+			if( y <= 0 )
+			{
+				y  = 1 ;
+			}
 
-            if( m_GridX != x || m_GridY != y )
-            {
-                m_GridX = x ;
-                m_GridY = y ;
-                m_IsMeshDirty = true ;
-            }
-        }
+			if( m_GridX != x || m_GridY != y )
+			{
+				m_GridX = x ;
+				m_GridY = y ;
+				m_IsMeshDirty = true ;
+			}
+		}
 
 		/// <summary>
 		/// 分割数(円専用)
@@ -3734,45 +3734,42 @@ namespace MeshHelper
 		/// </summary>
 		public void AdjustCollider()
 		{
-			if( m_DirectionType == DirectionTypes.Z_Axis )
+			if( ShapeType == ShapeTypes.Rectangle )
 			{
-				if( ShapeType == ShapeTypes.Rectangle )
+				if( m_DirectionType == DirectionTypes.Z_Axis )
 				{
-					if( m_DirectionType == DirectionTypes.Z_Axis )
+					if( m_Collider2D == null )
 					{
-						if( m_Collider2D == null )
-						{
-							return ;
-						}
-
-						float sx = m_Size.x ;
-						float sy = m_Size.y ;
-
-						var collider2D = m_Collider2D as BoxCollider2D ;
-						collider2D.offset	= new ( m_Offset.x, m_Offset.y ) ;
-						collider2D.size		= new ( sx, sy ) ;
+						return ;
 					}
+
+					float sx = m_Size.x ;
+					float sy = m_Size.y ;
+
+					var collider2D = m_Collider2D as BoxCollider2D ;
+					collider2D.offset	= new ( m_Offset.x, m_Offset.y ) ;
+					collider2D.size		= new ( sx, sy ) ;
 				}
-				else
-				if( ShapeType == ShapeTypes.Circle )
+			}
+			else
+			if( ShapeType == ShapeTypes.Circle )
+			{
+				if( m_DirectionType == DirectionTypes.Z_Axis )
 				{
-					if( m_DirectionType == DirectionTypes.Z_Axis )
+					if( m_Collider2D == null )
 					{
-						if( m_Collider2D == null )
-						{
-							return ;
-						}
-
-						float sx = m_Size.x ;
-						float sy = m_Size.y ;
-
-						var collider2D = m_Collider2D as CircleCollider2D ;
-						collider2D.offset	= new ( m_Offset.x, m_Offset.y ) ;
-
-						float r = Mathf.Max( sx, sy ) ;
-
-						collider2D.radius = r * 0.5f ;
+						return ;
 					}
+
+					float sx = m_Size.x ;
+					float sy = m_Size.y ;
+
+					var collider2D = m_Collider2D as CircleCollider2D ;
+					collider2D.offset	= new ( m_Offset.x, m_Offset.y ) ;
+
+					float r = Mathf.Max( sx, sy ) ;
+
+					collider2D.radius = r * 0.5f ;
 				}
 			}
 		}

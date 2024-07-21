@@ -15,30 +15,7 @@ namespace InputHelper
 	/// </summary>
 	public partial class Keyboard
 	{
-		//-------------------------------------------------------------------------------------------------------------------
-
 		private static InputManager m_Owner ;
-
-		/// <summary>
-		/// 初期化を行う
-		/// </summary>
-		public static void Initialize( bool inputSystemEnabled, InputManager owner )
-		{
-			m_Owner = owner ;
-
-			if( inputSystemEnabled == false )
-			{
-				// 旧版の実装を採用
-				m_Implementation = new Implementation_OldVersion() ;
-			}
-#if ENABLE_INPUT_SYSTEM
-			else
-			{
-				// 新版の実装を採用
-				m_Implementation = new Implementation_NewVersion() ;
-			}
-#endif
-		}
 
 		//-------------------------------------------------------------------------------------------
 
@@ -76,6 +53,29 @@ namespace InputHelper
 		// 公開メソッド
 
 		/// <summary>
+		/// 初期化を行う
+		/// </summary>
+		public static void Initialize( bool inputSystemEnabled, InputManager owner )
+		{
+			m_Owner = owner ;
+
+			if( inputSystemEnabled == false )
+			{
+				// 旧版の実装を採用
+				m_Implementation = new Implementation_OldVersion() ;
+			}
+#if ENABLE_INPUT_SYSTEM
+			else
+			{
+				// 新版の実装を採用
+				m_Implementation = new Implementation_NewVersion() ;
+			}
+#endif
+		}
+
+		//--------------------------------------------------------------------------------------------
+
+		/// <summary>
 		/// キーが押されているかどうかの判定
 		/// </summary>
 		/// <param name="keyCode"></param>
@@ -93,6 +93,7 @@ namespace InputHelper
 			{
 				throw new Exception( "Not implemented." ) ;
 			}
+
 			return m_Implementation.GetKey( keyCode ) ;
 		}
 
@@ -114,6 +115,7 @@ namespace InputHelper
 			{
 				throw new Exception( "Not implemented." ) ;
 			}
+
 			return m_Implementation.GetKeyDown( keyCode ) ;
 		}
 
@@ -135,6 +137,7 @@ namespace InputHelper
 			{
 				throw new Exception( "Not implemented." ) ;
 			}
+
 			return m_Implementation.GetKeyUp( keyCode ) ;
 		}
 	}
