@@ -520,6 +520,8 @@ namespace uGUIHelper
 		}
 
 		private bool m_IsContentDrag = false ;
+		protected bool m_ContentDirty = false ;
+		private Vector2 m_ContentPosition ;
 		private bool m_IsMoving = false ;
 
 		private bool m_IsAutoMoving = false ;
@@ -1037,7 +1039,48 @@ namespace uGUIHelper
 		}
 
 		/// <summary>
-		/// 有効範囲に収めたココンテントの現在位置を取得する
+		/// コンテントの現在位置を取得する
+		/// </summary>
+		protected virtual float ContentPositionPure
+		{
+			get
+			{
+				// 横スクロール
+				if( DirectionType == DirectionTypes.Horizontal )
+				{
+					if( Content == null ){ return 0 ; }
+					return - Content.Rx ;
+				}
+
+				// 縦スクロール
+				if( DirectionType == DirectionTypes.Vertical )
+				{
+					if( Content == null ){ return 0 ; }
+					return   Content.Ry ;
+				}
+				
+				return 0 ;
+			}
+			set
+			{
+				// 横スクロール
+				if( DirectionType == DirectionTypes.Horizontal )
+				{
+					if( Content == null ){ return ; }
+					Content.Rx = - value ;
+				}
+
+				// 縦スクロール
+				if( DirectionType == DirectionTypes.Vertical )
+				{
+					if( Content == null ){ return ; }
+					Content.Ry =   value ;
+				}
+			}
+		}
+
+		/// <summary>
+		/// 有効範囲に収めたコンテントの現在位置を取得する
 		/// </summary>
 		public float RoundingContentPosition
 		{
@@ -1257,19 +1300,6 @@ namespace uGUIHelper
 						}
 					}
 				}
-
-				bool isMoving = IsMoving ;
-				if( m_IsMoving != isMoving )
-				{
-					m_IsMoving  = isMoving ;
-
-					OnContentMoveInner( m_IsMoving ) ;
-
-					if( isMoving == false )
-					{
-						OnStoppedInner( ContentPosition ) ;	// 停止
-					}
-				}
 			}
 
 			//-----------------------------------------
@@ -1287,6 +1317,38 @@ namespace uGUIHelper
 			}
 		}
 
+		protected override void OnLateUpdate()
+		{
+			base.OnLateUpdate() ;
+
+			if( Application.isPlaying == true )
+			{
+				var contentPosition = new Vector2( - m_Content.Rx,   m_Content.Ry ) ;
+				if( m_ContentPosition.Equals( contentPosition ) == false || m_ContentDirty == true )
+				{
+					m_ContentPosition = contentPosition ;
+
+					OnContentPositionChangedInner( m_ContentPosition ) ;
+				}
+
+				bool isMoving = IsMoving ;
+				if( m_IsMoving != isMoving )
+				{
+					m_IsMoving  = isMoving ;
+
+					OnContentMoveInner( m_IsMoving ) ;
+
+					if( isMoving == false )
+					{
+						OnStoppedInner( ContentPosition ) ;	// 停止
+					}
+				}
+
+				// ---------------------------------------------
+
+				m_ContentDirty = false ;
+			}
+		}
 
 		//--------------------------------------------------------
 
@@ -1624,6 +1686,69 @@ namespace uGUIHelper
 			if( scrollRect != null )
 			{
 				scrollRect.onValueChanged.RemoveAllListeners() ;
+			}
+		}
+
+		//---------------------------------------------
+
+		/// <summary>
+		/// 状態が変化した際に呼び出されるアクション
+		/// </summary>
+		private Action<string, UIScrollView, Vector2> OnContentPositionChangedAction ;
+
+		/// <summary>
+		/// 状態が変化した際に呼び出されるデリゲートの定義
+		/// </summary>
+		/// <param name="identity">ビューの識別名(未設定の場合はゲームオブジェクト名)</param>
+		/// <param name="view">ビューのインスタンス</param>
+		/// <param name="state">変化後の値</param>
+		public delegate void OnContentPositionChanged( string identity, UIScrollView view, Vector2 value ) ;
+
+		/// <summary>
+		/// 状態が変化した際に呼び出されるデリゲート
+		/// </summary>
+		public OnContentPositionChanged OnContentPositionChangedDelegate ;
+		
+		/// <summary>
+		/// 状態が変化した際に呼び出されるアクションを設定する
+		/// </summary>
+		/// <param name="onValueChangedAction">アクションメソッド</param>
+		public void SetOnContentPositionChanged( Action<string, UIScrollView, Vector2> onContentPositionChangedAction )
+		{
+			OnContentPositionChangedAction = onContentPositionChangedAction ;
+		}
+	
+		/// <summary>
+		/// 状態が変化した際に呼び出されるデリゲートを追加する
+		/// </summary>
+		/// <param name="onValueChangedDelegate">デリゲートメソッド</param>
+		public void AddOnContentPositionChanged( OnContentPositionChanged onContentPositionChangedDelegate )
+		{
+			OnContentPositionChangedDelegate += onContentPositionChangedDelegate ;
+		}
+		
+		/// <summary>
+		/// 状態が変化した際に呼び出されるデリゲートを削除する
+		/// </summary>
+		/// <param name="onValueChangedDelegate">デリゲートメソッド</param>
+		public void RemoveOnContentPositionChanged( OnContentPositionChanged onContentPositionChangedDelegate )
+		{
+			OnContentPositionChangedDelegate -= onContentPositionChangedDelegate ;
+		}
+
+		// 内部リスナー
+		private void OnContentPositionChangedInner( Vector2 value )
+		{
+			if( OnContentPositionChangedAction != null || OnContentPositionChangedDelegate != null )
+			{
+				string identity = Identity ;
+				if( string.IsNullOrEmpty( identity ) == true )
+				{
+					identity = name ;
+				}
+
+				OnContentPositionChangedAction?.Invoke( identity, this, value ) ;
+				OnContentPositionChangedDelegate?.Invoke( identity, this, value ) ;
 			}
 		}
 
@@ -2512,6 +2637,10 @@ namespace uGUIHelper
 			
 			float time, factor, delta ;
 
+			float contentPosition_Old = contentPositionFrom ;
+			float contentPosition_New ;
+
+			float limitSize = ViewSize * 0.5f ;
 
 			// ムーブ処理中
 			while( true )
@@ -2526,15 +2655,33 @@ namespace uGUIHelper
 
 				delta = contentPositionTo - contentPositionFrom ;
 				delta = UITween.GetValue( 0, delta, factor, UITween.ProcessTypes.Ease, easeType ) ;
-				
-				ContentPosition = contentPositionFrom + delta ;
+
+				// Snap 処理が効いてしまうので、単純に Content の座標を変化させるだけではダメ
+				// UIListView であれば派生クラス(UIListView)側の ContentPosition を呼び出し強制位置設定を行う必要がある
+				contentPosition_New = contentPositionFrom + delta ;
+
+				delta = contentPosition_New - contentPosition_Old ;
+
+				if( Mathf.Abs( delta ) <= limitSize)
+				{
+					// １フレーム毎の移動量がビューサイズの半分以下なら速い方の処理を使用する
+					ContentPositionPure = contentPosition_New ;
+				}
+				else
+				{
+					// １フレーム毎の移動量がビューサイズの半分超過なら遅い方の処理を使用する
+					ContentPosition = contentPosition_New ;
+				}
+
+				contentPosition_Old = contentPosition_New ;
+
+//              yield return new WaitForEndOfFrame() ;  // FixedUpdate からの呼び出しであれば意味がある(インスタンスを生成する分遅いので使用しない)
+				yield return null ;
 
 				if( factor >= 1 || m_IsContentDrag == true || InputAdapter.UIEventSystem.IsPressing( gameObject ) == true )
 				{
 					break ;
 				}
-
-				yield return null ;
 			}
 			
 			if( state != null )

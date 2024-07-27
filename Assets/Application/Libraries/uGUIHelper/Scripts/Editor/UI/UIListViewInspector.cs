@@ -139,13 +139,18 @@ namespace uGUIHelper
 			}
 			GUILayout.EndHorizontal() ;		// 横並び終了
 
-			float workingMargin = EditorGUILayout.FloatField( "Working Margin", view.WorkingMargin ) ;
-			if( workingMargin!= view.WorkingMargin )
+			GUILayout.BeginHorizontal() ;	// 横並び
 			{
-				Undo.RecordObject( view, "UIListView : Working Margin Change" ) ;	// アンドウバッファに登録
-				view.WorkingMargin = workingMargin ;
-				EditorUtility.SetDirty( view ) ;
+				bool marginEnabled = EditorGUILayout.Toggle( view.MarginEnabled, GUILayout.Width( 16f ) ) ;
+				if( marginEnabled!= view.MarginEnabled )
+				{
+					Undo.RecordObject( view, "UIListView : Margin Enabled Change" ) ;	// アンドウバッファに登録
+					view.MarginEnabled = marginEnabled ;
+					EditorUtility.SetDirty( view ) ;
+				}
+				GUILayout.Label( "Margin Enabled ( Viewport Outside )", GUILayout.Width( 320f ) ) ;
 			}
+			GUILayout.EndHorizontal() ;		// 横並び終了
 
 			GUILayout.BeginHorizontal() ;	// 横並び
 			{
@@ -251,8 +256,9 @@ namespace uGUIHelper
 		}
 
 
-		//--------------------------------------------------------------------------
-
+		//---------------------------------------------------------------------
+		// 以下は現状未使用
+#if false
 		private readonly Dictionary<string,string> m_Japanese_Message = new ()
 		{
 			{ "SetAutoHide",			"Visibility を 'Auto Hide' に設定する事をお勧めします"	},
@@ -287,6 +293,7 @@ namespace uGUIHelper
 				return m_English_Message[ label ] ;
 			}
 		}
+#endif
 	}
 }
 

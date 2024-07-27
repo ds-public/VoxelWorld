@@ -77,7 +77,7 @@ namespace uGUIHelper
 			if( m_AlphaMaskMaterial == null )
 			{
 				bool overlay = m_IsOverlay ;
-				UIView view = GetComponent<UIView>() ;
+				var view = GetComponent<UIView>() ;
 				if( view.IsCanvasOverlay == true )
 				{
 					overlay = true ;

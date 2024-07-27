@@ -27,7 +27,7 @@ namespace uGUIHelper
 	/// </summary>
 	public class UIView : UIBehaviour
 	{
-		public const string Version = "Version 2024/07/21 0" ;
+		public const string Version = "Version 2024/07/27 0" ;
 
 		// ソースコード
 		// https://bitbucket.org/Unity-Technologies/ui/src/2019.1/
@@ -10750,8 +10750,8 @@ namespace uGUIHelper
 		private readonly bool[]	m_MultiTouchState    = new bool[ 10 ] ;
 		private readonly int[]	m_MultiTouchFingerId = new int[ 10 ] ;
 
-		private bool[] m_MultiTouchEntries = new bool[ 10 ] ;
-		private Vector2[] m_MultiTouchPointers = new Vector2[ 10 ] ;
+		private readonly bool[] m_MultiTouchEntries = new bool[ 10 ] ;
+		private readonly Vector2[] m_MultiTouchPointers = new Vector2[ 10 ] ;
 
 		/// <summary>
 		/// レイキャストのブロックキングに関わらず現在のタッチ情報を取得する
@@ -10775,9 +10775,9 @@ namespace uGUIHelper
 					// ＩＤが同じものを検査して存在するなら上書きする
 					// ＩＤが同じものが存在しないなら新規に追加する
 
-					Touch touch = Input.GetTouch( i ) ;
-					int fingerId = touch.fingerId ;
-					Vector2 position = touch.position ;
+					var touch = Input.GetTouch( i ) ;
+					var fingerId = touch.fingerId ;
+					var position = touch.position ;
 
 					bool isHit = true ;
 					if( isRaycastCheck == true )

@@ -114,26 +114,26 @@ namespace uGUIHelper
 		private int		m_WorkingItemCount = 10 ;
 
 		/// <summary>
-		/// リストビュー表示に使用する余剰展開分のマージン
+		/// ビューポートの外側部分の表示も有効にするかどうか
 		/// </summary>
-		public	float	WorkingMargin
+		public	bool	MarginEnabled
 		{
 			get
 			{
-				return m_WorkingMargin ;
+				return m_MarginEnabled ;
 			}
 			set
 			{
-				if( m_WorkingMargin  != value && value >= 64 )
+				if( m_MarginEnabled != value )
 				{
-					m_WorkingMargin  = value ;
-					m_ItemListDirty = true ;
+					m_MarginEnabled  = value ;
+					m_ItemListDirty  = true ;
 				}
 			}
 		}
 
 		[SerializeField][HideInInspector]
-		private float	m_WorkingMargin = 128 ;
+		private bool	m_MarginEnabled = false ;
 
 
 		/// <summary>
@@ -413,7 +413,7 @@ namespace uGUIHelper
 				SetSize( s * 0.75f, s ) ;
 			}
 
-			m_WorkingMargin = GetCanvasLength() * 128f / 960f ;
+			m_MarginEnabled = false ;
 
 
 			// Mask 等を設定する Viewport を設定(スクロールバーは表示したいので ScrollRect と Mask は別の階層に分ける)
@@ -438,7 +438,7 @@ namespace uGUIHelper
 			}
 			
 			// Content を追加する
-			UIView content = CreateContent( m_Viewport, directionType ) ;
+			var content = CreateContent( m_Viewport, directionType ) ;
 			if( content != null )
 			{
 				scrollRect.content = content.GetRectTransform() ;
@@ -609,13 +609,16 @@ namespace uGUIHelper
 			}
 		}
 
-		override protected void OnLateUpdate()
+		protected override void OnLateUpdate()
 		{
 			if( Application.isPlaying == true )
 			{
 				ProcessSnap() ;
 
 				ProcessItem() ;
+
+				// このメソッドの最後に呼ぶこと
+				base.OnLateUpdate() ;
 			}
 		}
 
@@ -633,7 +636,7 @@ namespace uGUIHelper
 		/// <summary>
 		/// コンテントの現在位置を取得する
 		/// </summary>
-		override public float ContentPosition
+		public override float ContentPosition
 		{
 			get
 			{
@@ -641,9 +644,27 @@ namespace uGUIHelper
 			}
 			set
 			{
-				// 横スクロール
-//				base.ContentPosition = value ;
+				// 横スクロール(強制設定)
 				SetContentPosition( value ) ;
+			}
+		}
+
+		/// <summary>
+		/// コンテントの現在位置を取得する
+		/// </summary>
+		protected override float ContentPositionPure
+		{
+			get
+			{
+				return base.ContentPosition ;
+			}
+			set
+			{
+				// 横スクロール(強制設定)
+				base .ContentPosition = value ;
+
+				// このフレームではスナップ処理を行わない
+				m_Snapping = 0 ;
 			}
 		}
 
@@ -683,6 +704,7 @@ namespace uGUIHelper
 		/// <param name="position"></param>
 		public float SetContentPosition( float position, int itemCount = -1, bool isUpdating = true )
 		{
+			// 注意：こちらでは MarginEnabled は考慮しない。LateUpdate の ProcessItem() で自動補完に任せる
 			if( isUpdating == false )
 			{
 				m_DirtyIndex		= null ;
@@ -834,7 +856,8 @@ namespace uGUIHelper
 
 			base.ContentPosition = position ;
 
-			m_Snapping = 0 ;	// スナップ処理中であれば一旦キャンセルする
+			// 重要
+			m_Snapping = 0 ;	// スナップ処理中であれば一旦キャンセルする(+1=スナップ処理中・0=現フレームではスナップを処理しない・-1=スナップ処理は終了している)
 
 			if( m_Snap == true )
 			{
@@ -844,6 +867,8 @@ namespace uGUIHelper
 					m_Snapping = -1 ;
 				}
 			}
+
+			m_ContentDirty = true ;
 
 			return ContentSize ;
 		}
@@ -857,9 +882,16 @@ namespace uGUIHelper
 			ItemComponentType = itemComponentType ;
 		}
 
-		// 指定したインデックスを基準としてアイテム群を表示させる
+		/// <summary>
+		/// 指定したインデックスを基準としてアイテム群を表示させる
+		/// </summary>
+		/// <param name="index"></param>
+		/// <param name="itemCount"></param>
+		/// <param name="isUpdating"></param>
+		/// <returns></returns>
 		public float SetContentIndex( int index, int itemCount = -1, bool isUpdating = true )
 		{
+			// 注意：こちらでは MarginEnabled は考慮しない。LateUpdate の ProcessItem() で自動補完に任せる
 			if( isUpdating == false )
 			{
 				m_DirtyIndex		= index ;
@@ -914,8 +946,8 @@ namespace uGUIHelper
 			//------------------------------------------------------------------
 
 			int i, l ;
-
-/*			if( m_ItemList.Count >  0 )
+#if false
+			if( m_ItemList.Count >  0 )
 			{
 				// 既に展開済みのアイテムを全て削除する
 				l = m_ItemList.Count ;
@@ -929,8 +961,8 @@ namespace uGUIHelper
 				}
 
 				m_ItemList.Clear() ;
-			}*/
-
+			}
+#endif
 			//----------------------------------------------------------
 
 			// コンテントサイズは最初に設定しておく必要がある
@@ -1077,7 +1109,9 @@ namespace uGUIHelper
 			m_CurrentItemIndex = index ;
 
 			base.ContentPosition = itemOffset + snapOffset ;
-			m_Snapping = 0 ;	// スナップ処理中であれば一旦キャンセルする
+
+			// 重要
+			m_Snapping = 0 ;		// スナップ処理中であれば一旦キャンセルする(+1=スナップ処理中・0=現フレームではスナップを処理しない・-1=スナップ処理は終了している)
 
 			//---------------------------------------------
 
@@ -1123,6 +1157,7 @@ namespace uGUIHelper
 
 					if( itemCode == null && ItemComponentType != null )
 					{
+						// コンポーネントの指定があり且つコンポーネントのインスタンスが未取得なら取得する
 						itemCode = itemView.GetComponent( ItemComponentType ) ;
 					}
 
@@ -1161,11 +1196,12 @@ namespace uGUIHelper
 
 					if( itemCode == null && ItemComponentType != null )
 					{
+						// コンポーネントの指定があり且つコンポーネントのインスタンスが未取得なら取得する
 						itemCode = itemView.GetComponent( ItemComponentType ) ;
 					}
 
 					// ダミーサイズ
-					itemSize = WorkingMargin ;
+					itemSize = DefaultItemSize ;	// 幅が不確定な値になってしまうのでマージン値をダミー値としてセットする
 
 					// オフセット増加
 					itemOffset += itemSize ;
@@ -1239,25 +1275,37 @@ namespace uGUIHelper
 				return null ;
 			}
 
-			if( ItemComponentType != typeof( T ) )
-			{
-				return null ;
-			}
-
 			//----------------------------------------------------------
 
 			var items = new List<( int, T )>() ;
 
 			int i, l = m_ItemList.Count ;
 
-			for( i  = 0 ; i <  l ; i ++ )
+			if( ItemComponentType == typeof( T ) )
 			{
-				// 発見
-				if( m_ItemList[ i ].Code != null )
+				for( i  = 0 ; i <  l ; i ++ )
 				{
+					// 発見
 					if( visibleOnly == false || ( visibleOnly == true && m_ItemList[ i ].View.ActiveSelf == true ) )
 					{
-						items.Add( ( m_ItemList[ i ].Index, m_ItemList[ i ].Code as T ) ) ;
+						if( m_ItemList[ i ].Code != null )
+						{
+							items.Add( ( m_ItemList[ i ].Index, m_ItemList[ i ].Code as T ) ) ;
+						}
+					}
+				}
+			}
+			else
+			{
+				for( i  = 0 ; i <  l ; i ++ )
+				{
+					// 発見
+					if( visibleOnly == false || ( visibleOnly == true && m_ItemList[ i ].View.ActiveSelf == true ) )
+					{
+						if( m_ItemList[ i ].View.TryGetComponent<T>( out var component ) == true )
+						{
+							items.Add( ( m_ItemList[ i ].Index, component ) ) ;
+						}
 					}
 				}
 			}
@@ -1762,12 +1810,49 @@ namespace uGUIHelper
 			m_ItemChecker.Clear() ;
 			bool workingItemFew = false ;
 
+			var vr = new Rect() ;
+			var sr = new Rect() ;
+
+			if( m_MarginEnabled == true )
+			{
+				// マージンが有効である場合、ListView と Viewport の間にもアイテムを表示する
+
+				vr = m_Viewport.RectInCanvas ;
+				sr = RectInCanvas ;
+			}
+
+			//----------------------------------------------------------
+
 			float lowerPosition = base.ContentPosition + ViewSize ;
+
+			if( m_MarginEnabled == true )
+			{
+				// マージンが有効である場合、ListView と Viewport の間にもアイテムを表示する
+
+				float lowerMargin = 0 ;
+
+				if( DirectionType == DirectionTypes.Horizontal )
+				{
+					// 右
+					lowerMargin =   ( sr.xMax - vr.xMax ) ;
+				}
+				else
+				if( DirectionType == DirectionTypes.Vertical )
+				{
+					// 下
+					lowerMargin = - ( sr.yMin - vr.yMin ) ;
+				}
+
+				if( lowerMargin >  0 )
+				{
+					// マージンが存在する
+					lowerPosition += lowerMargin ;
+				}
+			}
 
 			// インデックスは↓正に進む＝コンテントは↑負に進む(上のを下に持っていく)
 			while( m_ItemLowerPosition <  lowerPosition )
 			{
-				// 左か上に現在の位置よりも 128 以上移動している
 				// 最初のアイテムを最後のアイテムに移動させる
 
 				item = m_ItemList[ 0 ] ;
@@ -1802,7 +1887,7 @@ namespace uGUIHelper
 						itemView.name = "hide" ;
 
 						// ダミーのサイズ
-						itemSize = m_WorkingMargin ;	// 幅が不確定な値になってしまうのでマージン値をダミー値としてセットする
+						itemSize = DefaultItemSize ;	// 幅が不確定な値になってしまうのでマージン値をダミー値としてセットする
 					}
 					else
 					{
@@ -1847,11 +1932,38 @@ namespace uGUIHelper
 				}
 
 				m_CurrentItemIndex ++ ;
+
+				m_ContentDirty = true ;
 			}
 
 			//----------------------------------------------------------
 
 			float upperPosition = base.ContentPosition ;
+
+			if( m_MarginEnabled == true )
+			{
+				// マージンが有効である場合、ListView と Viewport の間にもアイテムを表示する
+
+				float upperMargin = 0 ;
+
+				if( DirectionType == DirectionTypes.Horizontal )
+				{
+					// 左
+					upperMargin = - ( sr.xMin - vr.xMin ) ;
+				}
+				else
+				if( DirectionType == DirectionTypes.Vertical )
+				{
+					// 上
+					upperMargin =   ( sr.yMax - vr.yMax ) ;
+				}
+
+				if( upperMargin >  0 )
+				{
+					// マージンが存在する
+					upperPosition -= upperMargin ;
+				}
+			}
 
 			// インデックスは↑負に進む＝コンテントは↓正に進む((下のを上に持っていく)
 			while( m_ItemUpperPosition >  upperPosition )
@@ -1898,7 +2010,7 @@ namespace uGUIHelper
 						itemView.name = "hide" ;
 
 						// ダミーのサイズ
-						itemSize = m_WorkingMargin ;	// 幅が不確定な値になってしまうのでマージン値をダミー値としてセットする
+						itemSize = DefaultItemSize ;	// 幅が不確定な値になってしまうのでマージン値をダミー値としてセットする
 					}
 					else
 					{
@@ -1934,6 +2046,8 @@ namespace uGUIHelper
 				{
 					SetItemSize( itemView, itemSize ) ;
 				}
+
+				m_ContentDirty = true ;
 			}
 
 			//----------------------------------------------------------
@@ -2018,6 +2132,7 @@ namespace uGUIHelper
 
 				m_SnapBaseTime = Time.realtimeSinceStartup ;
 
+				// スナップ処理を実際に有効化する
 				m_Snapping = 1 ;
 			}
 
