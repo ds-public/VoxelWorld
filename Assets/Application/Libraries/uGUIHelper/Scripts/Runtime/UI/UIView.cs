@@ -27,7 +27,7 @@ namespace uGUIHelper
 	/// </summary>
 	public class UIView : UIBehaviour
 	{
-		public const string Version = "Version 2024/07/27 0" ;
+		public const string Version = "Version 2024/07/31 0" ;
 
 		// ソースコード
 		// https://bitbucket.org/Unity-Technologies/ui/src/2019.1/
@@ -8231,8 +8231,10 @@ namespace uGUIHelper
 		protected float			m_SmartClickLimitDistance			= 30.0f ;
 
 		protected float			m_LongPressDecisionTime				= 0.75f ;	// 長押しと判定する時間
+		protected float         m_LongPressLimitDistance            = 0 ;       // 最初の位置からこれだ動いたら無効とする距離(半径)
 		protected bool			m_LongPressExecuted					= false ;
 		protected float			m_LongPressTimer					= 0 ;
+		protected Vector2       m_LongPressBasePosition ;                       // 長押しを開始した際の位置
 
 		protected float			m_RepeatPressStartingTime			= 0.75f ;
 		protected float			m_RepeatPressIntervalTime			= 0.25f ;
@@ -8432,7 +8434,15 @@ namespace uGUIHelper
 			// ロングプレス確認
 			if( ( OnLongPressAction != null || OnLongPressDelegate != null ) && m_LongPressTimer == 0 )
 			{
-				m_LongPressTimer = Time.realtimeSinceStartup ;
+				// 長押しを開始した時間を記録する
+				m_LongPressExecuted	= false ;
+				m_LongPressTimer    = Time.realtimeSinceStartup ;
+
+				if( m_LongPressLimitDistance >  0 )
+				{
+					// 長押しを開始した位置を記録する
+					( _, m_LongPressBasePosition ) = GetSinglePointerInCanvas() ;
+				}
 			}
 
 			//------------------------------------------------------------------------------------------
@@ -9527,11 +9537,27 @@ namespace uGUIHelper
 		/// </summary>
 		public OnLongPress OnLongPressDelegate ;
 
-		// 内部リスナー
+		// 内部リスナー(毎フレーム呼び出される)
 		private void ProcessLongPress()
 		{
 			if( m_LongPressExecuted == false && m_LongPressTimer >  0 )
 			{
+				if( m_LongPressLimitDistance >  0 )
+				{
+					// 移動による無効化判定が有効になっている
+					( _, var movePosition ) = GetSinglePointerInCanvas() ;
+
+					float distance = ( m_LongPressBasePosition - movePosition ).magnitude ;
+
+					if( distance >  m_LongPressLimitDistance )
+					{
+						// 以後はこの長押しは無効化
+						m_LongPressExecuted = true ;
+						m_LongPressTimer	= 0 ;
+						return ;
+					}
+				}
+
 				float deltaTime = Time.realtimeSinceStartup - m_LongPressTimer ;
 
 				if( deltaTime >= m_LongPressDecisionTime )
@@ -9575,32 +9601,33 @@ namespace uGUIHelper
 		/// ビューを長押しした際に呼び出されるアクションを設定する → OnLongPress( string identity, UIView view )
 		/// </summary>
 		/// <param name="onLongPress">アクションメソッド</param>
-		public void SetOnLongPress( Action<string, UIView> onLongPressAction, float longPressDecisionTime = 0.75f )
+		public void SetOnLongPress( Action<string, UIView> onLongPressAction, float longPressDecisionTime = 0.75f, float longPressLimitDistance = 0 )
 		{
 			OnLongPressAction = onLongPressAction ;
-			if( longPressDecisionTime >  0 )
-			{
-				m_LongPressDecisionTime = longPressDecisionTime ;
-			}
+
+			m_LongPressDecisionTime  = longPressDecisionTime ;
+			m_LongPressLimitDistance = longPressLimitDistance ;
 		}
 
 		/// <summary>
 		/// ビューを長押しした際に呼び出されるデリゲートを追加する → OnLongPress( string identity, UIView view )
 		/// </summary>
 		/// <param name="onLongPressDelegate">デリゲートメソッド</param>
-		public void AddOnLongPress( OnLongPress onLongPressDelegate, float longPressDecisionTime = 0.75f )
+		[Obsolete( "Not Use" )]
+		public void AddOnLongPress( OnLongPress onLongPressDelegate, float longPressDecisionTime = 0.75f, float longPressLimitDistance = 16 )
 		{
 			OnLongPressDelegate += onLongPressDelegate ;
-			if( longPressDecisionTime >  0 )
-			{
-				m_LongPressDecisionTime = longPressDecisionTime ;
-			}
+
+			// 最後ら設定したものが有効になってしまう(本当はこの処理はまずいので Add 系は削除すべきか)
+			m_LongPressDecisionTime  = longPressDecisionTime ;
+			m_LongPressLimitDistance = longPressLimitDistance ;
 		}
 
 		/// <summary>
 		/// ビューを長押しした際に呼び出されるデリゲートを削除する
 		/// </summary>
 		/// <param name="onLongPressDelegate">デリゲートメソッド</param>
+		[Obsolete( "Not Use" )]
 		public void RemoveOnLongPress( OnLongPress onLongPressDelegate )
 		{
 			OnLongPressDelegate -= onLongPressDelegate ;
@@ -10720,15 +10747,9 @@ namespace uGUIHelper
 				state = 0 ;
 			}
 
-			if( state != 0 )
-			{
-				// ローカル座標への変換を行う
-				pointer = GetLocalPosition( pointer ) ;
-			}
-
 			//----------------------------------------------------------
 
-			if( Input.touchCount == 0 )
+			if( state == 0 )
 			{
 				// 本当にタッチが無い場合のみマウスの入力を使用する
 				// 注意:タッチするとエミュレーション的に Input.GetMouseButton() が反応してしまう
@@ -10737,15 +10758,135 @@ namespace uGUIHelper
 					if( InputAdapter.UIEventSystem.GetMouseButton( i ) == true )
 					{
 						state |= ( 1 << i ) ;
-						pointer = GetLocalPosition( InputAdapter.UIEventSystem.MousePosition ) ;
 					}
+				}
+				if( state != 0 )
+				{
+					pointer = InputAdapter.UIEventSystem.MousePosition ;
 				}
 			}
 
 			//----------------------------------------------------------
-			
+
+			if( state != 0 )
+			{
+				// ローカル座標への変換を行う
+				pointer = GetLocalPosition( pointer ) ;
+			}
+
 			return ( state, pointer ) ;
 		}
+
+		/// <summary>
+		/// レイキャストのブロックキングに関わらず現在のタッチ情報を取得する(キャンバススケール)
+		/// </summary>
+		/// <param name="rPosition"></param>
+		/// <returns></returns>
+		public ( int, Vector2 ) GetSinglePointerInCanvas()
+		{
+			int i ;
+			int state = 0 ;
+			Vector2 pointer = Vector2.zero ;
+			
+			if( Input.touchCount == 1 )
+			{
+				// 押された
+				Touch touch = Input.GetTouch( 0 ) ;
+
+				if( m_SingleTouchState == false )
+				{
+					m_SingleTouchState = true ;
+					m_SingleTouchFingerId = touch.fingerId ;
+
+					pointer = touch.position ;
+
+					state = 1 ;
+				}
+				else
+				{
+					if( m_SingleTouchFingerId == touch.fingerId )
+					{
+						pointer = touch.position ;
+
+						state = 1 ;
+					}
+					else
+					{
+						// ここに来ることは基本時にありえない
+					}
+				}
+			}
+			else
+			if( Input.touchCount >= 2 )
+			{
+				// 複数押された
+				state = 0 ;
+			}
+			else
+			{
+				// 離された
+				m_SingleTouchState = false ;
+
+				state = 0 ;
+			}
+
+			//----------------------------------------------------------
+
+			if( state == 0 )
+			{
+				// 本当にタッチが無い場合のみマウスの入力を使用する
+				// 注意:タッチするとエミュレーション的に Input.GetMouseButton() が反応してしまう
+				for( i  = 0 ; i <= 2 ; i ++ )
+				{
+					if( InputAdapter.UIEventSystem.GetMouseButton( i ) == true )
+					{
+						state |= ( 1 << i ) ;
+					}
+				}
+				if( state != 0 )
+				{
+					pointer = InputAdapter.UIEventSystem.MousePosition ;
+				}
+			}
+
+			//----------------------------------------------------------
+
+			if( state != 0 )
+			{
+				// キャンパス座標への変換を行う
+
+				var canvas = GetParentCanvas() ;
+				if( canvas != null )
+				{
+					if( canvas.TryGetComponent<RectTransform>( out var rectTransform ) == true )
+					{
+						float sw = Screen.width  * 0.5f ;
+						float sh = Screen.height * 0.5f ;
+						float cw = rectTransform.sizeDelta.x * 0.5f ;
+						float ch = rectTransform.sizeDelta.y * 0.5f ;
+
+						pointer.x -= sw ;
+						pointer.x *= ( cw / sw ) ;
+
+						pointer.y -= sh ;
+						pointer.y *= ( ch / sh ) ;
+					}
+					else
+					{
+						// キャンバスの RectTransform が見つからない場合は仕方がないのでローカル座標への変換を行う(基本ここに来る事はありえない)
+						pointer = GetLocalPosition( pointer ) ;
+					}
+				}
+				else
+				{
+					// キャンバスが見つからない場合は仕方がないのでローカル座標への変換を行う(基本ここに来る事はありえない)
+					pointer = GetLocalPosition( pointer ) ;
+				}
+			}
+		
+			return ( state, pointer ) ;
+		}
+
 
 		private readonly bool[]	m_MultiTouchState    = new bool[ 10 ] ;
 		private readonly int[]	m_MultiTouchFingerId = new int[ 10 ] ;
@@ -11830,7 +11971,7 @@ namespace uGUIHelper
 
 			if( gameObject.activeInHierarchy == false )
 			{
-				Debug.LogWarning( "activeInHierarchy is false : [PlayAnimator] " + stateName + " offset = " + offset ) ;
+				Debug.LogWarning( "activeInHierarchy is false : [PlayAnimator] " + stateName + " offset = " + offset + " Path = " + Path ) ;
 				return null ;
 			}
 

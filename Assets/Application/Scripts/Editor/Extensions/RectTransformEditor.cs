@@ -13,7 +13,7 @@ using UnityEngine.UI ;
 namespace DSW
 {
     /// <summary>
-    /// RectTransform の Inspector 拡張クラス(Editor 用) Version 2024/07/27
+    /// RectTransform の Inspector 拡張クラス(Editor 用) Version 2024/07/29
     /// </summary>
     [CustomEditor( typeof( RectTransform ), true )]
     internal class RectTransformEditor : Editor
@@ -59,7 +59,9 @@ namespace DSW
 
             //---------------------------------------------------------------------------------
 
-            if( rectTransform.hideFlags != HideFlags.NotEditable )
+			bool isNotEditable = ( rectTransform.drivenByObject != null ) ;
+
+            if( rectTransform.hideFlags != HideFlags.NotEditable && isNotEditable == false )
             {
                 // １行目の拡張メニュー(編集可能な時のみ有効)
                 using ( new EditorGUILayout.HorizontalScope( EditorStyles.helpBox ) )
@@ -99,10 +101,7 @@ namespace DSW
                         rectTransform.anchorMin != Vector2.zero ||
                         rectTransform.anchorMax != Vector2.one  ||
                         rectTransform.offsetMin != Vector2.zero ||
-                        rectTransform.offsetMax != Vector2.zero ||
-                        rectTransform.pivot != new Vector2( 0.5f, 0.5f ) ||
-                        rectTransform.rotation != Quaternion.identity ||
-                        rectTransform.localScale != Vector3.one ;
+                        rectTransform.offsetMax != Vector2.zero ;
 
                     if( GUILayout.Button( new GUIContent( "Stretch", "Anchor を完全な Stretch 状態にします" ) ) == true )
                     {
@@ -112,9 +111,6 @@ namespace DSW
                         rectTransform.anchorMax  = Vector2.one ;
                         rectTransform.offsetMin  = Vector2.zero ;
                         rectTransform.offsetMax  = Vector2.zero ;
-                        rectTransform.pivot      = new Vector2( 0.5f, 0.5f ) ;
-                        rectTransform.rotation   = Quaternion.identity ;
-                        rectTransform.localScale = Vector3.one ;
                     }
 
                     //---------------------
@@ -140,7 +136,7 @@ namespace DSW
                 }
             }
 
-            if( rectTransform.hideFlags != HideFlags.NotEditable )
+            if( rectTransform.hideFlags != HideFlags.NotEditable && isNotEditable == false )
             {
                 // ２行目の拡張メニュー(編集可能な時のみ有効)
                 using ( new EditorGUILayout.HorizontalScope( EditorStyles.helpBox ) )

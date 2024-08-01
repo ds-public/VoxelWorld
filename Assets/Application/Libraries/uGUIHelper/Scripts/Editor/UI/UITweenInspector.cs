@@ -277,6 +277,11 @@ namespace uGUIHelper
 	//					UnityEditor.SceneManagement.EditorSceneManager.MarkSceneDirty( UnityEditor.SceneManagement.EditorSceneManager.GetActiveScene() ) ;
 					}
 
+					if( view.ScaleFrom.x == 0 || view.ScaleFrom.y == 0 || view.ScaleFrom.z == 0 )
+					{
+						EditorGUILayout.HelpBox( GetMessage( "Scale is zero" ), MessageType.Warning, true ) ;		
+					}
+
 					Vector3 scaleTo = EditorGUILayout.Vector3Field( " To",  view.ScaleTo ) ;
 					if( scaleTo != view.ScaleTo )
 					{
@@ -284,6 +289,11 @@ namespace uGUIHelper
 						view.ScaleTo = scaleTo ;
 						EditorUtility.SetDirty( view ) ;
 	//					UnityEditor.SceneManagement.EditorSceneManager.MarkSceneDirty( UnityEditor.SceneManagement.EditorSceneManager.GetActiveScene() ) ;
+					}
+
+					if( view.ScaleTo.x == 0 || view.ScaleTo.y == 0 || view.ScaleTo.z == 0 )
+					{
+						EditorGUILayout.HelpBox( GetMessage( "Scale is zero" ), MessageType.Warning, true ) ;		
 					}
 
 					// プロセスタイプ
@@ -813,11 +823,13 @@ namespace uGUIHelper
 		{
 			{ "RectTransformNone", "RectRansform クラスが必要です" },
 			{ "CanvasGroupNone",   "CanvasGroup クラスが必要です" },
+			{ "Scale is zero",     "スケール値が 0 である場合、ScrollRect 等で軽度の問題が生じる事があります" },
 		} ;
 		private static readonly Dictionary<string,string> m_English_Message = new ()
 		{
 			{ "RectTransformNone", "'RectTransorm' is necessary." },
 			{ "CanvasGroupNone",   "'CanvasGroup' is necessary." },
+			{ "Scale is zero",     "A scale value of 0 can cause minor issues with ScrollRect etc." },
 		} ;
 
 		private static string GetMessage( string label )

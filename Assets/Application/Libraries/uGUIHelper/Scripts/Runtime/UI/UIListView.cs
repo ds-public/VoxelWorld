@@ -1004,6 +1004,7 @@ namespace uGUIHelper
 
 			//------------------------------------------------------------------
 
+			float viewOffset = 0 ;
 			float itemOffset = 0 ;
 			float snapOffset = 0 ;	// スナップ有効且つアンカーが最後の場合のズレ補正値
 
@@ -1077,6 +1078,8 @@ namespace uGUIHelper
 					}
 				}
 
+				viewOffset = itemOffset ;
+
 				// 有限の場合は最後の方に行き過ぎると表示がおかしくなるのでスナップで限界までに留める
 				if( Infinity == false )
 				{
@@ -1095,6 +1098,8 @@ namespace uGUIHelper
 						}
 
 						index = i ;
+
+						viewOffset = ContentSize - ViewSize ;
 					}
 				}
 			}
@@ -1108,7 +1113,7 @@ namespace uGUIHelper
 
 			m_CurrentItemIndex = index ;
 
-			base.ContentPosition = itemOffset + snapOffset ;
+			base.ContentPosition = viewOffset + snapOffset ;
 
 			// 重要
 			m_Snapping = 0 ;		// スナップ処理中であれば一旦キャンセルする(+1=スナップ処理中・0=現フレームではスナップを処理しない・-1=スナップ処理は終了している)
@@ -1189,7 +1194,7 @@ namespace uGUIHelper
 					// 見えないダミーを登録しておく(必ず DisplayItemCount 分展開する必要がある)
 
 					// 名前を設定
-					itemView.name = "hide" ;
+					itemView.name = $"hide {i}" ;
 
 					// アイテムを非アクティブ化
 					itemView.SetActive( false ) ;
@@ -1880,11 +1885,11 @@ namespace uGUIHelper
 					if( index <  0 || index >= m_ItemCount )
 					{
 						// リミットを超えた分は非アクティブにする
-//						Debug.LogWarning( "↓リミット超えてます:" + tIndex ) ;
+//						Debug.LogWarning( "↓リミット超えてます:" + index ) ;
 						itemView.SetActive( false ) ;
 
 						// アイテムの名前を更新
-						itemView.name = "hide" ;
+						itemView.name = $"hide {index}" ;
 
 						// ダミーのサイズ
 						itemSize = DefaultItemSize ;	// 幅が不確定な値になってしまうのでマージン値をダミー値としてセットする
@@ -2007,7 +2012,7 @@ namespace uGUIHelper
 //						Debug.LogWarning( "↑リミット超えてます:" + tIndex ) ;
 
 						// アイテムの名前を更新
-						itemView.name = "hide" ;
+						itemView.name = $"hide{index}" ;
 
 						// ダミーのサイズ
 						itemSize = DefaultItemSize ;	// 幅が不確定な値になってしまうのでマージン値をダミー値としてセットする

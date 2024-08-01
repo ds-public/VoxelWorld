@@ -121,6 +121,26 @@ namespace uGUIHelper
 			}
 		}
 
+		[SerializeField][HideInInspector]
+		protected	float		m_PadButtonLongPressLimitDistance = 0.0f ;
+
+		/// <summary>
+		/// 長押しの有効範囲(０以下で無制限)
+		/// </summary>
+		public		float		  LongPressLimitDistance
+		{
+			get
+			{
+				return m_PadButtonLongPressLimitDistance ;
+			}
+			set
+			{
+				m_PadButtonLongPressLimitDistance = value ;
+				m_LongPressLimitDistance = value ;
+			}
+		}
+
+
 		//-------------------------------------------------------------------------------------------
 
 		/// <summary>
@@ -185,6 +205,7 @@ namespace uGUIHelper
 				m_RepeatPressIntervalTime	= m_PadButtonRepeatPressIntervalTime ;
 
 				m_LongPressDecisionTime		= m_PadButtonLongPressDecisionTime ;
+				m_LongPressLimitDistance    = m_PadButtonLongPressLimitDistance ;
 			}
 		}
 	}
