@@ -41,9 +41,6 @@ namespace uGUIHelper.InputAdapter
 		/// </summary>
 		GamePad	=  2,
 
-		/// <summary>
-		/// 両方　※InputProcessingType が Dual
-		/// </summary>
-		All		=  3,
+		// 注意 : Dual 入力モードの場合は最後に切り替わった(現在)のモードになる
 	}
 }

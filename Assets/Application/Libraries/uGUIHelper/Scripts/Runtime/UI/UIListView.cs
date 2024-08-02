@@ -3214,7 +3214,7 @@ namespace uGUIHelper
 		/// フォーカスのオン・オフを行う(ゲームパッドでの制御用)
 		/// </summary>
 		/// <param name="state"></param>
-		public void SetPadFocus( bool state )
+		public void SetPadActivate( bool state )
 		{
 			if( m_ItemCount <= 0 )
 			{
@@ -3336,19 +3336,16 @@ namespace uGUIHelper
 		//-------------------------------------------------------------------------------------------
 
 		/// <summary>
-		/// パッドアクションを実行する
+		/// パッドアクションを実行する(アイテム単位)
 		/// </summary>
 		/// <param name="selectedIndex"></param>
 		/// <param name=""></param>
-		public void ProcessPadAction( PadActions padAction )
+		public void ExecutePadAction( PadActions padAction )
 		{
-			if( TryGetComponent<UIPadAdapter>( out var padAdapter ) == true )
+			var padAdapter = CPadAdapter ;
+			if( padAdapter == null || padAdapter.Focus == false )
 			{
-				if( padAdapter.Focus == false )
-				{
-					// 無効
-					return ;
-				}
+				return ;
 			}
 
 			//----------------------------------
@@ -3646,6 +3643,134 @@ namespace uGUIHelper
 				// 表示を更新する
 				SetFocusIndex( m_SelectedIndex ) ;
 			}
+		}
+
+		/// <summary>
+		/// パッドアクションを実行する(ドット単位)　※項目を選択出来ないタイプ
+		/// </summary>
+		/// <param name="selectedIndex"></param>
+		/// <param name=""></param>
+		public void ExecutePadAction( PadActions padAction, float velocity )
+		{
+			var padAdapter = CPadAdapter ;
+			if( padAdapter == null || padAdapter.Focus == false )
+			{
+				return ;
+			}
+
+			//----------------------------------
+
+			float contentSize = ContentSize ;
+			float viewSize = ViewSize ;
+
+			if( contentSize <= viewSize )
+			{
+				return ;
+			}
+
+			//----------------------------------------------------------
+
+			float contentPosition = ContentPosition ;
+
+			if( Mathf.Abs( contentPosition ) <  0.01f )
+			{
+				// ScrollView コントロール下にあると ContentPosition が 0 にならないので、0 に極めて近い場合は 0 に吸着
+				contentPosition = 0 ;
+			}
+
+			float contentLimit = contentSize - viewSize ;
+
+			if( padAction == PadActions.BackItem )
+			{
+				// ↑
+
+				if( contentPosition <= 0 )
+				{
+					// 一番↓へ
+					contentPosition = contentLimit ;
+				}
+				else
+				{
+					// ↑へ
+					contentPosition -= velocity ;
+					if( contentPosition <  0 )
+					{
+						contentPosition  = 0 ;
+					}
+				}
+			}
+			else
+			if( padAction == PadActions.NextItem )
+			{
+				// ↓
+				if( contentPosition >= contentLimit )
+				{
+					// 一番↑へ
+					contentPosition = 0 ;
+				}
+				else
+				{
+					// ↓へ
+					contentPosition += velocity ;
+					if( contentPosition > contentLimit )
+					{
+						contentPosition = contentLimit ;
+					}
+				}
+			}
+			else
+			if( padAction == PadActions.BackPage )
+			{
+				// ←のページへ
+
+				if( contentPosition <= 0 )
+				{
+					// 一番↓へ
+					contentPosition = contentLimit ;
+				}
+				else
+				{
+					// ←へ
+					contentPosition -= velocity ;
+					if( contentPosition <  0 )
+					{
+						contentPosition = 0 ;
+					}
+				}
+			}
+			else
+			if( padAction == PadActions.NextPage )
+			{
+				// →ページへ
+				if( contentPosition >= contentLimit )
+				{
+					// 一番↑へ
+					contentPosition = 0 ;
+				}
+				else
+				{
+					// →へ
+					contentPosition += velocity ;
+					if( contentPosition > contentLimit )
+					{
+						contentPosition = contentLimit ;
+					}
+				}
+			}
+			else
+			if( padAction == PadActions.BackAll )
+			{
+				// 最初へ
+				contentPosition = 0 ;
+			}
+			else
+			if( padAction == PadActions.NextAll )
+			{
+				// 最後へ
+				contentPosition = contentLimit ;
+			}
+
+			SetContentPosition( contentPosition ) ;
 		}
 	}
 }

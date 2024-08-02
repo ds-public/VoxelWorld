@@ -1,7 +1,9 @@
-using UnityEngine ;
-using UnityEngine.UI ;
 using System ;
 using System.Collections ;
+using System.Collections.Generic ;
+using UnityEngine ;
+using UnityEngine.UI ;
+using UnityEngine.EventSystems ;
 
 using TMPro ;
 
@@ -770,14 +772,233 @@ namespace uGUIHelper
 					//--------------------------------
 					// 現在のフォーカス状態を比較して変化があったらコールバックを飛ばす
 
+					// ゲームパッドの方向ボタンで勝手にフォーカスが入ってしまうバグ対策
+
+
 					if( m_IsFocused != CTMP_InputField.isFocused )
 					{
 						m_IsFocused  = CTMP_InputField.isFocused ;
 
-						OnFocusChangedInner( m_IsFocused ) ;
+						if( IsPadAvailable() == true )
+						{
+							OnFocusChangedInner( m_IsFocused ) ;
+						}
+						else
+						{
+							Debug.LogWarning( "<color=#FFFF00>レイキャストでブロックされているにも関わらずフォーカスに変化があった : Focus = " + m_IsFocused + " | Path = " + Path + "</color>" ) ;
+						}
 					}
 				}
 			}
+		}
+
+
+		// パッドが押せるか確認する
+		private readonly PointerEventData		m_PA_EventDataCurrentPosition = new ( EventSystem.current ) ;
+		private readonly List<RaycastResult>	m_PA_Results = new () ;
+
+		// このＵＩが現在有効な状態か確認する
+		private bool IsPadAvailable()
+		{
+			if( EventSystem.current == null || CImage == null )
+			{
+				// 使用可能扱いとする
+				return true ;
+			}
+
+			//------------------------------------------------------------------------------------------
+
+			// スクリーン座標を計算する
+			( var padViewPoints, var padViewCenter ) = GetScreenArea( gameObject ) ;
+
+			//----------------------------------
+
+			// 一時的にレイキャストターゲットを有効化する(よって Graphic コンポーネント必須)
+			bool raycastTarget = true ;
+			if( RaycastTarget == false )
+			{
+				raycastTarget = RaycastTarget ;
+				RaycastTarget = true ;
+			}
+
+			//----------------------------------------------------------
+
+			bool isAvailable = false ;
+
+			// レイキャストを実行しヒットする対象を検出する
+			m_PA_EventDataCurrentPosition.position = padViewCenter ;
+			m_PA_Results.Clear() ;
+			EventSystem.current.RaycastAll( m_PA_EventDataCurrentPosition, m_PA_Results ) ;
+
+			// ヒットしない事は基本的にありえない
+			foreach( var result in m_PA_Results )
+			{
+				if( result.gameObject == gameObject )
+				{
+					// 有効
+					isAvailable = true ;
+					break ;
+				}
+				else
+				{
+					// レイキャストヒット対象がゲームパッド対象ビューそのものでなくても親に含まれていたらスルーする
+					if( IsContainParent( gameObject, result.gameObject ) == false )
+					{
+						// 親では無い
+						( var blockerPoints, var blockerCenter ) = GetScreenArea( result.gameObject ) ;
+						if( IsCompleteBlocking( padViewPoints, blockerPoints ) == true )
+						{
+							// 無効
+							isAvailable = false ;
+							break ;
+						}
+					}
+				}
+			}
+
+			//----------------------------------------------------------
+
+			// レイキャスト無効でもヒット判定を有効にしていた場合は設定を元に戻す
+			if( raycastTarget == false )
+			{
+				RaycastTarget = raycastTarget ;
+			}
+
+			//----------------------------------
+
+			// 対象のゲームパッド対応ビューが有効か無効か返す
+			return isAvailable ;
+		}
+
+		// スクリーン上の矩形範囲を取得する
+		private ( Vector2[], Vector2 ) GetScreenArea( GameObject go )
+		{
+			if( go.TryGetComponent<RectTransform>( out var rt ) == false )
+			{
+				// 取得出来ない
+				throw new Exception( "Not foud rectTransform." ) ;
+			}
+
+			//----------------------------------
+
+			// 横幅・縦幅
+			float tw = rt.rect.width ;
+			float th = rt.rect.height ;
+
+			// レイキャストパディング
+			Vector4 raycastPadding = Vector4.zero ;
+
+			if( go.TryGetComponent<UnityEngine.UI.Image>( out var image ) == true )
+			{
+				raycastPadding = image.raycastPadding ;
+			}
+
+			float tx0 = ( tw * ( 0 - rt.pivot.x ) ) + raycastPadding.x ;	// x = left
+			float ty0 = ( th * ( 0 - rt.pivot.y ) ) + raycastPadding.y ;	// y = bottom
+			float tx1 = ( tw * ( 1 - rt.pivot.x ) ) - raycastPadding.z ;	// z = right
+			float ty1 = ( th * ( 1 - rt.pivot.y ) ) - raycastPadding.w ;	// w = top
+
+			// 角の座標(まだローカルの２次元)	※順番は右回りである事に注意(Ｚ型ではない)
+			var points = new Vector2[ 4 ]
+			{
+				new ( tx0, ty0 ),
+				new ( tx1, ty0 ),
+				new ( tx1, ty1 ),
+				new ( tx0, ty1 ),
+			} ;
+
+			// ローカル座標をワールド座標に変換(ローカルのローテーションとスケールも反映)
+			int i, l = points.Length ;
+			for( i  = 0 ; i <  l ; i ++ )
+			{
+				// ローテーションとスケールも考慮するため個別に分ける
+				points[ i ] = rt.TransformPoint( points[ i ] ) ;
+			}
+
+			//----------------------------------
+
+			Camera targetCamera ;
+
+			var parentCanvas = rt.transform.GetComponentInParent<Canvas>() ;
+			if( parentCanvas != null )
+			{
+				if( parentCanvas.worldCamera != null )
+				{
+					// Screen Space - Camera
+					targetCamera = parentCanvas.worldCamera ;
+				}
+				else
+				{
+					// Screen Space - Overlay
+					targetCamera = Camera.main ;
+				}
+			}
+			else
+			{
+				throw new Exception( "Not foud canvas." ) ;
+			}
+
+			// スクリーン座標に変換する
+			Vector2 center = Vector2.zero ;
+			for( i  = 0 ; i <  l ; i ++ )
+			{
+				points[ i ] = RectTransformUtility.WorldToScreenPoint( targetCamera, points[ i ] ) ;
+				center += points[ i ] ;
+			}
+
+			center /= l ;
+
+			return ( points, center ) ;
+		}
+
+		// ブロッカーの親にこのＵＩが含まれているかどうか
+		private bool IsContainParent( GameObject target, GameObject blocker )
+		{
+			while( blocker.transform.parent != null )
+			{
+				blocker = blocker.transform.parent.gameObject ;
+
+				if( blocker == target )
+				{
+					// 含まれている
+					return true ;
+				}
+			}
+
+			// 含まれていない
+			return false ;
+		}
+
+		// このＵＩがブロッカーの内側に完全に隠されているか確認する
+		private bool IsCompleteBlocking( Vector2[] targetPoints, Vector2[] blockerPoints )
+		{
+			int oi, ol = blockerPoints.Length ;
+			int ii, il = targetPoints.Length ;
+
+			for( oi = 0 ; oi <  ol ; oi ++ )
+			{
+				var op0 = blockerPoints[ oi ] ;
+				var op1 = blockerPoints[ ( oi + 1 ) % ol ] ;
+
+				for( ii = 0 ; ii <  il ; ii ++ )
+				{
+					var ip = targetPoints[ ii ] ;
+
+					// 外積を用いて表裏判定を行う(Cross)
+					var v0 = op1 - op0 ;
+					var v1 = ip  - op0 ;
+					var cross = ( v0.x * v1.y ) - ( v0.y * v1.x ) ;
+
+					if( cross <  0 )
+					{
+						// 外側にある
+						return false ;
+					}
+				}
+			}
+
+			// 全て内側にある
+			return true ;
 		}
 
 		//-------------------------------------------------------------------------------------------

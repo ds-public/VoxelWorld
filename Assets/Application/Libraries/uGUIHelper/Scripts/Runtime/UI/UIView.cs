@@ -27,7 +27,7 @@ namespace uGUIHelper
 	/// </summary>
 	public class UIView : UIBehaviour
 	{
-		public const string Version = "Version 2024/07/31 0" ;
+		public const string Version = "Version 2024/08/02 0" ;
 
 		// ソースコード
 		// https://bitbucket.org/Unity-Technologies/ui/src/2019.1/
@@ -12399,6 +12399,29 @@ namespace uGUIHelper
 		}
 
 		/// <summary>
+		/// パッドアダプターのフォーカス状態を設定する
+		/// </summary>
+		public bool PadAdapterFocus
+		{
+			get
+			{
+				if( CPadAdapter == null )
+				{
+					return false ;
+				}
+				return CPadAdapter.Focus ;
+			}
+			set
+			{
+				if( CPadAdapter == null )
+				{
+					return ;
+				}
+				CPadAdapter.Focus = value ;
+			}
+		}
+
+		/// <summary>
 		/// パッドのオートフォーカス処理の有効無効
 		/// </summary>
 		public bool PadAutoFocusEnabled
@@ -12663,7 +12686,7 @@ namespace uGUIHelper
 			{
 				if( this is UIListView listView )
 				{
-					listView.SetPadFocus( state ) ;
+					listView.SetPadActivate( state ) ;
 				}
 			}
 

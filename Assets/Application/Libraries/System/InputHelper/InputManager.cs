@@ -15,7 +15,7 @@ using UnityEditor ;
 namespace InputHelper
 {
 	/// <summary>
-	/// 入力操作クラス Version 2024/07/17 0
+	/// 入力操作クラス Version 2024/08/02 0
 	/// </summary>
 	[DefaultExecutionOrder( -90 )]
 	public partial class InputManager : MonoBehaviour
@@ -399,7 +399,7 @@ namespace InputHelper
 		private float	m_Tick = 0 ;
 		private Vector3 m_Position = Vector3.zero ;
 
-        private const float m_DriftThreshold = 0.1f ;
+		private const float m_DriftThreshold = 0.1f ;
 
 		// 毎フレーム呼び出される(描画)
 		private void ProcessUpdate()
@@ -418,12 +418,25 @@ namespace InputHelper
 				if( m_InputType == InputTypes.Pointer )
 				{
 					// 現在は Pointer モード
-					if( m_InputHold == true )
+					if( m_InputSwitching == true )
 					{
+						//-------------
+						// 一時的に入力を強制有効化
+
+						m_IgnoreInputSwitching = true ;
+
+						bool button_0 = GetMouseButton( 0 ) ;
+						bool button_1 = GetMouseButton( 1 ) ;
+						bool button_2 = GetMouseButton( 2 ) ;
+
+						m_IgnoreInputSwitching = false ;
+
+						//-------------
+
 						// 切り替えた直後は一度全開放しないと入力できない
-						if( GetMouseButton( 0 ) == false && GetMouseButton( 1 ) == false && GetMouseButton( 2 ) == false )
+						if( button_0 == false && button_1 == false && button_2 == false )
 						{
-							m_InputHold = false ;
+							m_InputSwitching = false ;
 						}
 						else
 						{
@@ -431,7 +444,7 @@ namespace InputHelper
 							m_Tick += Time.unscaledDeltaTime ;
 							if( m_Tick >= 1 )
 							{
-								m_InputHold = false ;
+								m_InputSwitching = false ;
 							}
 						}
 					}
@@ -440,21 +453,31 @@ namespace InputHelper
 						// Pointer モード有効中
 						Pointer.Update( false ) ;
 
+						//-------------
+						// 一時的に入力を強制有効化
+
+						m_IgnoreInputSwitching = true ;
+
+						int buttonAll = GamePad.GetButtonAll() ;
 						var axis_0 = GamePad.GetAxis( 0 ) ;
 						var axis_1 = GamePad.GetAxis( 1 ) ;
 						var axis_2 = GamePad.GetAxis( 2 ) ;
 
-                        // ドリフト対策
-                        float ax0 = Mathf.Abs( axis_0.x ) ;
-                        float ay0 = Mathf.Abs( axis_0.y ) ;
-                        float ax1 = Mathf.Abs( axis_1.x ) ;
-                        float ay1 = Mathf.Abs( axis_1.y ) ;
-                        float ax2 = Mathf.Abs( axis_2.x ) ;
-                        float ay2 = Mathf.Abs( axis_2.y ) ;
-                        float ax = Mathf.Max( ax0, ax1, ax2 ) ;
-                        float ay = Mathf.Max( ay0, ay1, ay2 ) ;
+						m_IgnoreInputSwitching = false ;
 
-						if( GamePad.GetButtonAll() != 0 || ax >  m_DriftThreshold || ay >  m_DriftThreshold )
+						//-------------
+
+						// ドリフト対策
+						float ax0 = Mathf.Abs( axis_0.x ) ;
+						float ay0 = Mathf.Abs( axis_0.y ) ;
+						float ax1 = Mathf.Abs( axis_1.x ) ;
+						float ay1 = Mathf.Abs( axis_1.y ) ;
+						float ax2 = Mathf.Abs( axis_2.x ) ;
+						float ay2 = Mathf.Abs( axis_2.y ) ;
+						float ax = Mathf.Max( ax0, ax1, ax2 ) ;
+						float ay = Mathf.Max( ay0, ay1, ay2 ) ;
+
+						if( buttonAll != 0 || ax >  m_DriftThreshold || ay >  m_DriftThreshold )
 						{
 							// GamePad モードへ移行
 							SetInputType_Private( InputTypes.GamePad ) ;
@@ -464,27 +487,36 @@ namespace InputHelper
 				else
 				{
 					// 現在は GamePad モード
-					if( m_InputHold == true )
+					if( m_InputSwitching == true )
 					{
+						//-------------
+						// 一時的に入力を強制有効化
+
+						m_IgnoreInputSwitching = true ;
+
 						// 切り替えた直後は一度全開放しないと入力できない
+						int buttonAll = GamePad.GetButtonAll() ;
 						var axis_0 = GamePad.GetAxis( 0 ) ;
 						var axis_1 = GamePad.GetAxis( 1 ) ;
 						var axis_2 = GamePad.GetAxis( 2 ) ;
 
-                        // ドリフト対策
-                        float ax0 = Mathf.Abs( axis_0.x ) ;
-                        float ay0 = Mathf.Abs( axis_0.y ) ;
-                        float ax1 = Mathf.Abs( axis_1.x ) ;
-                        float ay1 = Mathf.Abs( axis_1.y ) ;
-                        float ax2 = Mathf.Abs( axis_2.x ) ;
-                        float ay2 = Mathf.Abs( axis_2.y ) ;
-                        float ax = Mathf.Max( ax0, ax1, ax2 ) ;
-                        float ay = Mathf.Max( ay0, ay1, ay2 ) ;
+						m_IgnoreInputSwitching = false ;
 
-						if( GamePad.GetButtonAll() == 0 && ax <  m_DriftThreshold && ay <  m_DriftThreshold )
+						//-------------
+
+						// ドリフト対策
+						float ax0 = Mathf.Abs( axis_0.x ) ;
+						float ay0 = Mathf.Abs( axis_0.y ) ;
+						float ax1 = Mathf.Abs( axis_1.x ) ;
+						float ay1 = Mathf.Abs( axis_1.y ) ;
+						float ax2 = Mathf.Abs( axis_2.x ) ;
+						float ay2 = Mathf.Abs( axis_2.y ) ;
+						float ax = Mathf.Max( ax0, ax1, ax2 ) ;
+						float ay = Mathf.Max( ay0, ay1, ay2 ) ;
+
+						if( buttonAll == 0 && ax <  m_DriftThreshold && ay <  m_DriftThreshold )
 						{
-							m_InputHold = false ;
-
+							m_InputSwitching = false ;
 							m_Position = MousePosition ;
 						}
 						else
@@ -493,7 +525,8 @@ namespace InputHelper
 							m_Tick += Time.unscaledDeltaTime ;
 							if( m_Tick >= 1 )
 							{
-								m_InputHold = false ;
+								m_InputSwitching = false ;
+								m_Position = MousePosition ;
 							}
 						}
 					}
@@ -502,7 +535,20 @@ namespace InputHelper
 						// GamePad モード有効中
 						GamePad.Update( false ) ;
 
-						if( m_Position.Equals( MousePosition ) == false || GetMouseButton( 0 ) == true || GetMouseButton( 1 ) == true || GetMouseButton( 2 ) == true )
+						//-------------
+						// 一時的に入力を強制有効化
+
+						m_IgnoreInputSwitching = true ;
+
+						bool button_0 = GetMouseButton( 0 ) ;
+						bool button_1 = GetMouseButton( 1 ) ;
+						bool button_2 = GetMouseButton( 2 ) ;
+
+						m_IgnoreInputSwitching = false ;
+
+						//-------------
+
+						if( m_Position.Equals( MousePosition ) == false || button_0 == true || button_1 == true || button_2 == true )
 						{
 							// Pointer モードへ移行
 							SetInputType_Private( InputTypes.Pointer ) ;
@@ -514,26 +560,30 @@ namespace InputHelper
 			{
 				// 両方の入力が同時に可能(Pointer・GamePadの最初の入力は有効＝切り替えと同時に効果を発揮する)
 
+				m_InputSwitching = false ;
+				m_IgnoreInputSwitching = true ;
+
 				// 最後に入力された方を現在のモードとする
 				if( m_InputType == InputTypes.Pointer )
 				{
 					// 現在は Pointer モード扱い
 
+					int buttonAll = GamePad.GetButtonAll() ;
 					var axis_0 = GamePad.GetAxis( 0 ) ;
 					var axis_1 = GamePad.GetAxis( 1 ) ;
 					var axis_2 = GamePad.GetAxis( 2 ) ;
 
-                    // ドリフト対策
-                    float ax0 = Mathf.Abs( axis_0.x ) ;
-                    float ay0 = Mathf.Abs( axis_0.y ) ;
-                    float ax1 = Mathf.Abs( axis_1.x ) ;
-                    float ay1 = Mathf.Abs( axis_1.y ) ;
-                    float ax2 = Mathf.Abs( axis_2.x ) ;
-                    float ay2 = Mathf.Abs( axis_2.y ) ;
-                    float ax = Mathf.Max( ax0, ax1, ax2 ) ;
-                    float ay = Mathf.Max( ay0, ay1, ay2 ) ;
+					// ドリフト対策
+					float ax0 = Mathf.Abs( axis_0.x ) ;
+					float ay0 = Mathf.Abs( axis_0.y ) ;
+					float ax1 = Mathf.Abs( axis_1.x ) ;
+					float ay1 = Mathf.Abs( axis_1.y ) ;
+					float ax2 = Mathf.Abs( axis_2.x ) ;
+					float ay2 = Mathf.Abs( axis_2.y ) ;
+					float ax = Mathf.Max( ax0, ax1, ax2 ) ;
+					float ay = Mathf.Max( ay0, ay1, ay2 ) ;
 
-					if( GamePad.GetButtonAll() != 0 || ax >  m_DriftThreshold || ay >  m_DriftThreshold )
+					if( buttonAll != 0 || ax >  m_DriftThreshold || ay >  m_DriftThreshold )
 					{
 						// GamePad モードへ移行
 						SetInputType_Private( InputTypes.GamePad ) ;
@@ -543,7 +593,11 @@ namespace InputHelper
 				{
 					// 現在は GamePad モード扱い
 
-					if( m_Position.Equals( MousePosition ) == false || GetMouseButton( 0 ) == true || GetMouseButton( 1 ) == true || GetMouseButton( 2 ) == true )
+					bool button_0 = GetMouseButton( 0 ) ;
+					bool button_1 = GetMouseButton( 1 ) ;
+					bool button_2 = GetMouseButton( 2 ) ;
+
+					if( m_Position.Equals( MousePosition ) == false || button_0 == true || button_1 == true || button_2 == true )
 					{
 						// Pointer モードへ移行
 						SetInputType_Private( InputTypes.Pointer ) ;
@@ -631,7 +685,7 @@ namespace InputHelper
 			if( InputProcessingType == InputProcessingTypes.Switching )
 			{
 				// 最初の入力を無効化(切り替え用)にするための変数初期化
-				m_InputHold = true ;
+				m_InputSwitching = true ;
 				m_Tick = 0 ;
 			}
 			else

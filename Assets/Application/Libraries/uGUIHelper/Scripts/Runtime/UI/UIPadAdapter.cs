@@ -1805,7 +1805,7 @@ namespace uGUIHelper
 		private readonly PointerEventData		m_PA_EventDataCurrentPosition = new ( EventSystem.current ) ;
 		private readonly List<RaycastResult>	m_PA_Results = new () ;
 
-		// バックキーが現在有効な状態か確認する
+		// このＵＩが現在有効な状態か確認する
 		private bool IsPadAvailable()
 		{
 			if( m_View == null || EventSystem.current == null )
@@ -1959,14 +1959,14 @@ namespace uGUIHelper
 			return ( points, center ) ;
 		}
 
-		// ブロッカーの親にバックキーが含まれているかどうか
-		private bool IsContainParent( GameObject backKey, GameObject blocker )
+		// ブロッカーの親にこのＵＩが含まれているかどうか
+		private bool IsContainParent( GameObject target, GameObject blocker )
 		{
 			while( blocker.transform.parent != null )
 			{
 				blocker = blocker.transform.parent.gameObject ;
 
-				if( blocker == backKey )
+				if( blocker == target )
 				{
 					// 含まれている
 					return true ;
@@ -1977,11 +1977,11 @@ namespace uGUIHelper
 			return false ;
 		}
 
-		// バックキーがブロッカーの内側に完全に隠されているか確認する
-		private bool IsCompleteBlocking( Vector2[] backKeyPoints, Vector2[] blockerPoints )
+		// このＵＩがブロッカーの内側に完全に隠されているか確認する
+		private bool IsCompleteBlocking( Vector2[] targetPoints, Vector2[] blockerPoints )
 		{
 			int oi, ol = blockerPoints.Length ;
-			int ii, il = backKeyPoints.Length ;
+			int ii, il = targetPoints.Length ;
 
 			for( oi = 0 ; oi <  ol ; oi ++ )
 			{
@@ -1990,7 +1990,7 @@ namespace uGUIHelper
 
 				for( ii = 0 ; ii <  il ; ii ++ )
 				{
-					var ip = backKeyPoints[ ii ] ;
+					var ip = targetPoints[ ii ] ;
 
 					// 外積を用いて表裏判定を行う(Cross)
 					var v0 = op1 - op0 ;

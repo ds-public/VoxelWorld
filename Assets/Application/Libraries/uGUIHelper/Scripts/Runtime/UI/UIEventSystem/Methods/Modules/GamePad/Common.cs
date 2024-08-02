@@ -1490,11 +1490,22 @@ namespace uGUIHelper.InputAdapter
 		public static bool GetButton( string buttonName )
 		{
 			// modeEnabled を判定条件に入れないのは、マウスとキーボードを同時入力するケースを考慮するため
-			if( m_Owner == null || m_Owner.ControlEnabled == false || Enabled == false )
+			if( m_Owner == null || m_Owner.ControlEnabled == false || m_Owner.InputSwitching == true || Enabled == false )
 			{
 				// 無効
 				return false ;
 			}
+
+			if( m_Owner.IgnoreInputSwitching == false && m_Owner.InputProcessingType == InputProcessingTypes.Switching )
+			{
+				if( m_Owner.LastInputType == InputTypes.Pointer )
+				{
+					// 無効
+					return false ;
+				}
+			}
+
+			//----------------------------------
 
 			if( m_Implementation == null )
 			{
@@ -1511,11 +1522,22 @@ namespace uGUIHelper.InputAdapter
 		public static bool GetButtonDown( string buttonName )
 		{
 			// modeEnabled を判定条件に入れないのは、マウスとキーボードを同時入力するケースを考慮するため
-			if( m_Owner == null || m_Owner.ControlEnabled == false || Enabled == false )
+			if( m_Owner == null || m_Owner.ControlEnabled == false || m_Owner.InputSwitching == true || Enabled == false )
 			{
 				// 無効
 				return false ;
 			}
+
+			if( m_Owner.IgnoreInputSwitching == false && m_Owner.InputProcessingType == InputProcessingTypes.Switching )
+			{
+				if( m_Owner.LastInputType == InputTypes.Pointer )
+				{
+					// 無効
+					return false ;
+				}
+			}
+
+			//----------------------------------
 
 			if( m_Implementation == null )
 			{
@@ -1532,11 +1554,22 @@ namespace uGUIHelper.InputAdapter
 		public static bool GetButtonUp( string buttonName )
 		{
 			// modeEnabled を判定条件に入れないのは、マウスとキーボードを同時入力するケースを考慮するため
-			if( m_Owner == null || m_Owner.ControlEnabled == false || Enabled == false )
+			if( m_Owner == null || m_Owner.ControlEnabled == false || m_Owner.InputSwitching == true || Enabled == false )
 			{
 				// 無効
 				return false ;
 			}
+
+			if( m_Owner.IgnoreInputSwitching == false && m_Owner.InputProcessingType == InputProcessingTypes.Switching )
+			{
+				if( m_Owner.LastInputType == InputTypes.Pointer )
+				{
+					// 無効
+					return false ;
+				}
+			}
+
+			//----------------------------------
 
 			if( m_Implementation == null )
 			{
@@ -1556,11 +1589,22 @@ namespace uGUIHelper.InputAdapter
 		public static float GetAxis( string axisName )
 		{
 			// modeEnabled を判定条件に入れないのは、マウスとキーボードを同時入力するケースを考慮するため
-			if( m_Owner == null || m_Owner.ControlEnabled == false || Enabled == false )
+			if( m_Owner == null || m_Owner.ControlEnabled == false || m_Owner.InputSwitching == true || Enabled == false )
 			{
 				// 無効
 				return 0 ;
 			}
+
+			if( m_Owner.IgnoreInputSwitching == false && m_Owner.InputProcessingType == InputProcessingTypes.Switching )
+			{
+				if( m_Owner.LastInputType == InputTypes.Pointer )
+				{
+					// 無効
+					return 0 ;
+				}
+			}
+
+			//----------------------------------
 
 			if( m_Implementation == null )
 			{
@@ -1583,11 +1627,22 @@ namespace uGUIHelper.InputAdapter
 		public static int GetButtonAll( int playerNumber = -1 )
 		{
 			// modeEnabled を判定条件に入れないのは、マウスとキーボードを同時入力するケースを考慮するため
-			if( m_Owner == null || m_Owner.ControlEnabled == false || Enabled == false )
+			if( m_Owner == null || m_Owner.ControlEnabled == false || m_Owner.InputSwitching == true || Enabled == false )
 			{
 				// 無効
 				return 0 ;
 			}
+
+			if( m_Owner.IgnoreInputSwitching == false && m_Owner.InputProcessingType == InputProcessingTypes.Switching )
+			{
+				if( m_Owner.LastInputType == InputTypes.Pointer )
+				{
+					// 無効
+					return 0 ;
+				}
+			}
+
+			//----------------------------------
 
 			if( m_Implementation == null )
 			{
@@ -1605,11 +1660,22 @@ namespace uGUIHelper.InputAdapter
 		public static bool GetButton( int buttonIdentity, int playerNumber = -1 )
 		{
 			// modeEnabled を判定条件に入れないのは、マウスとキーボードを同時入力するケースを考慮するため
-			if( m_Owner == null || m_Owner.ControlEnabled == false || Enabled == false )
+			if( m_Owner == null || m_Owner.ControlEnabled == false || m_Owner.InputSwitching == true || Enabled == false )
 			{
 				// 無効
 				return false ;
 			}
+
+			if( m_Owner.IgnoreInputSwitching == false && m_Owner.InputProcessingType == InputProcessingTypes.Switching )
+			{
+				if( m_Owner.LastInputType == InputTypes.Pointer )
+				{
+					// 無効
+					return false ;
+				}
+			}
+
+			//----------------------------------
 
 			if( m_Implementation == null )
 			{
@@ -1627,10 +1693,19 @@ namespace uGUIHelper.InputAdapter
 		public static bool GetButtonDown( int buttonIdentity, int playerNumber = -1, bool isFixed = false )
 		{
 			// modeEnabled を判定条件に入れないのは、マウスとキーボードを同時入力するケースを考慮するため
-			if( m_Owner == null || m_Owner.ControlEnabled == false || Enabled == false )
+			if( m_Owner == null || m_Owner.ControlEnabled == false || m_Owner.InputSwitching == true || Enabled == false )
 			{
 				// 無効
 				return false ;
+			}
+
+			if( m_Owner.IgnoreInputSwitching == false && m_Owner.InputProcessingType == InputProcessingTypes.Switching )
+			{
+				if( m_Owner.LastInputType == InputTypes.Pointer )
+				{
+					// 無効
+					return false ;
+				}
 			}
 
 			//----------------------------------
@@ -1677,10 +1752,19 @@ namespace uGUIHelper.InputAdapter
 		public static bool GetButtonUp( int buttonIdentity, int playerNumber = -1, bool isFixed = false )
 		{
 			// modeEnabled を判定条件に入れないのは、マウスとキーボードを同時入力するケースを考慮するため
-			if( m_Owner == null || m_Owner.ControlEnabled == false || Enabled == false )
+			if( m_Owner == null || m_Owner.ControlEnabled == false || m_Owner.InputSwitching == true || Enabled == false )
 			{
 				// 無効
 				return false ;
+			}
+
+			if( m_Owner.IgnoreInputSwitching == false && m_Owner.InputProcessingType == InputProcessingTypes.Switching )
+			{
+				if( m_Owner.LastInputType == InputTypes.Pointer )
+				{
+					// 無効
+					return false ;
+				}
 			}
 
 			//----------------------------------
@@ -1727,9 +1811,18 @@ namespace uGUIHelper.InputAdapter
 		public static bool GetButtonRepeat( int buttonIdentity, int playerNumber = -1, bool isFixed = false )
 		{
 			// modeEnabled を判定条件に入れないのは、マウスとキーボードを同時入力するケースを考慮するため
-			if( m_Owner == null || m_Owner.ControlEnabled == false || Enabled == false )
+			if( m_Owner == null || m_Owner.ControlEnabled == false || m_Owner.InputSwitching == true || Enabled == false )
 			{
 				return false ;
+			}
+
+			if( m_Owner.IgnoreInputSwitching == false && m_Owner.InputProcessingType == InputProcessingTypes.Switching )
+			{
+				if( m_Owner.LastInputType == InputTypes.Pointer )
+				{
+					// 無効
+					return false ;
+				}
 			}
 
 			//----------------------------------
@@ -1779,11 +1872,22 @@ namespace uGUIHelper.InputAdapter
 		public static Vector2 GetAxis( int axisIdentity, int playerNumber = -1 )
 		{
 			// modeEnabled を判定条件に入れないのは、マウスとキーボードを同時入力するケースを考慮するため
-			if( m_Owner == null || m_Owner.ControlEnabled == false || Enabled == false )
+			if( m_Owner == null || m_Owner.ControlEnabled == false || m_Owner.InputSwitching == true || Enabled == false )
 			{
 				// 無効
 				return Vector2.zero ;
 			}
+
+			if( m_Owner.IgnoreInputSwitching == false && m_Owner.InputProcessingType == InputProcessingTypes.Switching )
+			{
+				if( m_Owner.LastInputType == InputTypes.Pointer )
+				{
+					// 無効
+					return Vector2.zero ;
+				}
+			}
+
+			//----------------------------------
 
 			if( m_Implementation == null )
 			{
@@ -1801,10 +1905,19 @@ namespace uGUIHelper.InputAdapter
 		public static Vector2 GetAxisDown( int axisIdentity, int playerNumber = -1, bool isFixed = false )
 		{
 			// modeEnabled を判定条件に入れないのは、マウスとキーボードを同時入力するケースを考慮するため
-			if( m_Owner == null || m_Owner.ControlEnabled == false || Enabled == false )
+			if( m_Owner == null || m_Owner.ControlEnabled == false || m_Owner.InputSwitching == true || Enabled == false )
 			{
 				// 無効
 				return Vector2.zero ;
+			}
+
+			if( m_Owner.IgnoreInputSwitching == false && m_Owner.InputProcessingType == InputProcessingTypes.Switching )
+			{
+				if( m_Owner.LastInputType == InputTypes.Pointer )
+				{
+					// 無効
+					return Vector2.zero ;
+				}
 			}
 
 			//----------------------------------
@@ -1858,10 +1971,19 @@ namespace uGUIHelper.InputAdapter
 		public static Vector2 GetAxisUp( int axisIdentity, int playerNumber = -1, bool isFixed = false )
 		{
 			// modeEnabled を判定条件に入れないのは、マウスとキーボードを同時入力するケースを考慮するため
-			if( m_Owner == null || m_Owner.ControlEnabled == false || Enabled == false )
+			if( m_Owner == null || m_Owner.ControlEnabled == false || m_Owner.InputSwitching == true || Enabled == false )
 			{
 				// 無効
 				return Vector2.zero ;
+			}
+
+			if( m_Owner.IgnoreInputSwitching == false && m_Owner.InputProcessingType == InputProcessingTypes.Switching )
+			{
+				if( m_Owner.LastInputType == InputTypes.Pointer )
+				{
+					// 無効
+					return Vector2.zero ;
+				}
 			}
 
 			//----------------------------------
@@ -1915,10 +2037,19 @@ namespace uGUIHelper.InputAdapter
 		public static Vector2 GetAxisRepeat( int axisIdentity, int playerNumber = -1, bool isFixed = false )
 		{
 			// modeEnabled を判定条件に入れないのは、マウスとキーボードを同時入力するケースを考慮するため
-			if( m_Owner == null || m_Owner.ControlEnabled == false || Enabled == false )
+			if( m_Owner == null || m_Owner.ControlEnabled == false || m_Owner.InputSwitching == true || Enabled == false )
 			{
 				// 無効
 				return Vector2.zero ;
+			}
+
+			if( m_Owner.IgnoreInputSwitching == false && m_Owner.InputProcessingType == InputProcessingTypes.Switching )
+			{
+				if( m_Owner.LastInputType == InputTypes.Pointer )
+				{
+					// 無効
+					return Vector2.zero ;
+				}
 			}
 
 			//----------------------------------
@@ -1983,6 +2114,8 @@ namespace uGUIHelper.InputAdapter
 				return false ;
 			}
 
+			//----------------------------------
+
 			if( m_Implementation == null )
 			{
 				throw new Exception( "Not implemented." ) ;
@@ -2004,6 +2137,8 @@ namespace uGUIHelper.InputAdapter
 				return false ;
 			}
 
+			//----------------------------------
+
 			if( m_Implementation == null )
 			{
 				throw new Exception( "Not implemented." ) ;
@@ -2023,6 +2158,8 @@ namespace uGUIHelper.InputAdapter
 				// 無効
 				return false ;
 			}
+
+			//----------------------------------
 
 			if( m_Implementation == null )
 			{
@@ -2044,6 +2181,8 @@ namespace uGUIHelper.InputAdapter
 				return false ;
 			}
 
+			//----------------------------------
+
 			if( m_Implementation == null )
 			{
 				throw new Exception( "Not implemented." ) ;
@@ -2063,6 +2202,8 @@ namespace uGUIHelper.InputAdapter
 				// 無効
 				return false ;
 			}
+
+			//----------------------------------
 
 			if( m_Implementation == null )
 			{

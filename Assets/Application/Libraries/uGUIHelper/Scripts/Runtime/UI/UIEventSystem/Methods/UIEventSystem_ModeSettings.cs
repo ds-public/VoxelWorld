@@ -45,7 +45,7 @@ namespace uGUIHelper.InputAdapter
 				// シングルにする場合は初期状態はポインターとする
 
 				m_InputType = InputTypes.Pointer ;
-				m_InputHold = false ;
+				m_InputSwitching = false ;
 
 				UnityEngine.Cursor.visible = true ;
 			}
@@ -75,7 +75,6 @@ namespace uGUIHelper.InputAdapter
 
 		// 現在の入力タイプ
 		private InputTypes	m_InputType	= InputTypes.Pointer ;	// デフォルトはポインターモード
-		private bool		m_InputHold	= false ;
 
 		/// <summary>
 		/// 現在の入力タイプ
@@ -94,20 +93,37 @@ namespace uGUIHelper.InputAdapter
 		}
 
 		/// <summary>
-		/// 現在のモードが実際に有効かどうか
+		/// 最後の入力タイプ
 		/// </summary>
-		public static bool InputEnabled
+		public InputTypes LastInputType => m_InputType ;
+
+		// 入力モードを切り替え中かどうか
+		private bool		m_InputSwitching	= false ;
+
+		/// <summary>
+		/// 入力モードを切り替え中かどうか
+		/// </summary>
+		public bool InputSwitching
 		{
 			get
 			{
-				if( m_Instance == null )
+				if( m_IgnoreInputSwitching == true )
 				{
+					// 常に入力は有効
 					return false ;
 				}
 
-				return ! m_Instance.m_InputHold ;
+				return m_InputSwitching ;
 			}
 		}
+
+		// 入力モード切り替え中の値を無視して常に入力を有効にするかどうか
+		private bool        m_IgnoreInputSwitching = false ;
+
+		/// <summary>
+		/// 入力モード切り替え中の値を無視して常に入力を有効にするかどうか
+		/// </summary>
+		public bool IgnoreInputSwitching => m_IgnoreInputSwitching ;
 
 		//-------------------------------------------------------------------------------------------
 		// コンポーネントなので public フィールドを使ってはいけない(インスタンスが生成された際にデフォルト値で初期化されてしまい事前に設定した値は無効化される)
