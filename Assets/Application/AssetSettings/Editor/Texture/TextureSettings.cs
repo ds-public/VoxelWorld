@@ -22,9 +22,8 @@ namespace AssetSettings
 		// フォルダ無指定時の対象フォルダ
 		private static readonly string[] m_Paths =
 		{
-			@"Assets/Application/AssetBundle/Textures/*",	// テスト用
 			@"Assets/Application/AssetBundle/Textures/*",
-//			@"Assets/Application/ReferencedAssets/Textures/UI/*",
+			@"Assets/Application/ReferencedAssets/Textures/*",
 		} ;
 
 		// Textureインポート用のディスパッチャー
