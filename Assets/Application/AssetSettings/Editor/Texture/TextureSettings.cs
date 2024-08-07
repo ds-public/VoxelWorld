@@ -219,6 +219,7 @@ namespace AssetSettings
 		private const bool							m_Texture_MipmapEnabled					= false ;
 		private const FilterMode					m_Texture_FilterMode					= FilterMode.Bilinear ;
 		private const TextureImporterCompression	m_Texture_TextureCompression			= TextureImporterCompression.Compressed ;
+		private const int							m_Texture_CompressionQuality			= 50 ;
 		private const bool							m_Texture_CrunchedCompression			= true ;
 
 		// Standalone
@@ -462,7 +463,7 @@ namespace AssetSettings
 		private static bool SetPlatformSettings
 		(
 			TextureImporterPlatformSettings platformSettings,
-			string platfornName,
+			string platformName,
 			bool overridden,
 			int maxTextureSize,
 			TextureImporterFormat textureFormat,
@@ -485,11 +486,13 @@ namespace AssetSettings
 					// 通常設定
 					if
 					(
-						platformSettings.overridden			!= overridden								||
-						platformSettings.maxTextureSize		!= maxTextureSize							||
-						platformSettings.format				!= textureFormat							||
-						platformSettings.textureCompression	!= m_Texture_TextureCompression				||
-						platformSettings.resizeAlgorithm	!= TextureResizeAlgorithm.Mitchell
+						platformSettings.overridden				!= overridden								||
+						platformSettings.maxTextureSize			!= maxTextureSize							||
+						platformSettings.format					!= textureFormat							||
+						platformSettings.textureCompression		!= m_Texture_TextureCompression				||
+						platformSettings.compressionQuality		!= m_Texture_CompressionQuality				||
+						platformSettings.crunchedCompression	!= m_Texture_CrunchedCompression			||
+						platformSettings.resizeAlgorithm		!= TextureResizeAlgorithm.Mitchell
 					)
 					{
 						isUpdate = true ;
@@ -500,11 +503,13 @@ namespace AssetSettings
 					// 特殊設定(強制無圧縮)
 					if
 					(
-						platformSettings.overridden			!= overridden								||
-						platformSettings.maxTextureSize		!= maxTextureSize							||
-						platformSettings.format				!= textureFormat							||
-						platformSettings.textureCompression	!= TextureImporterCompression.Uncompressed	||
-						platformSettings.resizeAlgorithm	!= TextureResizeAlgorithm.Mitchell
+						platformSettings.overridden				!= false									||
+						platformSettings.maxTextureSize			!= maxTextureSize							||
+						platformSettings.format					!= textureFormat							||
+						platformSettings.textureCompression		!= TextureImporterCompression.Uncompressed	||
+						platformSettings.compressionQuality		!= 100										||
+						platformSettings.crunchedCompression	!= false									||
+						platformSettings.resizeAlgorithm		!= TextureResizeAlgorithm.Mitchell
 					)
 					{
 						isUpdate = true ;
@@ -521,22 +526,26 @@ namespace AssetSettings
 				if( settingType == 0 )
 				{
 					// 通常設定
-					platformSettings.name				= platfornName									;
-					platformSettings.overridden			= overridden									;
-					platformSettings.maxTextureSize		= maxTextureSize								;
-					platformSettings.format				= textureFormat									;
-					platformSettings.textureCompression	= m_Texture_TextureCompression					;
-					platformSettings.resizeAlgorithm	= TextureResizeAlgorithm.Mitchell				;
+					platformSettings.name					= platformName								;
+					platformSettings.overridden				= overridden								;
+					platformSettings.maxTextureSize			= maxTextureSize							;
+					platformSettings.format					= textureFormat								;
+					platformSettings.textureCompression		= m_Texture_TextureCompression				;
+					platformSettings.compressionQuality		= m_Texture_CompressionQuality				;
+					platformSettings.crunchedCompression	= m_Texture_CrunchedCompression				;
+					platformSettings.resizeAlgorithm		= TextureResizeAlgorithm.Mitchell			;
 				}
 				else
 				{
 					// 特殊設定(強制無圧縮)
-					platformSettings.name				= platfornName									;
-					platformSettings.overridden			= overridden									;
-					platformSettings.maxTextureSize		= maxTextureSize								;
-					platformSettings.format				= textureFormat									;
-					platformSettings.textureCompression	= TextureImporterCompression.Uncompressed		;
-					platformSettings.resizeAlgorithm	= TextureResizeAlgorithm.Mitchell				;
+					platformSettings.name					= platformName								;
+					platformSettings.overridden				= false										;
+					platformSettings.maxTextureSize			= maxTextureSize							;
+					platformSettings.format					= textureFormat								;
+					platformSettings.textureCompression		= TextureImporterCompression.Uncompressed	;
+					platformSettings.compressionQuality		= 100										;
+					platformSettings.crunchedCompression	= false										;
+					platformSettings.resizeAlgorithm		= TextureResizeAlgorithm.Mitchell			;
 				}
 			}
 
