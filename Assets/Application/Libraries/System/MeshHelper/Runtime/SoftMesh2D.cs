@@ -14,7 +14,7 @@ using UnityEditorInternal ;
 namespace MeshHelper
 {
 	/// <summary>
-	/// ２Ｄメッシュ Version 2024/07/18
+	/// ２Ｄメッシュ Version 2024/08/07
 	/// </summary>
 	[ExecuteAlways]
 	[DisallowMultipleComponent]
@@ -474,7 +474,7 @@ namespace MeshHelper
 			Circle		= 2,
 		}
 
-		[ SerializeField ][ HideInInspector ]
+		[SerializeField][HideInInspector]
 		protected ShapeTypes m_ShapeType = ShapeTypes.Rectangle ;
 
 		/// <summary>
@@ -508,7 +508,7 @@ namespace MeshHelper
 		/// <summary>
 		/// オフセット
 		/// </summary>
-		[ SerializeField ][ HideInInspector ]
+		[SerializeField][HideInInspector]
 		protected Vector2 m_Offset = Vector2.zero ;
 
 		public    Vector2   Offset
@@ -530,7 +530,7 @@ namespace MeshHelper
 		/// <summary>
 		/// サイズ
 		/// </summary>
-		[ SerializeField ][ HideInInspector ]
+		[SerializeField][HideInInspector]
 		protected Vector2 m_Size = Vector2.one ;
 
 		public    Vector2   Size
@@ -596,7 +596,7 @@ namespace MeshHelper
 		}
 
 		// 線の太さ(０で塗りつぶし)
-		[ SerializeField ][ HideInInspector ]
+		[SerializeField][HideInInspector]
 		protected float m_LineWidth = 0 ;
 
 		/// <summary>
@@ -661,7 +661,7 @@ namespace MeshHelper
 		/// <summary>
 		/// スライスを考慮した基本サイズ
 		/// </summary>
-		[ SerializeField ][ HideInInspector ]
+		[SerializeField][HideInInspector]
 		protected Vector2 m_BorderSize = Vector2.one ;
 
 		public    Vector2   BorderSize
@@ -681,7 +681,7 @@ namespace MeshHelper
 		}
 
 		// ９パッチタイプの場合に中央を描画するかどうか(四角限定)
-		[ SerializeField ][ HideInInspector ]
+		[SerializeField][HideInInspector]
 		protected bool m_FillCenter = true ;
 
 		/// <summary>
@@ -704,7 +704,7 @@ namespace MeshHelper
 		}
 
 		// テクスチャのタイリング(四角限定)
-		[ SerializeField ][ HideInInspector ]
+		[SerializeField][HideInInspector]
 		protected bool m_Tiling = false ;
 
 		/// <summary>
@@ -769,7 +769,7 @@ namespace MeshHelper
 		/// <summary>
 		/// 横方向の分割数(四角専用)
 		/// </summary>
-		[ SerializeField ][ HideInInspector ]
+		[SerializeField][HideInInspector]
 		protected int m_GridX = 1 ;
 
 		/// <summary>
@@ -794,7 +794,7 @@ namespace MeshHelper
 		/// <summary>
 		/// 縦方向の分割数(四角専用)
 		/// </summary>
-		[ SerializeField ][ HideInInspector ]
+		[SerializeField][HideInInspector]
 		protected int m_GridY = 1 ;
 
 		/// <summary>
@@ -843,7 +843,7 @@ namespace MeshHelper
 		/// <summary>
 		/// 分割数(円専用)
 		/// </summary>
-		[ SerializeField ][ HideInInspector ]
+		[SerializeField][HideInInspector]
 		protected int m_Split = 0 ;
 
 		/// <summary>
@@ -870,7 +870,7 @@ namespace MeshHelper
 		/// <summary>
 		/// 基本色(頂点カラー)
 		/// </summary>
-		[ SerializeField ][ HideInInspector ]
+		[SerializeField][HideInInspector]
 		protected Color m_BasisColor = Color.white ;
 
 		/// <summary>
@@ -905,7 +905,7 @@ namespace MeshHelper
 		/// <summary>
 		/// 内側色(頂点カラー)
 		/// </summary>
-		[ SerializeField ][ HideInInspector ]
+		[SerializeField][HideInInspector]
 		protected Color m_InnerColor = Color.white ;
 
 		public    Color  InnerColor
@@ -937,7 +937,7 @@ namespace MeshHelper
 		/// <summary>
 		/// 外側色(頂点カラー)
 		/// </summary>
-		[ SerializeField ][ HideInInspector ]
+		[SerializeField][HideInInspector]
 		protected Color m_OuterColor = Color.white ;
 
 		public    Color  OuterColor
@@ -983,7 +983,7 @@ namespace MeshHelper
 			Z_Axis = 2,
 		}
 
-		[ SerializeField ][ HideInInspector ]
+		[SerializeField][HideInInspector]
 		protected  DirectionTypes m_DirectionType = DirectionTypes.Z_Axis ;
 
 		/// <summary>
@@ -1011,7 +1011,7 @@ namespace MeshHelper
 			}
 		}
 
-		[ SerializeField ][ HideInInspector ]
+		[SerializeField][HideInInspector]
 		protected  bool m_IsDirectionInverse = false ;
 
 		/// <summary>
@@ -1113,7 +1113,7 @@ namespace MeshHelper
 		/// <summary>
 		/// コライダーの自動調整
 		/// </summary>
-		[ SerializeField ][ HideInInspector ]
+		[SerializeField][HideInInspector]
 		protected bool m_ColliderAdjustment = true ;
 
 		/// <summary>
@@ -1841,10 +1841,10 @@ namespace MeshHelper
 
 				if( sprite != null )
 				{
-					tx0 = sprite.rect.xMin / sprite.texture.width  ;
-					tx1 = sprite.rect.xMax / sprite.texture.width  ;
-					ty0 = sprite.rect.yMin / sprite.texture.height ;
-					ty1 = sprite.rect.yMax / sprite.texture.height ;
+					tx0 = sprite.textureRect.xMin / sprite.texture.width  ;
+					tx1 = sprite.textureRect.xMax / sprite.texture.width  ;
+					ty0 = sprite.textureRect.yMin / sprite.texture.height ;
+					ty1 = sprite.textureRect.yMax / sprite.texture.height ;
 				}
 				else
 				{
@@ -2171,11 +2171,11 @@ namespace MeshHelper
 
 					if( sprite != null )
 					{
-						tx0 = sprite.rect.xMin / sprite.texture.width  ;
-						ty0 = sprite.rect.yMin / sprite.texture.height ;
+						tx0 = sprite.textureRect.xMin / sprite.texture.width  ;
+						ty0 = sprite.textureRect.yMin / sprite.texture.height ;
 
-						tx1 = sprite.rect.xMax / sprite.texture.width  ;
-						ty1 = sprite.rect.yMax / sprite.texture.height ;
+						tx1 = sprite.textureRect.xMax / sprite.texture.width  ;
+						ty1 = sprite.textureRect.yMax / sprite.texture.height ;
 					}
 					else
 					{
@@ -2602,17 +2602,17 @@ namespace MeshHelper
 						float tx0_i, tx1_i ;
 						float ty0_i, ty1_i ;
 
-						tx0 = sprite.rect.xMin / sprite.texture.width  ;
-						ty0 = sprite.rect.yMin / sprite.texture.height ;
+						tx0 = sprite.textureRect.xMin / sprite.texture.width  ;
+						ty0 = sprite.textureRect.yMin / sprite.texture.height ;
 
-						tx1 = sprite.rect.xMax / sprite.texture.width  ;
-						ty1 = sprite.rect.yMax / sprite.texture.height ;
+						tx1 = sprite.textureRect.xMax / sprite.texture.width  ;
+						ty1 = sprite.textureRect.yMax / sprite.texture.height ;
 
-						tx0_i = ( sprite.rect.xMin + bl ) / sprite.texture.width  ;
-						tx1_i = ( sprite.rect.xMax - br ) / sprite.texture.width  ;
+						tx0_i = ( sprite.textureRect.xMin + bl ) / sprite.texture.width  ;
+						tx1_i = ( sprite.textureRect.xMax - br ) / sprite.texture.width  ;
 
-						ty0_i = ( sprite.rect.yMin + bb ) / sprite.texture.height ;
-						ty1_i = ( sprite.rect.yMax - bt ) / sprite.texture.height ;
+						ty0_i = ( sprite.textureRect.yMin + bb ) / sprite.texture.height ;
+						ty1_i = ( sprite.textureRect.yMax - bt ) / sprite.texture.height ;
 
 						if( m_FlipX == true )
 						{
@@ -3108,17 +3108,17 @@ namespace MeshHelper
 						float tx0_i, tx1_i ;
 						float ty0_i, ty1_i ;
 
-						tx0 = sprite.rect.xMin / sprite.texture.width  ;
-						ty0 = sprite.rect.yMin / sprite.texture.height ;
+						tx0 = sprite.textureRect.xMin / sprite.texture.width  ;
+						ty0 = sprite.textureRect.yMin / sprite.texture.height ;
 
-						tx1 = sprite.rect.xMax / sprite.texture.width  ;
-						ty1 = sprite.rect.yMax / sprite.texture.height ;
+						tx1 = sprite.textureRect.xMax / sprite.texture.width  ;
+						ty1 = sprite.textureRect.yMax / sprite.texture.height ;
 
-						tx0_i = ( sprite.rect.xMin + bl ) / sprite.texture.width  ;
-						tx1_i = ( sprite.rect.xMax - br ) / sprite.texture.width  ;
+						tx0_i = ( sprite.textureRect.xMin + bl ) / sprite.texture.width  ;
+						tx1_i = ( sprite.textureRect.xMax - br ) / sprite.texture.width  ;
 
-						ty0_i = ( sprite.rect.yMin + bb ) / sprite.texture.height ;
-						ty1_i = ( sprite.rect.yMax - bt ) / sprite.texture.height ;
+						ty0_i = ( sprite.textureRect.yMin + bb ) / sprite.texture.height ;
+						ty1_i = ( sprite.textureRect.yMax - bt ) / sprite.texture.height ;
 
 						if( m_FlipX == true )
 						{
@@ -3447,11 +3447,11 @@ namespace MeshHelper
 				tfw = sprite.texture.width ;
 				tfh = sprite.texture.height ;
 
-				trw = sprite.rect.width  * 0.5f ;
-				trh = sprite.rect.height * 0.5f ;
+				trw = sprite.textureRect.width  * 0.5f ;
+				trh = sprite.textureRect.height * 0.5f ;
 
-				tcx = sprite.rect.x + trw ;
-				tcy = sprite.rect.y + trh ;
+				tcx = sprite.textureRect.x + trw ;
+				tcy = sprite.textureRect.y + trh ;
 			}
 
 			var normalVector = new Vector3(  0,  0, -1 ) ;
@@ -3668,14 +3668,14 @@ namespace MeshHelper
 
 					if( sprite != null )
 					{
-						tx0 = tcx				/ tfw ;
-						ty0 = sprite.rect.yMax	/ tfh ;
+						tx0 = tcx						/ tfw ;
+						ty0 = sprite.textureRect.yMax	/ tfh ;
 
-						tx1 = sprite.rect.xMin	/ tfw ;
-						ty1 = sprite.rect.yMin	/ tfh ;
+						tx1 = sprite.textureRect.xMin	/ tfw ;
+						ty1 = sprite.textureRect.yMin	/ tfh ;
 
-						tx2 = sprite.rect.xMax	/ tfw ;
-						ty2 = sprite.rect.yMin	/ tfh ;
+						tx2 = sprite.textureRect.xMax	/ tfw ;
+						ty2 = sprite.textureRect.yMin	/ tfh ;
 					}
 
 					for( i  = 0 ; i <  split ; i ++ )

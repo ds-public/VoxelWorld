@@ -3231,41 +3231,52 @@ namespace uGUIHelper
 				int itemUpperIndideIndex = ItemUpperInsideIndex ;
 				int itemLowerIndideIndex = ItemLowerInsideIndex ;
 
-				bool isLower = false ;
+				if( m_SelectedIndex <  0 )
+				{
+					// フォーカスを得ていない(正常)
 
-				if( m_SelectedIndex_Keep >= 0 )
-				{
-					// 以前に設定された選択状態のインデックス番号が存在する
-					if( m_SelectedIndex_Keep <  itemUpperIndideIndex )
+					if( m_SelectedIndex_Keep >= 0 )
 					{
-						// 表示範囲外になってしまうため無効
-						m_SelectedIndex_Keep = -1 ;
-						isLower = false ;
-					}
-					if( m_SelectedIndex_Keep >  itemLowerIndideIndex )
-					{
-						// 表示範囲外になってしまうため無効
-						m_SelectedIndex_Keep = -1 ;
-						isLower = true ;
-					}
-				}
+						// 以前に設定された選択状態のインデックス番号が存在する
+						if( m_SelectedIndex_Keep <  itemUpperIndideIndex )
+						{
+							// 表示範囲外になってしまうため無効
+							m_SelectedIndex = itemUpperIndideIndex ;
+							m_SelectedIndex_Keep = -1 ;
 
-				if( m_SelectedIndex_Keep >= 0 )
-				{
-					// 以前に設定された選択状態のインデックス番号は現時点でも有効である
-					m_SelectedIndex = m_SelectedIndex_Keep ;
-					m_SelectedIndex_Keep = -1 ;
-				}
-				else
-				{
-					// 以前に設定された選択状態のインデックス番号は現時点では無効である
-					if( isLower == false )
-					{
-						m_SelectedIndex = itemUpperIndideIndex ;
+						}
+						else
+						if( m_SelectedIndex_Keep >  itemLowerIndideIndex )
+						{
+							// 表示範囲外になってしまうため無効
+							m_SelectedIndex = itemLowerIndideIndex ;
+							m_SelectedIndex_Keep = -1 ;
+						}
+						else
+						{
+							// 以前に設定された選択状態のインデックス番号は現時点でも有効である
+							m_SelectedIndex = m_SelectedIndex_Keep ;
+							m_SelectedIndex_Keep = -1 ;
+						}
 					}
 					else
 					{
-						m_SelectedIndex = itemLowerIndideIndex ;
+						// 以前のインデックスが存在しない
+
+						// 範囲内の最も上をカーソル位置に設定する
+						m_SelectedIndex = itemUpperIndideIndex ;
+					}
+				}
+				else
+				{
+					// フォーカスを既に得ている(異常)
+
+					if( m_SelectedIndex <  itemUpperIndideIndex || m_SelectedIndex >  itemLowerIndideIndex )
+					{
+						// カーソル位置が範囲外になっている
+
+						// 範囲内の最も上をカーソル位置に設定する
+						m_SelectedIndex = itemUpperIndideIndex ;
 					}
 				}
 
@@ -3702,8 +3713,11 @@ namespace uGUIHelper
 			else
 			if( padAction == PadActions.NextItem )
 			{
+				// 状況によっては計算誤差が生じてきっちりリミットと同じ値に吸着しない事がある
+				float delta = Mathf.Abs( contentPosition - contentLimit ) ;
+
 				// ↓
-				if( contentPosition >= contentLimit )
+				if( delta <  0.02f )    // これ以下の差分は無かった事にする
 				{
 					// 一番↑へ
 					contentPosition = 0 ;
@@ -3712,9 +3726,10 @@ namespace uGUIHelper
 				{
 					// ↓へ
 					contentPosition += velocity ;
-					if( contentPosition > contentLimit )
+
+					if( contentPosition >  contentLimit )
 					{
-						contentPosition = contentLimit ;
+						contentPosition  = contentLimit ;
 					}
 				}
 			}
@@ -3742,7 +3757,11 @@ namespace uGUIHelper
 			if( padAction == PadActions.NextPage )
 			{
 				// →ページへ
-				if( contentPosition >= contentLimit )
+
+				// 状況によっては計算誤差が生じてきっちりリミットと同じ値に吸着しない事がある
+				float delta = Mathf.Abs( contentPosition - contentLimit ) ;
+
+				if( delta <  0.02f )    // これ以下の差分は無かった事にする
 				{
 					// 一番↑へ
 					contentPosition = 0 ;

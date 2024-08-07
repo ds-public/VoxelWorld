@@ -1,14 +1,17 @@
 using System ;
+using System.Collections ;
+using System.Collections.Generic ;
 using System.IO ;
 using System.Linq ;
 using System.Text.RegularExpressions ;
 using UnityEditor ;
 using UnityEngine ;
 
+
 namespace AssetSettings
 {
 	/// <summary>
-	/// アセットパスが一致したら処理をするクラス
+	/// アセットパスが一致したら処理をするクラス Version 2024/08/07
 	/// </summary>
 	/// <typeparam name="T"></typeparam>
 	internal sealed class ImportDispatcher<T> where T : AssetImporter
@@ -172,7 +175,7 @@ namespace AssetSettings
 		/// 対象全てに対して処理を施す
 		/// </summary>
 		/// <returns></returns>
-		public bool SetupAll( string targetPath = null )
+		public bool SetupAll( List<string> targetPaths = null )
 		{
 			if( m_MethodForAll == null )
 			{
@@ -183,35 +186,57 @@ namespace AssetSettings
 
 			string message =  "処理は長時間かかる可能性があります\n本当に実行してよろしいですか？" ;
 
-			string targetFolder = null ;
-			if( string.IsNullOrEmpty( targetPath ) == false )
+			string targetFilePath	= null ;
+			string targetFolderPath = null ;
+
+			if( targetPaths == null || targetPaths.Count <= 1 )
 			{
-				targetPath = targetPath.Replace( '\\', '/' ) ;
-				if( Directory.Exists( targetPath ) == false )
+				// 全体または１つが対象
+
+				string targetPath = null ;
+				if( targetPaths.Count == 1 )
 				{
-					int p = targetPath.LastIndexOf( '/' ) ;
-					if( p >= 0 )
-					{
-						targetPath = targetPath.Substring( 0, p ) ;
-						if( Directory.Exists( targetPath ) == false )
-						{
-							targetPath = null ;
-						}
-					}
-					else
-					{
-						targetPath = null ;
-					}
+					targetPath = targetPaths[ 0 ] ;
 				}
 
 				if( string.IsNullOrEmpty( targetPath ) == false )
 				{
-					if( MatchAny( targetPath ) == true )
+					// パスの指定がある
+					targetPath = targetPath.Replace( '\\', '/' ) ;
+					if( File.Exists( targetPath ) == true )
 					{
-						targetFolder = targetPath ;
-						message += "\n[対象フォルダ]\n" + targetFolder ;
+						// 単体ファイルを指定している
+						targetFilePath = targetPath ;
+					}
+					else
+					if( Directory.Exists( targetPath ) == true )
+					{
+						// 単体フォルダを指定している
+						targetFolderPath = targetPath ;
+					}
+
+					if( string.IsNullOrEmpty( targetFilePath ) == false )
+					{
+	//					if( MatchAny( targetFilePath ) == true )
+	//					{
+							message += "\n[対象ファイル]\n" + targetFilePath ;
+	//					}
+					}
+					else
+					if( string.IsNullOrEmpty( targetFolderPath ) == false )
+					{
+	//					if( MatchAny( targetFolderPath ) == true )
+	//					{
+							message += "\n[対象フォルダ]\n" + targetFolderPath ;
+	//					}
 					}
 				}
+			}
+			else
+			{
+				// 複数を選択している
+
+				message += "\n[対象ファイル・フォルダ]\n" + targetPaths.Count ;
 			}
 
 			if( EditorUtility.DisplayDialog( "アセット再設定の実行確認", message, "はい", "いいえ" ) == false )
@@ -237,16 +262,83 @@ namespace AssetSettings
 
 				//---------------------------------------------------------
 
-				// 指定したフォルダ内の対象ファイルを処理する
-				void Process( string folderPath )
+				if( targetPaths == null || targetPaths.Count <= 1 )
 				{
-					if( Directory.Exists( folderPath ) == true )
+					if( targetFilePath == null && targetFolderPath == null )
 					{
-						string[] assetPaths = Directory.GetFiles( folderPath, "*", SearchOption.AllDirectories ) ;
-						foreach( var assetPath in assetPaths )
+						// 全体対象
+						foreach( var path in Paths )
 						{
-//							Debug.Log( "TargetPath:" + targetPath ) ;
-							T assetImporter = AssetImporter.GetAtPath( assetPath.Replace( '\\', '/' ) ) as T  ;
+							string folderPath = path.ToString().Replace( '\\', '/' ) ;
+							int p = folderPath.LastIndexOf( '/' ) ;
+							if( p >= 0 )
+							{
+								folderPath = folderPath[ ..p ] ;
+								ProcessFolder( folderPath ) ;
+							}
+						}
+					}
+					else
+					if( string.IsNullOrEmpty( targetFilePath ) == false )
+					{
+//						Debug.Log( "対象ファイル : " + targetFilePath ) ;
+
+						// ファイル指定
+						ProcessFile( targetFilePath ) ;
+					}
+					else
+					if( string.IsNullOrEmpty( targetFolderPath ) == false )
+					{
+						// フォルダ指定
+						ProcessFolder( targetFolderPath ) ;
+					}
+				}
+				else
+				{
+					// 複数対象
+					foreach( var targetPath in targetPaths )
+					{
+						string path = targetPath.Replace( '\\', '/' ) ;
+
+						if( File.Exists( path ) == true )
+						{
+							// ファイル指定
+							ProcessFile( path ) ;
+						}
+						else
+						if( Directory.Exists( path ) == true )
+						{
+							// フォルダ指定
+							ProcessFolder( path ) ;
+						}
+					}
+				}
+
+				//-------------
+
+				// 指定したファイル内の対象ファイルを処理する
+				void ProcessFile( string filePath )
+				{
+					if( File.Exists( filePath ) == true )
+					{
+						string path = filePath ;
+
+						bool isTarget = true ;
+						int invalidIndex = path.IndexOf( "/#" ) ;
+						if( invalidIndex >= 0 )
+						{
+							// 処理無効フォルダ内のファイルである可能性がある
+							int validIndex = path.IndexOf( "/#@" ) ;
+							if( validIndex <  0 || invalidIndex <  validIndex )
+							{
+								// /# しかない・/# の方が /#@ より先にある
+								isTarget = false ;	// このパスを無効とする
+							}
+						}
+
+						if( isTarget == true )
+						{
+							T assetImporter = AssetImporter.GetAtPath( path ) as T  ;
 							if( assetImporter != null && m_MethodForAll( assetImporter ) == true )
 							{
 								isDirty = true ;
@@ -256,28 +348,54 @@ namespace AssetSettings
 					}
 					else
 					{
-						Debug.LogWarning( "Not found folder : " + folderPath ) ;
+						Debug.LogWarning( "Not found file : " + filePath ) ;
 					}
 				}
 
-				if( targetFolder == null )
+				// 指定したフォルダ内の対象ファイルを処理する
+				void ProcessFolder( string folderPath )
 				{
-					// 全体対象
-					foreach( var path in Paths )
+					if( Directory.Exists( folderPath ) == true )
 					{
-						string folderPath = path.ToString().Replace( '\\', '/' ) ;
-						int p = folderPath.LastIndexOf( '/' ) ;
-						if( p >= 0 )
+						string[] assetFileFullPaths = Directory.GetFiles( folderPath, "*", SearchOption.AllDirectories ) ;
+						if( assetFileFullPaths != null && assetFileFullPaths.Length >  0 )
 						{
-							folderPath = folderPath.Substring( 0, p ) ;
-							Process( folderPath ) ;
+							int i, l = assetFileFullPaths.Length ;
+							for( i  = 0 ; i <  l ; i ++ )
+							{
+								string assetFileFullPath = assetFileFullPaths[ i ] ;
+//								Debug.Log( "TargetPath:" + targetPath ) ;
+								assetFileFullPath = assetFileFullPath.Replace( '\\', '/' ) ;
+
+								bool isTarget = true ;
+								int invalidIndex = assetFileFullPath.IndexOf( "/#" ) ;
+								if( invalidIndex >= 0 )
+								{
+									// 処理無効フォルダ内のファイルである可能性がある
+									int validIndex = assetFileFullPath.IndexOf( "/#@" ) ;
+									if( validIndex <  0 || invalidIndex <  validIndex )
+									{
+										// /# しかない・/# の方が /#@ より先にある
+										isTarget = false ;	// このパスを無効とする
+									}
+								}
+
+								if( isTarget == true )
+								{
+									T assetImporter = AssetImporter.GetAtPath( assetFileFullPath ) as T  ;
+									if( assetImporter != null && m_MethodForAll( assetImporter ) == true )
+									{
+										isDirty = true ;
+										count ++ ;
+									}
+								}
+							}
 						}
 					}
-				}
-				else
-				{
-					// 限定対象
-					Process( targetFolder.Replace( '\\', '/' ) ) ;
+					else
+					{
+						Debug.LogWarning( "Not found folder : " + folderPath ) ;
+					}
 				}
 			}
 			catch( Exception e )

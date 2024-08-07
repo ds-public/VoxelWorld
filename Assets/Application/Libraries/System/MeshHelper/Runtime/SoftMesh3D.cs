@@ -13,7 +13,7 @@ using UnityEditorInternal ;
 namespace MeshHelper
 {
 	/// <summary>
-	/// ３Ｄメッシュ Version 2024/06/14
+	/// ３Ｄメッシュ Version 2024/08/07
 	/// </summary>
 	[ExecuteAlways]
 	[DisallowMultipleComponent]
@@ -242,7 +242,7 @@ namespace MeshHelper
 
 			if( m_SpriteSet == null )
 			{
-				m_SpriteSet = new SpriteSet() ;
+				m_SpriteSet = new () ;
 			}
 			else
 			{
@@ -308,7 +308,7 @@ namespace MeshHelper
 
 			if( m_SpriteAtlas != null )
 			{
-				Sprite sprite = GetSpriteInAtlasFromCache( spriteName ) ;
+				var sprite = GetSpriteInAtlasFromCache( spriteName ) ;
 				if( sprite != null )
 				{
 					Sprite = sprite ;
@@ -322,7 +322,7 @@ namespace MeshHelper
 
 			if( m_SpriteSet != null )
 			{
-				Sprite sprite = m_SpriteSet[ spriteName ] ;
+				var sprite = m_SpriteSet[ spriteName ] ;
 				if( sprite != null )
 				{
 					Sprite = sprite ;
@@ -348,7 +348,7 @@ namespace MeshHelper
 
 			if( m_SpriteAtlas != null )
 			{
-				Sprite sprite = GetSpriteInAtlasFromCache( spriteName ) ;
+				var sprite = GetSpriteInAtlasFromCache( spriteName ) ;
 				if( sprite != null )
 				{
 					return sprite ;
@@ -360,7 +360,7 @@ namespace MeshHelper
 
 			if( m_SpriteSet != null )
 			{
-				Sprite sprite = m_SpriteSet[ spriteName ] ;
+				var sprite = m_SpriteSet[ spriteName ] ;
 				if( sprite != null )
 				{
 					return sprite ;
@@ -384,7 +384,7 @@ namespace MeshHelper
 
 			if( m_SpriteAtlas != null )
 			{
-				Sprite sprite = GetSpriteInAtlasFromCache( spriteName ) ;
+				var sprite = GetSpriteInAtlasFromCache( spriteName ) ;
 				if( sprite != null )
 				{
 					return ( int )sprite.rect.width ;
@@ -396,7 +396,7 @@ namespace MeshHelper
 
 			if( m_SpriteSet != null )
 			{
-				Sprite sprite = m_SpriteSet[ spriteName ] ;
+				var sprite = m_SpriteSet[ spriteName ] ;
 				if( sprite != null )
 				{
 					return ( int )sprite.rect.width ;
@@ -499,7 +499,7 @@ namespace MeshHelper
 		/// <summary>
 		/// オフセット
 		/// </summary>
-		[ SerializeField ][ HideInInspector ]
+		[SerializeField][HideInInspector]
 		protected Vector3 m_Offset = Vector3.zero ;
 
 		public    Vector3   Offset
@@ -521,7 +521,7 @@ namespace MeshHelper
 		/// <summary>
 		/// サイズ
 		/// </summary>
-		[ SerializeField ][ HideInInspector ]
+		[SerializeField][HideInInspector]
 		protected Vector3 m_Size = Vector3.one ;
 
 		public    Vector3   Size
@@ -545,7 +545,7 @@ namespace MeshHelper
 		/// <summary>
 		/// 分割数
 		/// </summary>
-		[ SerializeField ][ HideInInspector ]
+		[SerializeField][HideInInspector]
 		protected int m_Split = 0 ;
 
 		public    int  Split
@@ -569,7 +569,7 @@ namespace MeshHelper
 		/// <summary>
 		/// 頂点カラー
 		/// </summary>
-		[ SerializeField ][ HideInInspector ]
+		[SerializeField][HideInInspector]
 		protected Color m_VertexColor = Color.white ;
 
 		public    Color  VertexColor
@@ -610,7 +610,7 @@ namespace MeshHelper
 			Z_Axis = 2,
 		}
 
-		[ SerializeField ][ HideInInspector ]
+		[SerializeField][HideInInspector]
 		protected  DirectionTypes m_DirectionType = DirectionTypes.Y_Axis ;
 
 		/// <summary>
@@ -644,7 +644,7 @@ namespace MeshHelper
 			}
 		}
 
-		[ SerializeField ][ HideInInspector ]
+		[SerializeField][HideInInspector]
 		protected  bool m_IsDirectionInverse = false ;
 
 		/// <summary>
@@ -1704,10 +1704,10 @@ namespace MeshHelper
 
 				if( sprite != null )
 				{
-					tx0 = sprite.rect.xMin / sprite.texture.width  ;
-					ty0 = sprite.rect.yMin / sprite.texture.height ;
-					tx1 = sprite.rect.xMax / sprite.texture.width  ;
-					ty1 = sprite.rect.yMax / sprite.texture.height ;
+					tx0 = sprite.textureRect.xMin / sprite.texture.width  ;
+					ty0 = sprite.textureRect.yMin / sprite.texture.height ;
+					tx1 = sprite.textureRect.xMax / sprite.texture.width  ;
+					ty1 = sprite.textureRect.yMax / sprite.texture.height ;
 				}
 				else
 				{
@@ -1855,10 +1855,10 @@ namespace MeshHelper
 
 			if( sprite != null )
 			{
-				tx0 = sprite.rect.xMin / sprite.texture.width  ;
-				ty0 = sprite.rect.yMin / sprite.texture.height ;
-				tx1 = sprite.rect.xMax / sprite.texture.width  ;
-				ty1 = sprite.rect.yMax / sprite.texture.height ;
+				tx0 = sprite.textureRect.xMin / sprite.texture.width  ;
+				ty0 = sprite.textureRect.yMin / sprite.texture.height ;
+				tx1 = sprite.textureRect.xMax / sprite.texture.width  ;
+				ty1 = sprite.textureRect.yMax / sprite.texture.height ;
 			}
 			else
 			{
@@ -2216,10 +2216,10 @@ namespace MeshHelper
 
 				if( sprite != null )
 				{
-					tx0 = sprite.rect.xMin / sprite.texture.width  ;
-					ty0 = sprite.rect.yMin / sprite.texture.height ;
-					tx1 = sprite.rect.xMax / sprite.texture.width  ;
-					ty1 = sprite.rect.yMax / sprite.texture.height ;
+					tx0 = sprite.textureRect.xMin / sprite.texture.width  ;
+					ty0 = sprite.textureRect.yMin / sprite.texture.height ;
+					tx1 = sprite.textureRect.xMax / sprite.texture.width  ;
+					ty1 = sprite.textureRect.yMax / sprite.texture.height ;
 				}
 				else
 				{
@@ -2558,10 +2558,10 @@ namespace MeshHelper
 
 				if( sprite != null )
 				{
-					tx0 = sprite.rect.xMin / sprite.texture.width  ;
-					ty0 = sprite.rect.yMin / sprite.texture.height ;
-					tx1 = sprite.rect.xMax / sprite.texture.width  ;
-					ty1 = sprite.rect.yMax / sprite.texture.height ;
+					tx0 = sprite.textureRect.xMin / sprite.texture.width  ;
+					ty0 = sprite.textureRect.yMin / sprite.texture.height ;
+					tx1 = sprite.textureRect.xMax / sprite.texture.width  ;
+					ty1 = sprite.textureRect.yMax / sprite.texture.height ;
 				}
 				else
 				{
@@ -2728,10 +2728,10 @@ namespace MeshHelper
 
 					if( sprite != null )
 					{
-						tx0 = sprite.rect.xMin / sprite.texture.width  ;
-						ty0 = sprite.rect.yMin / sprite.texture.height ;
-						tx1 = sprite.rect.xMax / sprite.texture.width  ;
-						ty1 = sprite.rect.yMax / sprite.texture.height ;
+						tx0 = sprite.textureRect.xMin / sprite.texture.width  ;
+						ty0 = sprite.textureRect.yMin / sprite.texture.height ;
+						tx1 = sprite.textureRect.xMax / sprite.texture.width  ;
+						ty1 = sprite.textureRect.yMax / sprite.texture.height ;
 					}
 					else
 					{
@@ -2801,10 +2801,10 @@ namespace MeshHelper
 
 				if( sprite != null )
 				{
-					tx0 = sprite.rect.xMin / sprite.texture.width  ;
-					ty0 = sprite.rect.yMin / sprite.texture.height ;
-					tx1 = sprite.rect.xMax / sprite.texture.width  ;
-					ty1 = sprite.rect.yMax / sprite.texture.height ;
+					tx0 = sprite.textureRect.xMin / sprite.texture.width  ;
+					ty0 = sprite.textureRect.yMin / sprite.texture.height ;
+					tx1 = sprite.textureRect.xMax / sprite.texture.width  ;
+					ty1 = sprite.textureRect.yMax / sprite.texture.height ;
 				}
 				else
 				{
@@ -3056,10 +3056,10 @@ namespace MeshHelper
 
 				if( sprite != null )
 				{
-					tx0 = sprite.rect.xMin / sprite.texture.width  ;
-					ty0 = sprite.rect.yMin / sprite.texture.height ;
-					tx1 = sprite.rect.xMax / sprite.texture.width  ;
-					ty1 = sprite.rect.yMax / sprite.texture.height ;
+					tx0 = sprite.textureRect.xMin / sprite.texture.width  ;
+					ty0 = sprite.textureRect.yMin / sprite.texture.height ;
+					tx1 = sprite.textureRect.xMax / sprite.texture.width  ;
+					ty1 = sprite.textureRect.yMax / sprite.texture.height ;
 				}
 				else
 				{
@@ -3251,10 +3251,10 @@ namespace MeshHelper
 
 				if( sprite != null )
 				{
-					tx0 = sprite.rect.xMin / sprite.texture.width  ;
-					ty0 = sprite.rect.yMin / sprite.texture.height ;
-					tx1 = sprite.rect.xMax / sprite.texture.width  ;
-					ty1 = sprite.rect.yMax / sprite.texture.height ;
+					tx0 = sprite.textureRect.xMin / sprite.texture.width  ;
+					ty0 = sprite.textureRect.yMin / sprite.texture.height ;
+					tx1 = sprite.textureRect.xMax / sprite.texture.width  ;
+					ty1 = sprite.textureRect.yMax / sprite.texture.height ;
 				}
 				else
 				{
@@ -3339,10 +3339,10 @@ namespace MeshHelper
 
 				if( sprite != null )
 				{
-					tx0 = sprite.rect.xMin / sprite.texture.width  ;
-					ty0 = sprite.rect.yMin / sprite.texture.height ;
-					tx1 = sprite.rect.xMax / sprite.texture.width  ;
-					ty1 = sprite.rect.yMax / sprite.texture.height ;
+					tx0 = sprite.textureRect.xMin / sprite.texture.width  ;
+					ty0 = sprite.textureRect.yMin / sprite.texture.height ;
+					tx1 = sprite.textureRect.xMax / sprite.texture.width  ;
+					ty1 = sprite.textureRect.yMax / sprite.texture.height ;
 				}
 				else
 				{
@@ -3410,10 +3410,10 @@ namespace MeshHelper
 
 				if( sprite != null )
 				{
-					tx0 = sprite.rect.xMin / sprite.texture.width  ;
-					ty0 = sprite.rect.yMin / sprite.texture.height ;
-					tx1 = sprite.rect.xMax / sprite.texture.width  ;
-					ty1 = sprite.rect.yMax / sprite.texture.height ;
+					tx0 = sprite.textureRect.xMin / sprite.texture.width  ;
+					ty0 = sprite.textureRect.yMin / sprite.texture.height ;
+					tx1 = sprite.textureRect.xMax / sprite.texture.width  ;
+					ty1 = sprite.textureRect.yMax / sprite.texture.height ;
 				}
 				else
 				{
@@ -3584,10 +3584,10 @@ namespace MeshHelper
 
 				if( sprite != null )
 				{
-					tx0 = sprite.rect.xMin / sprite.texture.width  ;
-					ty0 = sprite.rect.yMin / sprite.texture.height ;
-					tx1 = sprite.rect.xMax / sprite.texture.width  ;
-					ty1 = sprite.rect.yMax / sprite.texture.height ;
+					tx0 = sprite.textureRect.xMin / sprite.texture.width  ;
+					ty0 = sprite.textureRect.yMin / sprite.texture.height ;
+					tx1 = sprite.textureRect.xMax / sprite.texture.width  ;
+					ty1 = sprite.textureRect.yMax / sprite.texture.height ;
 				}
 				else
 				{
@@ -3730,10 +3730,10 @@ namespace MeshHelper
 
 				if( sprite != null )
 				{
-					tx0 = sprite.rect.xMin / sprite.texture.width  ;
-					ty0 = sprite.rect.yMin / sprite.texture.height ;
-					tx1 = sprite.rect.xMax / sprite.texture.width  ;
-					ty1 = sprite.rect.yMax / sprite.texture.height ;
+					tx0 = sprite.textureRect.xMin / sprite.texture.width  ;
+					ty0 = sprite.textureRect.yMin / sprite.texture.height ;
+					tx1 = sprite.textureRect.xMax / sprite.texture.width  ;
+					ty1 = sprite.textureRect.yMax / sprite.texture.height ;
 				}
 				else
 				{
@@ -3821,10 +3821,10 @@ namespace MeshHelper
 
 				if( sprite != null )
 				{
-					tx0 = sprite.rect.xMin / sprite.texture.width  ;
-					ty0 = sprite.rect.yMin / sprite.texture.height ;
-					tx1 = sprite.rect.xMax / sprite.texture.width  ;
-					ty1 = sprite.rect.yMax / sprite.texture.height ;
+					tx0 = sprite.textureRect.xMin / sprite.texture.width  ;
+					ty0 = sprite.textureRect.yMin / sprite.texture.height ;
+					tx1 = sprite.textureRect.xMax / sprite.texture.width  ;
+					ty1 = sprite.textureRect.yMax / sprite.texture.height ;
 				}
 				else
 				{

@@ -15,7 +15,7 @@ using UnityEditorInternal ;
 namespace SpriteHelper
 {
 	/// <summary>
-	/// ２Ｄメッシュ Version 2024/07/18
+	/// ２Ｄメッシュ Version 2024/08/07
 	/// </summary>
 	[ExecuteAlways]
 	[DisallowMultipleComponent]
@@ -1415,13 +1415,16 @@ namespace SpriteHelper
 			float xMin, xMax ;
 			float yMin, yMax ;
 
+
+
 			if( m_Sprite != null )
 			{
-				xMin = m_Sprite.rect.xMin / m_Sprite.texture.width  ;
-				yMin = m_Sprite.rect.yMin / m_Sprite.texture.height ;
+				// 注意：textureRect でないと SpriteAtlas の際に正しいＵＶ座標が取れない
+				xMin = m_Sprite.textureRect.xMin / m_Sprite.texture.width  ;
+				yMin = m_Sprite.textureRect.yMin / m_Sprite.texture.height ;
 
-				xMax = m_Sprite.rect.xMax / m_Sprite.texture.width  ;
-				yMax = m_Sprite.rect.yMax / m_Sprite.texture.height ;
+				xMax = m_Sprite.textureRect.xMax / m_Sprite.texture.width  ;
+				yMax = m_Sprite.textureRect.yMax / m_Sprite.texture.height ;
 			}
 			else
 			{

@@ -15,7 +15,7 @@ using UnityEditor ;
 namespace InputHelper
 {
 	/// <summary>
-	/// 入力操作クラス Version 2024/08/02 0
+	/// 入力操作クラス Version 2024/08/04 0
 	/// </summary>
 	[DefaultExecutionOrder( -90 )]
 	public partial class InputManager : MonoBehaviour
@@ -65,7 +65,7 @@ namespace InputHelper
 				return m_Instance ;
 			}
 			
-#if UNITY_EDITOR
+#if UNITY_EDITOR && !ENABLE_INPUT_SYSTEM
 			if( InputManagerSettings.Check() == false )
 			{
 				Debug.LogWarning( "InputManager[Edit->Project Settings->Input]に必要なパラメータが設定されていません\n[Tools->Initialize InputManager]を実行してください" ) ;

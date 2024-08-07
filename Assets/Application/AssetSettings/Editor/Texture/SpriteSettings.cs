@@ -15,19 +15,19 @@ using UnityEditor.U2D ;
 namespace AssetSettings
 {
 	/// <summary>
-	/// Texture の設定 Version 2024/08/07
+	/// Texture(Sprite) の設定 Version 2024/08/07
 	/// </summary>
-	public class TextureSettings : ImportProcessor
+	public class SpriteSettings : ImportProcessor
 	{
 		// フォルダ無指定時の対象フォルダ
 		private static readonly string[] m_Paths =
 		{
-			@"Assets/Application/AssetBundle/Textures/*",	// テスト用
-			@"Assets/Application/AssetBundle/Textures/*",
-//			@"Assets/Application/ReferencedAssets/Textures/UI/*",
+//			@"Assets/Application/AssetBundle/Textures/AAA/*",	// テスト用
+			@"Assets/Application/AssetBundle/Sprites/*",
+//			@"Assets/Application/ReferencedAssets/Textures/*",
 		} ;
 
-		// Textureインポート用のディスパッチャー
+		// Sprite インポート用のディスパッチャー
 		private static readonly ImportDispatcher<AssetImporter> m_TextureDispatcher
 			= new
 			(
@@ -61,7 +61,7 @@ namespace AssetSettings
 		//-------------------------------------------------------------------------------------------
 
 		// メニューから全て設定し直す
-		[ MenuItem( "AssetSettings/Texture - Reimport" ) ]
+		[ MenuItem( "AssetSettings/Sprite - Reimport" ) ]
 		internal static void ReimportAllAssets()
 		{
 			var targetPaths = new List<string>() ;
@@ -169,7 +169,7 @@ namespace AssetSettings
 
 			if( ProcessSpriteAtlasSettings( spriteAltas, version ) == true )
 			{
-//				Debug.Log( "------>スプライトアトラスを処理した" ) ;
+//				Debug.Log( "------>スプライトアトラスを処理した : " + version ) ;
 				return true ;
 			}
 
@@ -212,27 +212,28 @@ namespace AssetSettings
 		//-------------------------------------------------------------------------------------------
 		// 共通の設定項目
 
+
 		//------------------------------------------------------------
 		// Texture(Sprite) 関連
 
-		private const int							m_Texture_SpritePixelsPerUnit			= 100 ;
+		private const int							m_Texture_SpritePixelsPerUnit			= 1 ;
 		private const bool							m_Texture_IsReadable					= false ;
 		private const bool							m_Texture_MipmapEnabled					= false ;
-		private const FilterMode					m_Texture_FilterMode					= FilterMode.Bilinear ;
-		private const TextureImporterCompression	m_Texture_TextureCompression			= TextureImporterCompression.Compressed ;
-		private const bool							m_Texture_CrunchedCompression			= true ;
+		private const FilterMode					m_Texture_FilterMode					= FilterMode.Point ;
+		private const TextureImporterCompression	m_Texture_TextureCompression			= TextureImporterCompression.Uncompressed ;
+		private const bool							m_Texture_CrunchedCompression			= false ;
 
 		// Standalone
-		private const bool							m_Texture_Overridden_Standalone			= true ;
+		private const bool							m_Texture_Overridden_Standalone			= false ;
 		private const TextureImporterFormat			m_Texture_TextureFormat_Standalone		= TextureImporterFormat.DXT5Crunched ;
 
 		// Android
-		private const bool							m_Texture_Overridden_Android			= true ;
+		private const bool							m_Texture_Overridden_Android			= false ;
 		private const TextureImporterFormat			m_Texture_TextureFormat_Android_1		= TextureImporterFormat.ASTC_6x6 ;
 		private const TextureImporterFormat			m_Texture_TextureFormat_Android_2		= TextureImporterFormat.ETC2_RGBA8Crunched ;
 
 		// iPhone
-		private const bool							m_Texture_Overridden_iPhone				= true ;
+		private const bool							m_Texture_Overridden_iPhone				= false ;
 		private const TextureImporterFormat			m_Texture_TextureFormat_iPhone			= TextureImporterFormat.ASTC_6x6 ;
 
 		//------------------------------------------------------------
@@ -248,22 +249,23 @@ namespace AssetSettings
 		private const bool							m_SpriteAtlas_CrunchedCompression		= false ;
 
 		// Default
-		private const bool							m_SpriteAtlas_Overridden_Default		= true ;
+		private const bool							m_SpriteAtlas_Overridden_Default		= false ;
 		private const TextureImporterFormat			m_SpriteAtlas_TextureFormat_Default		= TextureImporterFormat.Automatic ;
 
 		// Standalone
-		private const bool							m_SpriteAtlas_Overridden_Standalone		= true ;
+		private const bool							m_SpriteAtlas_Overridden_Standalone		= false ;
 		private const TextureImporterFormat			m_SpriteAtlas_TextureFormat_Standalone	= TextureImporterFormat.DXT5Crunched ;
 
 		// Android
-		private const bool							m_SpriteAtlas_Overridden_Android		= true ;
+		private const bool							m_SpriteAtlas_Overridden_Android		= false ;
 		private const TextureImporterFormat			m_SpriteAtlas_TextureFormat_Android		= TextureImporterFormat.ETC2_RGBA8Crunched ;
 
 		// iPhone
-		private const bool							m_SpriteAtlas_Overridden_iPhone			= true ;
+		private const bool							m_SpriteAtlas_Overridden_iPhone			= false ;
 		private const TextureImporterFormat			m_SpriteAtlas_TextureFormat_iPhone		= TextureImporterFormat.ASTC_6x6 ;
 
 		//-------------------------------------------------------------------------------------------
+
 
 
 		/// <summary>
@@ -277,7 +279,7 @@ namespace AssetSettings
 			//------------------------------------------------------------------------------------------
 			// 再設定必要かどうかを確認しつつ必要であれば再設定を行う
 
-            bool isNotSprite = false ;
+			bool isNotSprite = false ;
 
 			// タイプ
 			if( textureImporter.textureType != TextureImporterType.Sprite )
@@ -285,13 +287,13 @@ namespace AssetSettings
 				textureImporter.textureType  = TextureImporterType.Sprite ;
 				isDirty = true ;
 
-                isNotSprite = true ;
+				isNotSprite = true ;
 			}
 
-            // モード
-            // TextureType が Texture を SPrite に変えた際に、
-            // SpriteImportModer はデフォルトで Multiple になってしまってウザいので、
-            // その場合は Single にする。
+			// モード
+			// TextureType が Texture を SPrite に変えた際に、
+			// SpriteImportModer はデフォルトで Multiple になってしまってウザいので、
+			// その場合は Single にする。
 			if( isNotSprite == true )
 			{
 				textureImporter.spriteImportMode  = SpriteImportMode.Single ;
@@ -423,7 +425,7 @@ namespace AssetSettings
 			// Android
 
 			// テクスチャのサイズにより圧縮フォーマットを切り替える
-			TextureImporterFormat androidTextureFormat =  m_Texture_TextureFormat_Android_1 ;
+			TextureImporterFormat androidTextureFormat = m_Texture_TextureFormat_Android_1 ;
 
 //			Texture2D texture = AssetDatabase.LoadAssetAtPath( textureImporter.assetPath, typeof( Texture2D ) ) as Texture2D ;
 
@@ -434,13 +436,13 @@ namespace AssetSettings
 			if( ( ( int )size[ 0 ] & 3 ) == 0 && ( ( int )size[ 1 ] & 3 ) == 0 )
 			{
 				// サイズは４の倍数なのでクランチＥＴＣ２が使用できる
-				androidTextureFormat =  m_Texture_TextureFormat_Android_2 ;
+				androidTextureFormat = m_Texture_TextureFormat_Android_2 ;
 			}
 
 			// Android
 			platfornName = "Android" ;
 			platformSettings = textureImporter.GetPlatformTextureSettings( platfornName ) ;
-			if( SetPlatformSettings( platformSettings, platfornName,  m_Texture_Overridden_Android, textureImporter.maxTextureSize, androidTextureFormat, settingType ) == true )
+			if( SetPlatformSettings( platformSettings, platfornName, m_Texture_Overridden_Android, textureImporter.maxTextureSize, androidTextureFormat, settingType ) == true )
 			{
 				textureImporter.SetPlatformTextureSettings( platformSettings ) ;
 				isDirty = true ;
@@ -449,7 +451,7 @@ namespace AssetSettings
 			// iOS
 			platfornName = "iPhone" ;
 			platformSettings = textureImporter.GetPlatformTextureSettings( platfornName ) ;
-			if( SetPlatformSettings( platformSettings, platfornName,  m_Texture_Overridden_iPhone, textureImporter.maxTextureSize, m_Texture_TextureFormat_iPhone, settingType ) == true )
+			if( SetPlatformSettings( platformSettings, platfornName, m_Texture_Overridden_iPhone, textureImporter.maxTextureSize, m_Texture_TextureFormat_iPhone, settingType ) == true )
 			{
 				textureImporter.SetPlatformTextureSettings( platformSettings ) ;
 				isDirty = true ;
@@ -562,23 +564,23 @@ namespace AssetSettings
 			//----------------------------------
 
 			// packing設定も適用
-			var packingSetting = editorData.FindPropertyRelative( "packingSettings" ) ;
+			var packingSettings = editorData.FindPropertyRelative( "packingSettings" ) ;
 
-			if( CheckPropertyOfBool( packingSetting, "enableRotation", m_SpriteAtlas_EnableRotation ) == false )
+			if( CheckPropertyOfBool( packingSettings, "enableRotation", m_SpriteAtlas_EnableRotation ) == false )
 			{
-				StorePropertyOfBool( packingSetting, "enableRotation", m_SpriteAtlas_EnableRotation ) ;
+				StorePropertyOfBool( packingSettings, "enableRotation", m_SpriteAtlas_EnableRotation ) ;
 				isDirty = true ;
 			}
 
-			if( CheckPropertyOfBool( packingSetting, "enableTightPacking", m_SpriteAtlas_EnableTightPacking ) == false )
+			if( CheckPropertyOfBool( packingSettings, "enableTightPacking", m_SpriteAtlas_EnableTightPacking ) == false )
 			{
-				StorePropertyOfBool( packingSetting, "enableTightPacking", m_SpriteAtlas_EnableTightPacking ) ;
+				StorePropertyOfBool( packingSettings, "enableTightPacking", m_SpriteAtlas_EnableTightPacking ) ;
 				isDirty = true ;
 			}
 
-			if( CheckPropertyOfInt( packingSetting, "padding", m_SpriteAtlas_Padding ) == false )
+			if( CheckPropertyOfInt( packingSettings, "padding", m_SpriteAtlas_Padding ) == false )
 			{
-				StorePropertyOfInt( packingSetting, "padding", m_SpriteAtlas_Padding ) ;
+				StorePropertyOfInt( packingSettings, "padding", m_SpriteAtlas_Padding ) ;
 				isDirty = true ;
 			}
 
@@ -620,6 +622,7 @@ namespace AssetSettings
 			}
 
 			//----------------------------------
+
 			// 基本設定
 			var textureSettings = editorData.FindPropertyRelative( "textureSettings" ) ;
 

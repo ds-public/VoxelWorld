@@ -9,12 +9,11 @@ using System.Reflection ;
 using UnityEngine ;
 using UnityEditor ;
 
-using UnityEngine.U2D ;
 
 namespace AssetSettings
 {
 	/// <summary>
-	/// Audio の設定 Version 2023/06/03
+	/// Audio の設定 Version 2024/08/07
 	/// </summary>
 	public class AudioSettings : ImportProcessor
 	{
@@ -26,7 +25,7 @@ namespace AssetSettings
 
 		// AudioClip インポート用のディスパッチャー
 		private static readonly ImportDispatcher<AudioImporter> m_AudioDispatcher
-			= new ImportDispatcher<AudioImporter>
+			= new
 			(
 				m_Paths,
 				ReplaceAudioSettings,	// ファイル単位の処理
@@ -37,7 +36,7 @@ namespace AssetSettings
 
 		// バッチ処理用のディスパッチャー
 		private static readonly ImportDispatcher<AudioImporter> m_BatchDispatcher
-			= new ImportDispatcher<AudioImporter>
+			= new
 			(
 				m_Paths,
 				null,
@@ -50,14 +49,24 @@ namespace AssetSettings
 		[ MenuItem( "AssetSettings/Audio - Reimport" ) ]
 		internal static void ReimportAllAssets()
 		{
-			string targetPath = null ;
-			if( Selection.objects.Length == 1 && Selection.activeObject != null )
+			var targetPaths = new List<string>() ;
+
+			if( Selection.objects != null && Selection.objects.Length == 1 && Selection.activeObject != null )
 			{
 				// １つだけ選択（複数選択には対応していない：フォルダかファイル）
-				targetPath = AssetDatabase.GetAssetPath( Selection.activeObject.GetInstanceID() ).Replace( '\\', '/' ) ;
+				targetPaths.Add( AssetDatabase.GetAssetPath( Selection.activeObject.GetInstanceID() ).Replace( '\\', '/' ) ) ;
+			}
+			else
+			if( Selection.objects != null && Selection.objects.Length >  1 )
+			{
+				// 複数対象
+				foreach( var activeObject in Selection.objects )
+				{
+					targetPaths.Add( AssetDatabase.GetAssetPath( activeObject.GetInstanceID() ).Replace( '\\', '/' ) ) ;
+				}
 			}
 
-			m_BatchDispatcher.SetupAll( targetPath ) ;
+			m_BatchDispatcher.SetupAll( targetPaths ) ;
 		}
 
 		//-------------------------------------------------------------------------------------------
@@ -207,7 +216,7 @@ namespace AssetSettings
 		private static readonly Dispatcher[] m_Dispatchers = new Dispatcher[]
 		{
 			// BGM
-			new Dispatcher()
+			new ()
 			{
 				// 対象パス
 				Paths = new string[]
@@ -218,8 +227,20 @@ namespace AssetSettings
 				Method = SetBgmSetting,									// ＢＧＭ用の設定にする
 			},
 
+			// Ambience
+			new ()
+			{
+				// 対象パス
+				Paths = new string[]
+				{
+					"Assets/Application/AssetBundle/Sounds/Ambience",		// アセットバンドル内のオーディオクリップ
+				},
+				// 設定メソッド
+				Method = SetBgmSetting,									// ＢＧＭ用の設定にする
+			},
+
 			// Jingle
-			new Dispatcher()
+			new ()
 			{
 				// 対象パス
 				Paths = new string[]
@@ -231,7 +252,7 @@ namespace AssetSettings
 			},
 
 			// SE
-			new Dispatcher()
+			new ()
 			{
 				// 対象パス
 				Paths = new string[]
@@ -243,7 +264,7 @@ namespace AssetSettings
 			},
 
 			// Voice
-			new Dispatcher()
+			new ()
 			{
 				// 対象パス
 				Paths = new string[]

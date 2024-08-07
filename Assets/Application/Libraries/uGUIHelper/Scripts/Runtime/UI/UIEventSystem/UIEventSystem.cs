@@ -35,7 +35,7 @@ namespace uGUIHelper.InputAdapter
 				return m_Instance ;
 			}
 		
-#if UNITY_EDITOR
+#if UNITY_EDITOR && !ENABLE_INPUT_SYSTEM
 			if( GameObject.FindAnyObjectByType<EventSystem>() != null )
 			{
 				Debug.LogWarning( "既にシーン内に EventSystem が存在しています。UIEventSystm への差し替えを推奨します。" ) ;
@@ -135,10 +135,13 @@ namespace uGUIHelper.InputAdapter
 
 			//-----------------------------
 
-			if( TryGetComponent<EventSystem>( out var _ ) == false )
+			if( TryGetComponent<EventSystem>( out var eventSystem ) == false )
 			{
-				gameObject.AddComponent<EventSystem>() ;
+				eventSystem = gameObject.AddComponent<EventSystem>() ;
 			}
+
+			// 重要：これをオフにしておかないとゲームパッドが不意に入力されて困った事になる
+			eventSystem.sendNavigationEvents = false ;
 		}
 
 		/// <summary>
@@ -755,16 +758,16 @@ namespace uGUIHelper.InputAdapter
 		//-------------------------------------------------------------------------------------------------------------------
 		// Hover と Press は独自に監視する
 
-		private GameObject						m_ActiveHover_GameObject ;
-		private List<GameObject>				m_ActivePress_GameObjects = new () ;
-		private GameObject						m_ActivePress_MouseGameObject ;
-		private Dictionary<int,GameObject>		m_ActivePress_TouchGameObjects = new () ;
+		private GameObject								m_ActiveHover_GameObject ;
+		private readonly List<GameObject>				m_ActivePress_GameObjects = new () ;
+		private GameObject								m_ActivePress_MouseGameObject ;
+		private readonly Dictionary<int,GameObject>		m_ActivePress_TouchGameObjects = new () ;
 
-		private readonly PointerEventData		m_CT_EventDataCurrentPosition = new ( EventSystem.current ) ;
-		private readonly List<RaycastResult>	m_CT_Results = new () ;
-		private GameObject						m_CT_GameObject ;
+		private readonly PointerEventData				m_CT_EventDataCurrentPosition = new ( EventSystem.current ) ;
+		private readonly List<RaycastResult>			m_CT_Results = new () ;
+		private GameObject								m_CT_GameObject ;
 
-		private List<int>						m_ActivePress_TouchRemoveFingerIds = new () ;
+		private readonly List<int>						m_ActivePress_TouchRemoveFingerIds = new () ;
 
 		// Hover と Press の監視
 		private void ProcessHoverAndPress_OnApplicationFocus()

@@ -27,7 +27,7 @@ namespace uGUIHelper
 	/// </summary>
 	public class UIView : UIBehaviour
 	{
-		public const string Version = "Version 2024/08/02 0" ;
+		public const string Version = "Version 2024/08/05 0" ;
 
 		// ソースコード
 		// https://bitbucket.org/Unity-Technologies/ui/src/2019.1/
@@ -1176,12 +1176,18 @@ namespace uGUIHelper
 				float py  = ph * 0.5f ;
 				float py0 = 0, py1 ;
 
+				float sx = 1.0f ;   // 累積のスケール補正
+				float sy = 1.0f ;   // 累積のスケール補正
+
 				l = hierarchyRects.Count ;
 				for( i  = ( l - 1 ) ; i >= 0 ; i -- )
 				{
 					rt = hierarchyRects[ i ] ;
 
 					// X
+					// pw は補正済みの絶対的な値になっている
+
+					sx *= rt.localScale.x ;
 
 					// 自身の横幅(次の親の横幅)
 					if( rt.anchorMin.x != rt.anchorMax.x )
@@ -1190,8 +1196,8 @@ namespace uGUIHelper
 						px1 = px0 + ( pw * rt.anchorMax.x ) ;	// 親の最大
 						
 						// マージンの補正をかける
-						px0 -= ( ( rt.sizeDelta.x *       rt.pivot.x   ) - rt.anchoredPosition.x ) ;
-						px1 += ( ( rt.sizeDelta.x * ( 1 - rt.pivot.x ) ) + rt.anchoredPosition.x ) ;
+						px0 -= ( ( ( rt.sizeDelta.x *       rt.pivot.x   ) - rt.anchoredPosition.x ) ) * sx ;
+						px1 += ( ( ( rt.sizeDelta.x * ( 1 - rt.pivot.x ) ) + rt.anchoredPosition.x ) ) * sx ;
 
 						pw = px1 - px0 ;
 
@@ -1201,15 +1207,19 @@ namespace uGUIHelper
 					else
 					{
 						// 中心位置
-						px = px0 + ( pw * rt.anchorMin.x ) + rt.anchoredPosition.x ;
+						px = px0 + ( pw * rt.anchorMin.x ) + ( rt.anchoredPosition.x * sx ) ;
 
-						pw = rt.sizeDelta.x ;
+						pw = rt.sizeDelta.x * sx ;
 					}
 
 					// 親の範囲更新
 					px0 = px - ( pw * rt.pivot.x ) ;
 
 					// Y
+					// ph は補正済みの絶対的な値になっている
+
+					sy *= rt.localScale.y ;
+
 					// 自身の横幅(次の親の横幅)
 					if( rt.anchorMin.y != rt.anchorMax.y )
 					{
@@ -1217,8 +1227,8 @@ namespace uGUIHelper
 						py1 = py0 + ( ph * rt.anchorMax.y ) ;	// 親の最大
 						
 						// マージンの補正をかける
-						py0 -= ( ( rt.sizeDelta.y *       rt.pivot.y   ) - rt.anchoredPosition.y ) ;
-						py1 += ( ( rt.sizeDelta.y * ( 1 - rt.pivot.y ) ) + rt.anchoredPosition.y ) ;
+						py0 -= ( ( ( rt.sizeDelta.y *       rt.pivot.y   ) - rt.anchoredPosition.y ) ) * sy ;
+						py1 += ( ( ( rt.sizeDelta.y * ( 1 - rt.pivot.y ) ) + rt.anchoredPosition.y ) ) * sy ;
 
 						ph = py1 - py0 ;
 
@@ -1228,9 +1238,9 @@ namespace uGUIHelper
 					else
 					{
 						// 中心位置
-						py = py0 + ( ph * rt.anchorMin.y ) + rt.anchoredPosition.y ;
+						py = py0 + ( ph * rt.anchorMin.y ) + ( rt.anchoredPosition.y * sy ) ;
 
-						ph = rt.sizeDelta.y ;
+						ph = rt.sizeDelta.y * sy ;
 					}
 
 					// 親の範囲更新
@@ -1241,8 +1251,8 @@ namespace uGUIHelper
 				px -= ( ps.x * 0.5f ) ;
 				py -= ( ps.y * 0.5f ) ;
 
-				pw *= GetRectTransform().localScale.x ;
-				ph *= GetRectTransform().localScale.y ;
+//				pw *= GetRectTransform().localScale.x ;
+//				ph *= GetRectTransform().localScale.y ;
 
 				px -= ( pw * Pivot.x ) ;
 				py -= ( ph * Pivot.y ) ;
