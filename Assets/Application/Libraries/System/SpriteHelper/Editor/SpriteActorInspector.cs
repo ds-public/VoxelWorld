@@ -42,7 +42,7 @@ namespace SpriteHelper
 
 			//----------------------------------
 
-			DrawAtlas( component ) ;
+			DrawColor( component ) ;
 
 			if( component.SpriteAtlas != null || component.SpriteSet != null )
 			{

@@ -583,7 +583,7 @@ namespace AssetBundleHelper
 			{ typeof( PhysicMaterial ),				new (){ ".physicmaterial", 																			} },
 			{ typeof( AvatarMask ),					new (){ ".mask", 																					} },
 			{ typeof( Playable ),					new (){ ".playable", 																				} },
-			{ typeof( SpriteAtlas ),				new (){ ".spriteatlas", 																			} },
+			{ typeof( SpriteAtlas ),				new (){ ".spriteatlas", "spriteatlasv2" 															} },
 			{ typeof( VideoClip ),					new (){ ".mp4", ".mov", ".asf", ".avi", ".mpg", ".mpeg"												} },
 			{ typeof( ScriptableObject ),			new (){ ".asset"																					} },
 		} ;
@@ -2724,7 +2724,7 @@ namespace AssetBundleHelper
 					}
 #endif
 					// LocalAssetBundle StreamingAssets RemoteAssetBundle
- 					if( string.IsNullOrEmpty( assetBundlePath ) == false && m_ManifestHash[ manifestName ].CorrectPath( ref assetBundlePath, ref assetPath, out _ ) == true )
+					if( string.IsNullOrEmpty( assetBundlePath ) == false && m_ManifestHash[ manifestName ].CorrectPath( ref assetBundlePath, ref assetPath, out _ ) == true )
 					{
 						return m_ManifestHash[ manifestName ].Exists( assetBundlePath ) ;
 					}
