@@ -27,7 +27,7 @@ namespace uGUIHelper
 	/// </summary>
 	public class UIView : UIBehaviour
 	{
-		public const string Version = "Version 2024/08/05 0" ;
+		public const string Version = "Version 2024/08/29 0" ;
 
 		// ソースコード
 		// https://bitbucket.org/Unity-Technologies/ui/src/2019.1/
@@ -445,13 +445,7 @@ namespace uGUIHelper
 			if( Application.isPlaying == true )
 			{
 				// バックキーの処理
-				if( m_BackKeyEnabled == true )
-				{
-					if( InputAdapter.UIEventSystem.GetKeyDown( InputAdapter.KeyCodes.Escape ) == true )
-					{
-						ProcessBackKey() ;
-					}
-				}
+				ProcessBackKey() ;
 
 				//----------------------------------------------------------
 
@@ -11179,11 +11173,12 @@ namespace uGUIHelper
 
 		//-------------------------------------------------------------------
 
+		[SerializeField]
+		protected bool			m_BackKeyEnabled = false ;
+
 		/// <summary>
 		/// バックキー連携
 		/// </summary>
-		[SerializeField]
-		protected bool			m_BackKeyEnabled = false ;
 		public    bool			  BackKeyEnabled
 		{
 			get
@@ -11196,53 +11191,64 @@ namespace uGUIHelper
 			}
 		}
 
-		/// <summary>
-		/// バックキー連携でレイキャストヒットを無視して反応するようにするかどうか
-		/// </summary>
 		[SerializeField]
-		protected bool			m_IsBackKeyIgnoreRaycastTarget = false ;
-		public    bool			  IsBackKeyIgnoreRaycastTarget
+		protected bool			m_IsForceRaycastTargetEnabled = false ;
+
+		/// <summary>
+		/// レイキャストターゲットが無効化されていても強制的に有効化して反応させるかどうか
+		/// </summary>
+		public    bool			  IsForceRaycastTargetEnabled
 		{
 			get
 			{
-				return m_IsBackKeyIgnoreRaycastTarget ;
+				return m_IsForceRaycastTargetEnabled ;
 			}
 			set
 			{
-				m_IsBackKeyIgnoreRaycastTarget  = value ;
+				m_IsForceRaycastTargetEnabled  = value ;
 			}
 		}
 
 		// バックキーを処理する
 		private void ProcessBackKey()
 		{
-			if( ActiveInHierarchy == true && IsAnyTweenPlayingInParents == false && ( ( IsBackKeyIgnoreRaycastTarget == false && Alpha >  0 ) || IsBackKeyIgnoreRaycastTarget == true ) && IsBackKeyAvailable() == true )
+			if( m_BackKeyEnabled == true )
 			{
-				// バックキーは有効
-				if( this is UIButton button )
+				if( InputAdapter.UIEventSystem.GetKeyDown( InputAdapter.KeyCodes.Escape ) == true )
 				{
-					if( button.Interactable == true )
+					if( ActiveInHierarchy == true && IsAnyTweenPlayingInParents == false && ( ( m_IsForceRaycastTargetEnabled == false && Alpha >  0 ) || m_IsForceRaycastTargetEnabled == true ) && IsRaycastAvailable() == true )
 					{
-						button.ExecuteButtonClick() ;
-					}
-				}
-				else
-				if( this is UIImage image )
-				{
-					if( image.IsInteraction == true )
-					{
-						image.ExecuteClick() ;
+						// バックキーは有効
+						if( this is UIButton button )
+						{
+							if( button.Interactable == true )
+							{
+								button.ExecuteButtonClick() ;
+							}
+						}
+						else
+						if( this is UIImage image )
+						{
+							if( image.IsInteraction == true )
+							{
+								image.ExecuteClick() ;
+							}
+						}
 					}
 				}
 			}
 		}
 
-		// バックキーが押せるか確認する
-		private readonly PointerEventData		m_BK_EventDataCurrentPosition = new ( EventSystem.current ) ;
-		private readonly List<RaycastResult>	m_BK_Results = new () ;
+		//-------------------------------------------------------------------------------------
 
-		// バックキーが現在有効な状態か確認する
-		private bool IsBackKeyAvailable()
+		private readonly PointerEventData		m_Raycast_EventDataCurrentPosition = new ( EventSystem.current ) ;
+		private readonly List<RaycastResult>	m_Raycast_Results = new () ;
+
+		/// <summary>
+		/// ビューがレイキャストに反応できる状態かどうか
+		/// </summary>
+		/// <returns></returns>
+		public bool IsRaycastAvailable()
 		{
 			// バックキー対象のスクリーン座標を計算する
 			( var backKeyPoints, var backKeyCenter ) = GetScreenArea( gameObject ) ;
@@ -11251,7 +11257,7 @@ namespace uGUIHelper
 
 			// 一時的にレイキャストターゲットを有効化する(よって Graphic コンポーネント必須)
 			bool raycastTarget = true ;
-			if( IsBackKeyIgnoreRaycastTarget == true && RaycastTarget == false )
+			if( m_IsForceRaycastTargetEnabled == true && RaycastTarget == false )
 			{
 				raycastTarget = RaycastTarget ;
 				RaycastTarget = true ;
@@ -11262,12 +11268,12 @@ namespace uGUIHelper
 			bool isAvailable = false ;
 
 			// レイキャストを実行しヒットする対象を検出する
-			m_BK_EventDataCurrentPosition.position = backKeyCenter ;
-			m_BK_Results.Clear() ;
-			EventSystem.current.RaycastAll( m_BK_EventDataCurrentPosition, m_BK_Results ) ;
+			m_Raycast_EventDataCurrentPosition.position = backKeyCenter ;
+			m_Raycast_Results.Clear() ;
+			EventSystem.current.RaycastAll( m_Raycast_EventDataCurrentPosition, m_Raycast_Results ) ;
 
 			// ヒットしない事は基本的にありえない
-			foreach( var result in m_BK_Results )
+			foreach( var result in m_Raycast_Results )
 			{
 				if( result.gameObject == gameObject )
 				{
@@ -11295,7 +11301,7 @@ namespace uGUIHelper
 			//----------------------------------------------------------
 
 			// レイキャスト無効でもヒット判定を有効にしていた場合は設定を元に戻す
-			if( IsBackKeyIgnoreRaycastTarget == true && raycastTarget == false )
+			if( m_IsForceRaycastTargetEnabled == true && raycastTarget == false )
 			{
 				RaycastTarget = raycastTarget ;
 			}
@@ -11335,7 +11341,7 @@ namespace uGUIHelper
 			float ty1 = ( th * ( 1 - rt.pivot.y ) ) - raycastPadding.w ;	// w = top
 
 			// 角の座標(まだローカルの２次元)	※順番は右回りである事に注意(Ｚ型ではない)
-			Vector2[] points = new Vector2[ 4 ]
+			var points = new Vector2[ 4 ]
 			{
 				new ( tx0, ty0 ),
 				new ( tx1, ty0 ),
@@ -11387,14 +11393,14 @@ namespace uGUIHelper
 			return ( points, center ) ;
 		}
 
-		// ブロッカーの親にバックキーが踏まれているかどうか
-		private bool IsContainParent( GameObject backKey, GameObject blocker )
+		// レイキャストターゲットの親に有効レイキャストターゲットが踏まれているかどうか
+		private bool IsContainParent( GameObject raycastTarget, GameObject blocker )
 		{
 			while( blocker.transform.parent != null )
 			{
 				blocker = blocker.transform.parent.gameObject ;
 
-				if( blocker == backKey )
+				if( blocker == raycastTarget )
 				{
 					// 含まれている
 					return true ;
@@ -11405,7 +11411,7 @@ namespace uGUIHelper
 			return false ;
 		}
 
-		// バックキーがブロッカーの内側に完全に隠されているか確認する
+		// レイキャストターゲットがブロッカーの内側に完全に隠されているか確認する
 		private bool IsCompleteBlocking( Vector2[] backKeyPoints, Vector2[] blockerPoints )
 		{
 			int oi, ol = blockerPoints.Length ;

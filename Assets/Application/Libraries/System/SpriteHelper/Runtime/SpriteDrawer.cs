@@ -9,26 +9,27 @@ using UnityEngine.U2D ;
 #if UNITY_EDITOR
 using UnityEditor ;
 using UnityEditorInternal ;
+using UnityEditor.SceneManagement ;
 #endif
 
 
 namespace SpriteHelper
 {
 	/// <summary>
-	/// ２Ｄメッシュ Version 2024/08/07
+	/// ２Ｄメッシュ Version 2024/08/16
 	/// </summary>
 	[ExecuteAlways]
 	[DisallowMultipleComponent]
 	[RequireComponent( typeof( MeshRenderer ) )]
 	[RequireComponent( typeof( MeshFilter ) )]
-	public class SpriteDrawer : MonoBehaviour
+	public class SpriteDrawer : SpriteTransform
 	{
 #if UNITY_EDITOR
 		/// <summary>
 		/// Sprite を生成
 		/// </summary>
 		[MenuItem( "GameObject/SpriteHelper/SpriteDrawer", false, 22 )]	// ポップアップメニューから
-//		[MenuItem( "SpriteHelper/Add a SpriteDrawer" )]					// メニューから
+		[MenuItem( "SpriteHelper/Add a SpriteDrawer" )]					// メニューから
 		public static void CreateSpriteDrawer()
 		{
 			var go = Selection.activeGameObject ;
@@ -101,8 +102,14 @@ namespace SpriteHelper
 
 				SetSprites( sprites ) ;
 			}
-
+		
 			Size = new Vector2( 120, 120 ) ;
+
+			var material = Resources.Load<Material>( "SpriteHelper/Materials/DefaultSprite" ) ;
+			if( material != null )
+			{
+				Material = material ;
+			}
 		}
 
 		//-----------------------------------------------------------
@@ -169,6 +176,15 @@ namespace SpriteHelper
 					m_IsTextureCoordinateDirty = true ;
 				}
 			}
+		}
+
+		/// <summary>
+		/// スプライトを設定する
+		/// </summary>
+		/// <param name="sprite"></param>
+		public void SetSprite( Sprite sprite )
+		{
+			Sprite = sprite ;
 		}
 
 		//-------------------------------------------------------------------------------------------
@@ -320,7 +336,7 @@ namespace SpriteHelper
 		{
 			if( m_Sprite != null )
 			{
-				Size = new Vector2( m_Sprite.rect.width, m_Sprite.rect.height ) ; 
+				DeltaSize = new Vector2( m_Sprite.rect.width, m_Sprite.rect.height ) ; 
 			}
 		}
 
@@ -578,7 +594,14 @@ namespace SpriteHelper
 								sprite.name = spriteName ;
 							}
 
-							m_SpritesInAtlas.Add( spriteName, sprite ) ;
+							if( m_SpritesInAtlas.ContainsKey( spriteName ) == false )
+							{
+								m_SpritesInAtlas.Add( spriteName, sprite ) ;
+							}
+							else
+							{
+								Debug.LogWarning( "スプライトの識別名が重複しています : " + spriteName ) ;
+							}
 						}
 
 						return sprites ;
@@ -594,48 +617,67 @@ namespace SpriteHelper
 		/// <summary>
 		/// オフセット
 		/// </summary>
-		[ SerializeField ][ HideInInspector ]
-		protected Vector2 m_Offset = Vector2.zero ;
-
-		public    Vector2   Offset
+		public override Vector2   Offset
 		{
 			get
 			{
 				return m_Offset ;
 			}
-			set
+			protected set
 			{
 				if( m_Offset.Equals( value ) == false )
 				{
+					Debug.LogWarning( "オフセット変化 : " + m_Offset + " " + value ) ;
+
 					m_Offset = value ;
 
 					m_IsOffsetAndSizeDirty = true ;
 				}
 			}
-		}	
+		}
+
+#if false
+#if UNITY_EDITOR
+		[MenuItem( "Tools/SpriteDrawer/FieldRefactor" )]
+		private static void FieldRefactor()
+		{
+			int c = 0 ;
+			SpriteDrawer[] targets = Utility.FindComponents<SpriteDrawer>
+			(
+				"Assets/Application",
+				( _ ) =>
+				{
+					_.m_Width  = _.DeltaSize.x ;
+					_.m_Height = _.DeltaSize.y ;
+					c ++ ;
+				}
+			) ;
+			Debug.Log( "------>処理対象の Componentの数 : " + c ) ;
+		}
+#endif
+#endif
 
 		/// <summary>
-		/// サイズ
+		/// 実サイズ(外部からは読み取りのみ可能))
 		/// </summary>
-		[ SerializeField ][ HideInInspector ]
-		protected Vector2 m_Size = Vector2.one ;
-
-		public    Vector2   Size
+		public override Vector2   DeltaSize
 		{
 			get
 			{
-				return m_Size ;
+				return m_DeltaSize ;
 			}
-			set
+			protected set
 			{
-				if( m_Size.Equals( value ) == false )
+				if( m_DeltaSize.Equals( value ) == false )
 				{
-					m_Size = value ;
+					m_DeltaSize = value ;
 
 					m_IsOffsetAndSizeDirty = true ;
 				}
 			}
 		}
+
+		//-------------------------------------------------------------------------------------------
 
 		//-------------------------------------------------------------------------------------------
 
@@ -1032,8 +1074,10 @@ namespace SpriteHelper
 		/// <summary>
 		/// 更新される際に呼び出される(LateUpdate でなければならない。Mesh の変更要求を Update より後に実行すると、反映が次のフレームになってしまうため)
 		/// </summary>
-		internal void LateUpdate()
+		internal override void LateUpdate()
 		{
+			base.LateUpdate() ;
+
 			if
 			(
 				m_IsMaterialDirty			== true ||
@@ -1140,66 +1184,6 @@ namespace SpriteHelper
 
 		//-------------------------------------------------------------------------------------------
 
-		/// <summary>
-		/// アクティブ状態を切り替える
-		/// </summary>
-		/// <param name="state"></param>
-		public void SetActive( bool state )
-		{
-			gameObject.SetActive( state ) ;
-		}
-
-		/// <summary>
-		/// アクティブかどうか
-		/// </summary>
-		public bool ActiveSelf
-		{
-			get
-			{
-				return gameObject.activeSelf ;
-			}
-		}
-
-		/// <summary>
-		/// レイヤーを設定する
-		/// </summary>
-		/// <param name="layer"></param>
-		public void SetLayer( int layer )
-		{
-			gameObject.layer = layer ;
-		}
-
-		/// <summary>
-		/// サイズを設定する
-		/// </summary>
-		/// <param name="x"></param>
-		/// <param name="y"></param>
-		public void SetSize( float x, float y )
-		{
-			Size = new Vector2( x, y ) ;
-		}
-
-		/// <summary>
-		/// 位置を設定する
-		/// </summary>
-		/// <param name="x"></param>
-		/// <param name="y"></param>
-		/// <param name="z"></param>
-		public void SetPosition( float x, float y )
-		{
-			transform.localPosition = new Vector3( x, y, transform.localPosition.z ) ;
-		}
-
-		/// <summary>
-		/// 位置を設定する
-		/// </summary>
-		/// <param name="x"></param>
-		/// <param name="y"></param>
-		/// <param name="z"></param>
-		public void SetPosition( float x, float y, float z )
-		{
-			transform.localPosition = new Vector3( x, y, z ) ;
-		}
 
 		/// <summary>
 		/// マテリアルの色を設定する
@@ -1372,8 +1356,8 @@ namespace SpriteHelper
 		// オフセットとサイズをメッシュに設定する
 		private void UpdateOffsetAndSize( Mesh mesh )
 		{
-			float hx = m_Size.x * 0.5f ;
-			float hy = m_Size.y * 0.5f ;
+			float hx = m_DeltaSize.x * 0.5f ;
+			float hy = m_DeltaSize.y * 0.5f ;
 
 			float xMin = -hx + m_Offset.x ;
 			float yMin = -hy + m_Offset.y ;
@@ -1461,5 +1445,120 @@ namespace SpriteHelper
 			m_IsTextureCoordinateDirty	= false ;
 		}
 	}
+
+	//--------------------------------------------------------------------------------------------------------------------
+#if UNITY_EDITOR
+	/// <summary>
+	/// エディターモード専用ユーティリティ関数
+	/// </summary>
+	public static class Utility
+	{
+		/// <summary>
+		/// プロジェクト内の指定のコンポーネントを列挙する
+		/// </summary>
+		/// <typeparam name="T"></typeparam>
+		/// <param name="onLoaded"></param>
+		/// <param name="rootPath"></param>
+		/// <returns></returns>
+		public static T[] FindComponents<T>( string rootPath, Action<T> onLoaded = null ) where T: UnityEngine.Component
+		{
+			var targets = new List<T>() ;
+
+			// Prefab
+			string[] prefabGuids = AssetDatabase.FindAssets( "t:prefab", new string[]{ rootPath } ) ;
+			if( prefabGuids != null && prefabGuids.Length >  0 )
+			{
+//				Debug.LogWarning( "全プレハブの数:" + prefabGuids.Length ) ;
+				foreach( var guid in prefabGuids )
+				{
+					string path = AssetDatabase.GUIDToAssetPath( guid ) ;
+					var go = AssetDatabase.LoadAssetAtPath<GameObject>( path ) ;
+
+					T[] targetsInPrefab = go.GetComponentsInChildren<T>( true ) ;
+					if( targetsInPrefab != null && targetsInPrefab.Length >  0 )
+					{
+//						Debug.LogWarning( "プレハブ " + path + " 内の UITween の数 = " + targetsInPrefab.Length ) ;
+
+						targets.AddRange( targetsInPrefab ) ;
+
+						if( onLoaded != null )
+						{
+							foreach( T target in targetsInPrefab )
+							{
+								onLoaded( target ) ;
+								EditorUtility.SetDirty( target ) ;
+							}
+						}
+					}
+				}
+
+				if( onLoaded != null )
+				{
+					AssetDatabase.SaveAssets() ;
+					AssetDatabase.Refresh() ;
+				}
+			}
+
+			// Scene
+			string[] sceneGuids = AssetDatabase.FindAssets( "t:scene", new string[]{ rootPath } ) ;
+			if( sceneGuids != null && sceneGuids.Length >  0 )
+			{
+				// 開いていたシーンを保存する
+				var activeScene = EditorSceneManager.GetActiveScene() ;
+//				Debug.LogWarning( "アクティブシーンのパス : " + activeScene.path ) ;
+				string activeScenepath = activeScene.path ;
+
+//				Debug.LogWarning( "全シーンの数:" + prefabGuids.Length ) ;
+				foreach( var guid in sceneGuids )
+				{
+					string path = AssetDatabase.GUIDToAssetPath( guid ) ;
+					var scene = EditorSceneManager.OpenScene( path ) ;
+					
+					T[] targetsInScene = Resources.FindObjectsOfTypeAll<T>() ;
+					if( targetsInScene != null && targetsInScene.Length >  0 )
+					{
+//						Debug.LogWarning( "シーン " + path + " 内の UITween の数 = " + targetsInScene.Length ) ;
+						targets.AddRange( targetsInScene ) ;
+
+						if( onLoaded != null )
+						{
+							foreach( T target in targetsInScene )
+							{
+								onLoaded( target ) ;
+							}
+
+							EditorSceneManager.SaveScene( scene, path ) ;
+						}
+					}
+				}
+
+				if( string.IsNullOrEmpty( activeScenepath ) == false )
+				{
+					// 開いていたシーンに戻す
+					activeScene = EditorSceneManager.GetActiveScene() ;
+					if( activeScene.path != activeScenepath )
+					{
+						EditorSceneManager.OpenScene( activeScenepath ) ;
+					}
+				}
+			}
+
+			if( onLoaded != null )
+			{
+				AssetDatabase.SaveAssets() ;
+				AssetDatabase.Refresh() ;
+			}
+
+//			Debug.LogWarning( "------>最終的な対象の数:" + targets.Count ) ;
+
+			if( targets.Count == 0 )
+			{
+				return null ;
+			}
+
+			return targets.ToArray() ;
+		}
+	}
+#endif
 }
 

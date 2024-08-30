@@ -984,7 +984,6 @@ namespace DSW
 			    Dialog.SetCanvasResolution( width, height ) ;
 			      Fade.SetCanvasResolution( width, height ) ;
 			  Progress.SetCanvasResolution( width, height ) ;
-			    Ripple.SetCanvasResolution( width, height ) ;
 			OuterFrame.SetCanvasResolution( width, height ) ;
 //			   Profile.SetCanvasResolution( width, height ) ;
 

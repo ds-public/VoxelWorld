@@ -4,11 +4,9 @@ using System.Collections.Generic ;
 
 using UnityEngine ;
 using UnityEngine.UI ;
-using UnityEngine.Events ;
 using UnityEngine.EventSystems ;
 
 using uGUIHelper ;
-using Cysharp.Threading.Tasks ;
 
 #if UNITY_EDITOR
 using UnityEditor ;
@@ -18,12 +16,13 @@ using UnityEditor ;
 namespace DSW.UI
 {
 	/// <summary>
-	/// ボタンのトランジション Version 2024/04/13
+	/// ボタンのトランジション Version 2024/08/15
 	/// </summary>
 	/// <summary>
 	/// Transition コンポーネントクラス
 	/// </summary>
-	[ RequireComponent( typeof( UnityEngine.Animator ) ) ][ ExecuteInEditMode ]
+	[ RequireComponent( typeof( UnityEngine.Animator ) ) ]
+	[ ExecuteInEditMode ]
 	public class ButtonTransition : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler, IPointerDownHandler, IPointerUpHandler
 	{
 		//-----------------------------------------------------------
@@ -220,6 +219,13 @@ namespace DSW.UI
 			}
 		}
 
+		[Header( "ColorTintに色を上書きするか(バグ防止用" )]
+
+		[SerializeField]
+		protected bool		m_IsColorTintReplacing = false ;
+
+		//-------------------------------------------------------------------------------------------
+
 		// エフェクトが終了した際に呼び出すコールバックを設定する
 		private Action m_OnEffectFinished ;
 
@@ -279,12 +285,12 @@ namespace DSW.UI
 		/// </summary>
 		public enum StateTypes
 		{
-			Normal		= 0,
-			Highlighted	= 1,
-			Pressed		= 2,
-			Disabled	= 3,
-			Selected	= 4,
-			Finished	= 5,
+			Normal		=  0,
+			Highlighted	=  1,
+			Pressed		=  2,
+			Disabled	=  3,
+			Selected	=  4,
+			Finished	=  5,
 
 			Unknown		= -1,
 		}
@@ -326,13 +332,15 @@ namespace DSW.UI
 		private CanvasRenderer	m_CanvasRenderer ;
 
 		// ボタン
-		private Button	m_Button ;
-		
+		private Button		m_Button ;
+
+		// ボタン
+		private UIButton	m_UIButton ;
+
 		// ビュー
 		private UIView	m_View ;
 
 		// クリックした瞬間での位置と大きさ
-		private bool	m_Clicked ;
 		private Vector2	m_Clicked_Position ;
 		private Vector2 m_Clicked_Size ;
 
@@ -344,7 +352,7 @@ namespace DSW.UI
 
 		//---------------
 
-		private bool	m_ColorDisabled ;
+		private bool	m_ColorDisabled = false ;
 
 		private Color32	m_ColorBefore	= new ( 255, 255, 255, 255 ) ;
 		private Color32	m_ColorAfter	= new ( 255, 255, 255, 255 ) ;
@@ -354,6 +362,10 @@ namespace DSW.UI
 		private float	m_ColorProcess_BaseTime ;
 		private float	m_ColorProcess_FadeDuration ;
 
+		//---------------
+
+		private bool	m_FakeInvalidation		= false ;
+		private bool	m_InteractableOfFake	= false ;
 
 		//-----------------------------------------------------------------
 		// 色取得メソッド群
@@ -361,82 +373,183 @@ namespace DSW.UI
 		// ノーマル色を取得する
 		private Color GetNormalColor()
 		{
+			if( m_UIButton != null )
+			{
+				if( m_UIButton.FakeInvalidation == true && m_UIButton.InteractableOfFake == false )
+				{
+					return m_UIButton.DisableColorOfFake ;
+				}
+			}
+
+			//----------------------------------
+
 			if( m_ColorDisabled == true )
 			{
+				// SpriteSwap 想定
 				return Color.white ;
 			}
 
-			if( m_IsOverride == true || m_GeneralColor == null )
-			{
-				return m_Normal ;
-			}
-
-			return m_GeneralColor.Normal ;
+			return NormalColor ;
 		}
+
+		private Color NormalColor
+		{
+			get
+			{
+				if( m_IsOverride == true || m_GeneralColor == null )
+				{
+					return m_Normal ;
+				}
+
+				return m_GeneralColor.Normal ;
+			}
+		}
+
 
 		// ハイライト色を取得する
 		private Color GetHighlightedColor()
 		{
+			if( m_UIButton != null )
+			{
+				if( m_UIButton.FakeInvalidation == true && m_UIButton.InteractableOfFake == false )
+				{
+					return m_UIButton.DisableColorOfFake ;
+				}
+			}
+
+			//----------------------------------
+
 			if( m_ColorDisabled == true )
 			{
+				// SpriteSwap 想定
 				return Color.white ;
 			}
 
-			if( m_IsOverride == true || m_GeneralColor == null )
-			{
-				return m_Highlighted ;
-			}
+			return HighlightColor ;
+		}
 
-			return m_GeneralColor.Highlighted ;
+		private Color HighlightColor
+		{
+			get
+			{
+				if( m_IsOverride == true || m_GeneralColor == null )
+				{
+					return m_Highlighted ;
+				}
+
+				return m_GeneralColor.Highlighted ;
+			}
 		}
 
 		// プレス色を取得する
 		private Color GetPressedColor()
 		{
+			if( m_UIButton != null )
+			{
+				if( m_UIButton.FakeInvalidation == true && m_UIButton.InteractableOfFake == false )
+				{
+					// 偽の入力無効化時の色
+					return m_UIButton.DisableColorOfFake ;
+				}
+			}
+
+			//----------------------------------
+
 			if( m_ColorDisabled == true )
 			{
+				// SpriteSwap 想定
 				return Color.white ;
 			}
 
-			if( m_IsOverride == true || m_GeneralColor == null )
-			{
-				return m_Pressed ;
-			}
+			return PressedColor ;
+		}
 
-			return m_GeneralColor.Pressed ;
+		private Color PressedColor
+		{
+			get
+			{
+				if( m_IsOverride == true || m_GeneralColor == null )
+				{
+					return m_Pressed ;
+				}
+
+				return m_GeneralColor.Pressed ;
+			}
 		}
 
 		// セレクト色を取得する
 		private Color GetSelectedColor()
 		{
+			if( m_UIButton != null )
+			{
+				if( m_UIButton.FakeInvalidation == true && m_UIButton.InteractableOfFake == false )
+				{
+					// 偽の入力無効化時の色
+					return m_UIButton.DisableColorOfFake ;
+				}
+			}
+
+			//----------------------------------
+
 			if( m_ColorDisabled == true )
 			{
+				// SpriteSwap 想定
 				return Color.white ;
 			}
 
-			if( m_IsOverride == true || m_GeneralColor == null )
-			{
-				return m_Selected ;
-			}
+			return SelectedColor ;
+		}
 
-			return m_GeneralColor.Selected ;
+		private Color SelectedColor
+		{
+			get
+			{
+				if( m_IsOverride == true || m_GeneralColor == null )
+				{
+					return m_Selected ;
+				}
+
+				return m_GeneralColor.Selected ;
+			}
 		}
 
 		// ディスエーブル色を取得する
 		private Color GetDisabledColor()
 		{
+			if( m_UIButton != null )
+			{
+				if( m_UIButton.FakeInvalidation == true && m_UIButton.InteractableOfFake == false )
+				{
+					// 偽の入力無効化時の色
+					return m_UIButton.DisableColorOfFake ;
+				}
+			}
+
+			//----------------------------------
+
 			if( m_ColorDisabled == true )
 			{
+				// SpriteSwap 想定
 				return Color.white ;
 			}
 
-			if( m_IsOverride == true || m_GeneralColor == null )
-			{
-				return m_Disabled ;
-			}
-
-			return m_GeneralColor.Disabled ;
+			return DisabledColor ;
 		}
+
+		private Color DisabledColor
+		{
+			get
+			{
+				if( m_IsOverride == true || m_GeneralColor == null )
+				{
+					return m_Disabled ;
+				}
+
+				return m_GeneralColor.Disabled ;
+			}
+		}
+
+		//---------------
 
 		// 色変化時間を取得する
 		private float GetFadeDuration()
@@ -454,11 +567,9 @@ namespace DSW.UI
 			return m_GeneralColor.FadeDuration ;
 		}
 
-
 		//-----------------------------------------------------------------
 
-		// 展開時に実行される
-		internal void Awake()
+		private void Load()
 		{
 			if( m_Button == null )
 			{
@@ -468,6 +579,11 @@ namespace DSW.UI
 			if( m_View == null )
 			{
 				m_View = GetComponent<UIView>() ;
+			}
+
+			if( m_UIButton == null )
+			{
+				m_UIButton = GetComponent<UIButton>() ;
 			}
 
 			if( m_View != null )
@@ -491,7 +607,7 @@ namespace DSW.UI
 					// Transition が ColorTint か Animation になっていたら無効化する(SpriteSwap はタブのトグルで使用しているのでそのままにする)
 					if( m_Button.transition == Selectable.Transition.ColorTint || m_Button.transition == Selectable.Transition.Animation )
 					{
-						m_Button.transition  = Selectable.Transition.None ;
+						m_Button.transition = Selectable.Transition.None ;
 					}
 					else
 					if( m_Button.transition == Selectable.Transition.SpriteSwap )
@@ -500,20 +616,43 @@ namespace DSW.UI
 						m_ColorDisabled = true ;
 					}
 
+					//----------------------------------------------------------
+
+					if( m_IsColorTintReplacing == true )
+					{
+						// ColorTint の上書きを実行する
+
+						// 色の退避
+						var colors = m_Button.colors ;
+
+						colors.normalColor = NormalColor;
+						colors.highlightedColor = HighlightColor ;
+						colors.pressedColor = PressedColor ;
+						colors.selectedColor = SelectedColor ;
+						colors.disabledColor = DisabledColor ;
+
+						m_Button.colors = colors ;
+					}
+
 					if( m_Button.interactable == true )
 					{
 						// 有効色
-						m_ColorBefore	= GetNormalColor() ;
+						m_ColorBefore = GetNormalColor() ;
 					}
 					else
 					{
-						// 無効ス色
-						m_ColorBefore	= GetDisabledColor() ;
+						// 無効色
+						m_ColorBefore = GetDisabledColor() ;
 					}
 				}
 				else
 				{
-					m_ColorBefore	= GetNormalColor() ;
+					m_ColorBefore = GetNormalColor() ;
+				}
+
+				if( m_UIButton != null )
+				{
+					m_UIButton.SetOnInteractableChanged( OnInteractableChanged ) ;
 				}
 
 				//---------------------------------------------------------
@@ -521,9 +660,59 @@ namespace DSW.UI
 				SetCanvasRendererColor( m_ColorBefore ) ;
 				ReplaceColor( ref m_ColorBefore, ref m_ColorAfter ) ;
 
+				m_View.RemoveOnSimpleHover( OnHovered ) ;
+				m_View.AddOnSimpleHover( OnHovered ) ;
+
+				m_View.RemoveOnSimplePress( OnPressed ) ;
+				m_View.AddOnSimplePress( OnPressed ) ;
+
 				m_View.RemoveOnSimpleClick( OnClicked ) ;
 				m_View.AddOnSimpleClick( OnClicked ) ;
+
+				//---------------------------------
+
+				// エフェクト用の座標情報を取得しておく(保険)
+				m_Clicked_Position = m_View.GetPositionIn<ScreenSizeFitter>() ;
+
+				// 自身と親のスケールも考慮したサイズにする
+				var r = m_View.RectInCanvas ;
+				m_Clicked_Size = new Vector2( r.width, r.height ) ;
 			}
+		}
+#if false
+		private void Free()
+		{
+			m_Button   = null ;
+			m_View     = null ;
+			m_UIButton = null ;
+		}
+#endif
+		// 展開時に実行される
+		internal void Awake()
+		{
+			if( Application.isPlaying == true )
+			{
+				Load() ;
+			}
+		}
+
+		internal void OnDestroy()
+		{
+			if( m_View != null )
+			{
+				m_View.RemoveOnSimpleClick( OnClicked ) ;
+				m_View.RemoveOnSimplePress( OnPressed ) ;
+				m_View.RemoveOnSimpleHover( OnHovered ) ;
+
+				m_View  = null ;
+			}
+		}
+
+		// Button の Interactable の状態が変化した際に呼び出される
+		private void OnInteractableChanged( bool interactable )
+		{
+			// 即座にボタンの見た目に反映させる
+			ResetState() ;
 		}
 
 		// 色を設定する
@@ -544,6 +733,7 @@ namespace DSW.UI
 			}
 		}
 
+		// ０フレームで状態を反映させる
 		private void ResetState()
 		{
 			// レジューム時にボタンの状態を復旧させる
@@ -581,14 +771,52 @@ namespace DSW.UI
 		{
 			if( Application.isPlaying == true )
 			{
+//              Load() ;
 				ResetState() ;
+			}
+		}
+
+		internal void OnDisable()
+		{
+			if( Application.isPlaying == true )
+			{
+//              Free() ;
+			}
+		}
+
+		internal void Start()
+		{
+			if( Application.isPlaying == true )
+			{
+				// 強制反映
+				ResetState() ;
+
+				if( m_UIButton != null )
+				{
+					m_FakeInvalidation		= m_UIButton.FakeInvalidation ;
+					m_InteractableOfFake	= m_UIButton.InteractableOfFake ;
+				}
 			}
 		}
 
 		// 毎フレーム実行される
 		internal void Update()
 		{
-			if( Application.isPlaying == true )
+			bool isResetState = false ;
+			if( m_UIButton != null )
+			{
+				if( m_UIButton.FakeInvalidation != m_FakeInvalidation || m_UIButton.InteractableOfFake != m_InteractableOfFake )
+				{
+					m_FakeInvalidation		= m_UIButton.FakeInvalidation ;
+					m_InteractableOfFake	= m_UIButton.InteractableOfFake ;
+
+					isResetState = true ;
+				}
+			}
+
+			//----------------------------------
+
+			if( Application.isPlaying == true && isResetState == false )
 			{
 				// 無効状態に変化した解除した事を判定して処理する
 				if( m_State != StateTypes.Selected && m_State != StateTypes.Finished )
@@ -643,90 +871,112 @@ namespace DSW.UI
 			}
 		}
 
-		//---------------------------------------------
+		//-------------------------------------------------------------------------------------------
+		// Button UIButton で UIInteraction が付いていない場合は必要になる
 	
 		// Enter
 		public void OnPointerEnter( PointerEventData pointer )
 		{
-			// → Release 状態であれば Highlight へ遷移
-
-			if( m_State == StateTypes.Normal )
+			if( m_View != null && m_View is UIButton )
 			{
-				ChangeTransitionState( StateTypes.Highlighted ) ;
+				OnHovered( true ) ;
 			}
-
-//			Debug.Log( "Enter:" + name ) ;
-			m_IsHover = true ;
 		}
 
 		// Exit
 		public void OnPointerExit( PointerEventData pointer )
 		{
-			// → Release 状態であれば Normal へ遷移
-			if( m_State == StateTypes.Highlighted )
+			if( m_View != null && m_View is UIButton )
 			{
-				ChangeTransitionState( StateTypes.Normal ) ;
+				OnHovered( false ) ;
 			}
-
-//			Debug.Log( "Exit:" + name ) ;
-			m_IsHover = false ;
 		}
+
+		//-----------------------------------------------------------
+
+		// Hovered(UIView UIButton から呼び出される)
+		private void OnHovered( bool state )
+		{
+			if( state == true )
+			{
+				// → Release 状態であれば Highlight へ遷移
+
+				if( m_State == StateTypes.Normal )
+				{
+					ChangeTransitionState( StateTypes.Highlighted ) ;
+				}
+
+				m_IsHover = true ;
+			}
+			else
+			{
+				// → Release 状態であれば Normal へ遷移
+				if( m_State == StateTypes.Highlighted )
+				{
+					ChangeTransitionState( StateTypes.Normal ) ;
+				}
+
+				m_IsHover = false ;
+			}
+		}
+
+		//-------------------------------------------------------------------------------------------
+		// Button UIButton で UIInteraction が付いていない場合は必要になる
 
 		// Down
 		public void OnPointerDown( PointerEventData pointer )
 		{
-			// → Press 状態へ遷移
-			if( m_State == StateTypes.Normal || m_State == StateTypes.Highlighted )
+			if( m_View != null && m_View is UIButton )
 			{
-				ChangeTransitionState( StateTypes.Pressed ) ;
-			}
-
-//			Debug.Log( "<color=#FF7F00>[Press]:" + name + "</color>" ) ;
-			m_IsPress = true ;
-
-			//----------------------------------
-
-			if( m_View != null && m_EffectType != Ripple.ButtonEffectTypes.None )
-			{
-				// プレスした時点での座標と大きさを記録する
-//				Vector2 position	= m_View.PositionInCanvas ;
-				Vector2 position	= m_View.GetPositionIn<ScreenSizeFitter>() ;
-				Vector2 size		= m_View.Size ;
-
-				// 補正は不要
-//				Vector2 pivot		= m_View.Pivot ;
-//				position.x += ( size.x * ( 0.5f - pivot.x ) ) ; 
-//				position.y += ( size.y * ( 0.5f - pivot.y ) ) ; 
-
-				m_Clicked			= true ;
-				m_Clicked_Position	= position ;
-				m_Clicked_Size		= size ;
+				OnPressed( true ) ;
 			}
 		}
 
 		// Up
 		public void OnPointerUp( PointerEventData pointer )
 		{
-			// → Enter 状態であれば Highlight へ遷移
-			// → Exit  状態であれば Normal へ遷移
-
-			if( m_State == StateTypes.Pressed )
+			if( m_View != null && m_View is UIButton )
 			{
-				if( m_IsHover == false )
-				{
-					ChangeTransitionState( StateTypes.Normal ) ;
-				}
-				else
-				{
-					ChangeTransitionState( StateTypes.Highlighted ) ;
-				}
+				OnPressed( false ) ;
 			}
-
-//			Debug.Log( "<color=#00FFFF>[Release]:" + name + "</color>" ) ;
-			m_IsPress = false ;
 		}
 
-		// Clicked(UIButton から呼び出される)
+		//-----------------------------------------------------------
+
+		// Pressed(UIView UIButton から呼び出される)
+		private void OnPressed( bool state )
+		{
+			if( state == true )
+			{
+				// → Press 状態へ遷移
+				if( m_State == StateTypes.Normal || m_State == StateTypes.Highlighted )
+				{
+					ChangeTransitionState( StateTypes.Pressed ) ;
+				}
+
+				m_IsPress = true ;
+			}
+			else
+			{
+				if( m_State == StateTypes.Pressed )
+				{
+					if( m_IsHover == false )
+					{
+						ChangeTransitionState( StateTypes.Normal ) ;
+					}
+					else
+					{
+						ChangeTransitionState( StateTypes.Highlighted ) ;
+					}
+				}
+
+				m_IsPress = false ;
+			}
+		}
+
+		//-----------------------------------------------------------
+
+		// Clicked(UIView UIButton から呼び出される)
 		private void OnClicked()
 		{
 			if( m_State != StateTypes.Disabled && m_IsClick == false )
@@ -745,6 +995,13 @@ namespace DSW.UI
 //				}
 
 				//---------------------------------
+
+				// エフェクト用の座標情報を取得しておく(クリック直前の状態)
+				m_Clicked_Position	= m_View.GetPositionIn<ScreenSizeFitter>() ;
+
+				// 自身と親のスケールも考慮したサイズにする
+				var r = m_View.RectInCanvas ;
+				m_Clicked_Size = new Vector2( r.width, r.height ) ;
 
 				m_IsClick = true ;
 				ChangeTransitionState( StateTypes.Selected ) ;
@@ -779,7 +1036,16 @@ namespace DSW.UI
 			//----------------------------------------------------------
 			// アニメーション
 
-			if( animationEnabled == true )
+			bool isDisableTransition = false ;
+			if( m_UIButton != null )
+			{
+				if( m_UIButton.FakeInvalidation == true && m_UIButton.EnableTransitionOfFake == false && m_UIButton.InteractableOfFake == false )
+				{
+					isDisableTransition = true ;
+				}
+			}
+
+			if( animationEnabled == true && isDisableTransition == false )
 			{
 				if( m_AnimatonEnabled == true && m_View.CAnimator != null )
 				{
@@ -868,7 +1134,7 @@ namespace DSW.UI
 
 				if( fadeDuration <  0 )
 				{
-					fadeDuration = GetFadeDuration() ;
+					fadeDuration  = GetFadeDuration() ;
 				}
 
 				if( fadeDuration == 0 )
@@ -921,11 +1187,7 @@ namespace DSW.UI
 		{
 			if( m_View != null && m_EffectType != Ripple.ButtonEffectTypes.None )
 			{
-				if( m_Clicked == true )
-				{
-					m_Clicked = false ;
-					Ripple.PlayButtonEffect( m_EffectType, m_Clicked_Position, m_Clicked_Size, m_OnEffectFinished ) ;
-				}
+				Ripple.PlayButtonEffect( m_EffectType, m_Clicked_Position, m_Clicked_Size, m_OnEffectFinished ) ;
 			}
 		}
 
@@ -955,8 +1217,6 @@ namespace DSW.UI
 				m_ColorProcess_FadeDuration	= 0 ;
 			}
 		}
-
-
 
 		// ２つの色値が等しいか判定する
 		private bool CompareColor( Color c0, Color c1 )
@@ -1004,14 +1264,14 @@ namespace DSW.UI
 		// メニュー
 #if UNITY_EDITOR
 
-		private const string m_AnimationControllerPath	= "Assets/Application/ReferencedAssets/Animations/_00_Framework/Buttons/ButtonTransition/Default.controller" ;
+		private const string m_AnimationControllerPath	= "Assets/Application/ReferencedAssets/Animations/Framework/Button/ButtonTransition/Default.controller" ;
 
 //		private const string m_PositiveButtonEffectPath	= "Assets/Application/ReferencedAssets/Prefabs/_01_Screen/_00_General/PositiveButtonEffect.prefab" ;
 //		private const string m_NegativeButtonEffectPath	= "Assets/Application/ReferencedAssets/Prefabs/_01_Screen/_00_General/NegativeButtonEffect.prefab" ;
 
 		//-----------------------------------
 
-		[MenuItem( "ButtonTransition/AddComponent" )]
+		[ MenuItem( "ButtonTransition/AddComponent" ) ]
 		private static void ButtonTansition_AddComponent()
 		{
 			var go = Selection.activeGameObject ;
@@ -1020,9 +1280,9 @@ namespace DSW.UI
 				return ;
 			}
 
-			if( go.TryGetComponent<uGUIHelper.UITransition>( out var _ ) == true )
+			if( go.GetComponent<uGUIHelper.UITransition>() != null )
 			{
-				EditorUtility.DisplayDialog( "警告", "ButtonTransition を追加するには\nUITransition を削除する必要があります", "閉じる" ) ;
+				EditorUtility.DisplayDialog( "警告", "ButtonTransition を追加するには\nUITransition を削除する必要があります", "とじる" ) ;
 				return ;
 			}
 
@@ -1064,7 +1324,7 @@ namespace DSW.UI
 			UnityEditor.SceneManagement.EditorSceneManager.MarkSceneDirty( UnityEditor.SceneManagement.EditorSceneManager.GetActiveScene() ) ;
 		}
 
-		[MenuItem( "ButtonTransition/AddComponent And PositiveEffect" )]
+		[ MenuItem( "ButtonTransition/AddComponent And PositiveEffect" ) ]
 		private static void ButtonTansition_AddComponentAndPositiveEffect()
 		{
 			var go = Selection.activeGameObject ;
@@ -1073,9 +1333,9 @@ namespace DSW.UI
 				return ;
 			}
 
-			if( go.TryGetComponent<uGUIHelper.UITransition>( out var _ ) == true )
+			if( go.GetComponent<uGUIHelper.UITransition>() != null )
 			{
-				EditorUtility.DisplayDialog( "警告", "ButtonTransition を追加するには\nUITransition を削除する必要があります", "閉じる" ) ;
+				EditorUtility.DisplayDialog( "警告", "ButtonTransition を追加するには\nUITransition を削除する必要があります", "とじる" ) ;
 				return ;
 			}
 
@@ -1126,9 +1386,9 @@ namespace DSW.UI
 				return ;
 			}
 
-			if( go.TryGetComponent<uGUIHelper.UITransition>( out var _ ) == true )
+			if( go.GetComponent<uGUIHelper.UITransition>() != null )
 			{
-				EditorUtility.DisplayDialog( "警告", "ButtonTransition を追加するには\nUITransition を削除する必要があります", "閉じる" ) ;
+				EditorUtility.DisplayDialog( "警告", "ButtonTransition を追加するには\nUITransition を削除する必要があります", "とじる" ) ;
 				return ;
 			}
 
@@ -1169,7 +1429,6 @@ namespace DSW.UI
 
 			UnityEditor.SceneManagement.EditorSceneManager.MarkSceneDirty( UnityEditor.SceneManagement.EditorSceneManager.GetActiveScene() ) ;
 		}
-
 #endif
 		//-------------------------------------------------------------------------------------------
 
@@ -1183,7 +1442,7 @@ namespace DSW.UI
 		public static bool Prepare()
 		{
 			// ボタン全体で共通の色変化情報を読み出す
-			string path = "ScriptableObjects/ButtonTransitionColor" ;
+			string path = "ScriptableObjects/ButtonTransitionSettings/ButtonTransitionColor" ;
 			m_GeneralColor = Resources.Load<ButtonTransitionColor>( path ) ;
 
 			return ( m_GeneralColor != null ) ;

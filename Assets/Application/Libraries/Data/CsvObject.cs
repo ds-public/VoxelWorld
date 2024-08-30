@@ -14,6 +14,8 @@
 #pragma warning disable CS8618
 #pragma warning disable CS8625
 
+#pragma warning disable IDE0018
+
 //-------------------------------------
 
 using System ;
@@ -37,7 +39,7 @@ using System.Runtime.CompilerServices ;
 namespace CsvHelper
 {
 	/// <summary>
-	/// CSVデータクラス Version 2023/10/09
+	/// CSVデータクラス Version 2024/08/21
 	/// </summary>
 	public class CsvObject
 	{
@@ -191,7 +193,24 @@ namespace CsvHelper
 
 				text = GetRelationalValue( text ) ;
 
-				if( TryHexStringToValue( text, out ulong ulongValue ) == true )
+				ulong ulongValue ;
+
+				// １６進数変換
+				if( TryHexStringToValue( text, out ulongValue ) == true )
+				{
+					// １６進数である
+					if( ulongValue == 0 )
+					{
+						return false ;
+					}
+					else
+					{
+						return true ;
+					}
+				}
+
+				// ０２進数変換
+				if( TryBinStringToValue( text, out ulongValue ) == true )
 				{
 					if( ulongValue == 0 )
 					{
@@ -251,8 +270,19 @@ namespace CsvHelper
 
 				text = GetRelationalValue( text ) ;
 
-				if( TryHexStringToValue( text, out ulong ulongValue ) == true )
+				ulong ulongValue ;
+
+				// １６進数変換
+				if( TryHexStringToValue( text, out ulongValue ) == true )
 				{
+					// １６進数である
+					return ( Byte )ulongValue ;
+				}
+
+				// ０２進数変換
+				if( TryBinStringToValue( text, out ulongValue ) == true )
+				{
+					// ０２進数である
 					return ( Byte )ulongValue ;
 				}
 
@@ -285,8 +315,19 @@ namespace CsvHelper
 
 				text = GetRelationalValue( text ) ;
 
-				if( TryHexStringToValue( text, out ulong ulongValue ) == true )
+				ulong ulongValue ;
+
+				// １６進数変換
+				if( TryHexStringToValue( text, out ulongValue ) == true )
 				{
+					// １６進数である
+					return ( SByte )ulongValue ;
+				}
+
+				// ０２進数変換
+				if( TryHexStringToValue( text, out ulongValue ) == true )
+				{
+					// １６進数である
 					return ( SByte )ulongValue ;
 				}
 
@@ -319,8 +360,19 @@ namespace CsvHelper
 
 				text = GetRelationalValue( text ) ;
 
-				if( TryHexStringToValue( text, out ulong ulongValue ) == true )
+				ulong ulongValue ;
+
+				// １６進数変換
+				if( TryHexStringToValue( text, out ulongValue ) == true )
 				{
+					// １６進数である
+					return ( Char )ulongValue ;
+				}
+
+				// ０２進数変換
+				if( TryBinStringToValue( text, out ulongValue ) == true )
+				{
+					// １６進数である
 					return ( Char )ulongValue ;
 				}
 
@@ -353,8 +405,19 @@ namespace CsvHelper
 
 				text = GetRelationalValue( text ) ;
 
-				if( TryHexStringToValue( text, out ulong ulongValue ) == true )
+				ulong ulongValue ;
+
+				// １６進数変換
+				if( TryHexStringToValue( text, out ulongValue ) == true )
 				{
+					// １６進数である
+					return ( Int16 )ulongValue ;
+				}
+
+				// ０２進数変換
+				if( TryBinStringToValue( text, out ulongValue ) == true )
+				{
+					// ０２進数である
 					return ( Int16 )ulongValue ;
 				}
 
@@ -393,8 +456,19 @@ namespace CsvHelper
 
 				text = GetRelationalValue( text ) ;
 
-				if( TryHexStringToValue( text, out ulong ulongValue ) == true )
+				ulong ulongValue ;
+
+				// １６進数変換
+				if( TryHexStringToValue( text, out ulongValue ) == true )
 				{
+					// １６進数である
+					return ( UInt16 )ulongValue ;
+				}
+
+				// ０２進数変換
+				if( TryBinStringToValue( text, out ulongValue ) == true )
+				{
+					// ０２進数である
 					return ( UInt16 )ulongValue ;
 				}
 
@@ -433,8 +507,19 @@ namespace CsvHelper
 
 				text = GetRelationalValue( text ) ;
 
-				if( TryHexStringToValue( text, out ulong ulongValue ) == true )
+				ulong ulongValue ;
+
+				// １６進数変換
+				if( TryHexStringToValue( text, out ulongValue ) == true )
 				{
+					// １６進数である
+					return ( Int32 )ulongValue ;
+				}
+
+				// ０２進数変換
+				if( TryBinStringToValue( text, out ulongValue ) == true )
+				{
+					// ０２進数である
 					return ( Int32 )ulongValue ;
 				}
 
@@ -473,8 +558,19 @@ namespace CsvHelper
 
 				text = GetRelationalValue( text ) ;
 
-				if( TryHexStringToValue( text, out ulong ulongValue ) == true )
+				ulong ulongValue ;
+
+				// １６進数変換
+				if( TryHexStringToValue( text, out ulongValue ) == true )
 				{
+					// １６進数である
+					return ( UInt32 )ulongValue ;
+				}
+
+				// ０２進数変換
+				if( TryBinStringToValue( text, out ulongValue ) == true )
+				{
+					// １６進数である
 					return ( UInt32 )ulongValue ;
 				}
 
@@ -513,8 +609,19 @@ namespace CsvHelper
 
 				text = GetRelationalValue( text ) ;
 
-				if( TryHexStringToValue( text, out ulong ulongValue ) == true )
+				ulong ulongValue ;
+
+				// １６進数変換
+				if( TryHexStringToValue( text, out ulongValue ) == true )
 				{
+					// １６進数である
+					return ( Int64 )ulongValue ;
+				}
+
+				// ０２進数変換
+				if( TryBinStringToValue( text, out ulongValue ) == true )
+				{
+					// ０２進数である
 					return ( Int64 )ulongValue ;
 				}
 
@@ -553,8 +660,19 @@ namespace CsvHelper
 
 				text = GetRelationalValue( text ) ;
 
-				if( TryHexStringToValue( text, out ulong ulongValue ) == true )
+				ulong ulongValue ;
+
+				// １６進数変換
+				if( TryHexStringToValue( text, out ulongValue ) == true )
 				{
+					// １６進数である
+					return ulongValue ;
+				}
+
+				// ０２進数変換
+				if( TryBinStringToValue( text, out ulongValue ) == true )
+				{
+					// ０２進数である
 					return ulongValue ;
 				}
 
@@ -593,8 +711,19 @@ namespace CsvHelper
 
 				text = GetRelationalValue( text ) ;
 
-				if( TryHexStringToValue( text, out ulong ulongValue ) == true )
+				ulong ulongValue ;
+
+				// １６進数変換
+				if( TryHexStringToValue( text, out ulongValue ) == true )
 				{
+					// １６進数である
+					return ulongValue ;
+				}
+
+				// ０２進数変換
+				if( TryBinStringToValue( text, out ulongValue ) == true )
+				{
+					// ０２進数である
 					return ulongValue ;
 				}
 
@@ -633,8 +762,19 @@ namespace CsvHelper
 
 				text = GetRelationalValue( text ) ;
 
-				if( TryHexStringToValue( text, out ulong ulongValue ) == true )
+				ulong ulongValue ;
+
+				// １６進数変換
+				if( TryHexStringToValue( text, out ulongValue ) == true )
 				{
+					// １６進数である
+					return ulongValue ;
+				}
+
+				// ０２進数変換
+				if( TryBinStringToValue( text, out ulongValue ) == true )
+				{
+					// ０２進数である
 					return ulongValue ;
 				}
 
@@ -667,8 +807,19 @@ namespace CsvHelper
 
 				text = GetRelationalValue( text ) ;
 
-				if( TryHexStringToValue( text, out ulong ulongValue ) == true )
+				ulong ulongValue ;
+
+				// １６進数変換
+				if( TryHexStringToValue( text, out ulongValue ) == true )
 				{
+					// １６進数である
+					return ulongValue ;
+				}
+
+				// ０２進数変換
+				if( TryBinStringToValue( text, out ulongValue ) == true )
+				{
+					// ０２進数である
 					return ulongValue ;
 				}
 
@@ -849,8 +1000,19 @@ namespace CsvHelper
 					return default ;
 				}
 
-				if( TryHexStringToValue( text, out ulong ulongValue ) == true )
+				ulong ulongValue ;
+
+				// １６進数変換
+				if( TryHexStringToValue( text, out ulongValue ) == true )
 				{
+					// １６進数である
+					return Enum.ToObject( enumType, ulongValue ) ;
+				}
+
+				// ０２進数変換
+				if( TryBinStringToValue( text, out ulongValue ) == true )
+				{
+					// ０２進数である
 					return Enum.ToObject( enumType, ulongValue ) ;
 				}
 
@@ -957,8 +1119,26 @@ namespace CsvHelper
 
 				text = GetRelationalValue( text ) ;
 
-				if( TryHexStringToValue( text, out ulong ulongValue ) == true )
+				ulong ulongValue ;
+
+				// １６進数変換
+				if( TryHexStringToValue( text, out ulongValue ) == true )
 				{
+					// １６進数である
+					if( ulongValue == 0 )
+					{
+						return false ;
+					}
+					else
+					{
+						return true ;
+					}
+				}
+
+				// ０２進数変換
+				if( TryBinStringToValue( text, out ulongValue ) == true )
+				{
+					// ０２進数である
 					if( ulongValue == 0 )
 					{
 						return false ;
@@ -1017,8 +1197,19 @@ namespace CsvHelper
 
 				text = GetRelationalValue( text ) ;
 
-				if( TryHexStringToValue( text, out ulong ulongValue ) == true )
+				ulong ulongValue ;
+
+				// １６進数変換
+				if( TryHexStringToValue( text, out ulongValue ) == true )
 				{
+					// １６進数である
+					return ( Byte )ulongValue ;
+				}
+
+				// ０２進数変換
+				if( TryBinStringToValue( text, out ulongValue ) == true )
+				{
+					// ０２進数である
 					return ( Byte )ulongValue ;
 				}
 
@@ -1051,8 +1242,19 @@ namespace CsvHelper
 
 				text = GetRelationalValue( text ) ;
 
-				if( TryHexStringToValue( text, out ulong ulongValue ) == true )
+				ulong ulongValue ;
+
+				// １６進数変換
+				if( TryHexStringToValue( text, out ulongValue ) == true )
 				{
+					// １６進数である
+					return ( SByte )ulongValue ;
+				}
+
+				// ０２進数変換
+				if( TryBinStringToValue( text, out ulongValue ) == true )
+				{
+					// ０２進数である
 					return ( SByte )ulongValue ;
 				}
 
@@ -1085,8 +1287,19 @@ namespace CsvHelper
 
 				text = GetRelationalValue( text ) ;
 
-				if( TryHexStringToValue( text, out ulong ulongValue ) == true )
+				ulong ulongValue ;
+
+				// １６進数変換
+				if( TryHexStringToValue( text, out ulongValue ) == true )
 				{
+					// １６進数である
+					return ( Char )ulongValue ;
+				}
+
+				// ０２進数変換
+				if( TryBinStringToValue( text, out ulongValue ) == true )
+				{
+					// ０２進数である
 					return ( Char )ulongValue ;
 				}
 
@@ -1119,8 +1332,19 @@ namespace CsvHelper
 
 				text = GetRelationalValue( text ) ;
 
-				if( TryHexStringToValue( text, out ulong ulongValue ) == true )
+				ulong ulongValue ;
+
+				// １６進数変換
+				if( TryHexStringToValue( text, out ulongValue ) == true )
 				{
+					// １６進数である
+					return ( Int16 )ulongValue ;
+				}
+
+				// ０２進数変換
+				if( TryBinStringToValue( text, out ulongValue ) == true )
+				{
+					// ０２進数である
 					return ( Int16 )ulongValue ;
 				}
 
@@ -1159,8 +1383,19 @@ namespace CsvHelper
 
 				text = GetRelationalValue( text ) ;
 
-				if( TryHexStringToValue( text, out ulong ulongValue ) == true )
+				ulong ulongValue ;
+
+				// １６進数変換
+				if( TryHexStringToValue( text, out ulongValue ) == true )
 				{
+					// １６進数である
+					return ( UInt16 )ulongValue ;
+				}
+
+				// ０２進数変換
+				if( TryBinStringToValue( text, out ulongValue ) == true )
+				{
+					// ０２進数である
 					return ( UInt16 )ulongValue ;
 				}
 
@@ -1199,8 +1434,19 @@ namespace CsvHelper
 
 				text = GetRelationalValue( text ) ;
 
-				if( TryHexStringToValue( text, out ulong ulongValue ) == true )
+				ulong ulongValue ;
+
+				// １６進数変換
+				if( TryHexStringToValue( text, out ulongValue ) == true )
 				{
+					// １６進数である
+					return ( Int32 )ulongValue ;
+				}
+
+				// ０２進数変換
+				if( TryBinStringToValue( text, out ulongValue ) == true )
+				{
+					// ０２進数である
 					return ( Int32 )ulongValue ;
 				}
 
@@ -1239,8 +1485,19 @@ namespace CsvHelper
 
 				text = GetRelationalValue( text ) ;
 
-				if( TryHexStringToValue( text, out ulong ulongValue ) == true )
+				ulong ulongValue ;
+
+				// １６進数変換
+				if( TryHexStringToValue( text, out ulongValue ) == true )
 				{
+					// １６進数である
+					return ( UInt32 )ulongValue ;
+				}
+
+				// ０２進数変換
+				if( TryBinStringToValue( text, out ulongValue ) == true )
+				{
+					// ０２進数である
 					return ( UInt32 )ulongValue ;
 				}
 
@@ -1279,8 +1536,19 @@ namespace CsvHelper
 
 				text = GetRelationalValue( text ) ;
 
-				if( TryHexStringToValue( text, out ulong ulongValue ) == true )
+				ulong ulongValue ;
+
+				// １６進数変換
+				if( TryHexStringToValue( text, out ulongValue ) == true )
 				{
+					// １６進数である
+					return ( Int64 )ulongValue ;
+				}
+
+				// ０２進数変換
+				if( TryBinStringToValue( text, out ulongValue ) == true )
+				{
+					// ０２進数である
 					return ( Int64 )ulongValue ;
 				}
 
@@ -1319,8 +1587,19 @@ namespace CsvHelper
 
 				text = GetRelationalValue( text ) ;
 
-				if( TryHexStringToValue( text, out ulong ulongValue ) == true )
+				ulong ulongValue ;
+
+				// １６進数変換
+				if( TryHexStringToValue( text, out ulongValue ) == true )
 				{
+					// １６進数である
+					return ulongValue ;
+				}
+
+				// ０２進数変換
+				if( TryBinStringToValue( text, out ulongValue ) == true )
+				{
+					// ０２進数である
 					return ulongValue ;
 				}
 
@@ -1359,8 +1638,19 @@ namespace CsvHelper
 
 				text = GetRelationalValue( text ) ;
 
-				if( TryHexStringToValue( text, out ulong ulongValue ) == true )
+				ulong ulongValue ;
+
+				// １６進数変換
+				if( TryHexStringToValue( text, out ulongValue ) == true )
 				{
+					// １６進数である
+					return ulongValue ;
+				}
+
+				// ０２進数変換
+				if( TryBinStringToValue( text, out ulongValue ) == true )
+				{
+					// ０２進数である
 					return ulongValue ;
 				}
 
@@ -1399,8 +1689,19 @@ namespace CsvHelper
 
 				text = GetRelationalValue( text ) ;
 
-				if( TryHexStringToValue( text, out ulong ulongValue ) == true )
+				ulong ulongValue ;
+
+				// １６進数変換
+				if( TryHexStringToValue( text, out ulongValue ) == true )
 				{
+					// １６進数である
+					return ulongValue ;
+				}
+
+				// ０２進数変換
+				if( TryBinStringToValue( text, out ulongValue ) == true )
+				{
+					// ０２進数である
 					return ulongValue ;
 				}
 
@@ -1433,8 +1734,19 @@ namespace CsvHelper
 
 				text = GetRelationalValue( text ) ;
 
-				if( TryHexStringToValue( text, out ulong ulongValue ) == true )
+				ulong ulongValue ;
+
+				// １６進数変換
+				if( TryHexStringToValue( text, out ulongValue ) == true )
 				{
+					// １６進数である
+					return ulongValue ;
+				}
+
+				// ０２進数変換
+				if( TryBinStringToValue( text, out ulongValue ) == true )
+				{
+					// ０２進数である
 					return ulongValue ;
 				}
 
@@ -1607,8 +1919,19 @@ namespace CsvHelper
 					return null ;
 				}
 
-				if( TryHexStringToValue( text, out ulong ulongValue ) == true )
+				ulong ulongValue ;
+
+				// １６進数変換
+				if( TryHexStringToValue( text, out ulongValue ) == true )
 				{
+					// １６進数である
+					return Enum.ToObject( enumType, ulongValue ) ;
+				}
+
+				// ０２進数変換
+				if( TryBinStringToValue( text, out ulongValue ) == true )
+				{
+					// ０２進数である
 					return Enum.ToObject( enumType, ulongValue ) ;
 				}
 
@@ -1729,8 +2052,27 @@ namespace CsvHelper
 					{
 						text = GetRelationalValue( text ) ;
 
-						if( TryHexStringToValue( text, out ulong ulongValue ) == true )
+						ulong ulongValue ;
+
+						// １６進数変換
+						if( TryHexStringToValue( text, out ulongValue ) == true )
 						{
+							// １６進数である
+							if( ulongValue == 0 )
+							{
+								values[ i ] = false ;
+							}
+							else
+							{
+								values[ i ] = true ;
+							}
+							continue ;
+						}
+
+						// ０２進数変換
+						if( TryBinStringToValue( text, out ulongValue ) == true )
+						{
+							// ０２進数である
 							if( ulongValue == 0 )
 							{
 								values[ i ] = false ;
@@ -1811,8 +2153,20 @@ namespace CsvHelper
 					{
 						text = GetRelationalValue( text ) ;
 
-						if( TryHexStringToValue( text, out ulong ulongValue ) == true )
+						ulong ulongValue ;
+
+						// １６進数変換
+						if( TryHexStringToValue( text, out ulongValue ) == true )
 						{
+							// １６進数である
+							values[ i ] = ( Byte )ulongValue ;
+							continue ;
+						}
+
+						// ０２進数変換
+						if( TryBinStringToValue( text, out ulongValue ) == true )
+						{
+							// ０２進数である
 							values[ i ] = ( Byte )ulongValue ;
 							continue ;
 						}
@@ -1863,8 +2217,20 @@ namespace CsvHelper
 					{
 						text = GetRelationalValue( text ) ;
 
-						if( TryHexStringToValue( text, out ulong ulongValue ) == true )
+						ulong ulongValue ;
+
+						// １６進数変換
+						if( TryHexStringToValue( text, out ulongValue ) == true )
 						{
+							// １６進数である
+							values[ i ] = ( SByte )ulongValue ;
+							continue ;
+						}
+
+						// ０２進数変換
+						if( TryBinStringToValue( text, out ulongValue ) == true )
+						{
+							// ０２進数である
 							values[ i ] = ( SByte )ulongValue ;
 							continue ;
 						}
@@ -1915,8 +2281,20 @@ namespace CsvHelper
 					{
 						text = GetRelationalValue( text ) ;
 
-						if( TryHexStringToValue( text, out ulong ulongValue ) == true )
+						ulong ulongValue ;
+
+						// １６進数変換
+						if( TryHexStringToValue( text, out ulongValue ) == true )
 						{
+							// １６進数である
+							values[ i ] = ( Char )ulongValue ;
+							continue ;
+						}
+
+						// ０２進数変換
+						if( TryBinStringToValue( text, out ulongValue ) == true )
+						{
+							// ０２進数である
 							values[ i ] = ( Char )ulongValue ;
 							continue ;
 						}
@@ -1967,8 +2345,20 @@ namespace CsvHelper
 					{
 						text = GetRelationalValue( text ) ;
 
-						if( TryHexStringToValue( text, out ulong ulongValue ) == true )
+						ulong ulongValue ;
+
+						// １６進数変換
+						if( TryHexStringToValue( text, out ulongValue ) == true )
 						{
+							// １６進数である
+							values[ i ] = ( Int16 )ulongValue ;
+							continue ;
+						}
+
+						// ０２進数変換
+						if( TryBinStringToValue( text, out ulongValue ) == true )
+						{
+							// ０２進数である
 							values[ i ] = ( Int16 )ulongValue ;
 							continue ;
 						}
@@ -2025,8 +2415,20 @@ namespace CsvHelper
 					{
 						text = GetRelationalValue( text ) ;
 
-						if( TryHexStringToValue( text, out ulong ulongValue ) == true )
+						ulong ulongValue ;
+
+						// １６進数変換
+						if( TryHexStringToValue( text, out ulongValue ) == true )
 						{
+							// １６進数である
+							values[ i ] = ( UInt16 )ulongValue ;
+							continue ;
+						}
+
+						// ０２進数変換
+						if( TryBinStringToValue( text, out ulongValue ) == true )
+						{
+							// ０２進数である
 							values[ i ] = ( UInt16 )ulongValue ;
 							continue ;
 						}
@@ -2083,8 +2485,20 @@ namespace CsvHelper
 					{
 						text = GetRelationalValue( text ) ;
 
-						if( TryHexStringToValue( text, out ulong ulongValue ) == true )
+						ulong ulongValue ;
+
+						// １６進数変換
+						if( TryHexStringToValue( text, out ulongValue ) == true )
 						{
+							// １６進数である
+							values[ i ] = ( Int32 )ulongValue ;
+							continue ;
+						}
+
+						// ０２進数変換
+						if( TryBinStringToValue( text, out ulongValue ) == true )
+						{
+							// ０２進数である
 							values[ i ] = ( Int32 )ulongValue ;
 							continue ;
 						}
@@ -2141,8 +2555,20 @@ namespace CsvHelper
 					{
 						text = GetRelationalValue( text ) ;
 
-						if( TryHexStringToValue( text, out ulong ulongValue ) == true )
+						ulong ulongValue ;
+
+						// １６進数変換
+						if( TryHexStringToValue( text, out ulongValue ) == true )
 						{
+							// １６進数である
+							values[ i ] = ( UInt32 )ulongValue ;
+							continue ;
+						}
+
+						// ０２進数変換
+						if( TryBinStringToValue( text, out ulongValue ) == true )
+						{
+							// ０２進数である
 							values[ i ] = ( UInt32 )ulongValue ;
 							continue ;
 						}
@@ -2199,8 +2625,20 @@ namespace CsvHelper
 					{
 						text = GetRelationalValue( text ) ;
 
-						if( TryHexStringToValue( text, out ulong ulongValue ) == true )
+						ulong ulongValue ;
+
+						// １６進数変換
+						if( TryHexStringToValue( text, out ulongValue ) == true )
 						{
+							// １６進数である
+							values[ i ] = ( Int64 )ulongValue ;
+							continue ;
+						}
+
+						// ０２進数変換
+						if( TryBinStringToValue( text, out ulongValue ) == true )
+						{
+							// ０２進数である
 							values[ i ] = ( Int64 )ulongValue ;
 							continue ;
 						}
@@ -2257,8 +2695,20 @@ namespace CsvHelper
 					{
 						text = GetRelationalValue( text ) ;
 
-						if( TryHexStringToValue( text, out ulong ulongValue ) == true )
+						ulong ulongValue ;
+
+						// １６進数変換
+						if( TryHexStringToValue( text, out ulongValue ) == true )
 						{
+							// １６進数である
+							values[ i ] = ulongValue ;
+							continue ;
+						}
+
+						// ０２進数変換
+						if( TryBinStringToValue( text, out ulongValue ) == true )
+						{
+							// ０２進数である
 							values[ i ] = ulongValue ;
 							continue ;
 						}
@@ -2315,8 +2765,20 @@ namespace CsvHelper
 					{
 						text = GetRelationalValue( text ) ;
 
-						if( TryHexStringToValue( text, out ulong ulongValue ) == true )
+						ulong ulongValue ;
+
+						// １６進数変換
+						if( TryHexStringToValue( text, out ulongValue ) == true )
 						{
+							// １６進数である
+							values[ i ] = ulongValue ;
+							continue ;
+						}
+
+						// ０２進数変換
+						if( TryBinStringToValue( text, out ulongValue ) == true )
+						{
+							// ０２進数である
 							values[ i ] = ulongValue ;
 							continue ;
 						}
@@ -2336,7 +2798,7 @@ namespace CsvHelper
 			/// float 配列型でセルの値を取得する
 			/// </summary>
 			/// <returns></returns>
-			public float[] ToFloatArray( string defaultValue = null )	=> ToFloatArray( defaultValue ) ;
+			public float[] ToFloatArray( string defaultValue = null )	=> ToSingleArray( defaultValue ) ;
 
 			/// <summary>
 			/// Double 配列型でセルの値を取得する
@@ -2373,8 +2835,20 @@ namespace CsvHelper
 					{
 						text = GetRelationalValue( text ) ;
 
-						if( TryHexStringToValue( text, out ulong ulongValue ) == true )
+						ulong ulongValue ;
+
+						// １６進数変換
+						if( TryHexStringToValue( text, out ulongValue ) == true )
 						{
+							// １６進数である
+							values[ i ] = ulongValue ;
+							continue ;
+						}
+
+						// ０２進数変換
+						if( TryBinStringToValue( text, out ulongValue ) == true )
+						{
+							// ０２進数である
 							values[ i ] = ulongValue ;
 							continue ;
 						}
@@ -2425,8 +2899,20 @@ namespace CsvHelper
 					{
 						text = GetRelationalValue( text ) ;
 
-						if( TryHexStringToValue( text, out ulong ulongValue ) == true )
+						ulong ulongValue ;
+
+						// １６進数変換
+						if( TryHexStringToValue( text, out ulongValue ) == true )
 						{
+							// １６進数である
+							values[ i ] = ulongValue ;
+							continue ;
+						}
+
+						// ０２進数変換
+						if( TryBinStringToValue( text, out ulongValue ) == true )
+						{
+							// ０２進数である
 							values[ i ] = ulongValue ;
 							continue ;
 						}
@@ -2729,8 +3215,20 @@ namespace CsvHelper
 						}
 						else
 						{
-							if( TryHexStringToValue( text, out ulong ulongValue ) == true )
+							ulong ulongValue ;
+
+							// １６進数変換
+							if( TryHexStringToValue( text, out ulongValue ) == true )
 							{
+								// １６進数である
+								values[ i ] =  Enum.ToObject( enumType, ulongValue ) ;
+								continue ;
+							}
+
+							// ０２進数変換
+							if( TryBinStringToValue( text, out ulongValue ) == true )
+							{
+								// ０２進数である
 								values[ i ] =  Enum.ToObject( enumType, ulongValue ) ;
 								continue ;
 							}
@@ -2858,8 +3356,28 @@ namespace CsvHelper
 					{
 						text = GetRelationalValue( text ) ;
 
-						if( TryHexStringToValue( text, out ulong ulongValue ) == true )
+						ulong ulongValue ;
+
+						// １６進数変換
+						if( TryHexStringToValue( text, out ulongValue ) == true )
 						{
+							// １６進数である
+							if( ulongValue == 0 )
+							{
+								values[ i ] = false ;
+							}
+							else
+							{
+								values[ i ] = true ;
+							}
+
+							continue ;
+						}
+
+						// ０２進数変換
+						if( TryBinStringToValue( text, out ulongValue ) == true )
+						{
+							// ０２進数である
 							if( ulongValue == 0 )
 							{
 								values[ i ] = false ;
@@ -2942,8 +3460,20 @@ namespace CsvHelper
 					{
 						text = GetRelationalValue( text ) ;
 
-						if( TryHexStringToValue( text, out ulong ulongValue ) == true )
+						ulong ulongValue ;
+
+						// １６進数変換
+						if( TryHexStringToValue( text, out ulongValue ) == true )
 						{
+							// １６進数である
+							values[ i ] = ( Byte )ulongValue ;
+							continue ;
+						}
+
+						// ０２進数変換
+						if( TryBinStringToValue( text, out ulongValue ) == true )
+						{
+							// ０２進数である
 							values[ i ] = ( Byte )ulongValue ;
 							continue ;
 						}
@@ -2994,8 +3524,20 @@ namespace CsvHelper
 					{
 						text = GetRelationalValue( text ) ;
 
-						if( TryHexStringToValue( text, out ulong ulongValue ) == true )
+						ulong ulongValue ;
+
+						// １６進数変換
+						if( TryHexStringToValue( text, out ulongValue ) == true )
 						{
+							// １６進数である
+							values[ i ] = ( SByte )ulongValue ;
+							continue ;
+						}
+
+						// ０２進数変換
+						if( TryBinStringToValue( text, out ulongValue ) == true )
+						{
+							// ０２進数である
 							values[ i ] = ( SByte )ulongValue ;
 							continue ;
 						}
@@ -3046,8 +3588,20 @@ namespace CsvHelper
 					{
 						text = GetRelationalValue( text ) ;
 
-						if( TryHexStringToValue( text, out ulong ulongValue ) == true )
+						ulong ulongValue ;
+
+						// １６進数変換
+						if( TryHexStringToValue( text, out ulongValue ) == true )
 						{
+							// １６進数である
+							values[ i ] = ( Char )ulongValue ;
+							continue ;
+						}
+
+						// ０２進数変換
+						if( TryBinStringToValue( text, out ulongValue ) == true )
+						{
+							// ０２進数である
 							values[ i ] = ( Char )ulongValue ;
 							continue ;
 						}
@@ -3098,8 +3652,20 @@ namespace CsvHelper
 					{
 						text = GetRelationalValue( text ) ;
 
-						if( TryHexStringToValue( text, out ulong ulongValue ) == true )
+						ulong ulongValue ;
+
+						// １６進数変換
+						if( TryHexStringToValue( text, out ulongValue ) == true )
 						{
+							// １６進数である
+							values[ i ] = ( Int16 )ulongValue ;
+							continue ;
+						}
+
+						// ０２進数変換
+						if( TryBinStringToValue( text, out ulongValue ) == true )
+						{
+							// ０２進数である
 							values[ i ] = ( Int16 )ulongValue ;
 							continue ;
 						}
@@ -3156,8 +3722,20 @@ namespace CsvHelper
 					{
 						text = GetRelationalValue( text ) ;
 
-						if( TryHexStringToValue( text, out ulong ulongValue ) == true )
+						ulong ulongValue ;
+
+						// １６進数変換
+						if( TryHexStringToValue( text, out ulongValue ) == true )
 						{
+							// １６進数である
+							values[ i ] = ( UInt16 )ulongValue ;
+							continue ;
+						}
+
+						// ０２進数変換
+						if( TryBinStringToValue( text, out ulongValue ) == true )
+						{
+							// ０２進数である
 							values[ i ] = ( UInt16 )ulongValue ;
 							continue ;
 						}
@@ -3214,8 +3792,20 @@ namespace CsvHelper
 					{
 						text = GetRelationalValue( text ) ;
 
-						if( TryHexStringToValue( text, out ulong ulongValue ) == true )
+						ulong ulongValue ;
+
+						// １６進数変換
+						if( TryHexStringToValue( text, out ulongValue ) == true )
 						{
+							// １６進数である
+							values[ i ] = ( Int32 )ulongValue ;
+							continue ;
+						}
+
+						// ０２進数変換
+						if( TryBinStringToValue( text, out ulongValue ) == true )
+						{
+							// ０２進数である
 							values[ i ] = ( Int32 )ulongValue ;
 							continue ;
 						}
@@ -3272,8 +3862,20 @@ namespace CsvHelper
 					{
 						text = GetRelationalValue( text ) ;
 
-						if( TryHexStringToValue( text, out ulong ulongValue ) == true )
+						ulong ulongValue ;
+
+						// １６進数変換
+						if( TryHexStringToValue( text, out ulongValue ) == true )
 						{
+							// １６進数である
+							values[ i ] = ( UInt32 )ulongValue ;
+							continue ;
+						}
+
+						// ０２進数変換
+						if( TryBinStringToValue( text, out ulongValue ) == true )
+						{
+							// ０２進数である
 							values[ i ] = ( UInt32 )ulongValue ;
 							continue ;
 						}
@@ -3330,8 +3932,20 @@ namespace CsvHelper
 					{
 						text = GetRelationalValue( text ) ;
 
-						if( TryHexStringToValue( text, out ulong ulongValue ) == true )
+						ulong ulongValue ;
+
+						// １６進数変換
+						if( TryHexStringToValue( text, out ulongValue ) == true )
 						{
+							// １６進数である
+							values[ i ] = ( Int64 )ulongValue ;
+							continue ;
+						}
+
+						// ０２進数変換
+						if( TryBinStringToValue( text, out ulongValue ) == true )
+						{
+							// ０２進数である
 							values[ i ] = ( Int64 )ulongValue ;
 							continue ;
 						}
@@ -3388,8 +4002,20 @@ namespace CsvHelper
 					{
 						text = GetRelationalValue( text ) ;
 
-						if( TryHexStringToValue( text, out ulong ulongValue ) == true )
+						ulong ulongValue ;
+
+						// １６進数変換
+						if( TryHexStringToValue( text, out ulongValue ) == true )
 						{
+							// １６進数である
+							values[ i ] = ulongValue ;
+							continue ;
+						}
+
+						// ０２進数変換
+						if( TryBinStringToValue( text, out ulongValue ) == true )
+						{
+							// ０２進数である
 							values[ i ] = ulongValue ;
 							continue ;
 						}
@@ -3446,8 +4072,20 @@ namespace CsvHelper
 					{
 						text = GetRelationalValue( text ) ;
 
-						if( TryHexStringToValue( text, out ulong ulongValue ) == true )
+						ulong ulongValue ;
+
+						// １６進数変換
+						if( TryHexStringToValue( text, out ulongValue ) == true )
 						{
+							// １６進数である
+							values[ i ] = ulongValue ;
+							continue ;
+						}
+
+						// ０２進数変換
+						if( TryBinStringToValue( text, out ulongValue ) == true )
+						{
+							// ０２進数である
 							values[ i ] = ulongValue ;
 							continue ;
 						}
@@ -3467,7 +4105,7 @@ namespace CsvHelper
 			/// float? 配列型でセルの値を取得する
 			/// </summary>
 			/// <returns></returns>
-			public float?[] ToFloatNArray( string defaultValue = null )	=> ToFloatNArray( defaultValue ) ;
+			public float?[] ToFloatNArray( string defaultValue = null )	=> ToSingleNArray( defaultValue ) ;
 
 			/// <summary>
 			/// Double? 配列型でセルの値を取得する
@@ -3504,8 +4142,20 @@ namespace CsvHelper
 					{
 						text = GetRelationalValue( text ) ;
 
-						if( TryHexStringToValue( text, out ulong ulongValue ) == true )
+						ulong ulongValue ;
+
+						// １６進数変換
+						if( TryHexStringToValue( text, out ulongValue ) == true )
 						{
+							// １６進数である
+							values[ i ] = ulongValue ;
+							continue ;
+						}
+
+						// ０２進数変換
+						if( TryBinStringToValue( text, out ulongValue ) == true )
+						{
+							// ０２進数である
 							values[ i ] = ulongValue ;
 							continue ;
 						}
@@ -3556,8 +4206,20 @@ namespace CsvHelper
 					{
 						text = GetRelationalValue( text ) ;
 
-						if( TryHexStringToValue( text, out ulong ulongValue ) == true )
+						ulong ulongValue ;
+
+						// １６進数変換
+						if( TryHexStringToValue( text, out ulongValue ) == true )
 						{
+							// １６進数である
+							values[ i ] = ulongValue ;
+							continue ;
+						}
+
+						// ０２進数変換
+						if( TryBinStringToValue( text, out ulongValue ) == true )
+						{
+							// ０２進数である
 							values[ i ] = ulongValue ;
 							continue ;
 						}
@@ -3820,8 +4482,20 @@ namespace CsvHelper
 						}
 						else
 						{
-							if( TryHexStringToValue( text, out ulong ulongValue ) == true )
+							ulong ulongValue ;
+
+							// １６進数変換
+							if( TryHexStringToValue( text, out ulongValue ) == true )
 							{
+								// １６進数である
+								values[ i ] = Enum.ToObject( enumType, ulongValue ) ;
+								continue ;
+							}
+
+							// ０２進数変換
+							if( TryBinStringToValue( text, out ulongValue ) == true )
+							{
+								// ０２進数である
 								values[ i ] = Enum.ToObject( enumType, ulongValue ) ;
 								continue ;
 							}
@@ -4052,6 +4726,55 @@ namespace CsvHelper
 					}
 
 					unit *= 16 ;
+				}
+
+				return true ;
+			}
+
+			// ０２進数文字列を符号なし６４ビット値に変換する
+			private static bool TryBinStringToValue( string binString, out ulong value )
+			{
+				value = 0 ;
+
+				if( string.IsNullOrEmpty( binString ) == true )
+				{
+					// 不可
+					return false ;
+				}
+
+				binString = binString.ToLower() ;
+
+				string code = null ;
+				if( binString.Length >= 2 && binString[ .. 2 ] == "0b" )
+				{
+					code = binString[ 2.. ] ;
+				}
+
+				if( string.IsNullOrEmpty( code ) == true )
+				{
+					return false ;
+				}
+
+				//---------------------------------
+
+				ulong unit = 1 ;
+				char c ;
+
+				int i, l = code.Length ;
+				for( i  = l - 1 ; i >= 0 ; i -- )
+				{
+					c = code[ i ] ;
+					if( c >= '0' && c <= '1' )
+					{
+						value += ( ulong )( c - '0' ) * unit ;
+					}
+					else
+					{
+						// 不可
+						return false ;
+					}
+
+					unit *= 2 ;
 				}
 
 				return true ;
@@ -6455,77 +7178,89 @@ namespace CsvHelper
 				isAvailable	= true ;
 				exist		= false ;
 
-				foreach( var member in members )
+				// Column Row 共に 1 始まりであるという事に注意する
+				// 最初のカラムの頭に # が付いていたら問答無用でその行は無効として扱う
+				check = this[ rowIndex, 1 ].ToString() ;
+				if( string.IsNullOrEmpty( check ) == false && check[ 0 ] == '#' )
 				{
-					if( member.ColumnIndices == null || member.ColumnIndices.Count == 0 )
+					// この行は無効
+					isAvailable = false ;
+				}
+
+				if( isAvailable == true )
+				{
+					foreach( var member in members )
 					{
-						// 基本的にありえないが保険
-						continue ;
-					}
-
-					//--------------------------------
-
-					// 文字列以外の行で検査する
-					if( member.PrimitiveTypeCode != TypeCode.String )
-					{
-						// 格納すべき値がある
-						columnIndex = member.ColumnIndices[ 0 ] ;
-
-						check = this[ rowIndex, columnIndex ].ToString() ;
-
-						if( string.IsNullOrEmpty( check ) == false )
+						if( member.ColumnIndices == null || member.ColumnIndices.Count == 0 )
 						{
-							// 文字列は存在する
-							if( check[ 0 ] == '#' )
+							// 基本的にありえないが保険
+							continue ;
+						}
+
+						//--------------------------------
+
+						// 文字列以外の行で検査する
+						if( member.PrimitiveTypeCode != TypeCode.String )
+						{
+							// 格納すべき値がある
+							columnIndex = member.ColumnIndices[ 0 ] ;
+
+							check = this[ rowIndex, columnIndex ].ToString() ;
+
+							if( string.IsNullOrEmpty( check ) == false )
 							{
-								// この行は無効となる
-								isAvailable = false ;
+								// 文字列は存在する
+								if( check[ 0 ] == '#' )
+								{
+									// この行は無効となる
+									isAvailable = false ;
+
+									// 次のロウ(行)へ
+									break ;
+								}
+							}
+						}
+						else
+						{
+							columnIndex = member.ColumnIndices[ 0 ] ;
+
+							if( string.IsNullOrEmpty( this[ rowIndex, columnIndex ].Value ) == false )
+							{
+								// 文字列カラムに何か文字列が入っている
+								exist = true ;
 
 								// 次のロウ(行)へ
 								break ;
 							}
 						}
-					}
-					else
-					{
-						columnIndex = member.ColumnIndices[ 0 ] ;
 
-						if( string.IsNullOrEmpty( this[ rowIndex, columnIndex ].Value ) == false )
+						if( exist == false )
 						{
-							// 文字列カラムに何か文字列が入っている
-							exist = true ;
-
-							// 次のロウ(行)へ
-							break ;
-						}
-					}
-
-					if( exist == false )
-					{
-						if
-						(
-							member.PrimitiveTypeCode != TypeCode.String &&
-							member.IsNullable == false
-						)
-						{
-							// String でも Nullable でもないカラムが全て空白であった場合、
-							// それらは 0 (default 値) とはせず、レコード自体を無効とする
-							// しかし String が空で無い場合は有効とする
-
-							int i ;
-							for( i  = 0 ; i <  member.ColumnIndices.Count ; i ++ )
+							if
+							(
+								member.PrimitiveTypeCode != TypeCode.String &&
+								member.IsNullable == false
+							)
 							{
-								columnIndex = member.ColumnIndices[ 0 ] ;
+								// String でも Nullable でもないカラムが全て空白であった場合、
+								// それらは 0 (default 値) とはせず、レコード自体を無効とする
+								// しかし String が空で無い場合は有効とする
 
-								check = this[ rowIndex, columnIndex ].ToString() ;
-
-								if( string.IsNullOrEmpty( check ) == false )
+								int i ;
+								for( i  = 0 ; i <  member.ColumnIndices.Count ; i ++ )
 								{
-									// 空ではないセルを発見した
-									exist = true ;
+									columnIndex = member.ColumnIndices[ 0 ] ;
 
-									// 次のロウ(行)へ
-									break ;
+									check = this[ rowIndex, columnIndex ].ToString() ;
+
+									if( string.IsNullOrEmpty( check ) == false )
+									{
+										// 空ではないセルを発見した
+										exist = true ;
+
+										// 次のロウ(行)へ
+										break ;
+									}
 								}
 							}
 						}

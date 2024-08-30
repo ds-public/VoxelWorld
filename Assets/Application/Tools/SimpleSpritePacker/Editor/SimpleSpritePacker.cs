@@ -28,7 +28,7 @@ namespace Tools.ForSprite
 		// 要素がどのように変化するか
 		public enum SpriteAction
 		{
-			None,		// 要素維持
+			Keep,		// 要素維持
 			Add,		// 要素追加
 			Update,		// 要素更新
 			Delete,		// 要素削除
@@ -37,13 +37,17 @@ namespace Tools.ForSprite
 		// 要素の情報
 		public class SpriteElement
 		{
-			public	Texture2D		Texture ;	// 追加または更新が行われ場合の別テクスチャファイルのインスタンス
-			public	SpriteRect		SpriteRect ;
-			public	SpriteAction	Action ;
-			public	int				Type ;      // 要素となる画像がテクスチャ・シングルタイプスプライト(0)なのかマルチプルタイプスプライト(1)なのか
+			public	Texture2D					Texture ;	// 追加または更新が行われ場合の別テクスチャファイルのインスタンス
+			public	SpriteRect					SpriteRect ;
+			public	SpriteAction				Action ;
+			public	int							Type ;      // 要素となる画像がテクスチャ・シングルタイプスプライト(0)なのかマルチプルタイプスプライト(1)なのか
 
-			public	TextureSettings	TextureSettings ;
-//			public TextureImporterCompression	Format ;
+			public	FilterMode					FilterMode ;
+			public	TextureImporterCompression	Compression ;
+
+			// 設定の復元用
+			public	TextureSettings				TextureSettings ;
+
 //			public TextureImporterNPOTScale		NPOTscale ;
 		} ;
 
@@ -54,6 +58,7 @@ namespace Tools.ForSprite
 		private Dictionary<string,SpriteElement> m_SpriteElementHash = new () ;
 	
 		private int	m_Padding = 2 ;
+		private bool m_TilingCorrection = false ;
 		private int	m_MaxTextureSize = 2048 ;
 
 		private readonly static string[] m_MaxTextureSizeLabels = new string[]{   "64",  "128",  "256",  "512", "1024", "2048", "4096", "8192" } ;
@@ -235,6 +240,20 @@ namespace Tools.ForSprite
 				}
 				GUILayout.EndHorizontal() ;		// 横一列終了
 
+				GUILayout.BeginHorizontal() ;	// 横一列開始
+				{
+					// タイリング用の補正を入れるかどうか
+					GUILayout.BeginHorizontal() ;
+					{
+						EditorGUIUtility.labelWidth = 140f ;
+						EditorGUIUtility.fieldWidth =  40f ;
+						m_TilingCorrection = EditorGUILayout.Toggle( "Tiling Correction", m_TilingCorrection ) ;
+						EditorGUIUtility.labelWidth =  80f ;
+						EditorGUIUtility.fieldWidth =  50f ;
+					}
+					GUILayout.EndHorizontal() ;
+				}
+				GUILayout.EndHorizontal() ;		// 横一列終了
 
 				GUILayout.BeginHorizontal() ;
 				{
@@ -361,7 +380,7 @@ namespace Tools.ForSprite
 								switch( spriteElement.Action )
 								{
 									// 通常状態
-									case SpriteAction.None :
+									case SpriteAction.Keep :
 										if( GUILayout.Button( "Delete", GUILayout.Width( 60f ) ) )
 										{
 											spriteElement.Action = SpriteAction.Delete ;	// 破棄対象にする
@@ -387,7 +406,7 @@ namespace Tools.ForSprite
 										GUI.backgroundColor = Color.red ;
 										if( GUILayout.Button( "Delete", GUILayout.Width( 60f ) ) )
 										{
-											spriteElement.Action = SpriteAction.None ;
+											spriteElement.Action = SpriteAction.Keep ;
 										}
 										GUI.backgroundColor = Color.white ;
 									break ;
@@ -440,6 +459,7 @@ namespace Tools.ForSprite
 
 				var factory = new SpriteDataProviderFactories() ;
 				factory.Init() ;
+
 				var dataProvider = factory.GetSpriteEditorDataProviderFromObject( textureImporter ) ;
 				dataProvider.InitSpriteEditorDataProvider() ;
 
@@ -452,29 +472,33 @@ namespace Tools.ForSprite
 					if( m_SpriteElementHash.TryGetValue( spriteName, out SpriteElement spriteElement ) )
 					{
 						// 既にリストに登録済みの情報
-						spriteElement.Texture = null ;
+						spriteElement.Texture		= null ;
 
-						spriteElement.SpriteRect = spriteRect ;
+						spriteElement.SpriteRect	= spriteRect ;
 
 						if( spriteElement.Action == SpriteAction.Delete )
 						{
-							spriteElement.Action  = SpriteAction.Delete ;
+							spriteElement.Action	= SpriteAction.Delete ;
 						}
 						else
 						{
-							spriteElement.Action  = SpriteAction.None ;
+							spriteElement.Action	= SpriteAction.Keep ;
 						}
-						spriteElement.Type = 0 ;
+						spriteElement.Type			= 0 ;
+						spriteElement.FilterMode	= textureImporter.filterMode ;
+						spriteElement.Compression	= textureImporter.textureCompression ;
 					}
 					else
 					{
 						// リストに存在しない情報
 						spriteElement = new SpriteElement()
 						{
-							Texture = null,
-							SpriteRect = spriteRect,
-							Action = SpriteAction.None,
-							Type = 0
+							Texture					= null,
+							SpriteRect				= spriteRect,
+							Action					= SpriteAction.Keep,
+							Type					= 0,
+							FilterMode				= textureImporter.filterMode,
+							Compression				= textureImporter.textureCompression,
 						} ;
 					}
 
@@ -501,6 +525,7 @@ namespace Tools.ForSprite
 				// 素材となる画像がスプライト（アトラス）かそれ以外（テクスチャ）かで処理が異なる
 				string texturePath = AssetDatabase.GetAssetPath( texture.GetInstanceID() ) ;
 				TextureImporter textureImporter = AssetImporter.GetAtPath( texturePath ) as TextureImporter ;
+
 				if( textureImporter != null && textureImporter.textureType == TextureImporterType.Sprite )
 				{
 					// スプライト扱い
@@ -512,28 +537,32 @@ namespace Tools.ForSprite
 						if( spriteElementHash.TryGetValue( spriteName, out spriteElement ) )
 						{
 							// 既に存在するのでアップデートになる
-							spriteElement.Texture = texture ;
-						
+							spriteElement.Texture			= texture ;
+							
 							spriteElement.SpriteRect.border	= textureImporter.spriteBorder ;
 							spriteElement.SpriteRect.pivot	= textureImporter.spritePivot ;
 						
-							spriteElement.Action = SpriteAction.Update ;
-							spriteElement.Type = 0 ;
+							spriteElement.Action			= SpriteAction.Update ;
+							spriteElement.Type				= 0 ;	// アトラス画像には含まれていおらず単独画像ファイルからの追加となる
+							spriteElement.FilterMode		= textureImporter.filterMode ;
+							spriteElement.Compression		= textureImporter.textureCompression ;
 						}
 						else
 						{
 							// 存在しないため追加となる
 							spriteElement = new ()
 							{
-								Texture = texture,
+								Texture						= texture,
 								SpriteRect = new SpriteRect()
 								{
-									name	= spriteName,
-									border	= textureImporter.spriteBorder,
-									pivot	= textureImporter.spritePivot
+									name					= spriteName,
+									border					= textureImporter.spriteBorder,
+									pivot					= textureImporter.spritePivot
 								},
-								Action = SpriteAction.Add,
-								Type = 0
+								Action						= SpriteAction.Add,
+								Type						= 0,	// アトラス画像には含まれていおらず単独画像ファイルからの追加となる
+								FilterMode					= textureImporter.filterMode,
+								Compression					= textureImporter.textureCompression,
 							} ;
 
 							spriteElementHash.Add( spriteName, spriteElement ) ;
@@ -545,9 +574,11 @@ namespace Tools.ForSprite
 						// マルチプルタイプ
 
 						var factory = new SpriteDataProviderFactories() ;
-						factory.Init();
+						factory.Init() ;
+
 						var dataProvider = factory.GetSpriteEditorDataProviderFromObject( textureImporter ) ;
 						dataProvider.InitSpriteEditorDataProvider() ;
+
 						var spriteRects = dataProvider.GetSpriteRects() ;
 
 						foreach( var spriteRect in spriteRects )
@@ -557,22 +588,24 @@ namespace Tools.ForSprite
 							if( spriteElementHash.TryGetValue( spriteName, out spriteElement ) )
 							{
 								// 既に存在するのでアップデートになる
-								spriteElement.Texture = texture ;
-							
-								spriteElement.SpriteRect = spriteRect ;
-
-								spriteElement.Action = SpriteAction.Update ;
-								spriteElement.Type = 1 ;
+								spriteElement.Texture		= texture ;
+								spriteElement.SpriteRect	= spriteRect ;
+								spriteElement.Action		= SpriteAction.Update ;
+								spriteElement.Type			= 1 ;	// 既にアトラス画像に含まれている
+								spriteElement.FilterMode	= textureImporter.filterMode ;
+								spriteElement.Compression	= textureImporter.textureCompression ;
 							}
 							else
 							{
 								// 存在しないため追加となる
 								spriteElement = new ()
 								{
-									Texture = texture,
-									SpriteRect = spriteRect,
-									Action = SpriteAction.Add,
-									Type = 1
+									Texture					= texture,
+									SpriteRect				= spriteRect,
+									Action					= SpriteAction.Add,
+									Type					= 1,	// 既にアトラス画像に含まれている
+									FilterMode				= textureImporter.filterMode,
+									Compression				= textureImporter.textureCompression,
 								} ;
 
 								spriteElementHash.Add( spriteName, spriteElement ) ;
@@ -588,23 +621,27 @@ namespace Tools.ForSprite
 					if( spriteElementHash.TryGetValue( spriteName, out spriteElement ) )
 					{
 						// 既に存在するのでアップデートになる
-						spriteElement.Texture = texture ;
+						spriteElement.Texture		= texture ;
 					
-						spriteElement.Action = SpriteAction.Update ;
-						spriteElement.Type = 0 ;
+						spriteElement.Action		= SpriteAction.Update ;
+						spriteElement.Type			= 0 ;	// アトラス画像には含まれていおらず単独画像ファイルからの追加となる
+						spriteElement.FilterMode	= textureImporter.filterMode ;
+						spriteElement.Compression	= textureImporter.textureCompression ;
 					}
 					else
 					{
 						// 存在しないため追加となる
 						spriteElement = new ()
 						{
-							Texture = texture,
+							Texture					= texture,
 							SpriteRect = new ()
 							{
-								name = spriteName
+								name				= spriteName
 							},
-							Action = SpriteAction.Add,
-							Type = 0
+							Action					= SpriteAction.Add,
+							Type					= 0,	// アトラス画像には含まれていおらず単独画像ファイルからの追加となる
+							FilterMode				= textureImporter.filterMode,
+							Compression				= textureImporter.textureCompression,
 						} ;
 
 						spriteElementHash.Add( spriteName, spriteElement ) ;
@@ -627,7 +664,9 @@ namespace Tools.ForSprite
 			string path ;
 
 			// 元の状態を保存する(バックアップが必要な項目)
-			TextureSettings	atlasSettings = null ;
+			TextureSettings	atlasSettings ;
+
+			//----------------------------------------------------------
 
 			if( atlas != null )
 			{
@@ -638,6 +677,103 @@ namespace Tools.ForSprite
 			
 				atlas = AssetDatabase.LoadAssetAtPath( path, typeof( Texture2D ) ) as Texture2D ;
 			}
+			else
+			{
+				// 新規アトラスの生成
+
+				// 新規作成の場合に設定する
+				atlasSettings = new TextureSettings() ;	// デフォルトはスプライト用の設定
+
+				//---------------------------------
+
+				// アトラスが新規作成の場合にソースとなるスプライトの FilterMode が１種類だけなら新規生成されるアトラスの FilterMode として設定する
+
+				FilterMode					atlasFilterMode		= FilterMode.Bilinear ;
+
+				var filterModeCounts = new Dictionary<FilterMode,int>() ;
+
+				foreach( SpriteElement spriteElement in m_SpriteElementHash.Values )
+				{
+					var filterMode = spriteElement.FilterMode ;
+					if( filterModeCounts.ContainsKey( filterMode ) == false )
+					{
+						filterModeCounts.Add( filterMode, 1 ) ;
+					}
+					else
+					{
+						filterModeCounts[ filterMode ] ++ ;
+					}
+				}
+
+				FilterMode selectionFilterMode = atlasFilterMode ;
+				int usedFilterModeKind = 0 ;
+
+				foreach( var filterModeCount in filterModeCounts )
+				{
+					if( filterModeCount.Value >  0 )
+					{
+						// この種類は使用されている
+						selectionFilterMode = filterModeCount.Key ;
+						usedFilterModeKind ++ ;
+					}
+				}
+
+				if( usedFilterModeKind == 1 )
+				{
+					// 一種類しか使用されていないのでアトラスのフィルターモードはこれにする
+					atlasFilterMode = selectionFilterMode ;
+				}
+
+				//---------------------------------
+
+				// アトラスが新規作成の場合にソースとなるスプライトの Compression が１種類だけなら新規生成されるアトラスの Compression として設定する
+
+				TextureImporterCompression	atlasCompression	= TextureImporterCompression.Compressed ;
+
+				var compressionCounts = new Dictionary<TextureImporterCompression,int>() ;
+
+				foreach( SpriteElement spriteElement in m_SpriteElementHash.Values )
+				{
+					var compression = spriteElement.Compression ;
+					if( compressionCounts.ContainsKey( compression ) == false )
+					{
+						compressionCounts.Add( compression, 1 ) ;
+					}
+					else
+					{
+						compressionCounts[ compression ] ++ ;
+					}
+				}
+
+				TextureImporterCompression selectionCompression = atlasCompression ;
+				int usedCompressionKind = 0 ;
+
+				foreach( var compressionCount in compressionCounts )
+				{
+					if( compressionCount.Value >  0 )
+					{
+						// この種類は使用されている
+						selectionCompression = compressionCount.Key ;
+						usedCompressionKind ++ ;
+					}
+				}
+
+				if( usedCompressionKind == 1 )
+				{
+					// 一種類しか使用されていないのでアトラスのコンプレッションはこれにする
+					atlasCompression = selectionCompression ;
+				}
+
+				//---------------------------------------------------------
+
+				atlasSettings.FilterMode					= atlasFilterMode ;
+				atlasSettings.Default.TextureCompression	= atlasCompression ;
+				atlasSettings.Standalone.TextureCompression	= atlasCompression ;
+				atlasSettings.Android.TextureCompression	= atlasCompression ;
+				atlasSettings.iOS.TextureCompression		= atlasCompression ;
+			}
+
+			//----------------------------------------------------------
 
 			int pn = 0 ;
 			int pm = m_SpriteElementHash.Count ;
@@ -663,8 +799,8 @@ namespace Tools.ForSprite
 
 				switch( spriteElement.Action )
 				{
-					// アトラススプライトに内包される領域
-					case SpriteAction.None :
+					// 領域維持(アトラススプライトに内包される領域)
+					case SpriteAction.Keep :
 						spriteRects.Add( spriteElement.SpriteRect ) ;
 					
 						x = ( int )spriteElement.SpriteRect.rect.x ;
@@ -676,10 +812,16 @@ namespace Tools.ForSprite
 						elementTexture.SetPixels32( GetPixels32( atlas, x, y, w, h ), 0 ) ;
 						elementTexture.Apply() ;
 
+						if( m_TilingCorrection == true )
+						{
+							// タイリング用の補正が有効になっている場合は領域を１ドットずつ外側に増やす
+							elementTexture = CorrectForTiling( elementTexture, true ) ;
+						}
+
 						spriteTextures.Add( elementTexture ) ;
 					break ;
 
-					// 新規追加
+					// 領域追加
 					case SpriteAction.Add :
 						spriteRects.Add( spriteElement.SpriteRect ) ;
 					
@@ -691,8 +833,23 @@ namespace Tools.ForSprite
 						if( spriteElement.Type == 0 )
 						{
 							// テクスチャまたはシングルスプライトタイプ
-							spriteElement.Texture = AssetDatabase.LoadAssetAtPath( path, typeof( Texture2D ) ) as Texture2D ;
-							spriteTextures.Add( spriteElement.Texture ) ;
+							elementTexture = AssetDatabase.LoadAssetAtPath( path, typeof( Texture2D ) ) as Texture2D ;
+							
+							if( m_TilingCorrection == true )
+							{
+								// タイリング用の補正が有効になっている場合は領域を１ドットずつ外側に増やす
+								elementTexture = CorrectForTiling( elementTexture, false ) ;
+
+								// 設定を元に戻す(重要)
+								GetOrSetTextureSettings( path, spriteElement.TextureSettings ) ;
+							}
+							else
+							{
+								// アトラス画像生成後に設定を元に戻すのでインスタンスを記憶する
+								spriteElement.Texture = elementTexture ;
+							}
+
+							spriteTextures.Add( elementTexture ) ;
 						}
 						else
 						{
@@ -705,7 +862,13 @@ namespace Tools.ForSprite
 							elementTexture = new ( w, h, TextureFormat.ARGB32, false ) ;
 							elementTexture.SetPixels32( GetPixels32( spriteElement.Texture, x, y, w, h ) ) ;
 							elementTexture.Apply() ;
-					
+
+							if( m_TilingCorrection == true )
+							{
+								// タイリング用の補正が有効になっている場合は領域を１ドットずつ外側に増やす
+								elementTexture = CorrectForTiling( elementTexture, true ) ;
+							}
+							
 							spriteTextures.Add( elementTexture ) ;
 						}
 					break ;
@@ -722,8 +885,23 @@ namespace Tools.ForSprite
 						if( spriteElement.Type == 0 )
 						{
 							// テクスチャまたはシングルスプライトタイプ
-							spriteElement.Texture = AssetDatabase.LoadAssetAtPath( path, typeof( Texture2D ) ) as Texture2D ;
-							spriteTextures.Add( spriteElement.Texture ) ;
+							elementTexture = AssetDatabase.LoadAssetAtPath( path, typeof( Texture2D ) ) as Texture2D ;
+
+							if( m_TilingCorrection == true )
+							{
+								// タイリング用の補正が有効になっている場合は領域を１ドットずつ外側に増やす
+								elementTexture = CorrectForTiling( elementTexture, false ) ;
+
+								// 設定を元に戻す(重要)
+								GetOrSetTextureSettings( path, spriteElement.TextureSettings ) ;
+							}
+							else
+							{
+								// アトラス画像生成後に設定を元に戻すのでインスタンスを記憶する
+								spriteElement.Texture = elementTexture ;
+							}
+													
+							spriteTextures.Add( elementTexture ) ;
 						}
 						else
 						{
@@ -737,6 +915,12 @@ namespace Tools.ForSprite
 							elementTexture.SetPixels32( GetPixels32( spriteElement.Texture, x, y, w, h ) ) ;
 							elementTexture.Apply() ;
 						
+							if( m_TilingCorrection == true )
+							{
+								// タイリング用の補正が有効になっている場合は領域を１ドットずつ外側に増やす
+								elementTexture = CorrectForTiling( elementTexture, true ) ;
+							}
+
 							spriteTextures.Add( elementTexture ) ;
 						}
 					break ;
@@ -769,8 +953,6 @@ namespace Tools.ForSprite
 				// パッキングを行う
 				Rect[] rects = texture.PackTextures( spriteTextures.ToArray(), padding, maxSize ) ;
 
-
-
 				pn = 0 ;
 				pm = m_SpriteElementHash.Count ;
 
@@ -792,22 +974,28 @@ namespace Tools.ForSprite
 					{
 						// 新規追加の後始末
 						case SpriteAction.Add :
-							path = AssetDatabase.GetAssetPath( spriteElement.Texture.GetInstanceID() ) ;
-							GetOrSetTextureSettings( path, spriteElement.TextureSettings ) ;	// 設定を元に戻す
+							if( spriteElement.Texture != null )
+							{
+								path = AssetDatabase.GetAssetPath( spriteElement.Texture.GetInstanceID() ) ;
+								GetOrSetTextureSettings( path, spriteElement.TextureSettings ) ;	// 設定を元に戻す
 						
-							spriteElement.Texture = null ;
+								spriteElement.Texture = null ;
+							}
 						
-							spriteElement.Action = SpriteAction.None ;
+							spriteElement.Action = SpriteAction.Keep ;
 						break ;
 
 						// 領域更新の後始末
 						case SpriteAction.Update :
-							path = AssetDatabase.GetAssetPath( spriteElement.Texture.GetInstanceID() ) ;
-							GetOrSetTextureSettings( path, spriteElement.TextureSettings ) ;
+							if( spriteElement.Texture != null )
+							{
+								path = AssetDatabase.GetAssetPath( spriteElement.Texture.GetInstanceID() ) ;
+								GetOrSetTextureSettings( path, spriteElement.TextureSettings ) ;
 						
-							spriteElement.Texture = null ;
+								spriteElement.Texture = null ;
+							}
 						
-							spriteElement.Action = SpriteAction.None ;
+							spriteElement.Action = SpriteAction.Keep ;
 						break ;
 					}
 				}
@@ -828,7 +1016,7 @@ namespace Tools.ForSprite
 
 				for( i  = 0 ; i <  l ; i ++ )
 				{
-					Rect rect = rects[ i ] ;
+					var rect = rects[ i ] ;
 					rect.x      *= tw ;
 					rect.y      *= th ;
 					rect.width  *= tw ;
@@ -927,7 +1115,7 @@ namespace Tools.ForSprite
 
 					for( i  = 0 ; i <  l ; i ++ )
 					{
-						Rect rect = rects[ i ] ;
+						var rect = rects[ i ] ;
 						rect.x      -= rx ;
 						rect.y      -= ry ;
 						rects[ i ] = rect ;
@@ -960,21 +1148,18 @@ namespace Tools.ForSprite
 			
 				TextureImporter textureImporter = AssetImporter.GetAtPath( atlasFullPath ) as TextureImporter ;
 
-				// 既存の場合は以前の設定を引き継がせる
+				//---------------------------------
+
+				// アトラス画像の設定を行う
+				ApplyTextureSettings( textureImporter, atlasSettings ) ;
+
 				if( atlas == null )
 				{
-					// 新規作成の場合に設定する
-					atlasSettings = new TextureSettings() ;	// デフォルトはスプライト用の設定
-
-					ApplyTextureSettings( textureImporter, atlasSettings ) ;
-
+					// 新規の場合は Multiple 化
 					textureImporter.spriteImportMode	= SpriteImportMode.Multiple ;
 				}
-				else
-				{
-					// 既存更新の場合は反映する
-					ApplyTextureSettings( textureImporter, atlasSettings ) ;
-				}
+
+				//---------------------------------------------------------
 
 				// 警告を表示するかどうか
 				bool isWarning = false ;
@@ -987,7 +1172,26 @@ namespace Tools.ForSprite
 						// 領域が元のものより小さくなっている
 						isWarning = true ;
 					}
+				}
 
+				if( m_TilingCorrection == true && isWarning == false )	// ※縮小がかかっていたらタイル補正は行わない
+				{
+					// タイリング用の補正が有効になっている場合は領域を１ドットずつ内側に縮める
+					l = rects.Length ;
+					for( i  = 0 ; i <  l ; i ++ )
+					{
+						var rect = rects[ i ] ;
+						rect.xMin += 1 ;
+						rect.yMin += 1 ;
+						rect.xMax -= 1 ;
+						rect.yMax -= 1 ;
+						rects[ i ] = rect ;
+					}
+				}
+
+				// スプライト群の領域情報を更新する
+				for( i  = 0 ; i <  l ; i ++ )
+				{
 					spriteRects[ i ].rect = rects[ i ] ;
 				}
 
@@ -996,9 +1200,11 @@ namespace Tools.ForSprite
 
 				var factory = new SpriteDataProviderFactories() ;
 				factory.Init() ;
+
 				var dataProvider = factory.GetSpriteEditorDataProviderFromObject( textureImporter ) ;
 				dataProvider.InitSpriteEditorDataProvider() ;
 
+				// Multiple の領域を再設定する
 				dataProvider.SetSpriteRects( spriteRects.ToArray() ) ;
 				dataProvider.Apply() ;
 
@@ -1007,8 +1213,13 @@ namespace Tools.ForSprite
 				// 設定を上書き保存する
 				textureImporter.SaveAndReimport() ;
 
+				//---------------------------------
+
 				// アトラステクスチャを再ロードしておく(リストの表示更新用)
 				atlas = AssetDatabase.LoadAssetAtPath( atlasFullPath, typeof( Texture2D ) ) as Texture2D ;
+
+				//---------------------------------------------------------
+				// 後始末を行う
 
 				spriteRects.Clear() ;
 				spriteTextures.Clear() ;
@@ -1105,6 +1316,83 @@ namespace Tools.ForSprite
 			return pixels32 ;
 		}
 
+		// テクスチャを１ピクセル外に引き伸ばす
+		private Texture2D CorrectForTiling( Texture2D texture, bool isCreated )
+		{
+			// テクスチャは読み取り可能になっている
+
+			int w = texture.width ;
+			int h = texture.height ;
+
+			// 外側に１ピクセルずつ増やす
+			var correctTexture = new Texture2D( w + 2, h + 2, TextureFormat.ARGB32, false ) ;
+
+			int x, y ;
+
+			//----------------------------------
+
+			// 左下
+			correctTexture.SetPixel( 0, 0, texture.GetPixel( 0, 0 ) ) ;
+
+			// 中下
+			for( x  = 0 ; x <  w ; x ++ )
+			{
+				correctTexture.SetPixel( 1 + x, 0, texture.GetPixel( x, 0 ) ) ;
+			}
+
+			// 右下
+			correctTexture.SetPixel( 1 + w, 0, texture.GetPixel( w - 1, 0 ) ) ;
+
+			//--------------
+
+			// 左中
+			for( y  = 0 ; y <  h ; y ++ )
+			{
+				correctTexture.SetPixel( 0, 1 + y, texture.GetPixel( 0, y ) ) ;
+			}
+
+			// 中中
+			for( y  = 0 ; y <  h ; y ++ )
+			{
+				for( x  = 0 ; x <  w ; x ++ )
+				{
+					correctTexture.SetPixel( 1 + x, 1 + y, texture.GetPixel( x, y ) ) ;
+				}
+			}
+
+			// 右中
+			for( y  = 0 ; y <  h ; y ++ )
+			{
+				correctTexture.SetPixel( 1 + w, 1 + y, texture.GetPixel( w - 1, y ) ) ;
+			}
+
+			//--------------
+
+			// 左上
+			correctTexture.SetPixel( 0, 1 + y, texture.GetPixel( 0, h - 1 ) ) ;
+
+			// 中上
+			for( x  = 0 ; x <  w ; x ++ )
+			{
+				correctTexture.SetPixel( 1 + x, 1 + y, texture.GetPixel( x, h - 1 ) ) ;
+			}
+
+			// 右上
+			correctTexture.SetPixel( 1 + w, 1 + h, texture.GetPixel( w - 1, h - 1 ) ) ;
+
+			//----------------------------------
+
+			correctTexture.Apply() ;
+
+			if( isCreated == true )
+			{
+				// 使用しない方は破棄する
+				Destroy( texture ) ;
+			}
+
+			return correctTexture ;
+		}
+
 		// 個々の要素をシングルタイプスプライトして書き出す
 		private void OutputDividedSprite( Texture2D atlas, string folderPath )
 		{
@@ -1118,8 +1406,8 @@ namespace Tools.ForSprite
 				return ;
 			}
 			
-			int l = folderPath.Length ;
-			if( folderPath[ l - 1 ] != '/' )
+//			int l = folderPath.Length ;
+			if( folderPath[ ^1 ] != '/' )
 			{
 				folderPath += '/' ;
 			}
@@ -1181,6 +1469,49 @@ namespace Tools.ForSprite
 					elementTexture.SetPixels32( GetPixels32( atlas, x, y, w, h ) ) ;
 					elementTexture.Apply() ;
 
+					//---------------------------------
+					// ２のべき乗判定
+
+					int bi ;
+
+					bool isNPOT_W = true ;
+					int wc = 0 ;
+					if( ( w & 1 ) == 0 )
+					{
+						for( bi  =  1 ; bi <= 31 ; bi ++ )
+						{
+							if( ( w & ( 1 << bi ) ) != 0 )
+							{
+								wc ++ ;
+							}
+						}
+						if( wc == 1 )
+						{
+							isNPOT_W = false ;
+						}
+					}
+
+					bool isNPOT_H = true ;
+					int hc = 0 ;
+					if( ( h & 1 ) == 0 )
+					{
+						for( bi  =  1 ; bi <= 31 ; bi ++ )
+						{
+							if( ( h & ( 1 << bi ) ) != 0 )
+							{
+								hc ++ ;
+							}
+						}
+						if( hc == 1 )
+						{
+							isNPOT_H = false ;
+						}
+					}
+
+					bool isNPOT = isNPOT_W & isNPOT_H ;
+
+					//---------------------------------
+
 					elementPath = folderPath + spriteRect.name + ".png" ;
 
 					// テクスチャをＰＮＧ画像として保存する
@@ -1198,6 +1529,18 @@ namespace Tools.ForSprite
 					ApplyTextureSettings( elementTextureImporter, atlasSettings ) ;
 
 					elementTextureImporter.spriteImportMode		= SpriteImportMode.Single ;
+
+					elementTextureImporter.spritePixelsPerUnit	= atlasSettings.PixelsPerUnit ;
+
+					elementTextureImporter.sRGBTexture			= atlasSettings.SRGBTexture ;
+					elementTextureImporter.alphaSource			= atlasSettings.AlphaSource ;
+					elementTextureImporter.alphaIsTransparency	= atlasSettings.AlphaIsTransparency ;
+					elementTextureImporter.isReadable			= false ;
+					elementTextureImporter.mipmapEnabled		= atlasSettings.MipmapEnabled ;
+					elementTextureImporter.wrapMode				= atlasSettings.WrapMode ;
+					elementTextureImporter.filterMode			= atlasSettings.FilterMode ;
+
+					elementTextureImporter.npotScale			= isNPOT == true ? TextureImporterNPOTScale.None : TextureImporterNPOTScale.ToNearest ;
 
 					elementTextureImporter.spriteBorder			= spriteRect.border ;
 					elementTextureImporter.spritePivot			= spriteRect.pivot ;
@@ -1232,12 +1575,18 @@ namespace Tools.ForSprite
 		{
 			// General
 			public	TextureImporterType				TextureType				= TextureImporterType.Sprite ;
-			public	TextureImporterNPOTScale		NPOTScale				= TextureImporterNPOTScale.None ;
+
+			public	float							PixelsPerUnit			= 100 ;
+
+			public	bool							SRGBTexture				= true ;
+			public  TextureImporterAlphaSource		AlphaSource				= TextureImporterAlphaSource.FromInput ;
+			public	bool							AlphaIsTransparency		= true ;
 			public	bool							IsReadable				= false ;
 			public	bool							MipmapEnabled			= false ;
-			public	bool							AlphaIsTransparency		= true ;
 			public	TextureWrapMode					WrapMode				= TextureWrapMode.Clamp ;
 			public	FilterMode						FilterMode				= FilterMode.Bilinear ;
+
+			public	TextureImporterNPOTScale		NPOTScale				= TextureImporterNPOTScale.None ;
 
 			// Default
 			public class DefaultSettings
@@ -1271,6 +1620,16 @@ namespace Tools.ForSprite
 		{
 			var textureImporter = AssetImporter.GetAtPath( path ) as TextureImporter ;
 
+			if( textureImporter == null )
+			{
+				// 例外発生
+				// プログレスバーを消す
+				EditorUtility.ClearProgressBar() ;
+				return null ;
+			}
+
+			//----------------------------------------------------------
+
 			TextureImporterPlatformSettings ps ;
 
 			if( textureSettings == null )
@@ -1281,12 +1640,18 @@ namespace Tools.ForSprite
 				{
 					// General
 					TextureType						= textureImporter.textureType,
-					NPOTScale						= textureImporter.npotScale,
+
+					PixelsPerUnit					= textureImporter.spritePixelsPerUnit,
+
+					SRGBTexture						= textureImporter.sRGBTexture,
+					AlphaSource						= textureImporter.alphaSource,
+					AlphaIsTransparency				= textureImporter.alphaIsTransparency,
 					IsReadable						= textureImporter.isReadable,
 					MipmapEnabled					= textureImporter.mipmapEnabled,
-					AlphaIsTransparency				= textureImporter.alphaIsTransparency,
 					WrapMode						= textureImporter.wrapMode,
-					FilterMode						= textureImporter.filterMode
+					FilterMode						= textureImporter.filterMode,
+
+					NPOTScale						= textureImporter.npotScale,
 				} ;
 
 				// Default
@@ -1320,12 +1685,16 @@ namespace Tools.ForSprite
 
 				// General
 				textureImporter.textureType						= TextureImporterType.Sprite ;				//RGB
-				textureImporter.npotScale						= TextureImporterNPOTScale.None ;				//RGB
+
+				textureImporter.sRGBTexture						= true ;
+				textureSettings.AlphaSource						= TextureImporterAlphaSource.FromInput ;
+				textureSettings.AlphaIsTransparency				= true ;
 				textureImporter.isReadable						= true ;									// 読み出し可能
 				textureImporter.mipmapEnabled					= false ;
-				textureSettings.AlphaIsTransparency				= true ;
 				textureSettings.WrapMode						= TextureWrapMode.Clamp ;
 				textureSettings.FilterMode						= FilterMode.Point ;
+
+				textureImporter.npotScale						= TextureImporterNPOTScale.None ;			//RGB
 
 				// Default
 				textureImporter.maxTextureSize					= 8192 ;									// 縮められないように 2048 最大で
@@ -1367,12 +1736,18 @@ namespace Tools.ForSprite
 
 				// General
 				textureImporter.textureType						= textureSettings.TextureType ;
-				textureImporter.npotScale						= textureSettings.NPOTScale ;
+
+				textureImporter.spritePixelsPerUnit				= textureSettings.PixelsPerUnit ;
+
+				textureImporter.sRGBTexture						= textureSettings.SRGBTexture ;
+				textureImporter.alphaSource						= textureSettings.AlphaSource ;
+				textureImporter.alphaIsTransparency				= textureSettings.AlphaIsTransparency ;
 				textureImporter.isReadable						= textureSettings.IsReadable ;
 				textureImporter.mipmapEnabled					= textureSettings.MipmapEnabled ;
-				textureImporter.alphaIsTransparency				= textureSettings.AlphaIsTransparency ;
 				textureImporter.wrapMode						= textureSettings.WrapMode ;
 				textureImporter.filterMode						= textureSettings.FilterMode ;
+
+				textureImporter.npotScale						= textureSettings.NPOTScale ;
 
 				// Default
 				textureImporter.maxTextureSize					= textureSettings.Default.MaxTextureSize ;
@@ -1419,9 +1794,18 @@ namespace Tools.ForSprite
 
 			// General
 			textureImporter.textureType						= textureSettings.TextureType ;
-			textureImporter.npotScale						= textureSettings.NPOTScale ;
+
+			textureImporter.spritePixelsPerUnit				= textureSettings.PixelsPerUnit ;
+
+			textureImporter.sRGBTexture						= textureSettings.SRGBTexture ;
+			textureImporter.alphaSource						= textureSettings.AlphaSource ;
+			textureImporter.alphaIsTransparency				= textureSettings.AlphaIsTransparency ;
 			textureImporter.isReadable						= textureSettings.IsReadable ;
 			textureImporter.mipmapEnabled					= textureSettings.MipmapEnabled ;
+			textureImporter.wrapMode						= textureSettings.WrapMode ;
+			textureImporter.filterMode						= textureSettings.FilterMode ;
+
+			textureImporter.npotScale						= textureSettings.NPOTScale ;
 
 			// Default
 			textureImporter.maxTextureSize					= textureSettings.Default.MaxTextureSize ;

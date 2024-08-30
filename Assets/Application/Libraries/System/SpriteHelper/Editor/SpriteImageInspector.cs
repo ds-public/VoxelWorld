@@ -1,6 +1,7 @@
 #if UNITY_EDITOR
 
 using System.Collections.Generic ;
+using System.IO ;
 using System.Linq ;
 using System.Text.RegularExpressions ;
 using System.Reflection ;
@@ -13,40 +14,9 @@ using UnityEditor ;
 
 namespace SpriteHelper
 {
-	public static class SerializedPropertyExtensions
-	{
-		/// <summary>
-		/// リストの要素Indexを返す
-		/// </summary>
-		public static int GetArrayElementIndex( this SerializedProperty property )
-		{
-			// プロパティがリストのインデックスであれば、パスは(変数名).Array.data[(インデックス)] 
-			// となるため、この文字列からインデックスを取得する
-
-			// リストの要素であるか判定する
-			var match = Regex.Match( property.propertyPath, "^([a-zA-Z0-9_]*).Array.data\\[([0-9]*)\\]$" ) ;
-			if( match.Success == false )
-			{
-				return -1 ;
-			}
-
-			// Indexを抜き出す
-			var splitPath = property.propertyPath.Split( '.' ) ;
-			var regax = new Regex( @"[^0-9]" ) ;
-			if( int.TryParse( regax.Replace( splitPath[ ^1 ], "" ), out var index ) == false )
-			{
-				return -1 ;
-			}
-
-			return index ;
-		}
-	}
-
-
 	[ CustomEditor( typeof( SpriteImage ), true ) ]
-	public class SpriteImageInspector : Editor
+	public class SpriteImageInspector : SpriteFrameInspector
 	{
-
 		/// <summary>
 		/// スンスペクター描画
 		/// </summary>
@@ -65,8 +35,6 @@ namespace SpriteHelper
 				// デフォルトの描画
 				DrawDefaultInspector() ;
 
-
-//				GUILayout.Label( "-----------------", boldStyle ) ;
 				DrawSeparater() ;
 			}
 
@@ -146,7 +114,7 @@ namespace SpriteHelper
 
 			if( component.Animations != null && component.Animations.Count >  0 )
 			{
-				animationNames = component.Animations.Where( _ => string.IsNullOrEmpty( _.AnimationName ) == false ).Select( _ => _.AnimationName ).ToList() ;
+				animationNames = component.Animations.Where( _ => string.IsNullOrEmpty( _.Name ) == false ).Select( _ => _.Name ).ToList() ;
 			}
 			else
 			{
@@ -174,7 +142,7 @@ namespace SpriteHelper
 			}
 
 			// アニメーション選択
-			int indexNew = EditorGUILayout.Popup( "Animation Name", indexOld, animationNames.ToArray() ) ;
+			int indexNew = EditorGUILayout.Popup( "Default Animation Name", indexOld, animationNames.ToArray() ) ;
 			if( indexOld != indexNew )
 			{
 				Undo.RecordObject( component, "[SpriteImage] Animation Name : Change" ) ;	// アンドウバッファに登録
@@ -241,6 +209,81 @@ namespace SpriteHelper
 				GUILayout.EndHorizontal() ;		// 横並び終了
 			}
 
+			if( Application.isPlaying == false )
+			{
+				bool isImport = false ;
+				bool isExport = false ;
+
+				EditorGUILayout.Separator() ;	// 少し区切りスペース
+				GUILayout.BeginHorizontal() ;	// 横並び
+				{
+					GUI.backgroundColor = Color.cyan ;	// ボタンの下地を緑に
+					if( GUILayout.Button( new GUIContent( "Import", "アニメーション情報を Json テキストファイルから取り込みます" ), GUILayout.Width( 60f ) ) == true )
+					{
+						isImport = true ;
+					}
+					GUI.backgroundColor = Color.white ;	// ボタンの下地を緑に
+
+					if( component.Animations != null && component.Animations.Count >  0 )
+					{
+						GUI.backgroundColor = Color.green ;	// ボタンの下地を緑に
+						if( GUILayout.Button( new GUIContent( "Export", "アニメーション情報を Json テキストファイルに書き出します" ), GUILayout.Width( 60f ) ) == true )
+						{
+							isExport = true ;
+						}
+						GUI.backgroundColor = Color.white ;	// ボタンの下地を緑に
+					}
+				}
+				GUILayout.EndHorizontal() ;		// 横並び終了
+
+				//--------------------------------------------------------
+
+				if( isImport == true )
+				{
+					// エクスポート処理へ
+					var path = EditorUtility.OpenFilePanel( "Load Animaions", "Assets", "json" ) ;
+					if( string.IsNullOrEmpty( path ) == false )
+					{
+						var json = File.ReadAllText( path ) ;
+						if( string .IsNullOrEmpty( json ) == false )
+						{
+							if( component.ConvertAnimationsFromJson( json ) == true )
+							{
+								EditorUtility.DisplayDialog( "Save Animations", "アニメーションを Json テキストから読み込みました", "OK" ) ;
+							}
+							else
+							{
+								EditorUtility.DisplayDialog( "Save Animations", "Json テキストの読み込みに失敗しました(変換失敗)", "OK" ) ;
+							}
+						}
+						else
+						{
+							EditorUtility.DisplayDialog( "Save Animations", "Json テキストの読み込みに失敗しました(読込失敗)", "OK" ) ;
+						}
+					}
+				}
+
+				if( isExport == true )
+				{
+					// エクスポート処理へ
+					var path = EditorUtility.SaveFilePanel( "Save Animaions", "Assets", $"{component.name}_Animations.json", "json" ) ;
+					if( string.IsNullOrEmpty( path ) == false )
+					{
+						var json = component.ConvertAnimationsToJson() ;
+						if( string.IsNullOrEmpty( json ) == false )
+						{
+							File.WriteAllText( path, json ) ;
+
+							EditorUtility.DisplayDialog( "Save Animations", "アニメーションを Json テキストで書き出しました", "OK" ) ;
+						}
+						else
+						{
+							EditorUtility.DisplayDialog( "Save Animations", "Json テキストの書き出しに失敗しました", "OK" ) ;
+						}
+					}
+				}
+			}
+
 			//------------------------------------------------------------------------------------------
 
 			EditorGUILayout.Separator() ;	// 少し区切りスペース
@@ -266,7 +309,7 @@ namespace SpriteHelper
 				var framesProperty = property.FindPropertyRelative( "Frames" ) ;
 				float height = EditorGUI.GetPropertyHeight( framesProperty ) ;
 
-				return base.GetPropertyHeight( property, label ) + EditorGUIUtility.standardVerticalSpacing + LineHeight * 0 + height + EditorGUIUtility.standardVerticalSpacing ;
+				return base.GetPropertyHeight( property, label ) + EditorGUIUtility.standardVerticalSpacing + LineHeight * 1 + height + EditorGUIUtility.standardVerticalSpacing ;
 			}
 
 			/// <summary>
@@ -300,9 +343,9 @@ namespace SpriteHelper
 				}
 #endif
 				//---------------------------------
-				// AnimationtName
+				// AnimationName
 
-				var animationNameProperty = property.FindPropertyRelative( "AnimationName" ) ;
+				var animationNameProperty = property.FindPropertyRelative( "Name" ) ;
 
 				var animationNameRect = new Rect( x, y, w, EditorGUIUtility.singleLineHeight ) ;
 
@@ -316,6 +359,24 @@ namespace SpriteHelper
 						animationNameProperty.stringValue = animationName ;
 						EditorUtility.SetDirty( spriteImage ) ;
 					}
+				}
+
+				y += LineHeight ;
+
+				//---------------------------------
+				// AnimationSpeed
+
+				var animationSpeedProperty = property.FindPropertyRelative( "Speed" ) ;
+
+				var animationSpeedRect = new Rect( x, y, w, EditorGUIUtility.singleLineHeight ) ;
+
+				string animationSpeedLabel = "Speed" ; // animationNameProperty.displayName ;
+				var animationSpeed = EditorGUI.Slider( animationSpeedRect, animationSpeedLabel, animationSpeedProperty.floatValue, 0, 10 ) ;
+				if( animationSpeedProperty.floatValue != animationSpeed )
+				{
+					Undo.RecordObject( spriteImage, "[SpriteImage] Animation Speed : Change" ) ;	// アンドウバッファに登録
+					animationSpeedProperty.floatValue = animationSpeed ;
+					EditorUtility.SetDirty( spriteImage ) ;
 				}
 
 				y += LineHeight ;
@@ -615,230 +676,6 @@ namespace SpriteHelper
 			}
 		}
 //#endif
-		//-------------------------------------------------------------------------------------------
-		// Collider
-
-		private int		m_ColliderIndex			= 0 ;
-		private bool	m_ColliderRemoveAready	= false ;
-
-		protected void DrawCollider( SpriteImage component )
-		{
-			EditorGUILayout.Separator() ;	// 少し区切りスペース
-
-			var colliderTypeNames = new string[]
-			{
-				"None",
-				"BoxCollider2D",
-				"CircleCollider2D",
-				"CapsuleCollider2D",
-				"PolygonCollider2D",
-				"EdgeCollider2D",
-				"CompositeCollider2D",
-				"CustomCollider2D",
-			} ;
-
-			var collider = component.CCollider ;
-
-			if( collider == null )
-			{
-				// コライダーは無し
-
-				GUILayout.BeginHorizontal() ;	// 横並び開始
-				{
-					GUILayout.Label( new GUIContent( "Collider2D", "<color=#00FFFF>Collider2D</color>コンポーネントの追加または削除を行います" ), GUILayout.Width( 80f ) ) ;
-
-					m_ColliderIndex = EditorGUILayout.Popup( "", m_ColliderIndex, colliderTypeNames, GUILayout.Width( 160f ) ) ;	// フィールド名有りタイプ
-
-					if( m_ColliderIndex >  0 )
-					{
-						bool isAdd = false ;
-
-						GUI.backgroundColor = Color.cyan ;
-						if( GUILayout.Button( new GUIContent( "Add", "<color=#00FFFF>Collider</color>コンポーネントを\nこの<color=#00FF00>GameObjectに追加</color>します" ), GUILayout.Width( 60f ) ) == true )
-						{
-							isAdd = true ;
-						}
-						GUI.backgroundColor = Color.white ;
-
-						if( isAdd == true )
-						{
-							// Collider を追加する
-
-							switch( m_ColliderIndex )
-							{
-								case 1 : component.AddCollider<BoxCollider2D>()			; break ;
-								case 2 : component.AddCollider<CircleCollider2D>()		; break ;
-								case 3 : component.AddCollider<CapsuleCollider2D>()		; break ;
-								case 4 : component.AddCollider<PolygonCollider2D>()		; break ;
-								case 5 : component.AddCollider<EdgeCollider2D>()		; break ;
-								case 6 : component.AddCollider<CompositeCollider2D>()	; break ;
-								case 7 : component.AddCollider<CustomCollider2D>()		; break ;
-							}
-						}
-					}
-				}
-				GUILayout.EndHorizontal() ;		// 横並び終了
-			}
-			else
-			{
-				// コライダーは有り
-
-				if( m_ColliderRemoveAready == false )
-				{
-					GUILayout.BeginHorizontal() ;	// 横並び開始
-					{
-						GUILayout.Label( new GUIContent( "Collider2D", "<color=#00FFFF>Collider2D</color>コンポーネントの追加または削除を行います" ), GUILayout.Width( 80f ) ) ;
-
-						if( collider is BoxCollider2D		){ m_ColliderIndex = 1 ; }
-						if( collider is CircleCollider2D	){ m_ColliderIndex = 2 ; }
-						if( collider is CapsuleCollider2D	){ m_ColliderIndex = 3 ; }
-						if( collider is PolygonCollider2D	){ m_ColliderIndex = 4 ; }
-						if( collider is EdgeCollider2D		){ m_ColliderIndex = 5 ; }
-						if( collider is CompositeCollider2D	){ m_ColliderIndex = 6 ; }
-						if( collider is CustomCollider2D	){ m_ColliderIndex = 7 ; }
-
-						EditorGUILayout.TextField( "", colliderTypeNames[ m_ColliderIndex ], GUILayout.Width( 160f ) ) ;
-
-						bool isRemove = false ;
-						GUI.backgroundColor = Color.red ;	// ボタンの下地を緑に
-						if( GUILayout.Button( new GUIContent( "Remove", "<color=#00FFFF>Collider</color>コンポーネントを\nこの<color=#00FF00>GameObjectから削除</color>します" ), GUILayout.Width( 60f ) ) == true )
-						{
-							isRemove = true ;
-						}
-						GUI.backgroundColor = Color.white ;	// ボタンの下地を緑に
-
-						if( isRemove == true )
-						{
-							// 削除確認へ
-							m_ColliderRemoveAready = true ;
-						}
-					}
-					GUILayout.EndHorizontal() ;		// 横並び終了
-				}
-				else
-				{
-					// 実際の破棄の確認と実行
-					var message = GetMessage( "RemoveColliderOK?" ).Replace( "%1", colliderTypeNames[ m_ColliderIndex ] ) ;
-					GUILayout.Label( message ) ;
-
-					GUILayout.BeginHorizontal() ;	// 横並び開始
-					{
-						GUI.backgroundColor = Color.red ;
-						if( GUILayout.Button( "OK", GUILayout.Width( 100f ) ) == true )
-						{
-							// 本当に削除する
-							Undo.RecordObject( component, $"[SpriteController] {colliderTypeNames[ m_ColliderIndex ]} Remove" ) ;	// アンドウバッファに登録
-							component.RemoveCollider() ;
-							EditorUtility.SetDirty( component ) ;
-							UnityEditor.SceneManagement.EditorSceneManager.MarkSceneDirty( UnityEditor.SceneManagement.EditorSceneManager.GetActiveScene() ) ;
-
-							m_ColliderRemoveAready = false ;
-						}
-						GUI.backgroundColor = Color.white ;
-						if( GUILayout.Button( "Cancel", GUILayout.Width( 100f ) ) == true )
-						{
-							m_ColliderRemoveAready = false ;
-						}
-					}
-					GUILayout.EndHorizontal() ;		// 横並び終了
-				}
-
-				// コライダーの自動調整
-				GUILayout.BeginHorizontal() ;	// 横並び
-				{
-					GUILayout.Label( " ", GUILayout.Width( 16f ) ) ;
-					bool colliderAdjustment = EditorGUILayout.Toggle( component.ColliderAdjustment, GUILayout.Width( 16f ) ) ;
-					if( colliderAdjustment != component.ColliderAdjustment )
-					{
-						Undo.RecordObject( component, "SpriteImage : Collider Adjustment Change" ) ;	// アンドウバッファに登録
-						component.ColliderAdjustment = colliderAdjustment ;
-						EditorUtility.SetDirty( component ) ;
-					}
-					GUILayout.Label( new GUIContent( "Collider Adjustment", "コライダーのサイズをメッシュのサイズに自動的に合わせるかどうか" ) ) ;
-				}
-				GUILayout.EndHorizontal() ;		// 横並び終了
-			}
-		}
-
-		//--------------------------------------------------------------------------
-		// Animator
-
-		// アニメーターの生成破棄チェックボックスを描画する
-		protected void DrawAnimator( SpriteImage controller )
-		{
-			EditorGUILayout.Separator() ;	// 少し区切りスペース
-
-			GUILayout.BeginHorizontal() ;	// 横並び
-			{
-				bool isAnimator = EditorGUILayout.Toggle( controller.IsAnimator, GUILayout.Width( 16f ) ) ;
-				if( isAnimator != controller.IsAnimator )
-				{
-					Undo.RecordObject( controller, "[SpriteController] Animator Change" ) ;	// アンドウバッファに登録
-					controller.IsAnimator = isAnimator ;
-					EditorUtility.SetDirty( controller ) ;
-					UnityEditor.SceneManagement.EditorSceneManager.MarkSceneDirty( UnityEditor.SceneManagement.EditorSceneManager.GetActiveScene() ) ;
-				}
-				GUILayout.Label( new GUIContent( "Animator", "<color=#00FFFF>Animator</color>コンポーネントを\nこの<color=#00FF00>GameObjectに追加</color>します\n<color=#00FFFF>PlayAnimator</color>メソッドを実行する際に必要になります" ) ) ;
-			}
-			GUILayout.EndHorizontal() ;		// 横並び終了
-		}
-
-		//--------------------------------------------------------------------------
-
-		private static readonly Dictionary<string,string> m_Japanese_Message = new ()
-		{
-			{ "RemoveTweenOK?",		"Tween [ %1 ] を削除してもよろしいですか？" },
-			{ "RemoveFlipperOK?",	"Flipper [ %1 ] を削除してもよろしいですか？" },
-			{ "EventTriggerNone",	"EventTrigger クラスが必要です" },
-			{ "InputIdentity",		"識別子を入力してください" },
-
-			{ "RemoveColliderOK?",	"[ %1 ] を削除してもよろしいですか？" },
-		} ;
-		private static readonly Dictionary<string,string> m_English_Message = new ()
-		{
-			{ "RemoveTweenOK?",		"It does really may be to remove tween %1 ?" },
-			{ "RemoveFlipperOK?",	"It does really may be to remove flipper %1 ?" },
-			{ "EventTriggerNone",	"'EventTrigger' is necessary." },
-			{ "InputIdentity",		"Input identity !" },
-
-			{ "RemoveColliderOK?",   "It does really may be to remove %1 ?" },
-		} ;
-
-		private static string GetMessage( string label )
-		{
-			if( Application.systemLanguage == SystemLanguage.Japanese )
-			{
-				if( m_Japanese_Message.ContainsKey( label ) == false )
-				{
-					return "指定のラベル名が見つかりません" ;
-				}
-				return m_Japanese_Message[ label ] ;
-			}
-			else
-			{
-				if( m_English_Message.ContainsKey( label ) == false )
-				{
-					return "Specifying the label name can not be found" ;
-				}
-				return m_English_Message[ label ] ;
-			}
-		}
-
-		//-------------------------------------------------------------------------------------------
-
-		// 区切り線
-		protected void DrawSeparater()
-		{
-			EditorGUILayout.Space( 8 ) ;	// 少し区切りスペース
-
-			var rect = GUILayoutUtility.GetRect( Screen.width, 2f ) ;
-
-			EditorGUI.DrawRect( new Rect( rect.x + 0, rect.y + 0, rect.width - 0, 1 ), Color.white ) ;
-			EditorGUI.DrawRect( new Rect( rect.x + 0, rect.y + 1, rect.width - 0, 1 ), Color.black ) ;
-
-			EditorGUILayout.Space( 8 ) ;	// 少し区切りスペース
-
-		}
 	}
 }
 

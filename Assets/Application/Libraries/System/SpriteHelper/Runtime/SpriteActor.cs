@@ -15,7 +15,7 @@ using UnityEditorInternal ;
 namespace SpriteHelper
 {
 	/// <summary>
-	/// スプライト制御クラス  Version 2024/07/18
+	/// スプライト制御クラス  Version 2024/08/14
 	/// </summary>
 	public partial class SpriteActor : SpriteImage
 	{
@@ -48,7 +48,16 @@ namespace SpriteHelper
 			t.localScale = Vector3.one ;
 
 			var component = child.AddComponent<SpriteActor>() ;
-			component.SetDefault( true ) ;	// 初期状態に設定する
+			component.SetDefault() ;	// 初期状態に設定する
+
+			// 一番上に移動させる
+			while( ComponentUtility.MoveComponentUp( component ) ){}
+
+			if( component.TryGetComponent<SpriteDrawer>( out var spriteDrawer ) == true )
+			{
+				// SpriteDrawer を一番上に移動させる
+				while( ComponentUtility.MoveComponentUp( spriteDrawer ) ){}
+			}
 
 			Selection.activeGameObject = child ;
 

@@ -15,12 +15,12 @@ using UnityEditorInternal ;
 namespace SpriteHelper
 {
 	/// <summary>
-	/// スプライト制御クラス  Version 2024/07/18
+	/// スプライト制御クラス  Version 2024/08/16
 	/// </summary>
 	[ExecuteAlways]
 	[DisallowMultipleComponent]
 	[RequireComponent( typeof( SpriteDrawer ) )]
-	public partial class SpriteImage : SpriteBasis
+	public partial class SpriteImage : SpriteFrame
 	{
 #if UNITY_EDITOR
 		/// <summary>
@@ -51,7 +51,16 @@ namespace SpriteHelper
 			t.localScale = Vector3.one ;
 
 			var component = child.AddComponent<SpriteImage>() ;
-			component.SetDefault( true ) ;	// 初期状態に設定する
+			component.SetDefault() ;	// 初期状態に設定する
+
+			// 一番上に移動させる
+			while( ComponentUtility.MoveComponentUp( component ) ){}
+
+			if( component.TryGetComponent<SpriteDrawer>( out var spriteDrawer ) == true )
+			{
+				// SpriteDrawer を一番上に移動させる
+				while( ComponentUtility.MoveComponentUp( spriteDrawer ) ){}
+			}
 
 			Selection.activeGameObject = child ;
 
@@ -79,45 +88,23 @@ namespace SpriteHelper
 #endif
 		//-------------------------------------------------------------------------------------------
 
-		//-------------------------------------------------------------------------------------------
-
 		/// <summary>
 		/// 動的生成された際にデフォルト状態を設定する
 		/// </summary>
-		public void SetDefault( bool useSample = false )
+		public override void SetDefault()
 		{
-			var spriteDrawer = CSpriteDrawer ;
-			if( spriteDrawer == null )
-			{
-				return ; 
-			}
+			base.SetDefault() ;
 
-			//----------------------------------
+			//-----------------------------------------------------------
 
-			if( useSample == false )
-			{
-				// サンプルは設定しない
-				return ;
-			}
-
-			var sprites = Resources.LoadAll<Sprite>( "SpriteHelper/Textures/SpriteSet" ) ;
-			if( sprites != null && sprites.Length >  0 )
-			{
-				spriteDrawer.Sprite = sprites[ 0 ] ;
-
-				SetSprites( sprites ) ;
-			}
-
-			var material = Resources.Load<Material>( "SpriteHelper/Materials/DefaultSprite" ) ;
-			if( material != null )
-			{
-				spriteDrawer.Material = material ;
-			}
+			// 予めキャッシュしておく
+			_ = CSpriteDrawer ;
 		}
 
 		//-------------------------------------------------------------------------------------------
 
 		// インスタンスキャッシュ
+		[SerializeField][HideInInspector]
 		protected SpriteDrawer	m_SpriteDrawer ;
 
 		/// <summary>
@@ -711,6 +698,14 @@ namespace SpriteHelper
 
 		//-------------------------------------------------------------------------------------------
 
+		internal void Awake()
+		{
+			if( m_SpriteDrawer == null )
+			{
+				TryGetComponent<SpriteDrawer>( out m_SpriteDrawer ) ;
+			}
+		}
+
 //		internal void OnEnable(){}
 
 //		internal void OnDisable(){}
@@ -849,14 +844,22 @@ namespace SpriteHelper
 			/// </summary>
 			public void Reset()
 			{
-				AnimationName = "Default" ;
+				Name = "Default" ;
 			}
 
 			/// <summary>
 			/// 識別名
 			/// </summary>
-			public string AnimationName = "Default" ;
+			public string Name = "Default" ;
 
+			/// <summary>
+			/// アニメーションの種類ごとの速度係数
+			/// </summary>
+			public float  Speed = 1.0f ;
+
+			/// <summary>
+			/// フレーム情報
+			/// </summary>
 			[Serializable]
 			public class FrameDescriptor
 			{
@@ -1026,6 +1029,48 @@ namespace SpriteHelper
 		/// </summary>
 		public List<AnimationDescriptor> Animations => m_Animations ;
 
+		/// <summary>
+		/// Json 変換用
+		/// </summary>
+		public class AnimationsPackage
+		{
+			public List<AnimationDescriptor> Animations ;
+		}
+
+		/// <summary>
+		/// アニメーションを Json テキストから変換する
+		/// </summary>
+		/// <param name="json"></param>
+		/// <returns></returns>
+		public bool ConvertAnimationsFromJson( string json )
+		{
+			var package = JsonUtility.FromJson<AnimationsPackage>( json ) ;
+			if( package == null )
+			{
+				return false ;
+			}
+
+			m_Animations = package.Animations ;
+
+			return true ;
+		}
+
+		/// <summary>
+		/// アニメーションを Json テキストに変換する
+		/// </summary>
+		/// <returns></returns>
+		public string ConvertAnimationsToJson()
+		{
+			var package = new AnimationsPackage()
+			{
+				Animations = m_Animations 
+			} ;
+
+			return JsonUtility.ToJson( package, prettyPrint:true ) ;
+		}
+
+
+
 #if UNITY_EDITOR
 		[SerializeField][HideInInspector]
 		private int m_AnimationCount = 0 ;
@@ -1071,9 +1116,9 @@ namespace SpriteHelper
 				{
 					foreach( var animation in m_Animations )
 					{
-						if( m_HashAnimations.ContainsKey( animation.AnimationName ) == false )
+						if( m_HashAnimations.ContainsKey( animation.Name ) == false )
 						{
-							m_HashAnimations.Add( animation.AnimationName, animation ) ;
+							m_HashAnimations.Add( animation.Name, animation ) ;
 						}
 					}
 				}
@@ -1086,7 +1131,7 @@ namespace SpriteHelper
 				// 最初のアニメーション名に強制的に設定する
 				if( m_Animations.Count >  0 )
 				{
-					m_PlayingAnimationName = m_Animations[ 0 ].AnimationName ;
+					m_PlayingAnimationName = m_Animations[ 0 ].Name ;
 				}
 			}
 		}
@@ -1124,7 +1169,7 @@ namespace SpriteHelper
 
 			//----------------------------------
 
-			var animation = new AnimationDescriptor(){ AnimationName = animationName } ;
+			var animation = new AnimationDescriptor(){ Name = animationName } ;
 			animation.SetFrames( frames ) ;
 
 			m_Animations.Add( animation ) ;
@@ -1159,7 +1204,7 @@ namespace SpriteHelper
 
 			//----------------------------------
 
-			var animation = new AnimationDescriptor(){ AnimationName = animationName } ;
+			var animation = new AnimationDescriptor(){ Name = animationName } ;
 			animation.SetFrames( frames, duration ) ;
 
 			m_Animations.Add( animation ) ;
@@ -1195,7 +1240,7 @@ namespace SpriteHelper
 
 			if( m_Animations != null && m_Animations.Count >  0 )
 			{
-				var animations = m_Animations.Where( _ => _.AnimationName == animationName ).ToArray() ;
+				var animations = m_Animations.Where( _ => _.Name == animationName ).ToArray() ;
 				if( animations != null && animations.Length >  0 )
 				{
 					m_Animations.RemoveRange( animations ) ;
@@ -1460,11 +1505,30 @@ namespace SpriteHelper
 			}
 		}
 
-		private Vector2 m_Offset ;
-		private Vector2 m_Size ;
+		private bool m_FlipX = false ;
+		private bool m_FlipY = false ;
 
-		internal void Update()
+		// 毎フレーム呼び出される
+		internal override void Update()
 		{
+			// コライダーの更新
+			if( CSpriteDrawer != null && m_ColliderAdjustment == true )
+			{
+				if( CSpriteDrawer.FlipX != m_FlipX || CSpriteDrawer.FlipY != m_FlipY || m_ForceRefresh == true )
+				{
+					m_IsColliderDirty = true ;
+
+					m_FlipX = CSpriteDrawer.FlipX ;
+					m_FlipY = CSpriteDrawer.FlipY ;
+				}
+			}
+
+			//----------------------------------------------------------
+
+			base.Update() ;
+
+			//----------------------------------------------------------
+
 			if( Application.isPlaying == true )
 			{
 				var animation = GetAnimation( m_PlayingAnimationName ) ;
@@ -1475,7 +1539,7 @@ namespace SpriteHelper
 						if( m_IsAnimationPausing == false )
 						{
 							// ポーズ中でなければ時間を進める
-							m_AnimationTimer += ( Time.deltaTime * m_AnimationSpeed ) ;
+							m_AnimationTimer += ( Time.deltaTime * m_AnimationSpeed * animation.Speed ) ;
 						}
 
 						int animationIndex = animation.GetFrameIndex( m_AnimationTimer, m_IsAnimationLooping, out var oneShotTime ) ;
@@ -1510,259 +1574,6 @@ namespace SpriteHelper
 						}
 					}
 				}
-			}
-
-			//---------------------------------------------------------
-
-			// コライダーの更新
-			if( CSpriteDrawer != null && m_ColliderAdjustment == true )
-			{
-				if( CSpriteDrawer.Offset.Equals( m_Offset ) == false || CSpriteDrawer.Size.Equals( m_Size ) == false )
-				{
-					m_IsColliderDirty = true ;
-
-					m_Offset = CSpriteDrawer.Offset ;
-					m_Size	 = CSpriteDrawer.Size ;
-				}
-
-				if( m_IsColliderDirty == true )
-				{
-					AdjustCollider() ;
-				}
-			}
-		}
-
-		//-------------------------------------------------------------------------------------------
-
-		// コライダー２Ｄキャッシュ
-		protected Collider2D m_Collider ;
-
-		/// <summary>
-		/// Collider2D(ショートカット)
-		/// </summary>
-		public virtual Collider2D CCollider
-		{
-			get
-			{
-				if( m_Collider == null )
-				{
-					gameObject.TryGetComponent<Collider2D>( out m_Collider ) ;
-				}
-				return m_Collider ;
-			}
-		}
-		
-		/// <summary>
-		/// Collider2D の有無
-		/// </summary>
-		public bool IsCollider
-		{
-			get
-			{
-				return ( CCollider != null ) ;
-			}
-		}
-		
-		/// <summary>
-		/// Collider の追加
-		/// </summary>
-		public void AddCollider<T>() where T : Collider2D
-		{
-			if( CCollider != null )
-			{
-				return ;
-			}
-		
-			T collider ;
-		
-			collider = gameObject.AddComponent<T>() ;
-			collider.enabled = true ;
-			collider.isTrigger = true ;
-
-			if( TryGetComponent<Rigidbody2D>( out _ ) == false )
-			{
-				var rigidbody2d = gameObject.AddComponent<Rigidbody2D>() ;
-				rigidbody2d.gravityScale = 0 ;
-			}
-
-			m_IsColliderDirty = true ;
-		}
-
-		/// <summary>
-		/// Collider の削除
-		/// </summary>
-		public void RemoveCollider()
-		{
-			if( TryGetComponent<Rigidbody2D>( out var rigidbody2d ) == true )
-			{
-				if( Application.isPlaying == false )
-				{
-					DestroyImmediate( rigidbody2d ) ;
-				}
-				else
-				{
-					Destroy( rigidbody2d ) ;
-				}
-			}
-
-			var collider = CCollider ;
-			if( collider == null )
-			{
-				return ;
-			}
-		
-			if( Application.isPlaying == false )
-			{
-				DestroyImmediate( collider ) ;
-			}
-			else
-			{
-				Destroy( collider ) ;
-			}
-		}
-
-		//-------------------------------------------------------------------------------------------
-
-		private bool m_IsColliderDirty = true ;
-
-		/// <summary>
-		/// コライダーの自動調整
-		/// </summary>
-		[ SerializeField ][ HideInInspector ]
-		protected bool m_ColliderAdjustment = true ;
-
-		/// <summary>
-		/// コライダーの自動調整
-		/// </summary>
-		public    bool	 ColliderAdjustment
-		{
-			get
-			{
-				return m_ColliderAdjustment ;
-			}
-			set
-			{
-				if( m_ColliderAdjustment != value )
-				{
-					m_ColliderAdjustment	= value ;
-
-					if( m_ColliderAdjustment == true )
-					{
-						m_IsColliderDirty	= true ;
-					}
-				}
-			}
-		}
-
-		/// <summary>
-		/// コライダーの位置と大きさをメッシュと同じに合わせる
-		/// </summary>
-		public void AdjustCollider()
-		{
-			if( m_SpriteDrawer == null || m_Collider == null )
-			{
-				return ;
-			}
-
-			var offset = m_SpriteDrawer.Offset ;
-			var size   = m_SpriteDrawer.Size ;
-
-			float sx = size.x ;
-			float sy = size.y ;
-
-			if( m_Collider is BoxCollider2D )
-			{
-				var collider2D = m_Collider as BoxCollider2D ;
-				collider2D.offset	= new ( offset.x, offset.y ) ;
-				collider2D.size		= new ( sx, sy ) ;
-			}
-			else
-			if( m_Collider is CircleCollider2D )
-			{
-				var collider2D = m_Collider as CircleCollider2D ;
-				collider2D.offset	= new ( offset.x, offset.y ) ;
-				collider2D.radius	= Mathf.Min( sx, sy ) * 0.5f ;
-			}
-
-			m_IsColliderDirty = false ;
-		}
-
-		//----------
-		
-		// キャッシュ
-		private Animator m_Animator = null ;
-
-		/// <summary>
-		/// Animator(ショートカット)
-		/// </summary>
-		public virtual Animator CAnimator
-		{
-			get
-			{
-				if( m_Animator == null )
-				{
-					gameObject.TryGetComponent<Animator>( out m_Animator ) ;
-				}
-				return m_Animator ;
-			}
-		}
-		
-		/// <summary>
-		/// Animator の有無
-		/// </summary>
-		public bool IsAnimator
-		{
-			get
-			{
-				return ( CAnimator != null ) ;
-			}
-			set
-			{
-				if( value == true )
-				{
-					AddAnimator() ;
-				}
-				else
-				{
-					RemoveAnimator() ;
-				}
-			}
-		}
-		
-		/// <summary>
-		/// Animator の追加
-		/// </summary>
-		public void AddAnimator()
-		{
-			if( CAnimator != null )
-			{
-				return ;
-			}
-		
-			Animator animator ;
-		
-			animator = gameObject.AddComponent<Animator>() ;
-			animator.speed = 1 ;
-		}
-
-		/// <summary>
-		/// Animator の削除
-		/// </summary>
-		public void RemoveAnimator()
-		{
-			var animator = CAnimator ;
-			if( animator == null )
-			{
-				return ;
-			}
-		
-			if( Application.isPlaying == false )
-			{
-				DestroyImmediate( animator ) ;
-			}
-			else
-			{
-				Destroy( animator ) ;
 			}
 		}
 
@@ -1878,7 +1689,180 @@ namespace SpriteHelper
 				material.SetColor( key, value ) ;
 			}
 		}
+
+		//-----------------------------------------------------------
+
+		/// <summary>
+		/// コライダーの位置と大きさをメッシュと同じに合わせる(Flip に対応)
+		/// </summary>
+		public override void AdjustCollider()
+		{
+			if( CST == null )
+			{
+				return ;
+			}
+
+			//----------------------------------------------------------
+
+			var offset = CST.Offset ;
+			var size   = CST.DeltaSize ;
+
+			if( m_Collider is BoxCollider2D )
+			{
+				var collider2D = m_Collider as BoxCollider2D ;
+
+				float mx, my ;
+				float ml, mr, mt, mb ;
+
+				ml = m_ColliderMarginL ;
+				mr = m_ColliderMarginR ;
+
+				if( CSpriteDrawer.FlipX == true )
+				{
+					( ml, mr ) = ( mr, ml ) ;
+				}
+
+				mt = m_ColliderMarginT ;
+				mb = m_ColliderMarginB ;
+
+				if( CSpriteDrawer.FlipY == true )
+				{
+					( mt, mb ) = ( mb, mt ) ;
+				}
+
+				mx = ( ml - mr ) * 0.5f ;
+				my = ( mb - mt ) * 0.5f ;
+
+				collider2D.offset	= new ( offset.x + mx, offset.y + my ) ;
+				collider2D.size		= new ( size.x - ml - mr, size.y - mb - mt ) ;
+			}
+			else
+			if( m_Collider is CircleCollider2D )
+			{
+				var collider2D = m_Collider as CircleCollider2D ;
+
+				float mx, my ;
+				float ml, mr, mt, mb ;
+
+				ml = m_ColliderMarginL ;
+				mr = m_ColliderMarginR ;
+
+				if( CSpriteDrawer.FlipX == true )
+				{
+					( ml, mr ) = ( mr, ml ) ;
+				}
+
+				mt = m_ColliderMarginT ;
+				mb = m_ColliderMarginB ;
+
+				if( CSpriteDrawer.FlipY == true )
+				{
+					( mt, mb ) = ( mb, mt ) ;
+				}
+
+				mx = ( ml - mr ) * 0.5f ;
+				my = ( mb - mt ) * 0.5f ;
+
+				collider2D.offset	= new ( offset.x + mx, offset.y + my ) ;
+				collider2D.radius	= Mathf.Min( size.x - ml - mr, size.y - mb - mt ) * 0.5f ;
+			}
+			else
+			if( m_Collider is CapsuleCollider2D )
+			{
+				var collider2D = m_Collider as CapsuleCollider2D ;
+
+				float mx, my ;
+				float ml, mr, mt, mb ;
+
+				ml = m_ColliderMarginL ;
+				mr = m_ColliderMarginR ;
+
+				if( CSpriteDrawer.FlipX == true )
+				{
+					( ml, mr ) = ( mr, ml ) ;
+				}
+
+				mt = m_ColliderMarginT ;
+				mb = m_ColliderMarginB ;
+
+				if( CSpriteDrawer.FlipY == true )
+				{
+					( mt, mb ) = ( mb, mt ) ;
+				}
+
+				mx = ( ml - mr ) * 0.5f ;
+				my = ( mb - mt ) * 0.5f ;
+
+				collider2D.offset	= new ( offset.x + mx, offset.y + my ) ;
+				collider2D.size		= new ( size.x - ml - mr, size.y - mb - mt ) ;
+			}
+			else
+			if( m_Collider is EdgeCollider2D )
+			{
+				var collider2D = m_Collider as EdgeCollider2D ;
+
+				float mx, my ;
+				float ml, mr, mt, mb ;
+
+				ml = m_ColliderMarginL ;
+				mr = m_ColliderMarginR ;
+
+				if( CSpriteDrawer.FlipX == true )
+				{
+					( ml, mr ) = ( mr, ml ) ;
+				}
+
+				mt = m_ColliderMarginT ;
+				mb = m_ColliderMarginB ;
+
+				if( CSpriteDrawer.FlipY == true )
+				{
+					( mt, mb ) = ( mb, mt ) ;
+				}
+
+				mx = ( ml - mr ) * 0.5f ;
+				my = ( mb - mt ) * 0.5f ;
+
+				float ox = offset.x + mx,    oy = offset.y + my ;
+				float sx = size.x - ml - mr, sy = size.y - mb - mt ; 
+
+				float hx = sx * 0.5f ;
+				float hy = sy * 0.5f ;
+
+				float x0 = ox - hx ;
+				float x1 = ox + hx ;
+				float y0 = oy - hy ;
+				float y1 = oy + hy ;
+
+				float ew = m_ColliderEdgeWidth ;
+				if( ew <= 0 )
+				{
+					ew  = 0.1f ;
+				}
+
+				collider2D.points = new Vector2[]
+				{
+					new ( x0 + ew, y0 ),
+					new ( x0, y0 + ew ),
+
+					new ( x0, y1 - ew ),
+					new ( x0 + ew, y1 ),
+
+					new ( x1 - ew, y1 ),
+					new ( x1, y1 - ew ),
+
+					new ( x1, y0 + ew ),
+					new ( x1 - ew, y0 ),
+
+					new ( x0 + ew, y0 ),	// 最初に戻る
+				} ;
+			}
+
+			m_IsColliderDirty = false ;
+		}
 	}
+
+	//--------------------------------------------------------------------------------------------
 
 	/// <summary>
 	/// リストの拡張メソッド

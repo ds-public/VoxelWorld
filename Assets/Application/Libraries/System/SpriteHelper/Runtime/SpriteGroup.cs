@@ -12,19 +12,19 @@ using UnityEditorInternal ;
 namespace SpriteHelper
 {
 	/// <summary>
-	/// スプライト制御クラス  Version 2024/05/12
+	/// スプライト制御クラス  Version 2024/08/09
 	/// </summary>
 //	[ExecuteAlways]
 	[DisallowMultipleComponent]
-	public partial class SpriteLayer : SpriteBasis
+	public partial class SpriteGroup : SpriteTransform
 	{
 #if UNITY_EDITOR
 		/// <summary>
 		/// SpriteScreen を生成
 		/// </summary>
-		[MenuItem( "GameObject/SpriteHelper/SpriteLayer", false, 22 )]	// メニューから
-		[MenuItem( "SpriteHelper/Add a SpriteLayer" )]					// ポップアップメニューから
-		public static void CreateSpriteLayer()
+		[MenuItem( "GameObject/SpriteHelper/SpriteGroup", false, 22 )]	// メニューから
+		[MenuItem( "SpriteHelper/Add a SpriteGroup" )]					// ポップアップメニューから
+		public static void CreateSpriteGroup()
 		{
 			GameObject go = Selection.activeGameObject ;
 			if( go == null )
@@ -37,17 +37,20 @@ namespace SpriteHelper
 				return ;
 			}
 
-			Undo.RecordObject( go, "Add a child SpriteLayer" ) ;	// アンドウバッファに登録
+			Undo.RecordObject( go, "Add a child SpriteGroup" ) ;	// アンドウバッファに登録
 
-			var child = new GameObject( "SpriteLayer" ) ;
+			var child = new GameObject( "SpriteGroup" ) ;
 
-			Transform t = child.transform ;
+			var t = child.transform ;
 			t.SetParent( go.transform, false ) ;
 			t.SetLocalPositionAndRotation( Vector3.zero, Quaternion.identity ) ;
 			t.localScale = Vector3.one ;
 
-			var component = child.AddComponent<SpriteLayer>() ;
+			var component = child.AddComponent<SpriteGroup>() ;
 			component.SetDefault() ;	// 初期状態に設定する
+
+			// 一番上に移動させる
+			while( ComponentUtility.MoveComponentUp( component ) ){}
 
 			Selection.activeGameObject = child ;
 

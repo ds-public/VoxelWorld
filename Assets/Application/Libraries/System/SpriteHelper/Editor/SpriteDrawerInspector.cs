@@ -13,7 +13,7 @@ using UnityEditor ;
 namespace SpriteHelper
 {
 	[CustomEditor( typeof( SpriteDrawer ) )]
-	public class SpriteDrawerInspector : Editor
+	public class SpriteDrawerInspector : SpriteTransformInspector
 	{
 		/// <summary>
 		/// スンスペクター描画
@@ -27,32 +27,9 @@ namespace SpriteHelper
 		
 			// ターゲットのインスタンス
 			var component = target as SpriteDrawer ;
-		
-			EditorGUILayout.Separator() ;   // 少し区切りスペース
 
-			//----------------------------------
-
-			// オフセット
-			var offset2D_Old = new Vector2( component.Offset.x, component.Offset.y ) ;
-			var offset2D_New = EditorGUILayout.Vector2Field( "Offset", offset2D_Old ) ;
-			if( offset2D_New.Equals( offset2D_Old ) == false )
-			{
-				Undo.RecordObject( component, "SpriteDrawer : Offset Change" ) ;	// アンドウバッファに登録
-				component.Offset = new Vector2( offset2D_New.x, offset2D_New.y ) ;
-				EditorUtility.SetDirty( component ) ;
-			}
-	
-			// サイズ
-			var size2D_Old = new Vector2( component.Size.x, component.Size.y ) ;
-			var size2D_New = EditorGUILayout.Vector2Field( "Size", size2D_Old ) ;
-			if( size2D_New.Equals( size2D_Old ) == false )
-			{
-				Undo.RecordObject( component, "SpriteDrawer : Size Change" ) ;	// アンドウバッファに登録
-				component.Size = new Vector2( size2D_New.x, size2D_New.y ) ;
-				EditorUtility.SetDirty( component ) ;
-			}
-
-			EditorGUILayout.Separator() ;   // 少し区切りスペース
+			// トランスフォーム部分を描画する
+			DrawTransform( component, true ) ;
 
 			//----------------------------------
 

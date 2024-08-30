@@ -1087,14 +1087,14 @@ namespace uGUIHelper
 
 				if( view.BackKeyEnabled == true )
 				{
-					bool isBackKeyIgnoreRaycastTarget = EditorGUILayout.Toggle( view.IsBackKeyIgnoreRaycastTarget, GUILayout.Width( 16f ) ) ;
-					if( isBackKeyIgnoreRaycastTarget != view.IsBackKeyIgnoreRaycastTarget )
+					bool isForceRaycastTargetEnabled = EditorGUILayout.Toggle( view.IsForceRaycastTargetEnabled, GUILayout.Width( 16f ) ) ;
+					if( view.IsForceRaycastTargetEnabled != isForceRaycastTargetEnabled )
 					{
-						Undo.RecordObject( view, "UIImage : Is Back Key Ignore RaycastTarget Change" ) ;	// アンドウバッファに登録
-						view.IsBackKeyIgnoreRaycastTarget = isBackKeyIgnoreRaycastTarget ;
+						Undo.RecordObject( view, "UIImage : Is Foece RaycastTarget Enabled Change" ) ;	// アンドウバッファに登録
+						view.IsForceRaycastTargetEnabled = isForceRaycastTargetEnabled ;
 						EditorUtility.SetDirty( view ) ;
 					}
-					GUILayout.Label( "Ignore RaycastTarget" ) ;
+					GUILayout.Label( "Is Foece RaycastTarget Enabled" ) ;
 				}
 			}
 			GUILayout.EndHorizontal() ;     // 横並び終了

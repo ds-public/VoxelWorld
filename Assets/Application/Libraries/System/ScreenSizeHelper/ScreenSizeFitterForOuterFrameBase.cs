@@ -6,7 +6,7 @@ using UnityEngine.EventSystems ;
 namespace ScreenSizeHelper
 {
 	/// <summary>
-	/// スクリーンのサイズ調整クラス Version 2024/02/22 0
+	/// スクリーンのサイズ調整クラス Version 2024/08/14 0
 	/// </summary>
 	[ExecuteAlways]
 	[DisallowMultipleComponent]
@@ -66,7 +66,7 @@ namespace ScreenSizeHelper
 		protected float					m_ParentHeight ;
 
 
-		[Header( "基準解像度 ※ReadOnly" )]
+		[Header( "基準解像度" )]
 
 		// 基準解像度
 		[SerializeField]
@@ -76,7 +76,7 @@ namespace ScreenSizeHelper
 		protected float					m_BasicHeight ;
 
 
-		[Header( "最大解像度 ※ReadOnly" )]
+		[Header( "最大解像度" )]
 
 		// 最大解像度
 		[SerializeField]

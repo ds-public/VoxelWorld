@@ -21,9 +21,9 @@ namespace uGUIHelper
 		/// <param name="onLoaded"></param>
 		/// <param name="rootPath"></param>
 		/// <returns></returns>
-		public static T[] FindComponents<T>( string rootPath, Action<T> onLoaded = null ) where T: UnityEngine.Object
+		public static T[] FindComponents<T>( string rootPath, Action<T> onLoaded = null ) where T: UnityEngine.Component
 		{
-			List<T> targets = new List<T>() ;
+			var targets = new List<T>() ;
 
 			// Prefab
 			string[] prefabGuids = AssetDatabase.FindAssets( "t:prefab", new string[]{ rootPath } ) ;
@@ -33,7 +33,7 @@ namespace uGUIHelper
 				foreach( var guid in prefabGuids )
 				{
 					string path = AssetDatabase.GUIDToAssetPath( guid ) ;
-					GameObject go = AssetDatabase.LoadAssetAtPath<GameObject>( path ) ;
+					var go = AssetDatabase.LoadAssetAtPath<GameObject>( path ) ;
 
 					T[] targetsInPrefab = go.GetComponentsInChildren<T>( true ) ;
 					if( targetsInPrefab != null && targetsInPrefab.Length >  0 )

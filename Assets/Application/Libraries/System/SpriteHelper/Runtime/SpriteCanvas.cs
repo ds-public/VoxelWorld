@@ -15,19 +15,19 @@ using UnityEditorInternal ;
 namespace SpriteHelper
 {
 	/// <summary>
-	/// スプライト制御クラス  Version 2024/05/20
+	/// スプライト制御クラス  Version 2024/08/09
 	/// </summary>
 	[ExecuteAlways]
 	[DisallowMultipleComponent]
-	public partial class SpriteScreen : MonoBehaviour
+	public partial class SpriteCanvas : SpriteTransform
 	{
 #if UNITY_EDITOR
 		/// <summary>
 		/// SpriteScreen を生成
 		/// </summary>
-		[MenuItem( "GameObject/SpriteHelper/SpriteScreen", false, 22 )]	// メニューから
-		[MenuItem( "SpriteHelper/Add a SpriteScreen" )]					// ポップアップメニューから
-		public static void CreateSpriteScreen()
+		[MenuItem( "GameObject/SpriteHelper/SpriteCanvas", false, 22 )]	// メニューから
+		[MenuItem( "SpriteHelper/Add a SpriteCanvas" )]					// ポップアップメニューから
+		public static void CreateSpriteCanvas()
 		{
 			GameObject go = Selection.activeGameObject ;
 			if( go == null )
@@ -40,17 +40,20 @@ namespace SpriteHelper
 				return ;
 			}
 
-			Undo.RecordObject( go, "Add a child SpriteScreen" ) ;	// アンドウバッファに登録
+			Undo.RecordObject( go, "Add a child SpriteCanvas" ) ;	// アンドウバッファに登録
 
-			var child = new GameObject( "SpriteScreen" ) ;
+			var child = new GameObject( "SpriteCanvas" ) ;
 
 			Transform t = child.transform ;
 			t.SetParent( go.transform, false ) ;
 			t.SetLocalPositionAndRotation( Vector3.zero, Quaternion.identity ) ;
 			t.localScale = Vector3.one ;
 
-			var component = child.AddComponent<SpriteScreen>() ;
+			var component = child.AddComponent<SpriteCanvas>() ;
 			component.SetDefault() ;	// 初期状態に設定する
+
+			// 一番上に移動させる
+			while( ComponentUtility.MoveComponentUp( component ) ){}
 
 			Selection.activeGameObject = child ;
 
@@ -78,36 +81,6 @@ namespace SpriteHelper
 #endif
 		//-------------------------------------------------------------------------------------------
 
-		/// <summary>
-		/// ヒエラルキーでの階層パス名を取得する
-		/// </summary>
-		public string Path
-		{
-			get
-			{
-				string path = name ;
-
-				var t = transform.parent ;
-				while( t != null )
-				{
-					path = $"{t.name}/{path}" ;
-					t = t.parent ;
-				}
-				return path ;
-			}
-		}
-
-		/// <summary>
-		/// Component を追加する(ショートカット)
-		/// </summary>
-		/// <typeparam name="T"></typeparam>
-		/// <returns></returns>
-		public T AddComponent<T>() where T : UnityEngine.Component
-		{
-			return gameObject.AddComponent<T>() ;
-		}
-
-		//-------------------------------------------------------------------------------------------
 
 		/// <summary>
 		/// 動的生成された際にデフォルト状態を設定する
@@ -128,7 +101,7 @@ namespace SpriteHelper
 
 			//----------------------------------
 
-			m_Camera = camera ;
+			m_SpriteCamera = camera ;
 
 			m_SafeAreaEnabled = true ;
 
@@ -151,28 +124,6 @@ namespace SpriteHelper
 		//-------------------------------------------------------------------------------------------
 
 		/// <summary>
-		/// 横方向のアンカー種別
-		/// </summary>
-		public enum HorizontalAnchorTypes
-		{
-			Stretch,
-			Left,
-			Center,
-			Right,
-		}
-
-		/// <summary>
-		/// 縦方向のアンカー種別
-		/// </summary>
-		public enum VerticalAnchorTypes
-		{
-			Stretch,
-			Bottom,
-			Middle,
-			Top,
-		}
-
-		/// <summary>
 		/// ＦｏＶの指定方向
 		/// </summary>
 		public enum FovAxisTypes
@@ -187,7 +138,7 @@ namespace SpriteHelper
 		[Header( "対象のカメラ" )]
 
 		[SerializeField]
-		protected Camera				m_Camera ;
+		protected Camera				m_SpriteCamera ;
 
 		/// <summary>
 		/// スプライトスクリーン用のカメラ
@@ -196,11 +147,11 @@ namespace SpriteHelper
 		{
 			get
 			{
-				return m_Camera ;
+				return m_SpriteCamera ;
 			}
 			set
 			{
-				m_Camera = value ;
+				m_SpriteCamera = value ;
 			}
 		}
 
@@ -289,7 +240,6 @@ namespace SpriteHelper
 			}
 		}
 
-
 		[Header( "最大解像度" )]
 
 		// 最大解像度
@@ -336,37 +286,10 @@ namespace SpriteHelper
 
 		//-----------------------------------------------------------
 
-		[Header( "ピボット" )]
-
-		// 最大解像度
-		[SerializeField]
-		protected Vector2					m_Pivot ;
-
-		public Vector2 Pivot
-		{
-			get
-			{
-				return m_Pivot ;
-			}
-			set
-			{
-				if( m_Pivot != value )
-				{
-					m_Pivot = value ;
-
-					m_IsDirty = true ;
-				}
-			}
-		}
-
-		//-----------------------------------------------------------
-
-		[Header( "ビューポートの表示位置指定" )]
-
-		[SerializeField]
-		protected HorizontalAnchorTypes	m_HorizontalAnchorType = HorizontalAnchorTypes.Stretch ;
-
-		public HorizontalAnchorTypes HorizontalAnchorType
+		/// <summary>
+		/// 水平方向のアンカータイプ
+		/// </summary>
+		public override HorizontalAnchorTypes HorizontalAnchorType
 		{
 			get
 			{
@@ -383,91 +306,92 @@ namespace SpriteHelper
 			}
 		}
 
-
-		[SerializeField]
-		protected float					m_ViewportMarginL ;
-
-		public float ViewportMarginL
-		{
-			get
-			{
-				return m_ViewportMarginL ;
-			}
-			set
-			{
-				if( m_ViewportMarginL != value )
-				{
-					m_ViewportMarginL  = value ;
-
-					m_IsDirty = true ;
-				}
-			}
-		}
-
-		[SerializeField]
-		protected float					m_ViewportMarginR ;
-
-		public float ViewportMarginR
-		{
-			get
-			{
-				return m_ViewportMarginR ;
-			}
-			set
-			{
-				if( m_ViewportMarginR != value )
-				{
-					m_ViewportMarginR  = value ;
-
-					m_IsDirty = true ;
-				}
-			}
-		}
-
-		[SerializeField]
-		protected float					m_ViewportOffsetX ;
-
+		/// <summary>
+		/// ビューポートのオフセット位置(Ｘ)
+		/// </summary>
 		public float ViewportOffsetX
 		{
 			get
 			{
-				return m_ViewportOffsetX ;
+				return m_AnchorPositionX ;
 			}
 			set
 			{
-				if( m_ViewportOffsetX != value )
+				if( m_AnchorPositionX != value )
 				{
-					m_ViewportOffsetX  = value ;
+					m_AnchorPositionX  = value ;
 
 					m_IsDirty = true ;
 				}
 			}
 		}
 
-		[SerializeField]
-		protected float					m_ViewportWidth  ;
-
+		/// <summary>
+		/// ビューポートの横幅
+		/// </summary>
 		public float ViewportWidth
 		{
 			get
 			{
-				return m_ViewportWidth  ;
+				return m_Width  ;
 			}
 			set
 			{
-				if( m_ViewportWidth  != value )
+				if( m_Width  != value )
 				{
-					m_ViewportWidth   = value ;
+					m_Width   = value ;
 
 					m_IsDirty = true ;
 				}
 			}
 		}
 
-		[SerializeField]
-		protected VerticalAnchorTypes	m_VerticalAnchorType = VerticalAnchorTypes.Stretch ;
+		/// <summary>
+		/// ビューポートのマージン(右)
+		/// </summary>
+		public float ViewportMarginL
+		{
+			get
+			{
+				return m_MarginL ;
+			}
+			set
+			{
+				if( m_MarginL != value )
+				{
+					m_MarginL  = value ;
 
-		public VerticalAnchorTypes VerticalAnchorType
+					m_IsDirty = true ;
+				}
+			}
+		}
+
+		/// <summary>
+		/// ビューポートのマージン(右)
+		/// </summary>
+		public float ViewportMarginR
+		{
+			get
+			{
+				return m_MarginR ;
+			}
+			set
+			{
+				if( m_MarginR != value )
+				{
+					m_MarginR  = value ;
+
+					m_IsDirty = true ;
+				}
+			}
+		}
+
+		//---------------
+
+		/// <summary>
+		/// 垂直方向のアンカータイプ
+		/// </summary>
+		public override VerticalAnchorTypes VerticalAnchorType
 		{
 			get
 			{
@@ -484,86 +408,87 @@ namespace SpriteHelper
 			}
 		}
 
-		[SerializeField]
-		protected float					m_ViewportMarginB ;
-
-		public float ViewportMarginB
-		{
-			get
-			{
-				return m_ViewportMarginB ;
-			}
-			set
-			{
-				if( m_ViewportMarginB != value )
-				{
-					m_ViewportMarginB  = value ;
-
-					m_IsDirty = true ;
-				}
-			}
-		}
-
-		[SerializeField]
-		protected float					m_ViewportMarginT ;
-
-		public float ViewportMarginT
-		{
-			get
-			{
-				return m_ViewportMarginT ;
-			}
-			set
-			{
-				if( m_ViewportMarginT != value )
-				{
-					m_ViewportMarginT  = value ;
-
-					m_IsDirty = true ;
-				}
-			}
-		}
-
-
-		[SerializeField]
-		protected float					m_ViewportOffsetY ;
-
+		/// <summary>
+		/// ビューポートのオフセット位置(Ｙ)
+		/// </summary>
 		public float ViewportOffsetY
 		{
 			get
 			{
-				return m_ViewportOffsetY ;
+				return m_AnchorPositionY ;
 			}
 			set
 			{
-				if( m_ViewportOffsetY != value )
+				if( m_AnchorPositionY != value )
 				{
-					m_ViewportOffsetY  = value ;
+					m_AnchorPositionY  = value ;
 
 					m_IsDirty = true ;
 				}
 			}
 		}
 
-		[SerializeField]
-		protected float					m_ViewportHeight ;
-
+		/// <summary>
+		/// ビューポートの縦幅
+		/// </summary>
 		public float ViewportHeight
 		{
 			get
 			{
-				return m_ViewportHeight ;
+				return m_Height ;
 			}
 			set
 			{
-				if( m_ViewportHeight != value )
+				if( m_Height != value )
 				{
-					m_ViewportHeight  = value ;
+					m_Height  = value ;
 
 					m_IsDirty = true ;
 				}
 			}
 		}
+
+		/// <summary>
+		/// ビューポートのマージン(上)
+		/// </summary>
+		public float ViewportMarginT
+		{
+			get
+			{
+				return m_MarginT ;
+			}
+			set
+			{
+				if( m_MarginT != value )
+				{
+					m_MarginT  = value ;
+
+					m_IsDirty = true ;
+				}
+			}
+		}
+
+		/// <summary>
+		/// ビューポートのマージン(下)
+		/// </summary>
+		public float ViewportMarginB
+		{
+			get
+			{
+				return m_MarginB ;
+			}
+			set
+			{
+				if( m_MarginB != value )
+				{
+					m_MarginB  = value ;
+
+					m_IsDirty = true ;
+				}
+			}
+		}
+
+		//---------------
 
 		[SerializeField]
 		protected bool					m_ProjectionSizeAdjustment = true ;
@@ -582,6 +507,28 @@ namespace SpriteHelper
 				if( m_ProjectionSizeAdjustment != value )
 				{
 					m_ProjectionSizeAdjustment  = value ;
+
+					m_IsDirty = true ;
+				}
+			}
+		}
+
+		//-----------------------------------------------------------
+
+		/// <summary>
+		/// ピボット(中心)
+		/// </summary>
+		public override Vector2 Pivot
+		{
+			get
+			{
+				return m_Pivot ;
+			}
+			set
+			{
+				if( m_Pivot != value )
+				{
+					m_Pivot = value ;
 
 					m_IsDirty = true ;
 				}
@@ -669,38 +616,34 @@ namespace SpriteHelper
 		}
 
 
-		// 現在の画面サイズ(Canvas系)
-
-		private Vector2 m_Size ;
-
 		/// <summary>
 		/// 現在の画面解像度(Canvasスケール)
 		/// </summary>
-		public  Vector2 Size => GetSize() ;
+		public override Vector2 DeltaSize => GetDeltaSize() ;
 
 		/// <summary>
 		/// 現在の画面解像度(Canvasスケール)を取得する
 		/// </summary>
 		/// <returns></returns>
-		public Vector2 GetSize()
+		public override Vector2 GetDeltaSize()
 		{
-			if( m_Size.x <= 0 || m_Size.y <= 0 )
+			if( m_DeltaSize.x <= 0 || m_DeltaSize.y <= 0 )
 			{
 				return new Vector2( m_BasicWidth, m_BasicHeight ) ;
 			}
 
-			return m_Size ;
+			return m_DeltaSize ;
 		}
 
 		//-------------------------------------------------------------------------------------------
 
 		internal void Awake()
 		{
-			if( m_Camera == null )
+			if( m_SpriteCamera == null )
 			{
 				// カメラの指定が無ければ同じノードからの取得を試みる
 
-				TryGetComponent<Camera>( out m_Camera ) ;
+				TryGetComponent<Camera>( out m_SpriteCamera ) ;
 			}
 		}
 
@@ -726,7 +669,7 @@ namespace SpriteHelper
 
 		internal void Start()
 		{
-			if( m_Camera == null )
+			if( m_SpriteCamera == null )
 			{
 				// 最低限 Camera が必要
 				return ;
@@ -739,7 +682,7 @@ namespace SpriteHelper
 
 		internal void Update()
 		{
-			if( m_Camera == null )
+			if( m_SpriteCamera == null )
 			{
 				// 最低限 Camera が必要
 				return ;
@@ -783,7 +726,7 @@ namespace SpriteHelper
 		// カメラのビューポートを更新する
 		private void Refresh()
 		{
-			if( m_Camera == null )
+			if( m_SpriteCamera == null )
 			{
 				// 最低限 Camera が必要
 				return ;
@@ -1021,8 +964,8 @@ namespace SpriteHelper
 
 			// さらにビューポートの範囲内で範囲指定があれば適用する
 
-			float viewportWidth  = m_ViewportWidth ;
-			float viewportHeight = m_ViewportHeight ;
+			float viewportWidth  = m_Width ;
+			float viewportHeight = m_Height ;
 
 			if( viewportWidth  <= 0 )
 			{
@@ -1040,10 +983,10 @@ namespace SpriteHelper
 			{
 				// 横は引き伸ばし
 				case HorizontalAnchorTypes.Stretch :
-					if( ( m_ViewportMarginL + m_ViewportMarginR ) <  viewportW )
+					if( ( m_MarginL + m_MarginR ) <  viewportW )
 					{
-						viewportX += m_ViewportMarginL ;
-						viewportW -= ( m_ViewportMarginL + m_ViewportMarginR ) ;
+						viewportX += m_MarginL ;
+						viewportW -= ( m_MarginL + m_MarginR ) ;
 					}
 				break ;
 
@@ -1051,9 +994,9 @@ namespace SpriteHelper
 
 				// 横は左寄せ
 				case HorizontalAnchorTypes.Left :
-					if( m_ViewportOffsetX >= 0 && ( m_ViewportOffsetX + viewportWidth  ) <= viewportW )
+					if( m_AnchorPositionX >= 0 && ( m_AnchorPositionX + viewportWidth  ) <= viewportW )
 					{
-						viewportX += m_ViewportOffsetX ;
+						viewportX += m_AnchorPositionX ;
 						viewportW  = viewportWidth  ;
 					}
 				break ;
@@ -1063,9 +1006,9 @@ namespace SpriteHelper
 					if( viewportWidth  <= viewportW  )
 					{
 						float offsetLimitX = ( viewportW  - viewportWidth  ) * 0.5f ;
-						if( Mathf.Abs( m_ViewportOffsetX ) <= offsetLimitX )
+						if( Mathf.Abs( m_AnchorPositionX ) <= offsetLimitX )
 						{
-							viewportX += ( offsetLimitX + m_ViewportOffsetX ) ;
+							viewportX += ( offsetLimitX + m_AnchorPositionX ) ;
 							viewportW  = viewportWidth  ;
 						}
 					}
@@ -1073,9 +1016,9 @@ namespace SpriteHelper
 
 				// 横は右寄せ
 				case HorizontalAnchorTypes.Right :
-					if( m_ViewportOffsetX <= 0 && ( viewportWidth  - m_ViewportOffsetX ) <= viewportW )
+					if( m_AnchorPositionX <= 0 && ( viewportWidth  - m_AnchorPositionX ) <= viewportW )
 					{
-						viewportX += ( viewportW - viewportWidth  + m_ViewportOffsetX ) ;
+						viewportX += ( viewportW - viewportWidth  + m_AnchorPositionX ) ;
 						viewportW  = viewportWidth  ;
 					}
 				break ;
@@ -1086,10 +1029,10 @@ namespace SpriteHelper
 			{
 				// 縦は引き伸ばし
 				case VerticalAnchorTypes.Stretch :
-					if( ( m_ViewportMarginB + m_ViewportMarginT ) <  viewportH )
+					if( ( m_MarginB + m_MarginT ) <  viewportH )
 					{
-						viewportY += m_ViewportMarginB ;
-						viewportH -= ( m_ViewportMarginB + m_ViewportMarginT ) ;
+						viewportY += m_MarginB ;
+						viewportH -= ( m_MarginB + m_MarginT ) ;
 					}
 				break ;
 
@@ -1097,9 +1040,9 @@ namespace SpriteHelper
 
 				// 縦は下寄せ
 				case VerticalAnchorTypes.Bottom :
-					if( m_ViewportOffsetY >= 0 && ( m_ViewportOffsetY + viewportHeight ) <= viewportH )
+					if( m_AnchorPositionY >= 0 && ( m_AnchorPositionY + viewportHeight ) <= viewportH )
 					{
-						viewportY += m_ViewportOffsetY ;
+						viewportY += m_AnchorPositionY ;
 						viewportH  = viewportHeight ;
 					}
 				break ;
@@ -1109,9 +1052,9 @@ namespace SpriteHelper
 					if( viewportHeight <= viewportH )
 					{
 						float offsetLimitY = ( viewportH - viewportHeight ) * 0.5f ;
-						if( Mathf.Abs( m_ViewportOffsetY ) <= offsetLimitY )
+						if( Mathf.Abs( m_AnchorPositionY ) <= offsetLimitY )
 						{
-							viewportY += ( offsetLimitY + m_ViewportOffsetY ) ;
+							viewportY += ( offsetLimitY + m_AnchorPositionY ) ;
 							viewportH  = viewportHeight ;
 						}
 					}
@@ -1119,16 +1062,16 @@ namespace SpriteHelper
 
 				// 縦は上寄せ
 				case VerticalAnchorTypes.Top :
-					if( m_ViewportOffsetY <= 0 && ( viewportHeight - m_ViewportOffsetY ) <= viewportH )
+					if( m_AnchorPositionY <= 0 && ( viewportHeight - m_AnchorPositionY ) <= viewportH )
 					{
-						viewportY += ( viewportH - viewportHeight + m_ViewportOffsetY ) ;
+						viewportY += ( viewportH - viewportHeight + m_AnchorPositionY ) ;
 						viewportH  = viewportHeight ;
 					}
 				break ;
 			}
 
 			//--------------
-			// 表示位置確定(ビューポート値をキャンバス座標系からビューポート座標系に変換する)
+			// 表示位置確定(ビューポート値をキャンバス座標系からカメラのビューポート座標系に変換する)
 
 			float vx = viewportX / canvasWidth  ;
 			float vw = viewportW / canvasWidth  ;
@@ -1136,29 +1079,38 @@ namespace SpriteHelper
 			float vy = viewportY / canvasHeight ;
 			float vh = viewportH / canvasHeight ;
 
-			m_Camera.rect = new Rect( vx, vy, vw, vh ) ;
+			m_SpriteCamera.rect = new Rect( vx, vy, vw, vh ) ;
 
 			//----------------------------------------------------------
 			// 投影の自動調整
 
 			// 強制的に平行投影モードにする
-			m_Camera.orthographic = true ;
+			m_SpriteCamera.orthographic = true ;
 
 			if( m_ProjectionSizeAdjustment == true )
 			{
 				// プロジェクションサイズの反映有効
-				m_Camera.orthographicSize = viewportH * 0.5f ;
+				m_SpriteCamera.orthographicSize = viewportH * 0.5f ;
 			}
 
 			//----------------------------------------------------------
 			// ピボットの反映
 
-			m_Camera.transform.localPosition = new Vector3( - viewportW * m_Pivot.x, - viewportH * m_Pivot.y, m_Camera.transform.localPosition.z ) ;
+			m_SpriteCamera.transform.localPosition = new Vector3( - viewportW * m_Pivot.x, - viewportH * m_Pivot.y, m_SpriteCamera.transform.localPosition.z ) ;
 
 			//----------------------------------------------------------
-			// 解像度を更新
+			// 解像度を更新(共有する)
 
-			m_Size = new Vector2 ( viewportW, viewportH ) ;
+			m_Offset.x = - ( viewportW * m_Pivot.x ) ;
+			m_Offset.y = - ( viewportH * m_Pivot.y ) ;
+
+			m_DeltaSize.x = viewportW ;
+			m_DeltaSize.y = viewportH ;
+
+			// 注意：SpriteCanvas では SpriteTransform クラスの UpdateSpriteTransform() を実行する必要は無い
+
+			// 子に通知
+			ApplyToChildren() ;
 
 			//----------------------------------------------------------
 
@@ -1252,16 +1204,20 @@ namespace SpriteHelper
 		/// <summary>
 		/// コンポーネントが Enabled になる際に呼び出される
 		/// </summary>
-		internal void OnEnable()
+		internal override void OnEnable()
 		{
+			base.OnEnable() ;
+
 			m_IsDirty = true ;
 		}
 
 		/// <summary>
 		/// コンポーネントが Disabled になる際に呼び出される
 		/// </summary>
-		internal void OnDisable()
+		internal override void OnDisable()
 		{
+			base .OnDisable() ;
+
 			m_IsDirty = true ;
 		}
 
