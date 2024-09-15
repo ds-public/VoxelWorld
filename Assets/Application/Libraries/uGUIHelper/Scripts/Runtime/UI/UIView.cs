@@ -27,7 +27,7 @@ namespace uGUIHelper
 	/// </summary>
 	public class UIView : UIBehaviour
 	{
-		public const string Version = "Version 2024/08/29 0" ;
+		public const string Version = "Version 2024/09/10 0" ;
 
 		// ソースコード
 		// https://bitbucket.org/Unity-Technologies/ui/src/2019.1/
@@ -2148,7 +2148,19 @@ namespace uGUIHelper
 		/// <summary>
 		///  アンカーを中中に設定
 		/// </summary>
-		public void SetAnchorToCenter()			{ SetAnchorMinAndMax( 0.5f, 0.5f, 0.5f, 0.5f ) ; }
+		public void SetAnchorToCenter( bool isCorrect = true )
+		{
+			if( isCorrect == false )
+			{
+				SetAnchorMinAndMax( 0.5f, 0.5f, 0.5f, 0.5f ) ;
+			}
+			else
+			{
+				var basePosition = transform.position ;
+				SetAnchorMinAndMax( 0.5f, 0.5f, 0.5f, 0.5f ) ;
+				transform.position = basePosition ;
+			}
+		}
 
 		/// <summary>
 		/// マージン
@@ -2717,7 +2729,7 @@ namespace uGUIHelper
 				}
 			}
 		}
-		
+
 		/// <summary>
 		/// スケールを設定
 		/// </summary>
@@ -2725,6 +2737,34 @@ namespace uGUIHelper
 		public void SetScale( float s )
 		{
 			Scale = new Vector3( s, s, Scale.z ) ;
+		}
+
+		/// <summary>
+		/// スケールＸを設定
+		/// </summary>
+		/// <param name="s"></param>
+		public void SetScaleX( float x )
+		{
+			Scale = new Vector3( x, Scale.z, Scale.z ) ;
+		}
+
+		/// <summary>
+		/// スケールＹを設定
+		/// </summary>
+		/// <param name="s"></param>
+		public void SetScaleY( float y )
+		{
+			Scale = new Vector3( Scale.x, y, Scale.z ) ;
+		}
+
+
+		/// <summary>
+		/// スケールＺを設定
+		/// </summary>
+		/// <param name="s"></param>
+		public void SetScaleZ( float z )
+		{
+			Scale = new Vector3( Scale.x, Scale.y, z ) ;
 		}
 
 		/// <summary>

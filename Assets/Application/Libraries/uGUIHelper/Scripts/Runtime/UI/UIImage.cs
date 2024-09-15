@@ -2,22 +2,17 @@ using System.Collections ;
 using System.Collections.Generic ;
 using System.Linq ;
 
-//using UnityEngine.Serialization ;
-
 using UnityEngine ;
 using UnityEngine.UI ;
 using UnityEngine.U2D ;
 
-#if UNITY_EDITOR
-using UnityEditor ;
-#endif
 
 namespace uGUIHelper
 {
 	/// <summary>
 	/// uGUI:Image クラスの機能拡張コンポーネントクラス
 	/// </summary>
-	[ RequireComponent( typeof( UnityEngine.UI.Image ) ) ]
+	[RequireComponent( typeof( UnityEngine.UI.Image ) )]
 	public class UIImage : UIView
 	{
 		/// <summary>
@@ -117,7 +112,7 @@ namespace uGUIHelper
 
 			if( m_SpriteSet == null )
 			{
-				m_SpriteSet = new SpriteSet() ;
+				m_SpriteSet = new () ;
 			}
 			else
 			{
@@ -183,7 +178,7 @@ namespace uGUIHelper
 
 			if( m_SpriteAtlas != null )
 			{
-				Sprite sprite = GetSpriteInAtlasFromCache( spriteName ) ;
+				var sprite = GetSpriteInAtlasFromCache( spriteName ) ;
 				if( sprite != null )
 				{
 					Sprite = sprite ;
@@ -202,7 +197,7 @@ namespace uGUIHelper
 
 			if( m_SpriteSet != null )
 			{
-				Sprite sprite = m_SpriteSet[ spriteName ] ;
+				var sprite = m_SpriteSet[ spriteName ] ;
 				if( sprite != null )
 				{
 					Sprite = sprite ;
@@ -233,7 +228,7 @@ namespace uGUIHelper
 
 			if( m_SpriteAtlas != null )
 			{
-				Sprite sprite = GetSpriteInAtlasFromCache( spriteName ) ;
+				var sprite = GetSpriteInAtlasFromCache( spriteName ) ;
 				if( sprite != null )
 				{
 					return sprite ;
@@ -245,7 +240,7 @@ namespace uGUIHelper
 
 			if( m_SpriteSet != null )
 			{
-				Sprite sprite = m_SpriteSet[ spriteName ] ;
+				var sprite = m_SpriteSet[ spriteName ] ;
 				if( sprite != null )
 				{
 					return sprite ;
@@ -269,10 +264,10 @@ namespace uGUIHelper
 
 			if( m_SpriteAtlas != null )
 			{
-				Sprite sprite = GetSpriteInAtlasFromCache( spriteName ) ;
+				var sprite = GetSpriteInAtlasFromCache( spriteName ) ;
 				if( sprite != null )
 				{
-					return ( int )sprite.rect.width ;
+					return ( int )sprite.textureRect.width ;
 				}
 			}
 
@@ -281,10 +276,10 @@ namespace uGUIHelper
 
 			if( m_SpriteSet != null )
 			{
-				Sprite sprite = m_SpriteSet[ spriteName ] ;
+				var sprite = m_SpriteSet[ spriteName ] ;
 				if( sprite != null )
 				{
-					return ( int )sprite.rect.width ;
+					return ( int )sprite.textureRect.width ;
 				}
 			}
 
@@ -305,10 +300,10 @@ namespace uGUIHelper
 
 			if( m_SpriteAtlas != null )
 			{
-				Sprite sprite = GetSpriteInAtlasFromCache( spriteName ) ;
+				var sprite = GetSpriteInAtlasFromCache( spriteName ) ;
 				if( sprite != null )
 				{
-					return ( int )sprite.rect.height ;
+					return ( int )sprite.textureRect.height ;
 				}
 			}
 
@@ -317,10 +312,10 @@ namespace uGUIHelper
 
 			if( m_SpriteSet != null )
 			{
-				Sprite sprite = m_SpriteSet[ spriteName ] ;
+				var sprite = m_SpriteSet[ spriteName ] ;
 				if( sprite != null )
 				{
-					return ( int )sprite.rect.height ;
+					return ( int )sprite.textureRect.height ;
 				}
 			}
 
@@ -651,7 +646,7 @@ namespace uGUIHelper
 		// 各派生クラスでの初期化処理を行う（メニューまたは AddView から生成される場合のみ実行れる）
 		protected override void OnBuild( string option = "" )
 		{
-			Image image = CImage != null ? CImage : gameObject.AddComponent<Image>() ;
+			var image = CImage != null ? CImage : gameObject.AddComponent<Image>() ;
 			if( image == null )
 			{
 				// 異常
@@ -698,7 +693,7 @@ namespace uGUIHelper
 		/// <returns>結果(true=成功・false=失敗)</returns>
 		public bool LoadSpriteFromResources( string path )
 		{
-			Sprite sprite = Resources.Load<Sprite>( path ) ;
+			var sprite = Resources.Load<Sprite>( path ) ;
 			if( sprite == null )
 			{
 				return false ;

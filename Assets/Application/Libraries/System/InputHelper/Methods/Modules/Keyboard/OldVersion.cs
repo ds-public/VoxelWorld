@@ -167,6 +167,140 @@ namespace InputHelper
 				{ KeyCodes.Menu,				KeyCode.Menu				},
 			} ;
 
+			//---------------------------------------------------------------------------------
+
+			private static KeyCodes[] m_KeyCodes ;
+
+			/// <summary>
+			/// ボタン用状態
+			/// </summary>
+			public class KeyState
+			{
+				public bool		RepeatKeepFlag ;
+				public float	RepeatWakeTime ;
+				public float	RepeatLoopTime ;
+				public bool		IsRepeat ;
+				public bool		IsDown ;
+				public bool		IsUp ;
+			}
+
+			private static KeyState[,] m_KeyStates ;
+
+			private static Dictionary<KeyCodes,int> m_KeyCodeToIndexMapper ;
+
+			//---------------------------------------------------------------------------------
+
+			/// <summary>
+			/// 初期化を行う
+			/// </summary>
+			public void Initialize()
+			{
+				// キーの全種
+				m_KeyCodes = m_KeyCodeMapper.Keys.ToArray() ;
+
+				int keyIndex ;
+				int numberOfKeys = m_KeyCodes.Length ;
+
+				// キーの順番
+				m_KeyCodeToIndexMapper = new Dictionary<KeyCodes,int>() ;
+				for( keyIndex  = 0 ; keyIndex <  numberOfKeys ; keyIndex ++ )
+				{
+					m_KeyCodeToIndexMapper.Add( m_KeyCodes[ keyIndex ], keyIndex ) ;
+				}
+				
+				// キーの状態
+				m_KeyStates = new KeyState[ numberOfKeys, 2 ] ;
+				for( keyIndex  = 0 ; keyIndex <  numberOfKeys ; keyIndex ++ )
+				{
+					m_KeyStates[ keyIndex, 0 ] = new () ;	// Update 用
+					m_KeyStates[ keyIndex, 1 ] = new () ;	// FixedUpdate 用
+				}
+			}
+
+			/// <summary>
+			/// フレーム毎の更新呼び出し
+			/// </summary>
+			public void Update( bool fromFixedUpdate )
+			{
+				int slotNumber = ( fromFixedUpdate == false ? 0 : 1 ) ;
+
+				// SlotNumber = 0 : Update
+				// SlotNumber = 1 : FixedUpdate
+
+				int keyIndex ;
+				int numberOfKeys = m_KeyCodes.Length ;
+
+				KeyState state ;
+
+				float time = Time.realtimeSinceStartup ;
+
+				for( keyIndex  = 0 ; keyIndex <  numberOfKeys ; keyIndex ++ )
+				{
+					state = m_KeyStates[ keyIndex, slotNumber ] ;
+
+					//---------------------------------
+
+					state.IsRepeat	= false ;
+					state.IsDown	= false ;
+					state.IsUp		= false ;
+
+					bool isPressed = Input.GetKey( m_KeyCodeMapper[ m_KeyCodes[ keyIndex ] ] ) ;
+					if( isPressed == true )
+					{
+						if( state.RepeatKeepFlag == false )
+						{
+							// リピート開始
+							state.IsRepeat	= true ;
+
+							state.RepeatKeepFlag = true ;
+							state.RepeatWakeTime = time ;
+							state.RepeatLoopTime = time ;
+
+							state.IsDown = true ;
+						}
+						else
+						{
+							// リピート最中
+							if( ( time - state.RepeatWakeTime ) >= RepeatStartingTime )
+							{
+								// リピート中
+								if( ( time - state.RepeatLoopTime ) >= RepeatIntervalTime )
+								{
+									state.RepeatLoopTime = time ;
+
+									state.IsRepeat = true ;
+								}
+							}
+						}
+					}
+					else
+					{
+						// リピート解除
+						if( state.RepeatKeepFlag == true )
+						{
+							state.IsUp = true ;
+
+							state.RepeatKeepFlag  = false ;
+						}
+					}
+				}
+			}
+
+			/// <summary>
+			/// どのキーが押されているか確認する
+			/// </summary>
+			public void CheckAllKeys()
+			{
+				foreach( KeyCode keyCode in Enum.GetValues( typeof( KeyCode ) ) )
+				{
+					if( Input.GetKey( keyCode ) == true )
+					{
+						Debug.Log( "Pressing Key : " + keyCode ) ;
+					}
+				}
+			}
+
+			//---------------------------------------------------------------------------------
 
 			/// <summary>
 			/// キーが押されているかどうかの判定
@@ -183,9 +317,16 @@ namespace InputHelper
 			/// </summary>
 			/// <param name="keyCode"></param>
 			/// <returns></returns>
-			public bool GetKeyDown( KeyCodes keyCode )
+			public bool GetKeyDown( KeyCodes keyCode, bool fromFixedUpdate )
 			{
-				return Input.GetKeyDown( m_KeyCodeMapper[ keyCode ] ) ;
+				int slotNumber = ( fromFixedUpdate == false ? 0 : 1 ) ;
+
+				// SlotNumber = 0 : Update
+				// SlotNumber = 1 : FixedUpdate
+
+				int keyIndex = m_KeyCodeToIndexMapper[ keyCode ] ;
+
+				return m_KeyStates[ keyIndex, slotNumber ].IsDown ;
 			}
 
 			/// <summary>
@@ -193,9 +334,33 @@ namespace InputHelper
 			/// </summary>
 			/// <param name="keyCode"></param>
 			/// <returns></returns>
-			public bool GetKeyUp( KeyCodes keyCode )
+			public bool GetKeyUp( KeyCodes keyCode, bool fromFixedUpdate )
 			{
-				return Input.GetKeyUp( m_KeyCodeMapper[ keyCode ] ) ;
+				int slotNumber = ( fromFixedUpdate == false ? 0 : 1 ) ;
+
+				// SlotNumber = 0 : Update
+				// SlotNumber = 1 : FixedUpdate
+
+				int keyIndex = m_KeyCodeToIndexMapper[ keyCode ] ;
+
+				return m_KeyStates[ keyIndex, slotNumber ].IsUp ;
+			}
+
+			/// <summary>
+			/// リピート付きでキーが押されているかどうかの判定
+			/// </summary>
+			/// <param name="keyCode"></param>
+			/// <returns></returns>
+			public bool GetKeyRepeat( KeyCodes keyCode, bool fromFixedUpdate )
+			{
+				int slotNumber = ( fromFixedUpdate == false ? 0 : 1 ) ;
+
+				// SlotNumber = 0 : Update
+				// SlotNumber = 1 : FixedUpdate
+
+				int keyIndex = m_KeyCodeToIndexMapper[ keyCode ] ;
+
+				return m_KeyStates[ keyIndex, slotNumber ].IsRepeat ;
 			}
 		}
 	}

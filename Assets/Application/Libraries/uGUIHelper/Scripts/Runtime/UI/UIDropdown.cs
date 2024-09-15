@@ -1,10 +1,10 @@
+using System ;
+using System.Collections ;
+using System.Collections.Generic ;
 using UnityEngine ;
 using UnityEngine.UI ;
 using UnityEngine.Events ;
 using UnityEngine.EventSystems ;
-using System ;
-using System.Collections ;
-using System.Collections.Generic ;
 
 using TMPro ;
 
@@ -14,7 +14,7 @@ namespace uGUIHelper
 	/// <summary>
 	/// uGUI:ScrollRect クラスの機能拡張コンポーネントクラス(複合)
 	/// </summary>
-	[ RequireComponent( typeof( TMPro.TMP_Dropdown ) ) ]
+	[RequireComponent( typeof( TMPro.TMP_Dropdown ) )]
 	public class UIDropdown : UIImage
 	{
 		/// <summary>
@@ -34,6 +34,71 @@ namespace uGUIHelper
 		}
 
 		/// <summary>
+		/// カーソル位置
+		/// </summary>
+		public int Value
+		{
+			get
+			{
+				var dropdown = CTMP_Dropdown ;
+				if( dropdown == null )
+				{
+					return 0 ;
+				}
+
+				return dropdown.value ;
+			}
+			set
+			{
+				var dropdown = CTMP_Dropdown ;
+				if( dropdown == null )
+				{
+					return ;
+				}
+
+				if( value >= 0 && value <  dropdown.options.Count )
+				{
+					// コールバックの一時的な無効化をオン
+//					m_DisableCallback = true ;
+
+					dropdown.value = value ;
+
+					// コールバックの一時的な無効化をオフ
+//					m_DisableCallback = false ;
+				}
+			}
+		}
+
+		/// <summary>
+		/// カーソル位置を設定する
+		/// </summary>
+		public void SetValue( int value, bool isCallbackEnabled = true )
+		{
+			var dropdown = CTMP_Dropdown ;
+			if( dropdown == null )
+			{
+				return ;
+			}
+
+			if( value >= 0 && value <  dropdown.options.Count )
+			{
+				if( isCallbackEnabled == false )
+				{
+					// コールバックの一時的な無効化をオン
+					m_DisableCallback = true ;
+				}
+
+				dropdown.value = value ;
+
+				if( isCallbackEnabled == false )
+				{
+					// コールバックの一時的な無効化をオフ
+					m_DisableCallback = false ;
+				}
+			}
+		}
+
+		/// <summary>
 		/// Interactable(ショートカット)
 		/// </summary>
 		public bool Interactable
@@ -45,6 +110,7 @@ namespace uGUIHelper
 				{
 					return false ;
 				}
+
 				return dropdown.interactable ;
 			}
 			set
@@ -54,17 +120,17 @@ namespace uGUIHelper
 				{
 					return ;
 				}
+
 				dropdown.interactable = value ;
 			}
 		}
 
-        //------------------------------------------------------------------------------------
+		//-------------------------------------------------------------------------------------------
 
-        // コールバックを一時的に無効化する
-        private bool m_DisableCallback ;
+		// コールバックを一時的に無効化する
+		private bool m_DisableCallback ;
 
-        //--------------------------------------------------------------------------------------
-
+		//-------------------------------------------------------------------------------------------
 
 		/// <summary>
 		/// 各派生クラスでの初期化処理を行う（メニューまたは AddView から生成される場合のみ実行れる）
@@ -79,7 +145,7 @@ namespace uGUIHelper
 				return ;
 			}
 
-			Image image = CImage ;
+			var image = CImage ;
 
 			//------------------------------------------
 
@@ -180,7 +246,7 @@ namespace uGUIHelper
 			}
 		}
 
-		//---------------------------------------------
+		//-------------------------------------------------------------------------------------------
 
 		/// <summary>
 		/// 状態が変化した際に呼び出されるアクション
@@ -230,14 +296,14 @@ namespace uGUIHelper
 		// 内部リスナー登録
 		private void OnValueChangedInner( int value )
 		{
-            if( m_DisableCallback == true )
-            {
-                // コールバック無効
-                return ;
-            }
-
 			if( OnValueChangedAction != null || OnValueChangedDelegate != null )
 			{
+				if( m_DisableCallback == true )
+				{
+					// コールバック無効
+					return ;
+				}
+
 				string identity = Identity ;
 				if( string.IsNullOrEmpty( identity ) == true )
 				{
@@ -310,7 +376,8 @@ namespace uGUIHelper
 
 			int activeValue = dropdown.value ;
 
-            m_DisableCallback = true ;
+			// コールバックの一時的な無効化をオン
+			m_DisableCallback = true ;
 
 			dropdown.value = 0 ;
 			dropdown.ClearOptions() ;
@@ -335,9 +402,10 @@ namespace uGUIHelper
 				activeValue  = initailValue ;
 			}
 
-            m_DisableCallback = false ;
-
 			dropdown.value  = activeValue ;
+
+			// コールバックの一時的な無効化をオフ
+			m_DisableCallback = false ;
 
 			return true ;
 		}
@@ -403,35 +471,6 @@ namespace uGUIHelper
 			dropdown.options.RemoveAt( index ) ;
 
 			return true ;
-		}
-
-		/// <summary>
-		/// カーソル位置
-		/// </summary>
-		public int Value
-		{
-			get
-			{
-				var dropdown = CTMP_Dropdown ;
-				if( dropdown == null )
-				{
-					return 0 ;
-				}
-				return dropdown.value ;
-			}
-			set
-			{
-				var dropdown = CTMP_Dropdown ;
-				if( dropdown == null )
-				{
-					return ;
-				}
-
-				if( value >= 0 && value <  dropdown.options.Count )
-				{
-					dropdown.value = value ;
-				}
-			}
 		}
 
 		/// <summary>

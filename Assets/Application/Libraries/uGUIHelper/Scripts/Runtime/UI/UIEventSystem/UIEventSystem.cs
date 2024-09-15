@@ -268,11 +268,11 @@ namespace uGUIHelper.InputAdapter
 
 		//-----------------------------------
 
-		// フォーカスを得ている状態かどうか
+		// アプリケーションがフォーカスを得ている状態かどうか
 		private bool m_IsFocus ;
 
 		/// <summary>
-		/// フォーカスを得ているか状態かどうか
+		/// アプリケーションがフォーカスを得ているか状態かどうか
 		/// </summary>
 		public static bool IsFocus
 		{
@@ -1087,6 +1087,89 @@ namespace uGUIHelper.InputAdapter
 			}
 
 			return m_Instance.m_ActivePress_GameObjects.Contains( target ) ;
+		}
+
+		//--------------------------------------------------------------------------------------
+
+		// フォーカスを得た InputField 情報
+		protected HashSet<UIInputField> m_FocusedInputFields = new () ;
+
+		/// <summary>
+		/// フォーカスを得た InputField を記録に追加する
+		/// </summary>
+		/// <param name="inputField"></param>
+		public static bool AddFocusedInputField( UIInputField inputField )
+		{
+			if( m_Instance == null )
+			{
+				// インスタンスが生成されていない
+				return false ;
+			}
+
+			if( m_Instance.m_FocusedInputFields.Count >  0 )
+			{
+				Debug.LogWarning( "There is already an InputField with focus.\nCount = " + m_Instance.m_FocusedInputFields.Count ) ;
+			}
+
+			if( m_Instance.m_FocusedInputFields.Contains( inputField ) == false )
+			{
+				// 新たにフォーカスを得た InputField を記録に追加する
+				m_Instance.m_FocusedInputFields.Add( inputField ) ;
+			}
+			else
+			{
+				Debug.LogWarning( "This InputField already has focus.\n Path = " + inputField.Path ) ;
+				return false ;
+			}
+
+			return true ;
+		}
+
+		/// <summary>
+		/// フォーカスを失った InputField を記録から削除する
+		/// </summary>
+		/// <param name="inputField"></param>
+		public static bool RemoveFocusedInputField( UIInputField inputField )
+		{
+			if( m_Instance == null )
+			{
+				// インスタンスが生成されていない
+				return false ;
+			}
+
+			if( m_Instance.m_FocusedInputFields.Count == 0 )
+			{
+				Debug.LogWarning( "There is no InputField that has focus." ) ;
+				return false ;
+			}
+
+			if( m_Instance.m_FocusedInputFields.Contains( inputField ) == true )
+			{
+				// 新たにフォーカスを得た InputField を記録に追加する
+				m_Instance.m_FocusedInputFields.Remove( inputField ) ;
+			}
+			else
+			{
+				Debug.LogWarning( "This InputField does not have focus.\n Path = " + inputField.Path ) ;
+				return false ;
+			}
+
+			return true ;
+		}
+
+		/// <summary>
+		/// フォーカスを得ている InputField の数を取得する
+		/// </summary>
+		/// <returns></returns>
+		public static int GetFocusedInputFieldCount()
+		{
+			if( m_Instance == null )
+			{
+				// インスタンスが生成されていない
+				return -1 ;
+			}
+
+			return m_Instance.m_FocusedInputFields.Count ;
 		}
 	}
 }

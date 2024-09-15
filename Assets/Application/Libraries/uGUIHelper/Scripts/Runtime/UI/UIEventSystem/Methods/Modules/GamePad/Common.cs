@@ -606,13 +606,15 @@ namespace uGUIHelper.InputAdapter
 			/// <param name="buttonFlags"></param>
 			public void UpdateButtonStates( int buttonIndex, int buttonIdentity, int buttonFlags, int slotNumber )
 			{
-				ButtonState state = m_ButtonStates[ buttonIndex, slotNumber ] ;
+				var state = m_ButtonStates[ buttonIndex, slotNumber ] ;
 
 				//---------------------------------
 
 				state.IsRepeat	= false ;
 				state.IsDown	= false ;
 				state.IsUp		= false ;
+
+				float time = Time.realtimeSinceStartup ;
 
 				if( ( buttonFlags & buttonIdentity ) != 0 )
 				{
@@ -622,22 +624,22 @@ namespace uGUIHelper.InputAdapter
 						state.IsRepeat = true ;
 
 						state.RepeatKeepFlag = true ;
-						state.RepeatWakeTime = Time.realtimeSinceStartup ;
-						state.RepeatLoopTime = Time.realtimeSinceStartup ;
+						state.RepeatWakeTime = time ;
+						state.RepeatLoopTime = time ;
 
 						state.IsDown = true ;
 					}
 					else
 					{
 						// リピート最中
-						if( ( Time.realtimeSinceStartup - state.RepeatWakeTime ) >= RepeatStartingTime )
+						if( ( time - state.RepeatWakeTime ) >= RepeatStartingTime )
 						{
 							// リピート中
-							if( ( Time.realtimeSinceStartup - state.RepeatLoopTime ) >= RepeatIntervalTime )
+							if( ( time - state.RepeatLoopTime ) >= RepeatIntervalTime )
 							{
 								state.IsRepeat = true ;
 								
-								state.RepeatLoopTime = Time.realtimeSinceStartup ;
+								state.RepeatLoopTime = time ;
 							}
 						}
 					}
@@ -662,7 +664,7 @@ namespace uGUIHelper.InputAdapter
 			/// <param name="axis"></param>
 			public void UpdateAxisStates( int axisIndex, Vector2 axis, int slotNumber )
 			{
-				AxisState state = m_AxisStates[ axisIndex, slotNumber ] ;
+				var state = m_AxisStates[ axisIndex, slotNumber ] ;
 
 				//---------------------------------
 
@@ -698,6 +700,8 @@ namespace uGUIHelper.InputAdapter
 				state.IsDown	= Vector2.zero ;
 				state.IsUp		= Vector2.zero ;
 
+				float time = Time.realtimeSinceStartup ;
+
 				if( axis.x != 0 || axis.y != 0 )
 				{
 					if( state.RepeatKeepFlag == false )
@@ -707,22 +711,22 @@ namespace uGUIHelper.InputAdapter
 
 						state.RepeatKeepFlag = true ;
 						state.RepeatKeepData = axis ;
-						state.RepeatWakeTime = Time.realtimeSinceStartup ;
-						state.RepeatLoopTime = Time.realtimeSinceStartup ;
+						state.RepeatWakeTime = time ;
+						state.RepeatLoopTime = time ;
 
 						state.IsDown = axis ;
 					}
 					else
 					{
 						// ホールド最中
-						if( ( Time.realtimeSinceStartup - state.RepeatWakeTime ) >= RepeatStartingTime )
+						if( ( time - state.RepeatWakeTime ) >= RepeatStartingTime )
 						{
 							// リピート中
-							if( ( Time.realtimeSinceStartup - state.RepeatLoopTime ) >= RepeatIntervalTime )
+							if( ( time - state.RepeatLoopTime ) >= RepeatIntervalTime )
 							{
 								state.IsRepeat = axis ;
 	
-								state.RepeatLoopTime = Time.realtimeSinceStartup ;
+								state.RepeatLoopTime = time ;
 							}
 						}
 					}

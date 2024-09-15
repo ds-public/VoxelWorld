@@ -1,14 +1,15 @@
-using UnityEngine ;
-using UnityEngine.UI ;
 using System ;
 using System.Collections ;
+using UnityEngine ;
+using UnityEngine.UI ;
+
 
 namespace uGUIHelper
 {
 	/// <summary>
 	/// uGUI:Toggle クラスの機能拡張コンポーネントクラス(複合)
 	/// </summary>
-	[RequireComponent(typeof(UnityEngine.UI.Toggle))]
+	[RequireComponent( typeof( UnityEngine.UI.Toggle ) )]
 	public class UIToggle : UIView
 	{
 		/// <summary>
@@ -48,7 +49,7 @@ namespace uGUIHelper
 		{
 			get
 			{
-				Toggle toggle = CToggle ;
+				var toggle = CToggle ;
 				if( toggle == null )
 				{
 					return false ;
@@ -58,13 +59,19 @@ namespace uGUIHelper
 			}
 			set
 			{
-				Toggle toggle = CToggle ;
+				var toggle = CToggle ;
 				if( toggle == null )
 				{
 					return ;
 				}
 			
+				// コールバックの一時的な無効化をオン
+//				m_DisableCallback = true ;
+
 				toggle.isOn = value ;
+
+				// コールバックの一時的な無効化をオフ
+//				m_DisableCallback = false ;
 			}
 		}
 	
@@ -75,7 +82,7 @@ namespace uGUIHelper
 		{
 			get
 			{
-				Toggle toggle = CToggle ;
+				var toggle = CToggle ;
 				if( toggle == null )
 				{
 					return false ;
@@ -85,13 +92,49 @@ namespace uGUIHelper
 			}
 			set
 			{
-				Toggle toggle = CToggle ;
+				var toggle = CToggle ;
 				if( toggle == null )
 				{
 					return ;
 				}
 
+				// コールバックの一時的な無効化をオン
+//				m_DisableCallback = true ;
+
 				toggle.isOn = value ;
+
+				// コールバックの一時的な無効化をオフ
+//				m_DisableCallback = false ;
+			}
+		}
+
+		/// <summary>
+		/// 値を設定する際にコールバックを発生させるかどうか設定できる
+		/// </summary>
+		/// <param name="isOn"></param>
+		/// <param name="callBackEnabled"></param>
+		public void SetValue( bool isOn, bool isCallbackEnabled = true )
+		{
+			var toggle = CToggle ;
+			if( toggle == null )
+			{
+				return ;
+			}
+
+			//----------------------------------
+
+			if( isCallbackEnabled == false )
+			{
+				// コールバックの一時的な無効化をオン
+				m_DisableCallback = true ;
+			}
+
+			toggle.isOn = isOn ;
+
+			if( isCallbackEnabled == false )
+			{
+				// コールバックの一時的な無効化をオフ
+				m_DisableCallback = false ;
 			}
 		}
 
@@ -102,7 +145,7 @@ namespace uGUIHelper
 		{
 			get
 			{
-				Toggle toggle = CToggle ;
+				var toggle = CToggle ;
 				if( toggle == null )
 				{
 					return false ;
@@ -111,7 +154,7 @@ namespace uGUIHelper
 			}
 			set
 			{
-				Toggle toggle = CToggle ;
+				var toggle = CToggle ;
 				if( toggle == null )
 				{
 					return ;
@@ -120,44 +163,17 @@ namespace uGUIHelper
 			}
 		}
 
-		//---------------------------------------------
+		//-------------------------------------------------------------------------------------------
 
-		// プログラムからの値のセットかどうか
-		private bool m_CallbackEnabled = true ;
+		// コールバックを一時的に無効化する
+		private bool m_DisableCallback ;
 
-		/// <summary>
-		/// 値を設定する際にコールバックを発生させるかどうか設定できる
-		/// </summary>
-		/// <param name="isOn"></param>
-		/// <param name="callBackEnabled"></param>
-		public void SetValue( bool isOn, bool callBackEnabled = true )
-		{
-			Toggle toggle = CToggle ;
-			if( toggle == null )
-			{
-				return ;
-			}
-
-			//----------------------------------
-
-			m_CallbackEnabled = callBackEnabled ;
-
-			toggle.isOn = isOn ;
-
-			m_CallbackEnabled = true ;
-		}
-
-		//---------------------------------------------
+		//-------------------------------------------------------------------------------------------
 
 		// 各派生クラスでの初期化処理を行う（メニューまたは AddView から生成される場合のみ実行れる）
-		override protected void OnBuild( string option = "" )
+		protected override void OnBuild( string option = "" )
 		{
-			Toggle toggle = CToggle ;
-		
-			if( toggle == null )
-			{
-				toggle = gameObject.AddComponent<Toggle>() ;
-			}
+			var toggle = CToggle != null ? CToggle : gameObject.AddComponent<Toggle>() ;
 			if( toggle == null )
 			{
 				// 異常
@@ -166,7 +182,7 @@ namespace uGUIHelper
 
 			//-------------------------
 
-			Vector2 size = GetCanvasSize() ;
+			var size = GetCanvasSize() ;
 			if( size.x >  0 && size.y >  0 )
 			{
 				SetSize( size.y * 0.25f, size.y * 0.05f ) ;
@@ -242,7 +258,7 @@ namespace uGUIHelper
 		}
 
 		// 派生クラスの Start
-		override protected void OnStart()
+		protected override void OnStart()
 		{
 			base.OnStart() ;
 		
@@ -257,7 +273,7 @@ namespace uGUIHelper
 			}
 		}
 
-		//---------------------------------------------
+		//-------------------------------------------------------------------------------------------
 		
 		/// <summary>
 		/// 状態が変化した際に呼び出されるアクション
@@ -309,9 +325,9 @@ namespace uGUIHelper
 		{
 			if( OnValueChangedAction != null || OnValueChangedDelegate != null )
 			{
-				if( m_CallbackEnabled == false )
+				if( m_DisableCallback == true )
 				{
-					// コールバックを発生させない
+					// コールバック無効
 					return ;
 				}
 
@@ -325,7 +341,7 @@ namespace uGUIHelper
 				OnValueChangedDelegate?.Invoke( identity, this, value ) ;
 			}
 		}
-	
+
 		//-----------------------------------------------------------
 		
 		/// <summary>
@@ -334,7 +350,7 @@ namespace uGUIHelper
 		/// <param name="onValueChanged">リスナーメソッド</param>
 		public void AddOnValueChangedListener( UnityEngine.Events.UnityAction<bool> onValueChanged )
 		{
-			Toggle toggle = CToggle ;
+			var toggle = CToggle ;
 			if( toggle != null )
 			{
 				toggle.onValueChanged.AddListener( onValueChanged ) ;
@@ -347,7 +363,7 @@ namespace uGUIHelper
 		/// <param name="onValueChanged">リスナーメソッド</param>
 		public void RemoveOnValueChangedListener( UnityEngine.Events.UnityAction<bool> onValueChanged )
 		{
-			Toggle toggle = CToggle ;
+			var toggle = CToggle ;
 			if( toggle != null )
 			{
 				toggle.onValueChanged.RemoveListener( onValueChanged ) ;
@@ -359,7 +375,7 @@ namespace uGUIHelper
 		/// </summary>
 		public void RemoveOnValueChangedAllListeners()
 		{
-			Toggle toggle = CToggle ;
+			var toggle = CToggle ;
 			if( toggle != null )
 			{
 				toggle.onValueChanged.RemoveAllListeners() ;

@@ -60,6 +60,15 @@ namespace uGUIHelper.InputAdapter
 			/// </summary>
 			public void Update( bool fromFixedUpdate )
 			{
+				UnityEngine.InputSystem.Mouse mouse = UnityEngine.InputSystem.Mouse.current ;
+				if( mouse == null )
+				{
+					// マウスデバイスが存在しない
+					return ;
+				}
+
+				//-----------------------------------------------------------------------------
+
 				int slotNumber = ( fromFixedUpdate == false ? 0 : 1 ) ;
 
 				// SlotNumber = 0 : Update
@@ -68,9 +77,13 @@ namespace uGUIHelper.InputAdapter
 				int buttonIndex ;
 				int numberOfButtons = m_ButtonStates.GetLength( 0 ) ;
 
+				ButtonState state ;
+
+				float time = Time.realtimeSinceStartup ;
+
 				for( buttonIndex  = 0 ; buttonIndex <  numberOfButtons ; buttonIndex ++ )
 				{
-					ButtonState state = m_ButtonStates[ buttonIndex, slotNumber ] ;
+					state = m_ButtonStates[ buttonIndex, slotNumber ] ;
 
 					//---------------------------------
 
@@ -86,20 +99,20 @@ namespace uGUIHelper.InputAdapter
 							state.IsRepeat	= true ;
 
 							state.RepeatKeepFlag = true ;
-							state.RepeatWakeTime = Time.realtimeSinceStartup ;
-							state.RepeatLoopTime = Time.realtimeSinceStartup ;
+							state.RepeatWakeTime = time ;
+							state.RepeatLoopTime = time ;
 
 							state.IsDown = true ;
 						}
 						else
 						{
 							// リピート最中
-							if( ( Time.realtimeSinceStartup - state.RepeatWakeTime ) >= RepeatStartingTime )
+							if( ( time - state.RepeatWakeTime ) >= RepeatStartingTime )
 							{
 								// リピート中
-								if( ( Time.realtimeSinceStartup - state.RepeatLoopTime ) >= RepeatIntervalTime )
+								if( ( time - state.RepeatLoopTime ) >= RepeatIntervalTime )
 								{
-									state.RepeatLoopTime = Time.realtimeSinceStartup ;
+									state.RepeatLoopTime = time ;
 
 									state.IsRepeat = true ;
 								}

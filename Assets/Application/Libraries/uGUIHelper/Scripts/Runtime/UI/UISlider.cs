@@ -1,14 +1,15 @@
-using UnityEngine ;
-using UnityEngine.UI ;
 using System ;
 using System.Collections ;
+using UnityEngine ;
+using UnityEngine.UI ;
+
 
 namespace uGUIHelper
 {
 	/// <summary>
 	/// uGUI:Slider クラスの機能拡張コンポーネントクラス(複合)
 	/// </summary>
-	[ RequireComponent(typeof(UnityEngine.UI.Slider))]
+	[RequireComponent( typeof( UnityEngine.UI.Slider ) )]
 	public class UISlider : UIView
 	{
 		/// <summary>
@@ -18,20 +19,22 @@ namespace uGUIHelper
 		{
 			get
 			{
-				Slider slider = CSlider ;
+				var slider = CSlider ;
 				if( slider == null )
 				{
 					return null ;
 				}
+
 				return slider.fillRect ;
 			}
 			set
 			{
-				Slider slider = CSlider ;
+				var slider = CSlider ;
 				if( slider == null )
 				{
 					return ;
 				}
+
 				slider.fillRect = value ;
 			}
 		}
@@ -43,20 +46,22 @@ namespace uGUIHelper
 		{
 			get
 			{
-				Slider slider = CSlider ;
+				var slider = CSlider ;
 				if( slider == null )
 				{
 					return null ;
 				}
+
 				return slider.targetGraphic ;
 			}
 			set
 			{
-				Slider slider = CSlider ;
+				var slider = CSlider ;
 				if( slider == null )
 				{
 					return ;
 				}
+
 				slider.targetGraphic = value ;
 			}
 		}
@@ -68,16 +73,18 @@ namespace uGUIHelper
 		{
 			get
 			{
-				Slider slider = CSlider ;
+				var slider = CSlider ;
 				if( slider == null )
 				{
 					return null ;
 				}
+
 				return slider.fillRect ;
 			}
 			set
 			{
-				Slider slider = CSlider ;
+				var slider = CSlider ;
+
 				if( slider == null )
 				{
 					return ;
@@ -90,16 +97,17 @@ namespace uGUIHelper
 		{
 			get
 			{
-				Slider slider = CSlider ;
+				var slider = CSlider ;
 				if( slider == null )
 				{
 					return Slider.Direction.LeftToRight ;
 				}
+
 				return slider.direction ;
 			}
 			set
 			{
-				Slider slider = CSlider ;
+				var slider = CSlider ;
 				if( slider == null )
 				{
 					return ;
@@ -116,16 +124,17 @@ namespace uGUIHelper
 		{
 			get
 			{
-				Slider slider = CSlider ;
+				var slider = CSlider ;
 				if( slider == null )
 				{
 					return 0f ;
 				}
+
 				return slider.minValue ;
 			}
 			set
 			{
-				Slider slider = CSlider ;
+				var slider = CSlider ;
 				if( slider == null )
 				{
 					return ;
@@ -142,16 +151,17 @@ namespace uGUIHelper
 		{
 			get
 			{
-				Slider slider = CSlider ;
+				var slider = CSlider ;
 				if( slider == null )
 				{
 					return 0f ;
 				}
+
 				return slider.maxValue ;
 			}
 			set
 			{
-				Slider slider = CSlider ;
+				var slider = CSlider ;
 				if( slider == null )
 				{
 					return ;
@@ -168,16 +178,17 @@ namespace uGUIHelper
 		{
 			get
 			{
-				Slider slider = CSlider ;
+				var slider = CSlider ;
 				if( slider == null )
 				{
 					return false ;
 				}
+
 				return slider.wholeNumbers ;
 			}
 			set
 			{
-				Slider slider = CSlider ;
+				var slider = CSlider ;
 				if( slider == null )
 				{
 					return ;
@@ -194,51 +205,57 @@ namespace uGUIHelper
 		{
 			get
 			{
-				Slider slider = CSlider ;
+				var slider = CSlider ;
 				if( slider == null )
 				{
 					return 0f ;
 				}
+
 				return slider.value ;
 			}
 			set
 			{
-				Slider slider = CSlider ;
+				var slider = CSlider ;
 				if( slider == null )
 				{
 					return ;
 				}
 
-				if( slider.value != value )
-				{
-					slider.value = value ;
-				}
+				// コールバックの一時的な無効化をオン
+//				m_DisableCallback = true ;
+
+				slider.value = value ;
+
+				// コールバックの一時的な無効化をオフ
+//				m_DisableCallback = false ;
 			}
 		}
-
-
-		private bool m_CallbackDisable = false ;
 
 		/// <summary>
 		/// 値(0～1)を設定する(コールバックの発生も指定可能)
 		/// </summary>
-		/// <param name="tValue"></param>
-		/// <param name="tCallback"></param>
-		public bool SetValue( float value, bool callback = true )
+		/// <param name="value"></param>
+		/// <param name="ballback"></param>
+		public bool SetValue( float value, bool isCallbackEnabled = true )
 		{
-			Slider slider = CSlider ;
+			var slider = CSlider ;
 			if( slider == null )
 			{
 				return false ;
 			}
 
-			if( slider.value != value )
+			if( isCallbackEnabled == false )
 			{
-				m_CallbackDisable = ! callback ;
+				// コールバックの一時的な無効化をオン
+				m_DisableCallback = true ;
+			}
 
-				slider.value  = value ;
+			slider.value  = value ;
 
-				m_CallbackDisable = false ;
+			if( isCallbackEnabled == false )
+			{
+				// コールバックの一時的な無効化をオフ
+				m_DisableCallback = false ;
 			}
 
 			return true ;
@@ -251,7 +268,7 @@ namespace uGUIHelper
 		{
 			get
 			{
-				Slider slider = CSlider ;
+				var slider = CSlider ;
 				if( slider == null )
 				{
 					return false ;
@@ -260,7 +277,7 @@ namespace uGUIHelper
 			}
 			set
 			{
-				Slider slider = CSlider ;
+				var slider = CSlider ;
 				if( slider == null )
 				{
 					return ;
@@ -269,7 +286,12 @@ namespace uGUIHelper
 			}
 		}
 
-		//-------------------------------------------------------------
+		//-------------------------------------------------------------------------------------------
+
+		// コールバックを一時的に無効化する
+		private bool m_DisableCallback ;
+
+		//-------------------------------------------------------------------------------------------
 
 		// 方向
 		private enum DirectionTypes
@@ -281,14 +303,9 @@ namespace uGUIHelper
 
 
 		// 各派生クラスでの初期化処理を行う（メニューまたは AddView から生成される場合のみ実行れる）
-		override protected void OnBuild( string option = "" )
+		protected override void OnBuild( string option = "" )
 		{
-			Slider slider = CSlider ;
-
-			if( slider == null )
-			{
-				slider = gameObject.AddComponent<Slider>() ;
-			}
+			var slider = CSlider != null ? CSlider : gameObject.AddComponent<Slider>() ;
 			if( slider == null )
 			{
 				// 異常
@@ -297,7 +314,7 @@ namespace uGUIHelper
 
 			//---------------------------------
 
-			DirectionTypes direction = DirectionTypes.Unknown ;
+			var direction = DirectionTypes.Unknown ;
 
 			if( option.ToLower() == "h" )
 			{
@@ -309,7 +326,7 @@ namespace uGUIHelper
 				direction = DirectionTypes.Vertical ;
 			}
 
-			Vector2 size = GetCanvasSize() ;
+			var size = GetCanvasSize() ;
 			if( size.x >  0 && size.y >  0 )
 			{
 				float s ;
@@ -337,7 +354,7 @@ namespace uGUIHelper
 
 			ResetRectTransform() ;
 
-			UIImage background = AddView<UIImage>( "Background" ) ;
+			var background = AddView<UIImage>( "Background" ) ;
 			if( direction == DirectionTypes.Horizontal )
 			{
 				background.SetAnchorMinAndMax( 0.00f, 0.25f, 1.00f, 0.75f ) ;
@@ -354,7 +371,7 @@ namespace uGUIHelper
 			background.SetSize( 0, 0 ) ;
 			background.RaycastTarget = true ;	// 重要
 
-			UIView fillArea = AddView<UIView>( "Fill Area" ) ;
+			var fillArea = AddView<UIView>( "Fill Area" ) ;
 			if( direction == DirectionTypes.Horizontal )
 			{
 				fillArea.SetAnchorMinAndMax( 0.00f, 0.25f, 1.00f, 0.75f ) ;
@@ -367,7 +384,7 @@ namespace uGUIHelper
 				fillArea.SetMargin(  0,  0,   5, 15 ) ;
 			}
 
-			UIImage fill = fillArea.AddView<UIImage>( "Fill" ) ;
+			var fill = fillArea.AddView<UIImage>( "Fill" ) ;
 			fill.SetAnchorMinAndMax( 0.00f, 0.00f, 1.00f, 1.00f ) ;
 			fill.Sprite = Resources.Load<Sprite>( "uGUIHelper/Textures/UIDefaultButton" ) ;
 			fill.Type = Image.Type.Sliced ;
@@ -385,7 +402,7 @@ namespace uGUIHelper
 			slider.fillRect = fill.GetRectTransform() ;
 
 
-			UIView handleSlideArea = AddView<UIView>( "Handle Slide Area" ) ;
+			var handleSlideArea = AddView<UIView>( "Handle Slide Area" ) ;
 			handleSlideArea.SetAnchorToStretch() ;
 			if( direction == DirectionTypes.Horizontal )
 			{
@@ -397,7 +414,7 @@ namespace uGUIHelper
 				handleSlideArea.SetMargin(  0,  0, 10, 10 ) ;
 			}
 
-			UIImage handle = handleSlideArea.AddView<UIImage>( "Handle" ) ;
+			var handle = handleSlideArea.AddView<UIImage>( "Handle" ) ;
 			if( direction == DirectionTypes.Horizontal )
 			{
 				handle.SetAnchorToRightStretch() ;
@@ -422,7 +439,7 @@ namespace uGUIHelper
 		}
 
 		// 派生クラスの Start
-		override protected void OnStart()
+		protected override void OnStart()
 		{
 			base.OnStart() ;
 
@@ -447,10 +464,10 @@ namespace uGUIHelper
 		/// <summary>
 		/// 状態が変化した際に呼び出されるデリゲートの定義
 		/// </summary>
-		/// <param name="tIdentity">ビューの識別名(未設定の場合はゲームオブジェクト名)</param>
-		/// <param name="tView">ビューのインスタンス</param>
-		/// <param name="tValue">変化後の値</param>
-		public delegate void OnValueChanged( string identity, UISlider view, float value ) ;
+		/// <param name="identity">ビューの識別名(未設定の場合はゲームオブジェクト名)</param>
+		/// <param name="slider">ビューのインスタンス</param>
+		/// <param name="value">変化後の値</param>
+		public delegate void OnValueChanged( string identity, UISlider slider, float value ) ;
 
 		/// <summary>
 		/// 状態が変化した際に呼び出されるデリゲート
@@ -487,13 +504,14 @@ namespace uGUIHelper
 		// 内部リスナー登録
 		private void OnValueChangedInner( float value )
 		{
-			if( m_CallbackDisable == true )
-			{
-				return ;
-			}
-
 			if( OnValueChangedAction != null || OnValueChangedDelegate != null )
 			{
+				if( m_DisableCallback == true )
+				{
+					// コールバック無効
+					return ;
+				}
+
 				string identity = Identity ;
 				if( string.IsNullOrEmpty( identity ) == true )
 				{
@@ -513,7 +531,7 @@ namespace uGUIHelper
 		/// <param name="onValueChanged">リスナーメソッド</param>
 		public void AddOnValueChangedListener( UnityEngine.Events.UnityAction<float> onValueChanged )
 		{
-			Slider slider = CSlider ;
+			var slider = CSlider ;
 			if( slider != null )
 			{
 				slider.onValueChanged.AddListener( onValueChanged ) ;
@@ -526,7 +544,7 @@ namespace uGUIHelper
 		/// <param name="onValueChanged">リスナーメソッド</param>
 		public void RemoveOnValueChangedListener( UnityEngine.Events.UnityAction<float> onValueChanged )
 		{
-			Slider slider = CSlider ;
+			var slider = CSlider ;
 			if( slider != null )
 			{
 				slider.onValueChanged.RemoveListener( onValueChanged ) ;
@@ -538,7 +556,7 @@ namespace uGUIHelper
 		/// </summary>
 		public void RemoveOnValueChangedAllListeners()
 		{
-			Slider slider = CSlider ;
+			var slider = CSlider ;
 			if( slider != null )
 			{
 				slider.onValueChanged.RemoveAllListeners() ;

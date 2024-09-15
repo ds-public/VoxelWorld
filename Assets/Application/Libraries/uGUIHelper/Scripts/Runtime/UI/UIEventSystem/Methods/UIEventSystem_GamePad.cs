@@ -227,18 +227,20 @@ namespace uGUIHelper.InputAdapter
 			set{ GamePad.AxisLowerThreshold = value ; }
 		}
 
-		/// リピートを開始するまでの時間(秒)
+		/// <summary>
+		/// ゲームパッドのリピートを開始するまでの時間(秒)
 		/// </summary>
-		public static float RepeatStartingTime
+		public static float GamePadRepeatStartingTime
 		{
 			get{ return GamePad.RepeatStartingTime ; }
 			set{ GamePad.RepeatStartingTime = value ; }
 		}
 
 		/// <summary>
-		/// リピートを繰り返す間隔の時間(秒)
+		/// <summary>
+		/// ゲームパッドのリピートを繰り返す間隔の時間(秒)
 		/// </summary>
-		public static float RepeatIntervalTime
+		public static float GamePadRepeatIntervalTime
 		{
 			get{ return GamePad.RepeatIntervalTime ; }
 			set{ GamePad.RepeatIntervalTime = value ; }

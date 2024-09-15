@@ -17,6 +17,16 @@ namespace uGUIHelper.InputAdapter
 	{
 		private static UIEventSystem m_Owner ;
 
+		/// <summary>
+		/// リピートを開始するまでの時間(秒)
+		/// </summary>
+		public static float RepeatStartingTime { get ; set ; } = 0.50f ;
+
+		/// <summary>
+		/// リピートを繰り返す間隔の時間(秒)
+		/// </summary>
+		public static float RepeatIntervalTime { get ; set ; } = 0.05f ;
+
 		//-------------------------------------------------------------------------------------------
 
 		/// <summary>
@@ -24,6 +34,23 @@ namespace uGUIHelper.InputAdapter
 		/// </summary>
 		public interface IImplementation
 		{
+			/// <summary>
+			/// 初期化を行う
+			/// </summary>
+			void Initialize() ;
+
+			/// <summary>
+			/// フレーム毎の更新
+			/// </summary>
+			void Update( bool fromFixedUpdate ) ;
+
+			/// <summary>
+			/// どのキーが押されているか確認する
+			/// </summary>
+			void CheckAllKeys() ;
+
+			//---------------------------------------------------------------------------------
+
 			/// <summary>
 			/// キーが押されているかどうかの判定
 			/// </summary>
@@ -36,14 +63,21 @@ namespace uGUIHelper.InputAdapter
 			/// </summary>
 			/// <param name="keyCode"></param>
 			/// <returns></returns>
-			bool GetKeyDown( KeyCodes keyCode ) ;
+			bool GetKeyDown( KeyCodes keyCode, bool fromFixedUpdate ) ;
 
 			/// <summary>
 			/// キーが離されたかどうかの判定
 			/// </summary>
 			/// <param name="keyCode"></param>
 			/// <returns></returns>
-			bool GetKeyUp( KeyCodes keyCode ) ;
+			bool GetKeyUp( KeyCodes keyCode, bool fromFixedUpdate ) ;
+
+			/// <summary>
+			/// キーがリピート付きで押されているかどうかの判定
+			/// </summary>
+			/// <param name="keyCode"></param>
+			/// <returns></returns>
+			bool GetKeyRepeat( KeyCodes keyCode, bool fromFixedUpdate ) ;
 		}
 
 		// 実装のインスタンス
@@ -71,6 +105,45 @@ namespace uGUIHelper.InputAdapter
 				m_Implementation = new Implementation_NewVersion() ;
 			}
 #endif
+			m_Implementation.Initialize() ;
+		}
+
+		/// <summary>
+		/// 毎フレーム実行する処理
+		/// </summary>
+		/// <param name="buttonNumber"></param>
+		/// <returns></returns>
+		public static bool Update( bool fromFixedUpdate )
+		{
+			// modeEnabled を判定条件に入れないのは、マウスとキーボードを同時入力するケースを考慮するため
+			if( m_Owner == null || m_Owner.ControlEnabled == false )
+			{
+				// 無効
+				return false ;
+			}
+
+			if( m_Implementation == null )
+			{
+				throw new Exception( "Not implemented." ) ;
+			}
+
+			m_Implementation.Update( fromFixedUpdate ) ;
+
+			return true ;
+		}
+
+		/// <summary>
+		/// どのキーが押されているか確認する
+		/// </summary>
+		/// <exception cref="Exception"></exception>
+		public static void CheckAllKeys()
+		{
+			if( m_Implementation == null )
+			{
+				throw new Exception( "Not implemented." ) ;
+			}
+
+			m_Implementation.CheckAllKeys() ;
 		}
 
 		//--------------------------------------------------------------------------------------------
@@ -89,7 +162,13 @@ namespace uGUIHelper.InputAdapter
 				return false ;
 			}
 
-			if( m_Implementation == null )
+			if( UIEventSystem.GetFocusedInputFieldCount() >  0 )
+			{
+				// フォーカスを得ている InputField があるためキーボードの入力は無効とする
+				return false ;
+			}
+
+			if ( m_Implementation == null )
 			{
 				throw new Exception( "Not implemented." ) ;
 			}
@@ -102,7 +181,7 @@ namespace uGUIHelper.InputAdapter
 		/// </summary>
 		/// <param name="keyCode"></param>
 		/// <returns></returns>
-		public static bool GetKeyDown( KeyCodes keyCode )
+		public static bool GetKeyDown( KeyCodes keyCode, bool fromFixedUpdate = false )
 		{
 			// modeEnabled を判定条件に入れないのは、マウスとキーボードを同時入力するケースを考慮するため
 			if( m_Owner == null || m_Owner.ControlEnabled == false )
@@ -111,12 +190,18 @@ namespace uGUIHelper.InputAdapter
 				return false ;
 			}
 
+			if( UIEventSystem.GetFocusedInputFieldCount() >  0 )
+			{
+				// フォーカスを得ている InputField があるためキーボードの入力は無効とする
+				return false ;
+			}
+
 			if( m_Implementation == null )
 			{
 				throw new Exception( "Not implemented." ) ;
 			}
 
-			return m_Implementation.GetKeyDown( keyCode ) ;
+			return m_Implementation.GetKeyDown( keyCode, fromFixedUpdate ) ;
 		}
 
 		/// <summary>
@@ -124,7 +209,7 @@ namespace uGUIHelper.InputAdapter
 		/// </summary>
 		/// <param name="keyCode"></param>
 		/// <returns></returns>
-		public static bool GetKeyUp( KeyCodes keyCode )
+		public static bool GetKeyUp( KeyCodes keyCode, bool fromFixedUpdate = false )
 		{
 			// modeEnabled を判定条件に入れないのは、マウスとキーボードを同時入力するケースを考慮するため
 			if( m_Owner == null || m_Owner.ControlEnabled == false )
@@ -133,12 +218,46 @@ namespace uGUIHelper.InputAdapter
 				return false ;
 			}
 
+			if( UIEventSystem.GetFocusedInputFieldCount() >  0 )
+			{
+				// フォーカスを得ている InputField があるためキーボードの入力は無効とする
+				return false ;
+			}
+
 			if( m_Implementation == null )
 			{
 				throw new Exception( "Not implemented." ) ;
 			}
 
-			return m_Implementation.GetKeyUp( keyCode ) ;
+			return m_Implementation.GetKeyUp( keyCode, fromFixedUpdate ) ;
+		}
+
+		/// <summary>
+		/// リピート付きでキーが押されているかどうかの判定
+		/// </summary>
+		/// <param name="keyCode"></param>
+		/// <returns></returns>
+		public static bool GetKeyRepeat( KeyCodes keyCode, bool fromFixedUpdate = false )
+		{
+			// modeEnabled を判定条件に入れないのは、マウスとキーボードを同時入力するケースを考慮するため
+			if( m_Owner == null || m_Owner.ControlEnabled == false )
+			{
+				// 無効
+				return false ;
+			}
+
+			if( UIEventSystem.GetFocusedInputFieldCount() >  0 )
+			{
+				// フォーカスを得ている InputField があるためキーボードの入力は無効とする
+				return false ;
+			}
+
+			if( m_Implementation == null )
+			{
+				throw new Exception( "Not implemented." ) ;
+			}
+
+			return m_Implementation.GetKeyRepeat( keyCode, fromFixedUpdate ) ;
 		}
 	}
 }

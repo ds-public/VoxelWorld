@@ -88,564 +88,564 @@ namespace uGUIHelper.InputAdapter
 			private static readonly Dictionary<string,ButtonDefinition> m_ButtonDefinitions = new ()
 			{
 				{ "Fire1",
-					new ButtonDefinition()
+					new ()
 					{
 						KeyCodes = new KeyCodes[]{ KeyCodes.LeftControl },
 						MouseButtonNumbers = new int[]{ 0 },
-						GamePadButtonDefinitions = new GamePadButtonDefinition[]{ new GamePadButtonDefinition( -1,  0 ) }
+						GamePadButtonDefinitions = new GamePadButtonDefinition[]{ new ( -1,  0 ) }
 					}
 				},
 				{ "Fire2",
-					new ButtonDefinition()
+					new ()
 					{
 						KeyCodes = new KeyCodes[]{ KeyCodes.LeftAlt },
 						MouseButtonNumbers = new int[]{ 1 },
-						GamePadButtonDefinitions = new GamePadButtonDefinition[]{ new GamePadButtonDefinition( -1,  1 ) }
+						GamePadButtonDefinitions = new GamePadButtonDefinition[]{ new ( -1,  1 ) }
 					}
 				},
 				{ "Fire3",
-					new ButtonDefinition()
+					new ()
 					{
 						KeyCodes = new KeyCodes[]{ KeyCodes.LeftShift },
 						MouseButtonNumbers = new int[]{ 2 },
-						GamePadButtonDefinitions = new GamePadButtonDefinition[]{ new GamePadButtonDefinition( -1,  2 ) }
+						GamePadButtonDefinitions = new GamePadButtonDefinition[]{ new ( -1,  2 ) }
 					}
 				},
 				{ "Jump",
-					new ButtonDefinition()
+					new ()
 					{
 						KeyCodes = new KeyCodes[]{ KeyCodes.Space },
 						MouseButtonNumbers = null,
-						GamePadButtonDefinitions = new GamePadButtonDefinition[]{ new GamePadButtonDefinition( -1,  3 ) }
+						GamePadButtonDefinitions = new GamePadButtonDefinition[]{ new ( -1,  3 ) }
 					}
 				},
 				{ "Submit",
-					new ButtonDefinition()
+					new ()
 					{
 						KeyCodes = new KeyCodes[]{ KeyCodes.Return },
 						MouseButtonNumbers = null,
-						GamePadButtonDefinitions = new GamePadButtonDefinition[]{ new GamePadButtonDefinition( -1,  0 ) }
+						GamePadButtonDefinitions = new GamePadButtonDefinition[]{ new ( -1,  0 ) }
 					}
 				},
 				{ "Cancel",
-					new ButtonDefinition()
+					new ()
 					{
 						KeyCodes = new KeyCodes[]{ KeyCodes.Escape },
 						MouseButtonNumbers = null,
-						GamePadButtonDefinitions = new GamePadButtonDefinition[]{ new GamePadButtonDefinition( -1,  1 ) }
+						GamePadButtonDefinitions = new GamePadButtonDefinition[]{ new ( -1,  1 ) }
 					}
 				},
 				{ GamePad.Player1Button00,
-					new ButtonDefinition()
+					new ()
 					{
 						KeyCodes = null,
 						MouseButtonNumbers = null,
-						GamePadButtonDefinitions = new GamePadButtonDefinition[]{ new GamePadButtonDefinition(  0,  0 ) }
+						GamePadButtonDefinitions = new GamePadButtonDefinition[]{ new (  0,  0 ) }
 					}
 				},
 				{ GamePad.Player1Button01,
-					new ButtonDefinition()
+					new ()
 					{
 						KeyCodes = null,
 						MouseButtonNumbers = null,
-						GamePadButtonDefinitions = new GamePadButtonDefinition[]{ new GamePadButtonDefinition(  0,  1 ) }
+						GamePadButtonDefinitions = new GamePadButtonDefinition[]{ new (  0,  1 ) }
 					}
 				},
 				{ GamePad.Player1Button02,
-					new ButtonDefinition()
+					new ()
 					{
 						KeyCodes = null,
 						MouseButtonNumbers = null,
-						GamePadButtonDefinitions = new GamePadButtonDefinition[]{ new GamePadButtonDefinition(  0,  2 ) }
+						GamePadButtonDefinitions = new GamePadButtonDefinition[]{ new (  0,  2 ) }
 					}
 				},
 				{ GamePad.Player1Button03,
-					new ButtonDefinition()
+					new ()
 					{
 						KeyCodes = null,
 						MouseButtonNumbers = null,
-						GamePadButtonDefinitions = new GamePadButtonDefinition[]{ new GamePadButtonDefinition(  0,  3 ) }
+						GamePadButtonDefinitions = new GamePadButtonDefinition[]{ new (  0,  3 ) }
 					}
 				},
 				{ GamePad.Player1Button04,
-					new ButtonDefinition()
+					new ()
 					{
 						KeyCodes = null,
 						MouseButtonNumbers = null,
-						GamePadButtonDefinitions = new GamePadButtonDefinition[]{ new GamePadButtonDefinition(  0,  4 ) }
+						GamePadButtonDefinitions = new GamePadButtonDefinition[]{ new (  0,  4 ) }
 					}
 				},
 				{ GamePad.Player1Button05,
-					new ButtonDefinition()
+					new ()
 					{
 						KeyCodes = null,
 						MouseButtonNumbers = null,
-						GamePadButtonDefinitions = new GamePadButtonDefinition[]{ new GamePadButtonDefinition(  0,  5 ) }
+						GamePadButtonDefinitions = new GamePadButtonDefinition[]{ new (  0,  5 ) }
 					}
 				},
 				{ GamePad.Player1Button06,
-					new ButtonDefinition()
+					new ()
 					{
 						KeyCodes = null,
 						MouseButtonNumbers = null,
-						GamePadButtonDefinitions = new GamePadButtonDefinition[]{ new GamePadButtonDefinition(  0,  6 ) }
+						GamePadButtonDefinitions = new GamePadButtonDefinition[]{ new (  0,  6 ) }
 					}
 				},
 				{ GamePad.Player1Button07,
-					new ButtonDefinition()
+					new ()
 					{
 						KeyCodes = null,
 						MouseButtonNumbers = null,
-						GamePadButtonDefinitions = new GamePadButtonDefinition[]{ new GamePadButtonDefinition(  0,  7 ) }
+						GamePadButtonDefinitions = new GamePadButtonDefinition[]{ new (  0,  7 ) }
 					}
 				},
 				{ GamePad.Player1Button08,
-					new ButtonDefinition()
+					new ()
 					{
 						KeyCodes = null,
 						MouseButtonNumbers = null,
-						GamePadButtonDefinitions = new GamePadButtonDefinition[]{ new GamePadButtonDefinition(  0,  8 ) }
+						GamePadButtonDefinitions = new GamePadButtonDefinition[]{ new (  0,  8 ) }
 					}
 				},
 				{ GamePad.Player1Button09,
-					new ButtonDefinition()
+					new ()
 					{
 						KeyCodes = null,
 						MouseButtonNumbers = null,
-						GamePadButtonDefinitions = new GamePadButtonDefinition[]{ new GamePadButtonDefinition(  0,  9 ) }
+						GamePadButtonDefinitions = new GamePadButtonDefinition[]{ new (  0,  9 ) }
 					}
 				},
 				{ GamePad.Player1Button10,
-					new ButtonDefinition()
+					new ()
 					{
 						KeyCodes = null,
 						MouseButtonNumbers = null,
-						GamePadButtonDefinitions = new GamePadButtonDefinition[]{ new GamePadButtonDefinition(  0, 10 ) }
+						GamePadButtonDefinitions = new GamePadButtonDefinition[]{ new (  0, 10 ) }
 					}
 				},
 				{ GamePad.Player1Button11,
-					new ButtonDefinition()
+					new ()
 					{
 						KeyCodes = null,
 						MouseButtonNumbers = null,
-						GamePadButtonDefinitions = new GamePadButtonDefinition[]{ new GamePadButtonDefinition(  0, 11 ) }
+						GamePadButtonDefinitions = new GamePadButtonDefinition[]{ new (  0, 11 ) }
 					}
 				},
 				{ GamePad.Player1Button12,
-					new ButtonDefinition()
+					new ()
 					{
 						KeyCodes = null,
 						MouseButtonNumbers = null,
-						GamePadButtonDefinitions = new GamePadButtonDefinition[]{ new GamePadButtonDefinition(  0, 12 ) }
+						GamePadButtonDefinitions = new GamePadButtonDefinition[]{ new (  0, 12 ) }
 					}
 				},
 				{ GamePad.Player1Button13,
-					new ButtonDefinition()
+					new ()
 					{
 						KeyCodes = null,
 						MouseButtonNumbers = null,
-						GamePadButtonDefinitions = new GamePadButtonDefinition[]{ new GamePadButtonDefinition(  0, 13 ) }
+						GamePadButtonDefinitions = new GamePadButtonDefinition[]{ new (  0, 13 ) }
 					}
 				},
 				{ GamePad.Player1Button14,
-					new ButtonDefinition()
+					new ()
 					{
 						KeyCodes = null,
 						MouseButtonNumbers = null,
-						GamePadButtonDefinitions = new GamePadButtonDefinition[]{ new GamePadButtonDefinition(  0, 14 ) }
+						GamePadButtonDefinitions = new GamePadButtonDefinition[]{ new (  0, 14 ) }
 					}
 				},
 				{ GamePad.Player1Button15,
-					new ButtonDefinition()
+					new ()
 					{
 						KeyCodes = null,
 						MouseButtonNumbers = null,
-						GamePadButtonDefinitions = new GamePadButtonDefinition[]{ new GamePadButtonDefinition(  0, 15 ) }
+						GamePadButtonDefinitions = new GamePadButtonDefinition[]{ new (  0, 15 ) }
 					}
 				},
 
 				{ GamePad.Player2Button00,
-					new ButtonDefinition()
+					new ()
 					{
 						KeyCodes = null,
 						MouseButtonNumbers = null,
-						GamePadButtonDefinitions = new GamePadButtonDefinition[]{ new GamePadButtonDefinition(  1,  0 ) }
+						GamePadButtonDefinitions = new GamePadButtonDefinition[]{ new (  1,  0 ) }
 					}
 				},
 				{ GamePad.Player2Button01,
-					new ButtonDefinition()
+					new ()
 					{
 						KeyCodes = null,
 						MouseButtonNumbers = null,
-						GamePadButtonDefinitions = new GamePadButtonDefinition[]{ new GamePadButtonDefinition(  1,  1 ) }
+						GamePadButtonDefinitions = new GamePadButtonDefinition[]{ new (  1,  1 ) }
 					}
 				},
 				{ GamePad.Player2Button02,
-					new ButtonDefinition()
+					new ()
 					{
 						KeyCodes = null,
 						MouseButtonNumbers = null,
-						GamePadButtonDefinitions = new GamePadButtonDefinition[]{ new GamePadButtonDefinition(  1,  2 ) }
+						GamePadButtonDefinitions = new GamePadButtonDefinition[]{ new (  1,  2 ) }
 					}
 				},
 				{ GamePad.Player2Button03,
-					new ButtonDefinition()
+					new ()
 					{
 						KeyCodes = null,
 						MouseButtonNumbers = null,
-						GamePadButtonDefinitions = new GamePadButtonDefinition[]{ new GamePadButtonDefinition(  1,  3 ) }
+						GamePadButtonDefinitions = new GamePadButtonDefinition[]{ new (  1,  3 ) }
 					}
 				},
 				{ GamePad.Player2Button04,
-					new ButtonDefinition()
+					new ()
 					{
 						KeyCodes = null,
 						MouseButtonNumbers = null,
-						GamePadButtonDefinitions = new GamePadButtonDefinition[]{ new GamePadButtonDefinition(  1,  4 ) }
+						GamePadButtonDefinitions = new GamePadButtonDefinition[]{ new (  1,  4 ) }
 					}
 				},
 				{ GamePad.Player2Button05,
-					new ButtonDefinition()
+					new ()
 					{
 						KeyCodes = null,
 						MouseButtonNumbers = null,
-						GamePadButtonDefinitions = new GamePadButtonDefinition[]{ new GamePadButtonDefinition(  1,  5 ) }
+						GamePadButtonDefinitions = new GamePadButtonDefinition[]{ new (  1,  5 ) }
 					}
 				},
 				{ GamePad.Player2Button06,
-					new ButtonDefinition()
+					new ()
 					{
 						KeyCodes = null,
 						MouseButtonNumbers = null,
-						GamePadButtonDefinitions = new GamePadButtonDefinition[]{ new GamePadButtonDefinition(  1,  6 ) }
+						GamePadButtonDefinitions = new GamePadButtonDefinition[]{ new (  1,  6 ) }
 					}
 				},
 				{ GamePad.Player2Button07,
-					new ButtonDefinition()
+					new ()
 					{
 						KeyCodes = null,
 						MouseButtonNumbers = null,
-						GamePadButtonDefinitions = new GamePadButtonDefinition[]{ new GamePadButtonDefinition(  1,  7 ) }
+						GamePadButtonDefinitions = new GamePadButtonDefinition[]{ new (  1,  7 ) }
 					}
 				},
 				{ GamePad.Player2Button08,
-					new ButtonDefinition()
+					new ()
 					{
 						KeyCodes = null,
 						MouseButtonNumbers = null,
-						GamePadButtonDefinitions = new GamePadButtonDefinition[]{ new GamePadButtonDefinition(  1,  8 ) }
+						GamePadButtonDefinitions = new GamePadButtonDefinition[]{ new (  1,  8 ) }
 					}
 				},
 				{ GamePad.Player2Button09,
-					new ButtonDefinition()
+					new ()
 					{
 						KeyCodes = null,
 						MouseButtonNumbers = null,
-						GamePadButtonDefinitions = new GamePadButtonDefinition[]{ new GamePadButtonDefinition(  1,  9 ) }
+						GamePadButtonDefinitions = new GamePadButtonDefinition[]{ new (  1,  9 ) }
 					}
 				},
 				{ GamePad.Player2Button10,
-					new ButtonDefinition()
+					new ()
 					{
 						KeyCodes = null,
 						MouseButtonNumbers = null,
-						GamePadButtonDefinitions = new GamePadButtonDefinition[]{ new GamePadButtonDefinition(  1, 10 ) }
+						GamePadButtonDefinitions = new GamePadButtonDefinition[]{ new (  1, 10 ) }
 					}
 				},
 				{ GamePad.Player2Button11,
-					new ButtonDefinition()
+					new ()
 					{
 						KeyCodes = null,
 						MouseButtonNumbers = null,
-						GamePadButtonDefinitions = new GamePadButtonDefinition[]{ new GamePadButtonDefinition(  1, 11 ) }
+						GamePadButtonDefinitions = new GamePadButtonDefinition[]{ new (  1, 11 ) }
 					}
 				},
 				{ GamePad.Player2Button12,
-					new ButtonDefinition()
+					new ()
 					{
 						KeyCodes = null,
 						MouseButtonNumbers = null,
-						GamePadButtonDefinitions = new GamePadButtonDefinition[]{ new GamePadButtonDefinition(  1, 12 ) }
+						GamePadButtonDefinitions = new GamePadButtonDefinition[]{ new (  1, 12 ) }
 					}
 				},
 				{ GamePad.Player2Button13,
-					new ButtonDefinition()
+					new ()
 					{
 						KeyCodes = null,
 						MouseButtonNumbers = null,
-						GamePadButtonDefinitions = new GamePadButtonDefinition[]{ new GamePadButtonDefinition(  1, 13 ) }
+						GamePadButtonDefinitions = new GamePadButtonDefinition[]{ new (  1, 13 ) }
 					}
 				},
 				{ GamePad.Player2Button14,
-					new ButtonDefinition()
+					new ()
 					{
 						KeyCodes = null,
 						MouseButtonNumbers = null,
-						GamePadButtonDefinitions = new GamePadButtonDefinition[]{ new GamePadButtonDefinition(  1, 14 ) }
+						GamePadButtonDefinitions = new GamePadButtonDefinition[]{ new (  1, 14 ) }
 					}
 				},
 				{ GamePad.Player2Button15,
-					new ButtonDefinition()
+					new ()
 					{
 						KeyCodes = null,
 						MouseButtonNumbers = null,
-						GamePadButtonDefinitions = new GamePadButtonDefinition[]{ new GamePadButtonDefinition(  1, 15 ) }
+						GamePadButtonDefinitions = new GamePadButtonDefinition[]{ new (  1, 15 ) }
 					}
 				},
 				{ GamePad.Player3Button00,
-					new ButtonDefinition()
+					new ()
 					{
 						KeyCodes = null,
 						MouseButtonNumbers = null,
-						GamePadButtonDefinitions = new GamePadButtonDefinition[]{ new GamePadButtonDefinition(  2,  0 ) }
+						GamePadButtonDefinitions = new GamePadButtonDefinition[]{ new (  2,  0 ) }
 					}
 				},
 				{ GamePad.Player3Button01,
-					new ButtonDefinition()
+					new ()
 					{
 						KeyCodes = null,
 						MouseButtonNumbers = null,
-						GamePadButtonDefinitions = new GamePadButtonDefinition[]{ new GamePadButtonDefinition(  2,  1 ) }
+						GamePadButtonDefinitions = new GamePadButtonDefinition[]{ new (  2,  1 ) }
 					}
 				},
 				{ GamePad.Player3Button02,
-					new ButtonDefinition()
+					new ()
 					{
 						KeyCodes = null,
 						MouseButtonNumbers = null,
-						GamePadButtonDefinitions = new GamePadButtonDefinition[]{ new GamePadButtonDefinition(  2,  2 ) }
+						GamePadButtonDefinitions = new GamePadButtonDefinition[]{ new (  2,  2 ) }
 					}
 				},
 				{ GamePad.Player3Button03,
-					new ButtonDefinition()
+					new ()
 					{
 						KeyCodes = null,
 						MouseButtonNumbers = null,
-						GamePadButtonDefinitions = new GamePadButtonDefinition[]{ new GamePadButtonDefinition(  2,  3 ) }
+						GamePadButtonDefinitions = new GamePadButtonDefinition[]{ new (  2,  3 ) }
 					}
 				},
 				{ GamePad.Player3Button04,
-					new ButtonDefinition()
+					new ()
 					{
 						KeyCodes = null,
 						MouseButtonNumbers = null,
-						GamePadButtonDefinitions = new GamePadButtonDefinition[]{ new GamePadButtonDefinition(  2,  4 ) }
+						GamePadButtonDefinitions = new GamePadButtonDefinition[]{ new (  2,  4 ) }
 					}
 				},
 				{ GamePad.Player3Button05,
-					new ButtonDefinition()
+					new ()
 					{
 						KeyCodes = null,
 						MouseButtonNumbers = null,
-						GamePadButtonDefinitions = new GamePadButtonDefinition[]{ new GamePadButtonDefinition(  2,  5 ) }
+						GamePadButtonDefinitions = new GamePadButtonDefinition[]{ new (  2,  5 ) }
 					}
 				},
 				{ GamePad.Player3Button06,
-					new ButtonDefinition()
+					new ()
 					{
 						KeyCodes = null,
 						MouseButtonNumbers = null,
-						GamePadButtonDefinitions = new GamePadButtonDefinition[]{ new GamePadButtonDefinition(  2,  6 ) }
+						GamePadButtonDefinitions = new GamePadButtonDefinition[]{ new (  2,  6 ) }
 					}
 				},
 				{ GamePad.Player3Button07,
-					new ButtonDefinition()
+					new ()
 					{
 						KeyCodes = null,
 						MouseButtonNumbers = null,
-						GamePadButtonDefinitions = new GamePadButtonDefinition[]{ new GamePadButtonDefinition(  2,  7 ) }
+						GamePadButtonDefinitions = new GamePadButtonDefinition[]{ new (  2,  7 ) }
 					}
 				},
 				{ GamePad.Player3Button08,
-					new ButtonDefinition()
+					new ()
 					{
 						KeyCodes = null,
 						MouseButtonNumbers = null,
-						GamePadButtonDefinitions = new GamePadButtonDefinition[]{ new GamePadButtonDefinition(  2,  8 ) }
+						GamePadButtonDefinitions = new GamePadButtonDefinition[]{ new (  2,  8 ) }
 					}
 				},
 				{ GamePad.Player3Button09,
-					new ButtonDefinition()
+					new ()
 					{
 						KeyCodes = null,
 						MouseButtonNumbers = null,
-						GamePadButtonDefinitions = new GamePadButtonDefinition[]{ new GamePadButtonDefinition(  2,  9 ) }
+						GamePadButtonDefinitions = new GamePadButtonDefinition[]{ new (  2,  9 ) }
 					}
 				},
 				{ GamePad.Player3Button10,
-					new ButtonDefinition()
+					new ()
 					{
 						KeyCodes = null,
 						MouseButtonNumbers = null,
-						GamePadButtonDefinitions = new GamePadButtonDefinition[]{ new GamePadButtonDefinition(  2, 10 ) }
+						GamePadButtonDefinitions = new GamePadButtonDefinition[]{ new (  2, 10 ) }
 					}
 				},
 				{ GamePad.Player3Button11,
-					new ButtonDefinition()
+					new ()
 					{
 						KeyCodes = null,
 						MouseButtonNumbers = null,
-						GamePadButtonDefinitions = new GamePadButtonDefinition[]{ new GamePadButtonDefinition(  2, 11 ) }
+						GamePadButtonDefinitions = new GamePadButtonDefinition[]{ new (  2, 11 ) }
 					}
 				},
 				{ GamePad.Player3Button12,
-					new ButtonDefinition()
+					new ()
 					{
 						KeyCodes = null,
 						MouseButtonNumbers = null,
-						GamePadButtonDefinitions = new GamePadButtonDefinition[]{ new GamePadButtonDefinition(  2, 12 ) }
+						GamePadButtonDefinitions = new GamePadButtonDefinition[]{ new (  2, 12 ) }
 					}
 				},
 				{ GamePad.Player3Button13,
-					new ButtonDefinition()
+					new ()
 					{
 						KeyCodes = null,
 						MouseButtonNumbers = null,
-						GamePadButtonDefinitions = new GamePadButtonDefinition[]{ new GamePadButtonDefinition(  2, 13 ) }
+						GamePadButtonDefinitions = new GamePadButtonDefinition[]{ new (  2, 13 ) }
 					}
 				},
 				{ GamePad.Player3Button14,
-					new ButtonDefinition()
+					new ()
 					{
 						KeyCodes = null,
 						MouseButtonNumbers = null,
-						GamePadButtonDefinitions = new GamePadButtonDefinition[]{ new GamePadButtonDefinition(  2, 14 ) }
+						GamePadButtonDefinitions = new GamePadButtonDefinition[]{ new (  2, 14 ) }
 					}
 				},
 				{ GamePad.Player3Button15,
-					new ButtonDefinition()
+					new ()
 					{
 						KeyCodes = null,
 						MouseButtonNumbers = null,
-						GamePadButtonDefinitions = new GamePadButtonDefinition[]{ new GamePadButtonDefinition(  2, 15 ) }
+						GamePadButtonDefinitions = new GamePadButtonDefinition[]{ new (  2, 15 ) }
 					}
 				},
 				{ GamePad.Player4Button00,
-					new ButtonDefinition()
+					new ()
 					{
 						KeyCodes = null,
 						MouseButtonNumbers = null,
-						GamePadButtonDefinitions = new GamePadButtonDefinition[]{ new GamePadButtonDefinition(  3,  0 ) }
+						GamePadButtonDefinitions = new GamePadButtonDefinition[]{ new (  3,  0 ) }
 					}
 				},
 				{ GamePad.Player4Button01,
-					new ButtonDefinition()
+					new ()
 					{
 						KeyCodes = null,
 						MouseButtonNumbers = null,
-						GamePadButtonDefinitions = new GamePadButtonDefinition[]{ new GamePadButtonDefinition(  3,  1 ) }
+						GamePadButtonDefinitions = new GamePadButtonDefinition[]{ new (  3,  1 ) }
 					}
 				},
 				{ GamePad.Player4Button02,
-					new ButtonDefinition()
+					new ()
 					{
 						KeyCodes = null,
 						MouseButtonNumbers = null,
-						GamePadButtonDefinitions = new GamePadButtonDefinition[]{ new GamePadButtonDefinition(  3,  2 ) }
+						GamePadButtonDefinitions = new GamePadButtonDefinition[]{ new (  3,  2 ) }
 					}
 				},
 				{ GamePad.Player4Button03,
-					new ButtonDefinition()
+					new ()
 					{
 						KeyCodes = null,
 						MouseButtonNumbers = null,
-						GamePadButtonDefinitions = new GamePadButtonDefinition[]{ new GamePadButtonDefinition(  3,  3 ) }
+						GamePadButtonDefinitions = new GamePadButtonDefinition[]{ new (  3,  3 ) }
 					}
 				},
 				{ GamePad.Player4Button04,
-					new ButtonDefinition()
+					new ()
 					{
 						KeyCodes = null,
 						MouseButtonNumbers = null,
-						GamePadButtonDefinitions = new GamePadButtonDefinition[]{ new GamePadButtonDefinition(  3,  4 ) }
+						GamePadButtonDefinitions = new GamePadButtonDefinition[]{ new (  3,  4 ) }
 					}
 				},
 				{ GamePad.Player4Button05,
-					new ButtonDefinition()
+					new ()
 					{
 						KeyCodes = null,
 						MouseButtonNumbers = null,
-						GamePadButtonDefinitions = new GamePadButtonDefinition[]{ new GamePadButtonDefinition(  3,  5 ) }
+						GamePadButtonDefinitions = new GamePadButtonDefinition[]{ new (  3,  5 ) }
 					}
 				},
 				{ GamePad.Player4Button06,
-					new ButtonDefinition()
+					new ()
 					{
 						KeyCodes = null,
 						MouseButtonNumbers = null,
-						GamePadButtonDefinitions = new GamePadButtonDefinition[]{ new GamePadButtonDefinition(  3,  6 ) }
+						GamePadButtonDefinitions = new GamePadButtonDefinition[]{ new (  3,  6 ) }
 					}
 				},
 				{ GamePad.Player4Button07,
-					new ButtonDefinition()
+					new ()
 					{
 						KeyCodes = null,
 						MouseButtonNumbers = null,
-						GamePadButtonDefinitions = new GamePadButtonDefinition[]{ new GamePadButtonDefinition(  3,  7 ) }
+						GamePadButtonDefinitions = new GamePadButtonDefinition[]{ new (  3,  7 ) }
 					}
 				},
 				{ GamePad.Player4Button08,
-					new ButtonDefinition()
+					new ()
 					{
 						KeyCodes = null,
 						MouseButtonNumbers = null,
-						GamePadButtonDefinitions = new GamePadButtonDefinition[]{ new GamePadButtonDefinition(  3,  8 ) }
+						GamePadButtonDefinitions = new GamePadButtonDefinition[]{ new (  3,  8 ) }
 					}
 				},
 				{ GamePad.Player4Button09,
-					new ButtonDefinition()
+					new ()
 					{
 						KeyCodes = null,
 						MouseButtonNumbers = null,
-						GamePadButtonDefinitions = new GamePadButtonDefinition[]{ new GamePadButtonDefinition(  3,  9 ) }
+						GamePadButtonDefinitions = new GamePadButtonDefinition[]{ new (  3,  9 ) }
 					}
 				},
 				{ GamePad.Player4Button10,
-					new ButtonDefinition()
+					new ()
 					{
 						KeyCodes = null,
 						MouseButtonNumbers = null,
-						GamePadButtonDefinitions = new GamePadButtonDefinition[]{ new GamePadButtonDefinition(  3, 10 ) }
+						GamePadButtonDefinitions = new GamePadButtonDefinition[]{ new (  3, 10 ) }
 					}
 				},
 				{ GamePad.Player4Button11,
-					new ButtonDefinition()
+					new ()
 					{
 						KeyCodes = null,
 						MouseButtonNumbers = null,
-						GamePadButtonDefinitions = new GamePadButtonDefinition[]{ new GamePadButtonDefinition(  3, 11 ) }
+						GamePadButtonDefinitions = new GamePadButtonDefinition[]{ new (  3, 11 ) }
 					}
 				},
 				{ GamePad.Player4Button12,
-					new ButtonDefinition()
+					new ()
 					{
 						KeyCodes = null,
 						MouseButtonNumbers = null,
-						GamePadButtonDefinitions = new GamePadButtonDefinition[]{ new GamePadButtonDefinition(  3, 12 ) }
+						GamePadButtonDefinitions = new GamePadButtonDefinition[]{ new (  3, 12 ) }
 					}
 				},
 				{ GamePad.Player4Button13,
-					new ButtonDefinition()
+					new ()
 					{
 						KeyCodes = null,
 						MouseButtonNumbers = null,
-						GamePadButtonDefinitions = new GamePadButtonDefinition[]{ new GamePadButtonDefinition(  3, 13 ) }
+						GamePadButtonDefinitions = new GamePadButtonDefinition[]{ new (  3, 13 ) }
 					}
 				},
 				{ GamePad.Player4Button14,
-					new ButtonDefinition()
+					new ()
 					{
 						KeyCodes = null,
 						MouseButtonNumbers = null,
-						GamePadButtonDefinitions = new GamePadButtonDefinition[]{ new GamePadButtonDefinition(  3, 14 ) }
+						GamePadButtonDefinitions = new GamePadButtonDefinition[]{ new (  3, 14 ) }
 					}
 				},
 				{ GamePad.Player4Button15,
-					new ButtonDefinition()
+					new ()
 					{
 						KeyCodes = null,
 						MouseButtonNumbers = null,
-						GamePadButtonDefinitions = new GamePadButtonDefinition[]{ new GamePadButtonDefinition(  3, 15 ) }
+						GamePadButtonDefinitions = new GamePadButtonDefinition[]{ new (  3, 15 ) }
 					}
 				},
 			} ;
@@ -990,23 +990,23 @@ namespace uGUIHelper.InputAdapter
 			private static readonly Dictionary<string,AxisDefinition> m_AxisDefinitions = new ()
 			{
 				{ "Horizontal",
-					new AxisDefinition()
+					new ()
 					{
 						KeyCodes = new KeyCodes[]{ KeyCodes.LeftArrow, KeyCodes.RightArrow, KeyCodes.A, KeyCodes.D },
 						MouseWheel = false,
-						GamePadAxisDefinitions = new GamePadAxisDefinition[]{ new GamePadAxisDefinition( -1,  2 ) }
+						GamePadAxisDefinitions = new GamePadAxisDefinition[]{ new ( -1,  2 ) }
 					}
 				},
 				{ "Vertical",
-					new AxisDefinition()
+					new ()
 					{
 						KeyCodes = new KeyCodes[]{ KeyCodes.DownArrow, KeyCodes.UpArrow, KeyCodes.S, KeyCodes.W },
 						MouseWheel = false,
-						GamePadAxisDefinitions = new GamePadAxisDefinition[]{ new GamePadAxisDefinition( -1,  3 ) }
+						GamePadAxisDefinitions = new GamePadAxisDefinition[]{ new ( -1,  3 ) }
 					}
 				},
 				{ "Mouse ScrollWheel",
-					new AxisDefinition()
+					new ()
 					{
 						KeyCodes = null,
 						MouseWheel = true,
@@ -1014,157 +1014,157 @@ namespace uGUIHelper.InputAdapter
 					}
 				},
 				{ GamePad.Player1Axis00,
-					new AxisDefinition()
+					new ()
 					{
 						KeyCodes = null,
 						MouseWheel = false,
-						GamePadAxisDefinitions = new GamePadAxisDefinition[]{ new GamePadAxisDefinition(  0,  0 ) }
+						GamePadAxisDefinitions = new GamePadAxisDefinition[]{ new (  0,  0 ) }
 					}
 				},
 				{ GamePad.Player1Axis01,
-					new AxisDefinition()
+					new ()
 					{
 						KeyCodes = null,
 						MouseWheel = false,
-						GamePadAxisDefinitions = new GamePadAxisDefinition[]{ new GamePadAxisDefinition(  0,  1 ) }
+						GamePadAxisDefinitions = new GamePadAxisDefinition[]{ new (  0,  1 ) }
 					}
 				},
 				{ GamePad.Player1Axis02,
-					new AxisDefinition()
+					new ()
 					{
 						KeyCodes = null,
 						MouseWheel = false,
-						GamePadAxisDefinitions = new GamePadAxisDefinition[]{ new GamePadAxisDefinition(  0,  2 ) }
+						GamePadAxisDefinitions = new GamePadAxisDefinition[]{ new (  0,  2 ) }
 					}
 				},
 				{ GamePad.Player1Axis03,
-					new AxisDefinition()
+					new ()
 					{
 						KeyCodes = null,
 						MouseWheel = false,
-						GamePadAxisDefinitions = new GamePadAxisDefinition[]{ new GamePadAxisDefinition(  0,  3 ) }
+						GamePadAxisDefinitions = new GamePadAxisDefinition[]{ new (  0,  3 ) }
 					}
 				},
 				{ GamePad.Player1Axis04,
-					new AxisDefinition()
+					new ()
 					{
 						KeyCodes = null,
 						MouseWheel = false,
-						GamePadAxisDefinitions = new GamePadAxisDefinition[]{ new GamePadAxisDefinition(  0,  4 ) }
+						GamePadAxisDefinitions = new GamePadAxisDefinition[]{ new (  0,  4 ) }
 					}
 				},
 				{ GamePad.Player1Axis05,
-					new AxisDefinition()
+					new ()
 					{
 						KeyCodes = null,
 						MouseWheel = false,
-						GamePadAxisDefinitions = new GamePadAxisDefinition[]{ new GamePadAxisDefinition(  0,  5 ) }
+						GamePadAxisDefinitions = new GamePadAxisDefinition[]{ new (  0,  5 ) }
 					}
 				},
 				{ GamePad.Player1Axis06,
-					new AxisDefinition()
+					new ()
 					{
 						KeyCodes = null,
 						MouseWheel = false,
-						GamePadAxisDefinitions = new GamePadAxisDefinition[]{ new GamePadAxisDefinition(  0,  6 ) }
+						GamePadAxisDefinitions = new GamePadAxisDefinition[]{ new (  0,  6 ) }
 					}
 				},
 				{ GamePad.Player1Axis07,
-					new AxisDefinition()
+					new ()
 					{
 						KeyCodes = null,
 						MouseWheel = false,
-						GamePadAxisDefinitions = new GamePadAxisDefinition[]{ new GamePadAxisDefinition(  0,  7 ) }
+						GamePadAxisDefinitions = new GamePadAxisDefinition[]{ new (  0,  7 ) }
 					}
 				},
 
 				{ GamePad.Player2Axis00,
-					new AxisDefinition()
+					new ()
 					{
 						KeyCodes = null,
 						MouseWheel = false,
-						GamePadAxisDefinitions = new GamePadAxisDefinition[]{ new GamePadAxisDefinition(  1,  0 ) }
+						GamePadAxisDefinitions = new GamePadAxisDefinition[]{ new (  1,  0 ) }
 					}
 				},
 				{ GamePad.Player2Axis01,
-					new AxisDefinition()
+					new ()
 					{
 						KeyCodes = null,
 						MouseWheel = false,
-						GamePadAxisDefinitions = new GamePadAxisDefinition[]{ new GamePadAxisDefinition(  1,  1 ) }
+						GamePadAxisDefinitions = new GamePadAxisDefinition[]{ new (  1,  1 ) }
 					}
 				},
 				{ GamePad.Player2Axis02,
-					new AxisDefinition()
+					new ()
 					{
 						KeyCodes = null,
 						MouseWheel = false,
-						GamePadAxisDefinitions = new GamePadAxisDefinition[]{ new GamePadAxisDefinition(  1,  2 ) }
+						GamePadAxisDefinitions = new GamePadAxisDefinition[]{ new (  1,  2 ) }
 					}
 				},
 				{ GamePad.Player2Axis03,
-					new AxisDefinition()
+					new ()
 					{
 						KeyCodes = null,
 						MouseWheel = false,
-						GamePadAxisDefinitions = new GamePadAxisDefinition[]{ new GamePadAxisDefinition(  1,  3 ) }
+						GamePadAxisDefinitions = new GamePadAxisDefinition[]{ new (  1,  3 ) }
 					}
 				},
 				{ GamePad.Player2Axis04,
-					new AxisDefinition()
+					new ()
 					{
 						KeyCodes = null,
 						MouseWheel = false,
-						GamePadAxisDefinitions = new GamePadAxisDefinition[]{ new GamePadAxisDefinition(  1,  4 ) }
+						GamePadAxisDefinitions = new GamePadAxisDefinition[]{ new (  1,  4 ) }
 					}
 				},
 				{ GamePad.Player2Axis05,
-					new AxisDefinition()
+					new ()
 					{
 						KeyCodes = null,
 						MouseWheel = false,
-						GamePadAxisDefinitions = new GamePadAxisDefinition[]{ new GamePadAxisDefinition(  1,  5 ) }
+						GamePadAxisDefinitions = new GamePadAxisDefinition[]{ new (  1,  5 ) }
 					}
 				},
 				{ GamePad.Player2Axis06,
-					new AxisDefinition()
+					new ()
 					{
 						KeyCodes = null,
 						MouseWheel = false,
-						GamePadAxisDefinitions = new GamePadAxisDefinition[]{ new GamePadAxisDefinition(  1,  6 ) }
+						GamePadAxisDefinitions = new GamePadAxisDefinition[]{ new (  1,  6 ) }
 					}
 				},
 				{ GamePad.Player2Axis07,
-					new AxisDefinition()
+					new ()
 					{
 						KeyCodes = null,
 						MouseWheel = false,
-						GamePadAxisDefinitions = new GamePadAxisDefinition[]{ new GamePadAxisDefinition(  1,  7 ) }
+						GamePadAxisDefinitions = new GamePadAxisDefinition[]{ new (  1,  7 ) }
 					}
 				},
 
 				{ GamePad.Player3Axis00,
-					new AxisDefinition()
+					new ()
 					{
 						KeyCodes = null,
 						MouseWheel = false,
-						GamePadAxisDefinitions = new GamePadAxisDefinition[]{ new GamePadAxisDefinition(  2,  0 ) }
+						GamePadAxisDefinitions = new GamePadAxisDefinition[]{ new (  2,  0 ) }
 					}
 				},
 				{ GamePad.Player3Axis01,
-					new AxisDefinition()
+					new ()
 					{
 						KeyCodes = null,
 						MouseWheel = false,
-						GamePadAxisDefinitions = new GamePadAxisDefinition[]{ new GamePadAxisDefinition(  2,  1 ) }
+						GamePadAxisDefinitions = new GamePadAxisDefinition[]{ new (  2,  1 ) }
 					}
 				},
 				{ GamePad.Player3Axis02,
-					new AxisDefinition()
+					new ()
 					{
 						KeyCodes = null,
 						MouseWheel = false,
-						GamePadAxisDefinitions = new GamePadAxisDefinition[]{ new GamePadAxisDefinition(  2,  2 ) }
+						GamePadAxisDefinitions = new GamePadAxisDefinition[]{ new (  2,  2 ) }
 					}
 				},
 				{ GamePad.Player3Axis03,
@@ -1172,7 +1172,7 @@ namespace uGUIHelper.InputAdapter
 					{
 						KeyCodes = null,
 						MouseWheel = false,
-						GamePadAxisDefinitions = new GamePadAxisDefinition[]{ new GamePadAxisDefinition(  2,  3 ) }
+						GamePadAxisDefinitions = new GamePadAxisDefinition[]{ new (  2,  3 ) }
 					}
 				},
 				{ GamePad.Player3Axis04,
@@ -1180,7 +1180,7 @@ namespace uGUIHelper.InputAdapter
 					{
 						KeyCodes = null,
 						MouseWheel = false,
-						GamePadAxisDefinitions = new GamePadAxisDefinition[]{ new GamePadAxisDefinition(  2,  4 ) }
+						GamePadAxisDefinitions = new GamePadAxisDefinition[]{ new (  2,  4 ) }
 					}
 				},
 				{ GamePad.Player3Axis05,
@@ -1188,7 +1188,7 @@ namespace uGUIHelper.InputAdapter
 					{
 						KeyCodes = null,
 						MouseWheel = false,
-						GamePadAxisDefinitions = new GamePadAxisDefinition[]{ new GamePadAxisDefinition(  2,  5 ) }
+						GamePadAxisDefinitions = new GamePadAxisDefinition[]{ new (  2,  5 ) }
 					}
 				},
 				{ GamePad.Player3Axis06,
@@ -1196,80 +1196,80 @@ namespace uGUIHelper.InputAdapter
 					{
 						KeyCodes = null,
 						MouseWheel = false,
-						GamePadAxisDefinitions = new GamePadAxisDefinition[]{ new GamePadAxisDefinition(  2,  6 ) }
+						GamePadAxisDefinitions = new GamePadAxisDefinition[]{ new (  2,  6 ) }
 					}
 				},
 				{ GamePad.Player3Axis07,
-					new AxisDefinition()
+					new ()
 					{
 						KeyCodes = null,
 						MouseWheel = false,
-						GamePadAxisDefinitions = new GamePadAxisDefinition[]{ new GamePadAxisDefinition(  2,  7 ) }
+						GamePadAxisDefinitions = new GamePadAxisDefinition[]{ new (  2,  7 ) }
 					}
 				},
 
 				{ GamePad.Player4Axis00,
-					new AxisDefinition()
+					new ()
 					{
 						KeyCodes = null,
 						MouseWheel = false,
-						GamePadAxisDefinitions = new GamePadAxisDefinition[]{ new GamePadAxisDefinition(  3,  0 ) }
+						GamePadAxisDefinitions = new GamePadAxisDefinition[]{ new (  3,  0 ) }
 					}
 				},
 				{ GamePad.Player4Axis01,
-					new AxisDefinition()
+					new ()
 					{
 						KeyCodes = null,
 						MouseWheel = false,
-						GamePadAxisDefinitions = new GamePadAxisDefinition[]{ new GamePadAxisDefinition(  3,  1 ) }
+						GamePadAxisDefinitions = new GamePadAxisDefinition[]{ new (  3,  1 ) }
 					}
 				},
 				{ GamePad.Player4Axis02,
-					new AxisDefinition()
+					new ()
 					{
 						KeyCodes = null,
 						MouseWheel = false,
-						GamePadAxisDefinitions = new GamePadAxisDefinition[]{ new GamePadAxisDefinition(  3,  2 ) }
+						GamePadAxisDefinitions = new GamePadAxisDefinition[]{ new (  3,  2 ) }
 					}
 				},
 				{ GamePad.Player4Axis03,
-					new AxisDefinition()
+					new ()
 					{
 						KeyCodes = null,
 						MouseWheel = false,
-						GamePadAxisDefinitions = new GamePadAxisDefinition[]{ new GamePadAxisDefinition(  3,  3 ) }
+						GamePadAxisDefinitions = new GamePadAxisDefinition[]{ new (  3,  3 ) }
 					}
 				},
 				{ GamePad.Player4Axis04,
-					new AxisDefinition()
+					new ()
 					{
 						KeyCodes = null,
 						MouseWheel = false,
-						GamePadAxisDefinitions = new GamePadAxisDefinition[]{ new GamePadAxisDefinition(  3,  4 ) }
+						GamePadAxisDefinitions = new GamePadAxisDefinition[]{ new (  3,  4 ) }
 					}
 				},
 				{ GamePad.Player4Axis05,
-					new AxisDefinition()
+					new ()
 					{
 						KeyCodes = null,
 						MouseWheel = false,
-						GamePadAxisDefinitions = new GamePadAxisDefinition[]{ new GamePadAxisDefinition(  3,  5 ) }
+						GamePadAxisDefinitions = new GamePadAxisDefinition[]{ new (  3,  5 ) }
 					}
 				},
 				{ GamePad.Player4Axis06,
-					new AxisDefinition()
+					new ()
 					{
 						KeyCodes = null,
 						MouseWheel = false,
-						GamePadAxisDefinitions = new GamePadAxisDefinition[]{ new GamePadAxisDefinition(  3,  6 ) }
+						GamePadAxisDefinitions = new GamePadAxisDefinition[]{ new (  3,  6 ) }
 					}
 				},
 				{ GamePad.Player4Axis07,
-					new AxisDefinition()
+					new ()
 					{
 						KeyCodes = null,
 						MouseWheel = false,
-						GamePadAxisDefinitions = new GamePadAxisDefinition[]{ new GamePadAxisDefinition(  3,  7 ) }
+						GamePadAxisDefinitions = new GamePadAxisDefinition[]{ new (  3,  7 ) }
 					}
 				},
 			} ;

@@ -229,7 +229,7 @@ namespace InputHelper
 
 		/// リピートを開始するまでの時間(秒)
 		/// </summary>
-		public static float RepeatStartingTime
+		public static float GamePadRepeatStartingTime
 		{
 			get{ return GamePad.RepeatStartingTime ; }
 			set{ GamePad.RepeatStartingTime = value ; }
@@ -238,7 +238,7 @@ namespace InputHelper
 		/// <summary>
 		/// リピートを繰り返す間隔の時間(秒)
 		/// </summary>
-		public static float RepeatIntervalTime
+		public static float GamePadRepeatIntervalTime
 		{
 			get{ return GamePad.RepeatIntervalTime ; }
 			set{ GamePad.RepeatIntervalTime = value ; }

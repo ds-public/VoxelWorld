@@ -33,6 +33,8 @@ namespace uGUIHelper.InputAdapter
 			/// <returns></returns>
 			public int GetButtonAll( int playerNumber = -1 )
 			{
+				// ゲームパッドの場合はキーボードのマッピングもあるため単純にゲームパッドデバイスの有無で処理の終了は出来ない
+
 				int buttonFlags = 0 ;
 
 				//----------------------------------

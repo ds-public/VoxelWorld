@@ -7,12 +7,13 @@ using UnityEngine.EventSystems ;
 
 using TMPro ;
 
+
 namespace uGUIHelper
 {
 	/// <summary>
 	/// uGUI:InputField クラスの機能拡張コンポーネントクラス(複合)
 	/// </summary>
-	[RequireComponent(typeof(TMP_InputFieldPlus))]	
+	[RequireComponent( typeof( TMP_InputFieldPlus ) )]	
 	public class UIInputField : UIImage
 	{
 		/// <summary>
@@ -22,7 +23,7 @@ namespace uGUIHelper
 		{
 			get
 			{
-				TMP_InputFieldPlus inputField = CTMP_InputField ;
+				var inputField = CTMP_InputField ;
 				if( inputField == null )
 				{
 					return false ;
@@ -31,7 +32,7 @@ namespace uGUIHelper
 			}
 			set
 			{
-				TMP_InputFieldPlus inputField = CTMP_InputField ;
+				var inputField = CTMP_InputField ;
 				if( inputField == null )
 				{
 					return ;
@@ -47,7 +48,7 @@ namespace uGUIHelper
 		{
 			get
 			{
-				TMP_InputFieldPlus inputField = CTMP_InputField ;
+				var inputField = CTMP_InputField ;
 				if( inputField == null )
 				{
 					return "" ;
@@ -57,7 +58,7 @@ namespace uGUIHelper
 			}
 			set
 			{
-				TMP_InputFieldPlus inputField = CTMP_InputField ;
+				var inputField = CTMP_InputField ;
 				if( inputField == null )
 				{
 					return ;
@@ -82,7 +83,7 @@ namespace uGUIHelper
 		{
 			get
 			{
-				TMP_InputFieldPlus inputField = CTMP_InputField ;
+				var inputField = CTMP_InputField ;
 				if( inputField == null )
 				{
 					return 0 ;
@@ -91,7 +92,7 @@ namespace uGUIHelper
 			}
 			set
 			{
-				TMP_InputFieldPlus inputField = CTMP_InputField ;
+				var inputField = CTMP_InputField ;
 				if( inputField == null )
 				{
 					return ;
@@ -107,7 +108,7 @@ namespace uGUIHelper
 		{
 			get
 			{
-				TMP_InputFieldPlus inputField = CTMP_InputField ;
+				var inputField = CTMP_InputField ;
 				if( inputField == null )
 				{
 					return TMP_InputFieldPlus.ContentType.Standard ;
@@ -116,7 +117,7 @@ namespace uGUIHelper
 			}
 			set
 			{
-				TMP_InputFieldPlus inputField = CTMP_InputField ;
+				var inputField = CTMP_InputField ;
 				if( inputField == null )
 				{
 					return ;
@@ -127,7 +128,7 @@ namespace uGUIHelper
 					inputField.contentType = value ;
 
 					string text = inputField.text ;
-					inputField.text = "" ;
+					inputField.text = string.Empty ;
 					inputField.text = text ;
 				}
 			}
@@ -140,7 +141,7 @@ namespace uGUIHelper
 		{
 			get
 			{
-				TMP_InputFieldPlus inputField = CTMP_InputField ;
+				var inputField = CTMP_InputField ;
 				if( inputField == null )
 				{
 					return TMP_InputFieldPlus.LineType.SingleLine ;
@@ -149,7 +150,7 @@ namespace uGUIHelper
 			}
 			set
 			{
-				TMP_InputFieldPlus inputField = CTMP_InputField ;
+				var inputField = CTMP_InputField ;
 				if( inputField == null )
 				{
 					return ;
@@ -165,7 +166,7 @@ namespace uGUIHelper
 		{
 			get
 			{
-				TMP_InputFieldPlus inputField = CTMP_InputField ;
+				var inputField = CTMP_InputField ;
 				if( inputField == null )
 				{
 					return null ;
@@ -181,7 +182,7 @@ namespace uGUIHelper
 		{
 			get
 			{
-				TMP_InputFieldPlus inputField = CTMP_InputField ;
+				var inputField = CTMP_InputField ;
 				if( inputField == null )
 				{
 					return null ;
@@ -197,7 +198,7 @@ namespace uGUIHelper
 		{
 			get
 			{
-				TMP_InputFieldPlus inputField = CTMP_InputField ;
+				var inputField = CTMP_InputField ;
 				if( inputField == null )
 				{
 					return 0 ;
@@ -206,7 +207,7 @@ namespace uGUIHelper
 			}
 			set
 			{
-				TMP_InputFieldPlus inputField = CTMP_InputField ;
+				var inputField = CTMP_InputField ;
 				if( inputField == null )
 				{
 					return ;
@@ -222,7 +223,7 @@ namespace uGUIHelper
 		{
 			get
 			{
-				TMP_InputFieldPlus inputField = CTMP_InputField ;
+				var inputField = CTMP_InputField ;
 				if( inputField == null )
 				{
 					return 0 ;
@@ -231,7 +232,7 @@ namespace uGUIHelper
 			}
 			set
 			{
-				TMP_InputFieldPlus inputField = CTMP_InputField ;
+				var inputField = CTMP_InputField ;
 				if( inputField == null )
 				{
 					return ;
@@ -247,7 +248,7 @@ namespace uGUIHelper
 		{
 			get
 			{
-				TMP_InputFieldPlus inputField = CTMP_InputField ;
+				var inputField = CTMP_InputField ;
 				if( inputField == null )
 				{
 					return false ;
@@ -256,7 +257,7 @@ namespace uGUIHelper
 			}
 			set
 			{
-				TMP_InputFieldPlus inputField = CTMP_InputField ;
+				var inputField = CTMP_InputField ;
 				if( inputField == null )
 				{
 					return ;
@@ -272,7 +273,7 @@ namespace uGUIHelper
 		{
 			get
 			{
-				TMP_InputFieldPlus inputField = CTMP_InputField ;
+				var inputField = CTMP_InputField ;
 				if( inputField == null )
 				{
 					return Color.black ;
@@ -281,7 +282,7 @@ namespace uGUIHelper
 			}
 			set
 			{
-				TMP_InputFieldPlus inputField = CTMP_InputField ;
+				var inputField = CTMP_InputField ;
 				if( inputField == null )
 				{
 					return ;
@@ -297,7 +298,7 @@ namespace uGUIHelper
 		{
 			get
 			{
-				TMP_InputFieldPlus inputField = CTMP_InputField ;
+				var inputField = CTMP_InputField ;
 				if( inputField == null )
 				{
 					return Color.black ;
@@ -306,7 +307,7 @@ namespace uGUIHelper
 			}
 			set
 			{
-				TMP_InputFieldPlus inputField = CTMP_InputField ;
+				var inputField = CTMP_InputField ;
 				if( inputField == null )
 				{
 					return ;
@@ -322,7 +323,7 @@ namespace uGUIHelper
 		{
 			get
 			{
-				TMP_InputFieldPlus inputField = CTMP_InputField ;
+				var inputField = CTMP_InputField ;
 				if( inputField == null )
 				{
 					return false ;
@@ -331,7 +332,7 @@ namespace uGUIHelper
 			}
 			set
 			{
-				TMP_InputFieldPlus inputField = CTMP_InputField ;
+				var inputField = CTMP_InputField ;
 				if( inputField == null )
 				{
 					return ;
@@ -348,7 +349,7 @@ namespace uGUIHelper
 		{
 			get
 			{
-				TMP_InputFieldPlus inputField = CTMP_InputField ;
+				var inputField = CTMP_InputField ;
 				if( inputField == null )
 				{
 					return false ;
@@ -357,7 +358,7 @@ namespace uGUIHelper
 			}
 			set
 			{
-				TMP_InputFieldPlus inputField = CTMP_InputField ;
+				var inputField = CTMP_InputField ;
 				if( inputField == null )
 				{
 					return ;
@@ -374,7 +375,7 @@ namespace uGUIHelper
 		{
 			get
 			{
-				TMP_InputFieldPlus inputField = CTMP_InputField ;
+				var inputField = CTMP_InputField ;
 				if( inputField == null )
 				{
 					return false ;
@@ -473,10 +474,6 @@ namespace uGUIHelper
 			}
 		}
 
-
-		//-----------------------------------
-
-
 		//-----------------------------------
 
 		// 数値
@@ -492,7 +489,7 @@ namespace uGUIHelper
 		/// </summary>
 		public bool Activate()
 		{
-			TMP_InputFieldPlus inputField = CTMP_InputField ;
+			var inputField = CTMP_InputField ;
 			if( inputField == null )
 			{
 				return false ;
@@ -505,21 +502,18 @@ namespace uGUIHelper
 		//-------------------------------------------------------------------------------------------
 
 		// 各派生クラスでの初期化処理を行う（メニューまたは AddView から生成される場合のみ実行れる）
-		override protected void OnBuild( string option = "" )
+		protected override void OnBuild( string option = "" )
 		{
-			TMP_InputFieldPlus inputField = CTMP_InputField ;
-
-			if( inputField == null )
-			{
-				inputField = gameObject.AddComponent<TMP_InputFieldPlus>() ;
-			}
+			var inputField = CTMP_InputField != null ? CTMP_InputField : gameObject.AddComponent<TMP_InputFieldPlus>() ;
 			if( inputField == null )
 			{
 				// 異常
 				return ;
 			}
 
-			Image image = CImage ;
+			//----------------------------
+
+			var image = CImage ;
 			if( image != null )
 			{
 				inputField.targetGraphic = image ;
@@ -534,8 +528,7 @@ namespace uGUIHelper
 				isMultiLine = true ;
 			}
 
-
-			Vector2 size = GetCanvasSize() ;
+			var size = GetCanvasSize() ;
 
 			int fontSize = 16 ;
 			if( size.x >  0 && size.y >  0 )
@@ -566,7 +559,7 @@ namespace uGUIHelper
 			ResetRectTransform() ;
 
 			// Viewport
-			UIImage viewport = AddView<UIImage>( "Viewport" ) ;
+			var viewport = AddView<UIImage>( "Viewport" ) ;
 			viewport.SetAnchorToStretch() ;
 			viewport.SetMargin( 16, 16, 2, 2 ) ;
 //			viewport.IsRectMask2D = true ;
@@ -576,7 +569,7 @@ namespace uGUIHelper
 			inputField.textViewport = viewport.GetRectTransform() ;
 
 			// Text
-			UITextMesh textComponent = viewport.AddView<UITextMesh>( "Text", "SIMPLE" ) ;
+			var textComponent = viewport.AddView<UITextMesh>( "Text", "SIMPLE" ) ;
 			textComponent.IsContentSizeFitter = false ;
 			textComponent.FontSize = fontSize ;
 			textComponent.SupportRichText = false ;
@@ -607,7 +600,7 @@ namespace uGUIHelper
 //			}
 
 			// Placeholder
-			UITextMesh placeholder = viewport.AddView<UITextMesh>( "Placeholder", "SIMPLE" ) ;
+			var placeholder = viewport.AddView<UITextMesh>( "Placeholder", "SIMPLE" ) ;
 			placeholder.FontSize = fontSize ;
 			placeholder.FontStyle = FontStyles.Italic ;
 			placeholder.Text = "Enter text..." ;
@@ -682,7 +675,7 @@ namespace uGUIHelper
 		}
 
 		// 派生クラスの Start
-		override protected void OnStart()
+		protected override void OnStart()
 		{
 			base.OnStart() ;
 
@@ -718,7 +711,7 @@ namespace uGUIHelper
 								string value = numericValue.ToString() ;
 								if( value.Length >  digit )
 								{
-									value = value.Substring( 0, digit ) ;
+									value = value[ ..digit ] ;
 								}
 								m_NumericValue   = value ;
 								CTMP_InputField.text = value ;
@@ -761,8 +754,8 @@ namespace uGUIHelper
 
 					if( m_LE != null )
 					{
-						CanvasRenderer cr0 = m_LE.GetComponent<CanvasRenderer>() ;
-						CanvasRenderer cr1 = CTMP_InputField.GetComponent<CanvasRenderer>() ;
+						var cr0 = m_LE.GetComponent<CanvasRenderer>() ;
+						var cr1 = CTMP_InputField.GetComponent<CanvasRenderer>() ;
 						if( cr0 != null && cr1 != null )
 						{
 							cr0.SetMaterial( cr1.GetMaterial(), 0 ) ;
@@ -792,9 +785,19 @@ namespace uGUIHelper
 			}
 		}
 
+        protected override void OnDisable()
+        {
+            base.OnDestroy() ;
 
-		// パッドが押せるか確認する
-		private readonly PointerEventData		m_PA_EventDataCurrentPosition = new ( EventSystem.current ) ;
+            if( IsFocused == true )
+            {
+                // フォーカスを得ている場合に記録から削除する
+                uGUIHelper.InputAdapter.UIEventSystem.RemoveFocusedInputField( this ) ;
+            }
+        }
+
+        // パッドが押せるか確認する
+        private readonly PointerEventData		m_PA_EventDataCurrentPosition = new ( EventSystem.current ) ;
 		private readonly List<RaycastResult>	m_PA_Results = new () ;
 
 		// このＵＩが現在有効な状態か確認する
@@ -886,7 +889,7 @@ namespace uGUIHelper
 			float th = rt.rect.height ;
 
 			// レイキャストパディング
-			Vector4 raycastPadding = Vector4.zero ;
+			var raycastPadding = Vector4.zero ;
 
 			if( go.TryGetComponent<UnityEngine.UI.Image>( out var image ) == true )
 			{
@@ -939,7 +942,7 @@ namespace uGUIHelper
 			}
 
 			// スクリーン座標に変換する
-			Vector2 center = Vector2.zero ;
+			var center = Vector2.zero ;
 			for( i  = 0 ; i <  l ; i ++ )
 			{
 				points[ i ] = RectTransformUtility.WorldToScreenPoint( targetCamera, points[ i ] ) ;
@@ -1053,9 +1056,18 @@ namespace uGUIHelper
 		{
 //			Debug.LogWarning( "状態変化:" + tValue + " : " + Input.compositionString + " : " + Input.inputString ) ;
 
-			//----------------------------------------------------------
+            if( state == true )
+            {
+                uGUIHelper.InputAdapter.UIEventSystem.AddFocusedInputField( this ) ;
+            }
+            else
+            {
+                uGUIHelper.InputAdapter.UIEventSystem.RemoveFocusedInputField( this ) ;
+            }
 
-			if( OnFocusChangedAction != null || OnFocusChangedDelegate != null )
+            //----------------------------------------------------------
+
+            if ( OnFocusChangedAction != null || OnFocusChangedDelegate != null )
 			{
 				string identity = Identity ;
 				if( string.IsNullOrEmpty( identity ) == true )
@@ -1182,7 +1194,7 @@ namespace uGUIHelper
 		/// <param name="onValueChanged">リスナーメソッド</param>
 		public void AddOnValueChangeListener( UnityEngine.Events.UnityAction<string> onValueChanged )
 		{
-			TMP_InputFieldPlus inputField = CTMP_InputField ;
+			var inputField = CTMP_InputField ;
 			if( inputField != null )
 			{
 				inputField.onValueChanged.AddListener( onValueChanged ) ;
@@ -1195,7 +1207,7 @@ namespace uGUIHelper
 		/// <param name="onValueChanged">リスナーメソッド</param>
 		public void RemoveOnValueChangeListener( UnityEngine.Events.UnityAction<string> onValueChanged )
 		{
-			TMP_InputFieldPlus inputField = CTMP_InputField ;
+			var inputField = CTMP_InputField ;
 			if( inputField != null )
 			{
 				inputField.onValueChanged.RemoveListener( onValueChanged ) ;
@@ -1207,7 +1219,7 @@ namespace uGUIHelper
 		/// </summary>
 		public void RemoveOnValueChangeAllListeners()
 		{
-			TMP_InputFieldPlus inputField = CTMP_InputField ;
+			var inputField = CTMP_InputField ;
 			if( inputField != null )
 			{
 				inputField.onValueChanged.RemoveAllListeners() ;
@@ -1356,7 +1368,7 @@ namespace uGUIHelper
 		/// <param name="onEndEdit">リスナーメソッド</param>
 		public void AddOnEndEditListener( UnityEngine.Events.UnityAction<string> onEndEdit )
 		{
-			TMP_InputFieldPlus inputField = CTMP_InputField ;
+			var inputField = CTMP_InputField ;
 			if( inputField != null )
 			{
 				inputField.onEndEdit.AddListener( onEndEdit ) ;
@@ -1369,7 +1381,7 @@ namespace uGUIHelper
 		/// <param name="onEndEdit">リスナーメソッド</param>
 		public void RemoveOnEndEditListener( UnityEngine.Events.UnityAction<string> onEndEdit )
 		{
-			TMP_InputFieldPlus inputField = CTMP_InputField ;
+			var inputField = CTMP_InputField ;
 			if( inputField != null )
 			{
 				inputField.onEndEdit.RemoveListener( onEndEdit ) ;
@@ -1381,7 +1393,7 @@ namespace uGUIHelper
 		/// </summary>
 		public void RemoveOnEndEditAllListeners()
 		{
-			TMP_InputFieldPlus inputField = CTMP_InputField ;
+			var inputField = CTMP_InputField ;
 			if( inputField != null )
 			{
 				inputField.onEndEdit.RemoveAllListeners() ;
@@ -1419,7 +1431,7 @@ namespace uGUIHelper
 							m_NumericValue = newValue.ToString() ;
 							if( m_NumericValue.Length >  digit )
 							{
-								m_NumericValue = m_NumericValue.Substring( 0, digit ) ;
+								m_NumericValue = m_NumericValue[ ..digit ] ;
 							}
 						}
 					}

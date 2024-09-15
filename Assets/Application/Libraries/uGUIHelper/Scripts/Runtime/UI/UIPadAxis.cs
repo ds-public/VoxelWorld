@@ -300,6 +300,9 @@ namespace uGUIHelper
 				// ピボットを強制的に中心にする(ただし位置は変化させない)
 				SetPivot( 0.5f, 0.5f, true ) ;
 
+				// アンカーを強制的に中心にする
+				m_Frame.SetAnchorToCenter( true ) ;
+
 				// ピボットを強制的に中心にする(ただし位置は変化させない)
 				m_Frame.SetPivot( 0.5f, 0.5f, true ) ;
 
