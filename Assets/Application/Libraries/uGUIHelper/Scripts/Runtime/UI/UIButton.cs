@@ -498,7 +498,7 @@ namespace uGUIHelper
 
 			if( IsCanvasOverlay == true )
 			{
-				image.material = Resources.Load<Material>( "uGUIHelper/Shaders/UI-Overlay-Default" ) ;
+				image.material = Resources.Load<Material>( "uGUIHelper/Shaders/UI-Overlay-Normal" ) ;
 			}
 
 			//----------------------------------
@@ -1091,7 +1091,7 @@ namespace uGUIHelper
 
 			if( IsCanvasOverlay == true )
 			{
-				label.Material = Resources.Load<Material>( "uGUIHelper/Shaders/UI-Overlay-Default" ) ;
+				label.Material = Resources.Load<Material>( "uGUIHelper/Shaders/UI-Overlay-Normal" ) ;
 			}
 
 			return label ;
@@ -1176,7 +1176,7 @@ namespace uGUIHelper
 
 			if( IsCanvasOverlay == true )
 			{
-				label.Material = Resources.Load<Material>( "uGUIHelper/Shaders/UI-Overlay-Default" ) ;
+				label.Material = Resources.Load<Material>( "uGUIHelper/Shaders/UI-Overlay-Normal" ) ;
 			}
 
 			return label ;

@@ -359,7 +359,7 @@ namespace uGUIHelper
 
 			if( IsCanvasOverlay == true )
 			{
-				line.material = Resources.Load<Material>( "uGUIHelper/Shaders/UI-Overlay-Default" ) ;
+				line.material = Resources.Load<Material>( "uGUIHelper/Shaders/UI-Overlay-Normal" ) ;
 			}
 
 			//----------------------------------------------------------

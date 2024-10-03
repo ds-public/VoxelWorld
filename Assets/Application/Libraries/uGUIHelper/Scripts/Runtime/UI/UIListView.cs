@@ -434,7 +434,7 @@ namespace uGUIHelper
 
 			if( IsCanvasOverlay == true )
 			{
-				m_Viewport.Material = Resources.Load<Material>( "uGUIHelper/Shaders/UI-Overlay-Default" ) ;
+				m_Viewport.Material = Resources.Load<Material>( "uGUIHelper/Shaders/UI-Overlay-Normal" ) ;
 			}
 			
 			// Content を追加する
@@ -457,7 +457,7 @@ namespace uGUIHelper
 
 			if( IsCanvasOverlay == true )
 			{
-				image.material = Resources.Load<Material>( "uGUIHelper/Shaders/UI-Overlay-Default" ) ;
+				image.material = Resources.Load<Material>( "uGUIHelper/Shaders/UI-Overlay-Normal" ) ;
 			}
 		}
 
@@ -513,7 +513,7 @@ namespace uGUIHelper
 
 			if( IsCanvasOverlay == true )
 			{
-				item.Material = Resources.Load<Material>( "uGUIHelper/Shaders/UI-Overlay-Default" ) ;
+				item.Material = Resources.Load<Material>( "uGUIHelper/Shaders/UI-Overlay-Normal" ) ;
 			}
 
 			return item ;

@@ -1604,7 +1604,7 @@ namespace uGUIHelper
 
 			if( IsCanvasOverlay == true )
 			{
-				richText.material = Resources.Load<Material>( "uGUIHelper/Shaders/UI-Overlay-Default" ) ;
+				richText.material = Resources.Load<Material>( "uGUIHelper/Shaders/UI-Overlay-Normal" ) ;
 			}
 		}
 

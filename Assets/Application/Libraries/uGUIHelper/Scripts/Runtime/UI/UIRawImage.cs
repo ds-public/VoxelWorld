@@ -263,7 +263,7 @@ namespace uGUIHelper
 
 			if( IsCanvasOverlay == true )
 			{
-				rawImage.material = Resources.Load<Material>( "uGUIHelper/Shaders/UI-Overlay-Default" ) ;
+				rawImage.material = Resources.Load<Material>( "uGUIHelper/Shaders/UI-Overlay-Normal" ) ;
 			}
 
 			ResetRectTransform() ;

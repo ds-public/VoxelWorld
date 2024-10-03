@@ -760,7 +760,7 @@ namespace uGUIHelper
 
 			if( IsCanvasOverlay == true )
 			{
-				text.material = Resources.Load<Material>( "uGUIHelper/Shaders/UI-Overlay-Default" ) ;
+				text.material = Resources.Load<Material>( "uGUIHelper/Shaders/UI-Overlay-Normal" ) ;
 			}
 
 			text.raycastTarget = false ;

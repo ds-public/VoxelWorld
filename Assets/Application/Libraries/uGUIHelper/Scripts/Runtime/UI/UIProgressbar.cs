@@ -178,7 +178,7 @@ namespace uGUIHelper
 
 			if( IsCanvasOverlay == true )
 			{
-				frame.material = Resources.Load<Material>( "uGUIHelper/Shaders/UI-Overlay-Default" ) ;
+				frame.material = Resources.Load<Material>( "uGUIHelper/Shaders/UI-Overlay-Normal" ) ;
 			}
 
 			UIView fillArea = AddView<UIView>( "Fill Area" ) ;
@@ -194,7 +194,7 @@ namespace uGUIHelper
 
 			if( IsCanvasOverlay == true )
 			{
-				m_Scope.Material = Resources.Load<Material>( "uGUIHelper/Shaders/UI-Overlay-Default" ) ;
+				m_Scope.Material = Resources.Load<Material>( "uGUIHelper/Shaders/UI-Overlay-Normal" ) ;
 			}
 
 			// Thumb
@@ -215,7 +215,7 @@ namespace uGUIHelper
 
 			if( IsCanvasOverlay == true )
 			{
-				m_Thumb.Material = Resources.Load<Material>( "uGUIHelper/Shaders/UI-Overlay-Default" ) ;
+				m_Thumb.Material = Resources.Load<Material>( "uGUIHelper/Shaders/UI-Overlay-Normal" ) ;
 			}
 
 			UpdateThumb() ;
@@ -228,7 +228,7 @@ namespace uGUIHelper
 
 //			if( IsCanvasOverlay == true )
 //			{
-//				m_Label.Material = Resources.Load<Material>( "uGUIHelper/Shaders/UI-Overlay-Default" ) ;
+//				m_Label.Material = Resources.Load<Material>( "uGUIHelper/Shaders/UI-Overlay-Normal" ) ;
 //			}
 
 			UpdateLabel() ;

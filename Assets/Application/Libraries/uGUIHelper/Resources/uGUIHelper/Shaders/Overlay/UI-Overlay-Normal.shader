@@ -1,4 +1,4 @@
-﻿Shader "UI/Overlay-Default"
+Shader "UI/Overlay-Normal"
 {
 	Properties
 	{

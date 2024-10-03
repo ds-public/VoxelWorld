@@ -295,7 +295,7 @@ namespace uGUIHelper
 
 			if( IsCanvasOverlay == true )
 			{
-				circle.material = Resources.Load<Material>( "uGUIHelper/Shaders/UI-Overlay-Default" ) ;
+				circle.material = Resources.Load<Material>( "uGUIHelper/Shaders/UI-Overlay-Normal" ) ;
 			}
 
 			//----------------------------------------------------------

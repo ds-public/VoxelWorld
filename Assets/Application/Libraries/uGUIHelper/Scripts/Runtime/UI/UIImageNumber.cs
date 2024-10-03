@@ -239,7 +239,7 @@ namespace uGUIHelper
 
 			if( IsCanvasOverlay == true )
 			{
-				imageNumber.material = Resources.Load<Material>( "uGUIHelper/Shaders/UI-Overlay-Default" ) ;
+				imageNumber.material = Resources.Load<Material>( "uGUIHelper/Shaders/UI-Overlay-Normal" ) ;
 			}
 
 			imageNumber.raycastTarget = false ;

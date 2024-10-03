@@ -201,7 +201,7 @@ namespace uGUIHelper
 
 			if( IsCanvasOverlay == true )
 			{
-				m_Background.Material = Resources.Load<Material>( "uGUIHelper/Shaders/UI-Overlay-Default" ) ;
+				m_Background.Material = Resources.Load<Material>( "uGUIHelper/Shaders/UI-Overlay-Normal" ) ;
 			}
 
 			toggle.targetGraphic = m_Background.CImage ;
@@ -214,7 +214,7 @@ namespace uGUIHelper
 			
 			if( IsCanvasOverlay == true )
 			{
-				m_Checkmark.Material = Resources.Load<Material>( "uGUIHelper/Shaders/UI-Overlay-Default" ) ;
+				m_Checkmark.Material = Resources.Load<Material>( "uGUIHelper/Shaders/UI-Overlay-Normal" ) ;
 			}
 
 			toggle.graphic = m_Checkmark.CImage ;
@@ -229,7 +229,7 @@ namespace uGUIHelper
 			
 			if( IsCanvasOverlay == true )
 			{
-				m_Label.Material = Resources.Load<Material>( "uGUIHelper/Shaders/UI-Overlay-Default" ) ;
+				m_Label.Material = Resources.Load<Material>( "uGUIHelper/Shaders/UI-Overlay-Normal" ) ;
 			}
 #endif
 

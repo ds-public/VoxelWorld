@@ -1,4 +1,4 @@
-﻿Shader "UI/Default"
+Shader "UI/Normal"
 {
 	Properties
 	{

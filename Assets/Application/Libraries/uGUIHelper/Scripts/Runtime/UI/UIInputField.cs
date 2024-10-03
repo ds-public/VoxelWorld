@@ -553,7 +553,7 @@ namespace uGUIHelper
 				
 			if( IsCanvasOverlay == true )
 			{
-				image.material = Resources.Load<Material>( "uGUIHelper/Shaders/UI-Overlay-Default" ) ;
+				image.material = Resources.Load<Material>( "uGUIHelper/Shaders/UI-Overlay-Normal" ) ;
 			}
 
 			ResetRectTransform() ;
@@ -596,7 +596,7 @@ namespace uGUIHelper
 
 //			if( IsCanvasOverlay == true )
 //			{
-//				textComponent.Material = Resources.Load<Material>( "uGUIHelper/Shaders/UI-Overlay-Default" ) ;
+//				textComponent.Material = Resources.Load<Material>( "uGUIHelper/Shaders/UI-Overlay-Normal" ) ;
 //			}
 
 			// Placeholder
@@ -622,7 +622,7 @@ namespace uGUIHelper
 
 //			if( IsCanvasOverlay == true )
 //			{
-//				placeholder.Material = Resources.Load<Material>( "uGUIHelper/Shaders/UI-Overlay-Default" ) ;
+//				placeholder.Material = Resources.Load<Material>( "uGUIHelper/Shaders/UI-Overlay-Normal" ) ;
 //			}
 
 			if( isMultiLine == true )
