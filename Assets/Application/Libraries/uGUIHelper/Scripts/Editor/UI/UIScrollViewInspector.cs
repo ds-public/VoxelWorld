@@ -12,16 +12,16 @@ namespace uGUIHelper
 	[ CustomEditor( typeof( UIScrollView ) ) ]
 	public class UIScrollViewInspector : UIImageInspector
 	{
-		override protected void DrawInspectorGUI()
+		protected override void DrawInspectorGUI()
 		{
-			UIScrollView view = target as UIScrollView ;
+			var view = target as UIScrollView ;
 
 			EditorGUILayout.Separator() ;	// 少し区切りスペース
 		
 			//-------------------------------------------------------------------
 
 			// スクロール方向
-			UIScrollView.DirectionTypes directionType = ( UIScrollView.DirectionTypes )EditorGUILayout.EnumPopup( "DirectionType",  view.DirectionType ) ;
+			var directionType = ( UIScrollView.DirectionTypes )EditorGUILayout.EnumPopup( "DirectionType",  view.DirectionType ) ;
 			if( directionType != view.DirectionType )
 			{
 				Undo.RecordObject( view, "UIScrollView : DirectionType Change" ) ;	// アンドウバッファに登録

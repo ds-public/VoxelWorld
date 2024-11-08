@@ -345,6 +345,22 @@ namespace SpriteHelper
 			
 			EditorGUILayout.Separator() ;   // 少し区切りスペース
 		}
+
+
+		//-------------------------------------------------------------------------------------------
+
+		// 区切り線
+		protected void DrawSeparater()
+		{
+			EditorGUILayout.Space( 8 ) ;	// 少し区切りスペース
+
+			var rect = GUILayoutUtility.GetRect( Screen.width, 2f ) ;
+
+			EditorGUI.DrawRect( new Rect( rect.x + 0, rect.y + 0, rect.width - 0, 1 ), Color.white ) ;
+			EditorGUI.DrawRect( new Rect( rect.x + 0, rect.y + 1, rect.width - 0, 1 ), Color.black ) ;
+
+			EditorGUILayout.Space( 8 ) ;	// 少し区切りスペース
+		}
 	}
 }
 

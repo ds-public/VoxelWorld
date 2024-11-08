@@ -204,6 +204,11 @@ namespace uGUIHelper.InputAdapter
 			// サブスレッド用のフック
 			Application.logMessageReceivedThreaded -= OnExceptionOccurred ;
 			Application.logMessageReceivedThreaded += OnExceptionOccurred ;
+
+			//-------------------------------------------------
+
+			// インスタンス生成直後に一度アップデートで実行さるる処理を呼ぶ
+			ExecuteCommonProcessing() ;
 		}
 
 		// 後始末を行う
@@ -217,14 +222,18 @@ namespace uGUIHelper.InputAdapter
 
 			//--------------
 
-			// ポインターが非表示になっている可能性があるので念のため表示しておく
-			if( m_CursorProcessing == true )
-			{
-				UnityEngine.Cursor.visible = true ;
-			}
-
 			// 振動を強制停止
 			StopMotor() ;
+		}
+
+		// アプリケーション終了時に呼び出される
+		internal void OnApplicationQuit()
+		{
+			// ポインターが非表示になっている可能性があるので念のため表示しておく
+			if( Settings.CursorProcessing == true )
+			{
+				UnityEngine.Cursor.visible = true ;
+			}        
 		}
 
 		/// <summary>
@@ -413,9 +422,38 @@ namespace uGUIHelper.InputAdapter
 		// 毎フレームの処理
 
 		private float	m_Tick = 0 ;
-		private Vector3 m_Position = Vector3.zero ;
 
 		private const float m_DriftThreshold = 0.1f ;
+
+		// 入力モードを切り替え中かどうか
+		private  bool    m_InputSwitching	= false ;
+
+		// 入力モード切り替え中の値を無視して常に入力を有効にするかどうか
+		private  bool    m_IgnoreInputSwitching = false ;
+
+		/// <summary>
+		/// 入力モードを切り替え中かどうか(public にしているが利用者に解放するものではない)
+		/// </summary>
+		public bool InputSwitching
+		{
+			get
+			{
+				if( m_IgnoreInputSwitching == true )
+				{
+					// 常に入力は有効
+					return false ;
+				}
+
+				return m_InputSwitching ;
+			}
+		}
+
+		/// <summary>
+		/// 入力モード切り替え中の値を無視して常に入力を有効にするかどうか(public にしているが利用者に解放するものではない)
+		/// </summary>
+		public bool IgnoreInputSwitching => m_IgnoreInputSwitching ;
+
+		//-----------------------------
 
 		// 毎フレーム呼び出される(描画)
 		private void ProcessUpdate()
@@ -427,11 +465,11 @@ namespace uGUIHelper.InputAdapter
 
 			//----------------------------------------------------------
 
-			if( InputProcessingType == InputProcessingTypes.Switching )
+			if( Settings.InputProcessingType == InputProcessingTypes.Switching )
 			{
 				// いずれか片方の入力のみ可能(Pointer・GamePadの最初の入力は無効＝切り替え扱い)
 
-				if( m_InputType == InputTypes.Pointer )
+				if( Settings.InputType == InputTypes.Pointer )
 				{
 					// 現在は Pointer モード
 					if( m_InputSwitching == true )
@@ -533,7 +571,7 @@ namespace uGUIHelper.InputAdapter
 						if( buttonAll == 0 && ax <  m_DriftThreshold && ay <  m_DriftThreshold )
 						{
 							m_InputSwitching = false ;
-							m_Position = MousePosition ;
+							Settings.MousePosition = MousePosition ;
 						}
 						else
 						{
@@ -542,7 +580,7 @@ namespace uGUIHelper.InputAdapter
 							if( m_Tick >= 1 )
 							{
 								m_InputSwitching = false ;
-								m_Position = MousePosition ;
+								Settings.MousePosition = MousePosition ;
 							}
 						}
 					}
@@ -564,7 +602,7 @@ namespace uGUIHelper.InputAdapter
 
 						//-------------
 
-						if( m_Position.Equals( MousePosition ) == false || button_0 == true || button_1 == true || button_2 == true )
+						if( Settings.MousePosition.Equals( MousePosition ) == false || button_0 == true || button_1 == true || button_2 == true )
 						{
 							// Pointer モードへ移行
 							SetInputType_Private( InputTypes.Pointer ) ;
@@ -580,7 +618,7 @@ namespace uGUIHelper.InputAdapter
 				m_IgnoreInputSwitching = true ;
 
 				// 最後に入力された方を現在のモードとする
-				if( m_InputType == InputTypes.Pointer )
+				if( Settings.InputType == InputTypes.Pointer )
 				{
 					// 現在は Pointer モード扱い
 
@@ -613,7 +651,7 @@ namespace uGUIHelper.InputAdapter
 					bool button_1 = GetMouseButton( 1 ) ;
 					bool button_2 = GetMouseButton( 2 ) ;
 
-					if( m_Position.Equals( MousePosition ) == false || button_0 == true || button_1 == true || button_2 == true )
+					if( Settings.MousePosition.Equals( MousePosition ) == false || button_0 == true || button_1 == true || button_2 == true )
 					{
 						// Pointer モードへ移行
 						SetInputType_Private( InputTypes.Pointer ) ;
@@ -678,27 +716,27 @@ namespace uGUIHelper.InputAdapter
 			{
 				// GamePad モードへ移行
 
-				m_InputType = InputTypes.GamePad ;
+				Settings.InputType = InputTypes.GamePad ;
 
-				m_SystemCursorVisible = false ;
+				Settings.SystemCursorVisible = false ;
 
-				m_OnInputTypeChanged?.Invoke( m_InputType ) ;
-				m_OnInputTypeChangedDelegate?.Invoke( m_InputType ) ;
+				m_OnInputTypeChanged?.Invoke( Settings.InputType ) ;
+				m_OnInputTypeChangedDelegate?.Invoke( Settings.InputType ) ;
 			}
 			else
 			if( inputType == InputTypes.Pointer )
 			{
 				// Pointer モードへ移行
 
-				m_InputType = InputTypes.Pointer ;
+				Settings.InputType = InputTypes.Pointer ;
 
-				m_SystemCursorVisible = true ;
+				Settings.SystemCursorVisible = true ;
 
-				m_OnInputTypeChanged?.Invoke( m_InputType ) ;
-				m_OnInputTypeChangedDelegate?.Invoke( m_InputType ) ;
+				m_OnInputTypeChanged?.Invoke( Settings.InputType ) ;
+				m_OnInputTypeChangedDelegate?.Invoke( Settings.InputType ) ;
 			}
 
-			if( InputProcessingType == InputProcessingTypes.Switching )
+			if( Settings.InputProcessingType == InputProcessingTypes.Switching )
 			{
 				// 最初の入力を無効化(切り替え用)にするための変数初期化
 				m_InputSwitching = true ;
@@ -707,7 +745,7 @@ namespace uGUIHelper.InputAdapter
 			else
 			{
 				// GamePad モード解除判定用に現在の Pointer の位置を記録する
-				m_Position = MousePosition ;
+				Settings.MousePosition = MousePosition ;
 			}
 		}
 
@@ -722,14 +760,14 @@ namespace uGUIHelper.InputAdapter
 			if( CursorProcessing == true )
 			{
 				// カーソルの表示制御が有効になっている
-				bool isVisible = m_SystemCursorVisible & CursorVisible ;
+				bool isVisible = Settings.SystemCursorVisible & CursorVisible ;
 
-				if( isVisible != m_ActiveCursorVisible )
+				if( isVisible != Settings.ActiveCursorVisible )
 				{
 					// カーソルの表示状態が変化する
-					m_ActiveCursorVisible = isVisible ;
+					Settings.ActiveCursorVisible = isVisible ;
 
-					if( m_ActiveCursorVisible == true )
+					if( Settings.ActiveCursorVisible == true )
 					{
 						// カーソルは表示
 						UnityEngine.Cursor.visible = true ;

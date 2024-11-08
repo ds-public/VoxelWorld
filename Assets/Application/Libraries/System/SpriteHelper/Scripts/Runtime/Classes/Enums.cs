@@ -63,4 +63,40 @@ namespace SpriteHelper
 		Center,
 	}
 
+	/// <summary>
+	/// ビューポートサイズのタイプ
+	/// </summary>
+	public enum ViewportSizeTypes
+	{
+		/// <summary>
+		/// 固定
+		/// </summary>
+		Fixed,
+
+		/// <summary>
+		/// 追従
+		/// </summary>
+		Stretch,
+	}
+
+	/// <summary>
+	/// マップチップのビューポート外に出た際の挙動タイプ
+	/// </summary>
+	public enum MapChipDestructionTypes
+	{
+		/// <summary>
+		/// 破棄する
+		/// </summary>
+		Destroy,
+
+		/// <summary>
+		/// 非アクティブ状態にする
+		/// </summary>
+		Deactive,
+
+		/// <summary>
+		/// アクティブ状態を維持する
+		/// </summary>
+		Active,
+	}
 }

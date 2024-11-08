@@ -16,7 +16,7 @@ using UnityEditorInternal ;
 namespace SpriteHelper
 {
 	/// <summary>
-	/// スプライト制御クラス  Version 2024/08/16
+	/// スプライト制御クラス  Version 2024/08/25
 	/// </summary>
 	[ExecuteAlways]
 	[DisallowMultipleComponent]
@@ -1095,6 +1095,16 @@ namespace SpriteHelper
 		public virtual Vector2 GetPosition()
 			=> new ( m_AnchorPositionX, m_AnchorPositionY ) ;
 
+
+		/// <summary>
+		/// 位置を設定する
+		/// </summary>
+		/// <param name="p"></param>
+		public virtual void SetPosition( Vector2 p )
+		{
+			AnchorPositionX = p.x ;
+			AnchorPositionY = p.y ;
+		}
 
 		/// <summary>
 		/// 位置を設定する

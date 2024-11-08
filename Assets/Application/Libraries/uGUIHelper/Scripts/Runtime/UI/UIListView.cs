@@ -354,24 +354,26 @@ namespace uGUIHelper
 		/// 各派生クラスでの初期化処理を行う（メニューまたは AddView から生成される場合のみ実行れる）
 		/// </summary>
 		/// <param name="option"></param>
-		override protected void OnBuild( string option = "" )
+		protected override void OnBuild( string option = "" )
 		{
-			ScrollRectWrapper scrollRect = CScrollRect != null ? CScrollRect : gameObject.AddComponent<ScrollRectWrapper>() ;
+			var scrollRect = CScrollRect != null ? CScrollRect : gameObject.AddComponent<ScrollRectWrapper>() ;
 
-			Image image = CImage ;
+			var image = CImage ;
 
 			//-------------------------------------
 
 			BuildTypes buildType = BuildTypes.Unknown ;
 			DirectionTypes directionType = DirectionTypes.Both ;
 
-			if( option.ToLower() == "h" )
+			option = option.ToLower() ;
+
+			if( option.Length >= 1 && option[ 0 ] == 'h' )
 			{
 				buildType = BuildTypes.ListView ;
 				directionType = DirectionTypes.Horizontal ;
 			}
 			else
-			if( option.ToLower() == "v" )
+			if( option.Length >= 1 && option[ 0 ] == 'v' )
 			{
 				buildType = BuildTypes.ListView ;
 				directionType = DirectionTypes.Vertical ;
@@ -459,14 +461,30 @@ namespace uGUIHelper
 			{
 				image.material = Resources.Load<Material>( "uGUIHelper/Shaders/UI-Overlay-Normal" ) ;
 			}
+
+			//----------------------------------------------------------
+
+			if( option.Length >= 2 && option[ 1 ] == 's' )
+			{
+				// スクロールバー付き
+				if( directionType == DirectionTypes.Horizontal )
+				{
+					m_HorizontalScrollbarElastic	= CreateScrollbar( this, directionType ) ;
+					m_HorizontalScrollbarElastic.ScrollViewElastic = this ;
+				}
+				else
+				if( directionType == DirectionTypes.Vertical )
+				{
+					m_VerticalScrollbarElastic		= CreateScrollbar( this, directionType ) ;
+					m_VerticalScrollbarElastic.ScrollViewElastic = this ;
+				}
+			}
 		}
 
 		// デフォルトの Content を生成する
 		private UIView CreateContent( UIView parent, DirectionTypes directionType )
 		{
-			UIView content ;
-
-			content = parent.AddView<UIView>( "Content" ) ;
+			var content = parent.AddView<UIView>( "Content" ) ;
 
 			if( directionType == DirectionTypes.Horizontal )
 			{
@@ -488,7 +506,7 @@ namespace uGUIHelper
 		// テンプレートのアイテムを生成する
 		private UIView CreateTemplateItem( UIView parent, DirectionTypes directionType )
 		{
-			UIImage item = parent.AddView<UIImage>( "Item(Template)" ) ;
+			var item = parent.AddView<UIImage>( "Item(Template)" ) ;
 
 			// Image
 			item.Sprite = Resources.Load<Sprite>( "uGUIHelper/Textures/UIBlank" ) ;
@@ -518,6 +536,35 @@ namespace uGUIHelper
 
 			return item ;
 		}
+
+		// スクロールバーを生成する
+		private UIScrollbar CreateScrollbar( UIView parent, DirectionTypes directionType )
+		{
+			string code = directionType == DirectionTypes.Horizontal ? "H" : "V" ;
+			var scrollbar = parent.AddView<UIScrollbar>( $"Scrollbar({code})", code ) ;
+
+			if( directionType == DirectionTypes.Horizontal )
+			{
+				scrollbar.SetAnchorToStretchBottom() ;
+				scrollbar.SetPivot( 0.5f, 0.0f ) ;
+				scrollbar.Height = parent.Height * 0.1f ;
+				scrollbar.IsCanvasGroup = true ;
+				scrollbar.IsInteraction = true ;
+			}
+			else
+			if( directionType == DirectionTypes.Vertical )
+			{
+				scrollbar.SetAnchorToRightStretch() ;
+				scrollbar.SetPivot( 1.0f, 0.5f ) ;
+				scrollbar.Width  = parent.Width  * 0.1f ;
+				scrollbar.IsCanvasGroup = true ;
+				scrollbar.IsInteraction = true ;
+			}
+
+			return scrollbar ;
+		}
+
+		//-------------------------------------------------------------------------------------------
 
 		protected override void OnAwake()
 		{
@@ -613,6 +660,15 @@ namespace uGUIHelper
 		{
 			if( Application.isPlaying == true )
 			{
+				if( m_ItemListDirty == true )
+				{
+					// タイミングによっては Update で処理されない場合があるため
+					// その場合は LateUpdate で処理する
+				  UpdateItemList() ;
+				}
+
+				//----------------------------------------------
+
 				ProcessSnap() ;
 
 				ProcessItem() ;
@@ -2296,11 +2352,12 @@ namespace uGUIHelper
 		/// </summary>
 		public void Restore()
 		{
-			if( m_ItemList == null || m_ItemList.Count == 0 )
+			if( m_ItemList == null || m_ItemList.Count == 0 || m_ItemListDirty == true )
 			{
 //				Debug.LogWarning( "Not fount item" ) ;
 //				return ;
 				Refresh() ;
+				return ;
 			}
 
 			//----------------------------------
@@ -2783,7 +2840,6 @@ namespace uGUIHelper
 		public void SetFocusIndex( int index )
 		{
 			( float upperItemPosition, float lowerItemPosition ) = ConvertIndexToPositionRange( index ) ;
-
 			( float upperViewPosition, float lowerViewPosition ) = GetViewPosition() ;
 
 			// 上に移動か下に移動か
@@ -3298,7 +3354,8 @@ namespace uGUIHelper
 			}
 		}
 
-		//-----------------------------------------------------------
+		//-------------------------------------------------------------------------------------------
+		// ゲームパッドから操作される場合を想定した表示位置変更メソッド群(ゲームパッドでなければ使用出来ないという事はない)
 
 		/// <summary>
 		/// パッドアクションの種別
@@ -3351,15 +3408,12 @@ namespace uGUIHelper
 		/// </summary>
 		/// <param name="selectedIndex"></param>
 		/// <param name=""></param>
-		public void ExecutePadAction( PadActions padAction )
+		public void ExecutePadAction( PadActions padAction, int defaultSelectedIndex = -1 )
 		{
-			var padAdapter = CPadAdapter ;
-			if( padAdapter == null || padAdapter.Focus == false )
+			if( m_SelectedIndex <  0 )
 			{
-				return ;
+				m_SelectedIndex  = defaultSelectedIndex ;
 			}
-
-			//----------------------------------
 
 			if( m_ItemCount <= 0 || m_SelectedIndex <  0 || m_SelectedIndex >= m_ItemCount )
 			{
@@ -3663,14 +3717,6 @@ namespace uGUIHelper
 		/// <param name=""></param>
 		public void ExecutePadAction( PadActions padAction, float velocity )
 		{
-			var padAdapter = CPadAdapter ;
-			if( padAdapter == null || padAdapter.Focus == false )
-			{
-				return ;
-			}
-
-			//----------------------------------
-
 			float contentSize = ContentSize ;
 			float viewSize = ViewSize ;
 

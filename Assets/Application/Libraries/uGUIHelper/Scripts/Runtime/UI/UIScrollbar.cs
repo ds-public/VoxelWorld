@@ -78,7 +78,7 @@ namespace uGUIHelper
 		}
 
 		[SerializeField][HideInInspector]
-		private UIScrollView	m_ScrollViewElastic = null ;
+		protected UIScrollView	m_ScrollViewElastic = null ;
 		public  UIScrollView	  ScrollViewElastic
 		{
 			get
@@ -93,7 +93,7 @@ namespace uGUIHelper
 
 		// バーの幅を常に一定にするかどうか
 		[SerializeField][HideInInspector]
-		private bool			m_FixedSize = false ;
+		protected bool			m_FixedSize = false ;
 		public  bool			  FixedSize
 		{
 			get

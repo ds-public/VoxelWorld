@@ -393,6 +393,13 @@ namespace uGUIHelper
 		protected UIImage	m_DisableMask ;
 
 		/// <summary>
+		/// カーソル画像
+		/// </summary>
+		public    UIImage     Cursor{ get{ return m_Cursor ; } set{ m_Cursor = value ; } }
+		[SerializeField]
+		protected UIImage   m_Cursor ;
+
+		/// <summary>
 		/// クリック時のトランジションを有効にするかどうか
 		/// </summary>
 		public bool ClickTransitionEnabled{ get{ return m_ClickTransitionEnabled ; } set{ m_ClickTransitionEnabled = value ; } }
@@ -859,17 +866,37 @@ namespace uGUIHelper
 		}
 
 		//-------------------------------------------------------------------------------------------
-		
+
+		// 内部リスナー
+		private void OnButtonClickInner()
+		{
+            // 注意：
+            // UIInteraction または UIInteractionForScrollView が付いている場合
+            // OnClickInner は UIButton と合わせて２回コールされてしまう
+            // 上記のケースでは UIButton からのインタラクションでは
+            // OnClickInner をコールしないようにして
+            // ２回のコールが行われないようにする
+
+            if( IsInteraction == true || IsInteractionForScrollView == true )
+            {
+                // UIIneraction または UIInteractionForScrollView が有効であ場合は UIButton のインタラクションは無視する
+                return ;
+            }
+
+            // UIButton のインタラクションで実行する
+            OnClickInner() ;
+        }
+
 		/// <summary>
 		/// ボタンクリックを強制的に実行する
 		/// </summary>
 		public void ExecuteButtonClick()
 		{
-			OnButtonClickInner() ;
+			OnClickInner() ;
 		}
 
 		// 内部リスナー
-		private void OnButtonClickInner()
+		protected override void OnClickInner()
 		{
 			//----------------------------------
 			// このクリックが有効か判定する
@@ -889,14 +916,10 @@ namespace uGUIHelper
 					m_IsButtonClicked = true ;
 					m_IsButtonClickedCountTime = Time.frameCount ;
 
-					if( IsInteraction == false && IsInteractionForScrollView == false )
+					if( OnSimpleClickAction != null || OnSimpleClickDelegate != null )
 					{
-						// IsInteraction が true だと UIView の方が反応してしまうので IsInteraction が false の場合のみ呼び出す
-						if( OnSimpleClickAction != null || OnSimpleClickDelegate != null )
-						{
-							OnSimpleClickAction?.Invoke() ;
-							OnSimpleClickDelegate?.Invoke() ;
-						}
+						OnSimpleClickAction?.Invoke() ;
+						OnSimpleClickDelegate?.Invoke() ;
 					}
 
 					if( OnButtonClickAction != null || OnButtonClickDelegate != null )
@@ -947,14 +970,10 @@ namespace uGUIHelper
 				m_IsButtonClicked = true ;
 				m_IsButtonClickedCountTime = Time.frameCount ;
 
-				if( IsInteraction == false )
+				if( OnSimpleClickAction != null || OnSimpleClickDelegate != null )
 				{
-					// IsInteraction が true だと UIView の方が反応してしまうので IsInteraction が false の場合のみ呼び出す
-					if( OnSimpleClickAction != null || OnSimpleClickDelegate != null )
-					{
-						OnSimpleClickAction?.Invoke() ;
-						OnSimpleClickDelegate?.Invoke() ;
-					}
+					OnSimpleClickAction?.Invoke() ;
+					OnSimpleClickDelegate?.Invoke() ;
 				}
 
 				if( OnButtonClickAction != null || OnButtonClickDelegate != null )

@@ -186,10 +186,10 @@ namespace TMPro.EditorUtilities
 							if (text != null)
 							{
 								if (m_LineType.enumValueIndex == (int)TMP_InputFieldPlus.LineType.SingleLine)
-									text.enableWordWrapping = false;
+									text.textWrappingMode = TextWrappingModes.NoWrap ;
 								else
 								{
-									text.enableWordWrapping = true;
+									text.textWrappingMode = TextWrappingModes.Normal ;
 								}
 							}
 						}

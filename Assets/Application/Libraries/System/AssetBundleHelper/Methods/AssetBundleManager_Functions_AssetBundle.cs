@@ -575,7 +575,7 @@ namespace AssetBundleHelper
 			{ typeof( AnimationClip ),				new (){ ".anim",																					} },
 			{ typeof( Font ),						new (){ ".ttf", ".otf", ".dfont", 																	} },
 			{ typeof( Material ),					new (){ ".mat", ".material", 																		} },
-			{ typeof( PhysicMaterial ),				new (){ ".physicMaterial",	".physicmaterial",														} },
+			{ typeof( PhysicsMaterial ),				new (){ ".physicMaterial",	".physicmaterial",														} },
 			{ typeof( PhysicsMaterial2D ),			new (){ ".physicsMaterial2D", ".physicsmaterial2d",													} },
 			{ typeof( Cubemap ),					new (){ ".hdr", ".cubemap",																			} },
 			{ typeof( RuntimeAnimatorController ),	new (){ ".controller",																				} },

@@ -48,7 +48,6 @@ namespace SpriteHelper
 			}
 			GUILayout.EndHorizontal() ;		// 横並び終了
 
-
 			//----------------------------------
 
 			EditorGUILayout.Separator() ;	// 少し区切りスペース

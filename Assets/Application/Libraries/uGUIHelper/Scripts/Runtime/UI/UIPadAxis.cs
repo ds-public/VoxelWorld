@@ -711,7 +711,7 @@ namespace uGUIHelper
 			//------------------------------------------------------------------------------------------
 
 			// スクリーン座標を計算する
-			( var padViewPoints, var padViewCenter ) = GetScreenArea( gameObject ) ;
+			( var targetAreaPoints, var targetCenterPoint ) = GetScreenArea( gameObject ) ;
 
 			//----------------------------------
 
@@ -728,7 +728,7 @@ namespace uGUIHelper
 			bool isAvailable = false ;
 
 			// レイキャストを実行しヒットする対象を検出する
-			m_PA_EventDataCurrentPosition.position = padViewCenter ;
+			m_PA_EventDataCurrentPosition.position = targetCenterPoint ;
 			m_PA_Results.Clear() ;
 			EventSystem.current.RaycastAll( m_PA_EventDataCurrentPosition, m_PA_Results ) ;
 
@@ -747,11 +747,10 @@ namespace uGUIHelper
 					if( IsContainParent( gameObject, result.gameObject ) == false )
 					{
 						// 親では無い
-						( var blockerPoints, var blockerCenter ) = GetScreenArea( result.gameObject ) ;
-						if( IsCompleteBlocking( padViewPoints, blockerPoints ) == true )
+						( var blockerAreaPoints, _ ) = GetScreenArea( result.gameObject ) ;
+						if( IsCompleteBlocking( targetAreaPoints, blockerAreaPoints ) == true )
 						{
 							// 無効
-							isAvailable = false ;
 							break ;
 						}
 					}
@@ -770,87 +769,6 @@ namespace uGUIHelper
 
 			// 対象のゲームパッド対応ビューが有効か無効か返す
 			return isAvailable ;
-		}
-
-		// スクリーン上の矩形範囲を取得する
-		private ( Vector2[], Vector2 ) GetScreenArea( GameObject go )
-		{
-			if( go.TryGetComponent<RectTransform>( out var rt ) == false )
-			{
-				// 取得出来ない
-				throw new Exception( "Not foud rectTransform." ) ;
-			}
-
-			//----------------------------------
-
-			// 横幅・縦幅
-			float tw = rt.rect.width ;
-			float th = rt.rect.height ;
-
-			// レイキャストパディング
-			Vector4 raycastPadding = Vector4.zero ;
-
-			if( go.TryGetComponent<UnityEngine.UI.Image>( out var image ) == true )
-			{
-				raycastPadding = image.raycastPadding ;
-			}
-
-			float tx0 = ( tw * ( 0 - rt.pivot.x ) ) + raycastPadding.x ;	// x = left
-			float ty0 = ( th * ( 0 - rt.pivot.y ) ) + raycastPadding.y ;	// y = bottom
-			float tx1 = ( tw * ( 1 - rt.pivot.x ) ) - raycastPadding.z ;	// z = right
-			float ty1 = ( th * ( 1 - rt.pivot.y ) ) - raycastPadding.w ;	// w = top
-
-			// 角の座標(まだローカルの２次元)	※順番は右回りである事に注意(Ｚ型ではない)
-			var points = new Vector2[ 4 ]
-			{
-				new ( tx0, ty0 ),
-				new ( tx1, ty0 ),
-				new ( tx1, ty1 ),
-				new ( tx0, ty1 ),
-			} ;
-
-			// ローカル座標をワールド座標に変換(ローカルのローテーションとスケールも反映)
-			int i, l = points.Length ;
-			for( i  = 0 ; i <  l ; i ++ )
-			{
-				// ローテーションとスケールも考慮するため個別に分ける
-				points[ i ] = rt.TransformPoint( points[ i ] ) ;
-			}
-
-			//----------------------------------
-
-			Camera targetCamera ;
-
-			var parentCanvas = rt.transform.GetComponentInParent<Canvas>() ;
-			if( parentCanvas != null )
-			{
-				if( parentCanvas.worldCamera != null )
-				{
-					// Screen Space - Camera
-					targetCamera = parentCanvas.worldCamera ;
-				}
-				else
-				{
-					// Screen Space - Overlay
-					targetCamera = Camera.main ;
-				}
-			}
-			else
-			{
-				throw new Exception( "Not foud canvas." ) ;
-			}
-
-			// スクリーン座標に変換する
-			Vector2 center = Vector2.zero ;
-			for( i  = 0 ; i <  l ; i ++ )
-			{
-				points[ i ] = RectTransformUtility.WorldToScreenPoint( targetCamera, points[ i ] ) ;
-				center += points[ i ] ;
-			}
-
-			center /= l ;
-
-			return ( points, center ) ;
 		}
 
 		// ブロッカーの親にバックキーが含まれているかどうか

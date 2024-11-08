@@ -16,7 +16,7 @@ using UnityEditor.SceneManagement ;
 namespace SpriteHelper
 {
 	/// <summary>
-	/// ２Ｄメッシュ Version 2024/08/16
+	/// ２Ｄメッシュ Version 2024/08/25
 	/// </summary>
 	[ExecuteAlways]
 	[DisallowMultipleComponent]
@@ -627,8 +627,6 @@ namespace SpriteHelper
 			{
 				if( m_Offset.Equals( value ) == false )
 				{
-					Debug.LogWarning( "オフセット変化 : " + m_Offset + " " + value ) ;
-
 					m_Offset = value ;
 
 					m_IsOffsetAndSizeDirty = true ;
@@ -1243,6 +1241,9 @@ namespace SpriteHelper
 		// 更新する
 		private void Refresh()
 		{
+			// 名前は常に更新
+			m_Mesh.name = name ;
+
 			// テクスチャ設定の保険
 			if( m_Texture == null && m_Sprite != null )
 			{

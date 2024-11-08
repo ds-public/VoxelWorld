@@ -1,8 +1,10 @@
-using UnityEngine;
-using UnityEngine.UI;
-using System.Collections;
-using System.Collections.Generic;
-using UnityEngine.EventSystems;
+using System.Collections ;
+using System.Collections.Generic ;
+
+using UnityEngine ;
+using UnityEngine.UI ;
+using UnityEngine.EventSystems ;
+
 
 namespace uGUIHelper
 {
@@ -88,8 +90,7 @@ namespace uGUIHelper
 
 			// 座標をレンダーテクスチャー系に変換する
 
-			RectTransform rt = GetComponent<RectTransform>() ;
-			if( rt == null )
+			if( TryGetComponent<RectTransform>( out var rt ) == false )
 			{
 				return ;
 			}
@@ -135,7 +136,7 @@ namespace uGUIHelper
 			// 親サイズ
 			Vector2 ps = Vector2.zero ;
 
-			List<RectTransform> rts = new List<RectTransform>() ;
+			var rts = new List<RectTransform>() ;
 			int i, l ;
 
 			Transform t = offScreen.transform ;
@@ -147,16 +148,14 @@ namespace uGUIHelper
 				{
 					if( t.GetComponent<Canvas>() == null )
 					{
-						RectTransform rt = t.GetComponent<RectTransform>() ;
-						if( rt != null )
+						if( t.TryGetComponent<RectTransform>( out var rt ) == true )
 						{
 							rts.Add( rt ) ;
 						}
 					}
 					else
 					{
-						RectTransform rt = t.GetComponent<RectTransform>() ;
-						if( rt != null )
+						if( t.TryGetComponent<RectTransform>( out var rt ) == true )
 						{
 							ps = rt.sizeDelta ;
 						}

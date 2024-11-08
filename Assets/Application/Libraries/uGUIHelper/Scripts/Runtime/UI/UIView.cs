@@ -27,7 +27,7 @@ namespace uGUIHelper
 	/// </summary>
 	public class UIView : UIBehaviour
 	{
-		public const string Version = "Version 2024/10/17 0" ;
+		public const string Version = "Version 2024/11/08 0" ;
 
 		// ソースコード
 		// https://bitbucket.org/Unity-Technologies/ui/src/2019.1/
@@ -1119,7 +1119,7 @@ namespace uGUIHelper
 		}
 
 		/// <summary>
-		/// キャンバス上での領域を取得する(画面中心が原点[0,0]・領域は左下が基準位置[x,y]となる)
+		/// キャンバス上での領域を取得する(画面中心が原点[0,0]・Rectの(x,y)は領域の左下の位置・４点をすべて使用する場合は(xMin,yMin,xMax,yMax)を参照する)
 		/// </summary>
 		public Rect RectInCanvas
 		{
@@ -1252,6 +1252,35 @@ namespace uGUIHelper
 				py -= ( ph * Pivot.y ) ;
 
 				return new Rect( px, py, pw, ph ) ;
+			}
+		}
+
+		/// <summary>
+		/// スクリーン上での領域を取得する(画面左下が原点[0,0]・Rectの(x,y)は領域の左下の位置・４点をすべて使用する場合は(xMin,yMin,xMax,yMax)を参照する)
+		/// </summary>
+		public Rect RectInScreen
+		{
+			get
+			{
+				var r = RectInCanvas ;
+
+				var canvasSize = GetCanvasSize() ;
+
+				// 画面左下が原点(0,0)になるように値を補正する
+				r.x += canvasSize.x * 0.5f ;
+				r.y += canvasSize.y * 0.5f ;
+
+				// スケールを Screen / Canvas になるよう調整する
+
+				float ratioX = ( float )Screen.width  / canvasSize.x ;
+				float ratioY = ( float )Screen.height / canvasSize.y ;
+
+				r.x      *= ratioX ; 
+				r.y      *= ratioY ; 
+				r.width  *= ratioX ; 
+				r.height *= ratioY ;
+
+				return r ;
 			}
 		}
 
@@ -3504,7 +3533,7 @@ namespace uGUIHelper
 			}
 
 #if UNITY_EDITOR
-			Debug.LogWarning( "[Tween] Not found this identity -> " + identity + " / "+ name ) ;
+			Debug.LogWarning( "[Tween] Not found this identity -> " + identity + " / "+ name + " Path = " + Path ) ;
 #endif
 			return null ;
 		}
@@ -4673,7 +4702,7 @@ namespace uGUIHelper
 		}
 
 		/// <summary>
-		/// 指定のコンポーネントをアタッチしたの GameObject を追加する
+		/// 指定のコンポーネントをアタッチした GameObject を追加する
 		/// </summary>
 		/// <param name="tTransform"></param>
 		/// <param name="tLayer"></param>
@@ -4745,13 +4774,13 @@ namespace uGUIHelper
 				t = transform ;
 			}
 
-			var go = ( GameObject )GameObject.Instantiate( prefab ) ;
+			var go = ( GameObject )GameObject.Instantiate( prefab, t, false ) ;
 			if( go == null )
 			{
 				return null ;
 			}
 		
-			go.transform.SetParent( t, false ) ;
+//			go.transform.SetParent( t, false ) ;
 
 			if( layer >= -1 && layer <= 31 )
 			{
@@ -4891,13 +4920,13 @@ namespace uGUIHelper
 				t = transform ;
 			}
 
-			var go = ( GameObject )GameObject.Instantiate( prefab ) ;
+			var go = ( GameObject )GameObject.Instantiate( prefab, t, false ) ;
 			if( go == null )
 			{
 				return null ;
 			}
 		
-			go.transform.SetParent( t, false ) ;
+//			go.transform.SetParent( t, false ) ;
 
 			if( layer >= -1 && layer <= 31 )
 			{
@@ -5232,7 +5261,7 @@ namespace uGUIHelper
 		/// <summary>
 		/// CanvasScaler(ショートカット)
 		/// </summary>
-		virtual public CanvasScaler GetCanvasScaler()
+		public virtual CanvasScaler GetCanvasScaler()
 		{
 			if( m_CanvasScaler == null )
 			{
@@ -7848,7 +7877,7 @@ namespace uGUIHelper
 		//----------------------------------------------------------------
 	
 		/// <summary>
-		/// 指定の識別子の View を取得する
+		/// 指定の識別子の View を取得する(UIView の Identity で検索する ※未設定なら name)
 		/// </summary>
 		/// <returns>The view.</returns>
 		/// <param name="identity">T identity.</param>
@@ -7978,7 +8007,7 @@ namespace uGUIHelper
 
 			GameObject targetGameObject ;
 
-			// 直の子供を再帰的に検査する
+			// 直の子供を確認する
 			int i, c = go.transform.childCount ;
 		
 			for( i  = 0 ; i <  c ; i ++ )
@@ -8006,7 +8035,12 @@ namespace uGUIHelper
 						return targetGameObject ;
 					}
 				}
-			
+			}
+
+			// 直の子供を再帰的に検査する
+			for( i  = 0 ; i <  c ; i ++ )
+			{
+				childNode = go.transform.GetChild( i ) ;
 				if( childNode.childCount >  0 )
 				{
 					targetGameObject = FindNode_Private( childNode.gameObject, nodeName, isContain ) ;
@@ -8051,7 +8085,7 @@ namespace uGUIHelper
 
 			T component ;
 		
-			// 直の子供を再帰的に検査する
+			// 直の子供を確認する
 			int i, c = go.transform.childCount ;
 		
 			for( i  = 0 ; i <  c ; i ++ )
@@ -8078,7 +8112,12 @@ namespace uGUIHelper
 						return component ;
 					}
 				}
+			}
 
+			// 直の子供を再帰的に検査する
+			for( i  = 0 ; i <  c ; i ++ )
+			{
+				childNode = go.transform.GetChild( i ) ;
 				if( childNode.childCount >  0 )
 				{
 					component = FindNode_Private<T>( childNode.gameObject, nodeName, isContain ) ;
@@ -9781,7 +9820,7 @@ namespace uGUIHelper
 		}
 
 		// 内部リスナー
-		private void OnClickInner()
+		protected virtual void OnClickInner()
 		{
 			//----------------------------------
 			// このクリックが有効か判定する
@@ -11290,8 +11329,17 @@ namespace uGUIHelper
 		/// <returns></returns>
 		public bool IsRaycastAvailable()
 		{
-			// バックキー対象のスクリーン座標を計算する
-			( var backKeyPoints, var backKeyCenter ) = GetScreenArea( gameObject ) ;
+			// 注意：
+			// レイキャストが通るかどうか判定は、
+			// 矩形の四隅座標は、計算誤差により、
+			// 本来ヒットするはずがヒットしないという問題が発生するため、
+			// 使用しない。
+			// つまり、矩形の中心座標のみで、
+			// レイキャストのヒット判定を行うという事である。
+
+
+			// 検査対象のスクリーン座標を計算する
+			( var targetAreaPoints, var targetCenterPoint ) = GetScreenArea( gameObject ) ;
 
 			//----------------------------------
 
@@ -11308,7 +11356,7 @@ namespace uGUIHelper
 			bool isAvailable = false ;
 
 			// レイキャストを実行しヒットする対象を検出する
-			m_Raycast_EventDataCurrentPosition.position = backKeyCenter ;
+			m_Raycast_EventDataCurrentPosition.position = targetCenterPoint ;
 			m_Raycast_Results.Clear() ;
 			EventSystem.current.RaycastAll( m_Raycast_EventDataCurrentPosition, m_Raycast_Results ) ;
 
@@ -11323,16 +11371,18 @@ namespace uGUIHelper
 				}
 				else
 				{
-					// レイキャストヒット対象がバックキーそのものでなくても親にバックキーが含まれていたらスルーする
+					// レイキャストヒット対象そのものでなくても親に含まれていたらスルーする
 					if( IsContainParent( gameObject, result.gameObject ) == false )
 					{
+						// 親子関係ではない矩形にヒットした
+
+						// レイキャストにヒットした矩形が対象の矩形をすべて覆うような場合はヒットしないと判定する
 						// 親では無い
-						( var blockerPoints, var blockerCenter ) = GetScreenArea( result.gameObject ) ;
-						if( IsCompleteBlocking( backKeyPoints, blockerPoints ) == true )
+						( var blockerAreaPoints, _ ) = GetScreenArea( result.gameObject ) ;
+						if( IsCompleteBlocking( targetAreaPoints, blockerAreaPoints ) == true )
 						{
-							// 無効
-							isAvailable = false ;
-							break ;
+							// レイキャストにヒットした矩形が対象の矩形をすべて覆う
+							break ; // 対象の矩形にはレイキャストはヒットしないとみなす
 						}
 					}
 				}
@@ -11353,78 +11403,29 @@ namespace uGUIHelper
 		}
 
 		// スクリーン上の矩形範囲を取得する
-		private ( Vector2[], Vector2 ) GetScreenArea( GameObject go )
+		public ( Vector2[], Vector2 ) GetScreenArea( GameObject go )
 		{
-			if( ( go.transform is RectTransform rt ) == false )
+			if( go.TryGetComponent<UIView>( out var view ) == false )
 			{
 				// 取得出来ない
-				throw new Exception( "Not foud rectTransform." ) ;
+				throw new Exception( "Not foud UIView." ) ;
 			}
 
-			//----------------------------------
+			var p = view.RectInScreen ;
 
-			// 横幅・縦幅
-			float tw = rt.rect.width ;
-			float th = rt.rect.height ;
-
-			// レイキャストパディング
-			Vector4 raycastPadding = Vector4.zero ;
-
-			if( go.TryGetComponent<UnityEngine.UI.Image>( out var image ) == true )
-			{
-				raycastPadding = image.raycastPadding ;
-			}
-
-			float tx0 = ( tw * ( 0 - rt.pivot.x ) ) + raycastPadding.x ;	// x = left
-			float ty0 = ( th * ( 0 - rt.pivot.y ) ) + raycastPadding.y ;	// y = bottom
-			float tx1 = ( tw * ( 1 - rt.pivot.x ) ) - raycastPadding.z ;	// z = right
-			float ty1 = ( th * ( 1 - rt.pivot.y ) ) - raycastPadding.w ;	// w = top
-
-			// 角の座標(まだローカルの２次元)	※順番は右回りである事に注意(Ｚ型ではない)
 			var points = new Vector2[ 4 ]
 			{
-				new ( tx0, ty0 ),
-				new ( tx1, ty0 ),
-				new ( tx1, ty1 ),
-				new ( tx0, ty1 ),
+				new ( p.xMin, p.yMin ),
+				new ( p.xMax, p.yMin ),
+				new ( p.xMax, p.yMax ),
+				new ( p.xMin, p.yMax ),
 			} ;
 
-			// ローカル座標をワールド座標に変換(ローカルのローテーションとスケールも反映)
+			Vector2 center = Vector2.zero ;
+
 			int i, l = points.Length ;
 			for( i  = 0 ; i <  l ; i ++ )
 			{
-				// ローテーションとスケールも考慮するため個別に分ける
-				points[ i ] = rt.TransformPoint( points[ i ] ) ;
-			}
-
-			//----------------------------------
-
-			Camera targetCamera ;
-
-			var parentCanvas = rt.transform.GetComponentInParent<Canvas>() ;
-			if( parentCanvas != null )
-			{
-				if( parentCanvas.worldCamera != null )
-				{
-					// Screen Space - Camera
-					targetCamera = parentCanvas.worldCamera ;
-				}
-				else
-				{
-					// Screen Space - Overlay
-					targetCamera = Camera.main ;
-				}
-			}
-			else
-			{
-				throw new Exception( "Not foud canvas." ) ;
-			}
-
-			// スクリーン座標に変換する
-			Vector2 center = Vector2.zero ;
-			for( i  = 0 ; i <  l ; i ++ )
-			{
-				points[ i ] = RectTransformUtility.WorldToScreenPoint( targetCamera, points[ i ] ) ;
 				center += points[ i ] ;
 			}
 
@@ -12262,6 +12263,50 @@ namespace uGUIHelper
 		public void OnAnimationEvent( string identity )
 		{
 			m_OnAnimationEvents?.Invoke( identity ) ;
+		}
+
+		/// <summary>
+		/// 再生中のアニメーションを強制的に最後の状態にして終了される(ただしループするもについては無効)
+		/// </summary>
+		/// <param name="layer"></param>
+		/// <returns></returns>
+		public bool FinishAnimator( int layer = 0 )
+		{
+			if( CAnimator == null )
+			{
+				Debug.LogWarning( "Not found Animator Component : [PlayAnimator] Path = " + Path, this ) ;
+				return false ;
+			}
+
+			if( CAnimator.runtimeAnimatorController == null )
+			{
+				// アニメーションコントローラが設定されていない
+				Debug.LogWarning( "Not set AnimationController : [PlayAnimator] " + Path ) ;
+				return false ;
+			}
+
+			//-------------------------------------------------
+
+			if( m_ActiveAnimations.ContainsKey( layer ) == false )
+			{
+				// 現在は再生中ではない
+				return false ;
+			}
+
+			if( m_ActiveAnimations[ layer ].IsLoop == true )
+			{
+				// ループ再生しているものに対しては無効
+				return false ;
+			}
+
+			//------------------------------------------------
+
+			AnimatorStateInfo stateInfo = m_Animator.GetCurrentAnimatorStateInfo( layer ) ;
+
+			// 再生状態を最後にする
+			m_Animator.Play( stateInfo.fullPathHash, layer, 1 ) ;
+
+			return true ;
 		}
 
 		//-------------------------------------------------------------------------------------------

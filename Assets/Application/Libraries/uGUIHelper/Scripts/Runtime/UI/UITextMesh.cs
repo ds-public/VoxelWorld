@@ -429,7 +429,7 @@ namespace uGUIHelper
 		{
 			get
 			{
-				TextMeshProUGUI textMesh = CTextMesh ;
+				var textMesh = CTextMesh ;
 				if( textMesh == null )
 				{
 					return FontStyles.Normal ;
@@ -439,7 +439,7 @@ namespace uGUIHelper
 			}
 			set
 			{
-				TextMeshProUGUI textMesh = CTextMesh ;
+				var textMesh = CTextMesh ;
 				if( textMesh == null )
 				{
 					return ;
@@ -464,7 +464,7 @@ namespace uGUIHelper
 		{
 			get
 			{
-				TextMeshProUGUI textMesh = CTextMesh ;
+				var textMesh = CTextMesh ;
 				if( textMesh == null )
 				{
 					return false ;
@@ -474,7 +474,7 @@ namespace uGUIHelper
 			}
 			set
 			{
-				TextMeshProUGUI textMesh = CTextMesh ;
+				var textMesh = CTextMesh ;
 				if( textMesh == null )
 				{
 					return ;
@@ -499,7 +499,7 @@ namespace uGUIHelper
 		{
 			get
 			{
-				TextMeshProUGUI textMesh = CTextMesh ;
+				var textMesh = CTextMesh ;
 				if( textMesh == null )
 				{
 					return TextAlignmentOptions.Center ;
@@ -509,7 +509,7 @@ namespace uGUIHelper
 			}
 			set
 			{
-				TextMeshProUGUI textMesh = CTextMesh ;
+				var textMesh = CTextMesh ;
 				if( textMesh == null )
 				{
 					return ;
@@ -534,7 +534,7 @@ namespace uGUIHelper
 		{
 			get
 			{
-				TextMeshProUGUI textMesh = CTextMesh ;
+				var textMesh = CTextMesh ;
 				if( textMesh == null )
 				{
 					return false ;
@@ -544,7 +544,7 @@ namespace uGUIHelper
 			}
 			set
 			{
-				TextMeshProUGUI textMesh = CTextMesh ;
+				var textMesh = CTextMesh ;
 				if( textMesh == null )
 				{
 					return ;
@@ -569,29 +569,39 @@ namespace uGUIHelper
 		{
 			get
 			{
-				TextMeshProUGUI textMesh = CTextMesh ;
+				var textMesh = CTextMesh ;
 				if( textMesh == null )
 				{
 					return false ;
 				}
 
-				return ( ! textMesh.enableWordWrapping ) ;
+				return ( textMesh.textWrappingMode == TextWrappingModes.NoWrap ) ;
 			}
 			set
 			{
-				TextMeshProUGUI textMesh = CTextMesh ;
+				var textMesh = CTextMesh ;
 				if( textMesh == null )
 				{
 					return ;
 				}
 
-				if( textMesh.enableWordWrapping != ( ! value ) )
+				if( value == true )
 				{
-					textMesh.enableWordWrapping = ( ! value ) ;
-
-					if( m_AutoSizeFitting == true )
+					if( textMesh.textWrappingMode != TextWrappingModes.NoWrap )
 					{
-						Resize() ;
+						textMesh.textWrappingMode  = TextWrappingModes.NoWrap ;
+
+						if( m_AutoSizeFitting == true )
+						{
+							Resize() ;
+						}
+					}
+				}
+				else
+				{
+					if( textMesh.textWrappingMode == TextWrappingModes.NoWrap )
+					{
+						textMesh.textWrappingMode  = TextWrappingModes.Normal ;
 					}
 				}
 			}
@@ -604,7 +614,7 @@ namespace uGUIHelper
 		{
 			get
 			{
-				TextMeshProUGUI textMesh = CTextMesh ;
+				var textMesh = CTextMesh ;
 				if( textMesh == null )
 				{
 					return TextOverflowModes.Overflow ;
@@ -614,7 +624,7 @@ namespace uGUIHelper
 			}
 			set
 			{
-				TextMeshProUGUI textMesh = CTextMesh ;
+				var textMesh = CTextMesh ;
 				if( textMesh == null )
 				{
 					return ;
@@ -639,7 +649,7 @@ namespace uGUIHelper
 		{
 			get
 			{
-				TextMeshProUGUI textMesh = CTextMesh ;
+				var textMesh = CTextMesh ;
 				if( textMesh == null )
 				{
 					return 1.0f ;
@@ -649,7 +659,7 @@ namespace uGUIHelper
 			}
 			set
 			{
-				TextMeshProUGUI textMesh = CTextMesh ;
+				var textMesh = CTextMesh ;
 				if( textMesh == null )
 				{
 					return ;
@@ -682,7 +692,7 @@ namespace uGUIHelper
 		{
 			get
 			{
-				TextMeshProUGUI textMesh = CTextMesh ;
+				var textMesh = CTextMesh ;
 				if( textMesh == null )
 				{
 					return 1.0f ;
@@ -692,7 +702,7 @@ namespace uGUIHelper
 			}
 			set
 			{
-				TextMeshProUGUI textMesh = CTextMesh ;
+				var textMesh = CTextMesh ;
 				if( textMesh == null )
 				{
 					return ;
@@ -720,23 +730,23 @@ namespace uGUIHelper
 		{
 			get
 			{
-				TextMeshProUGUI textMesh = CTextMesh ;
+				var textMesh = CTextMesh ;
 				if( textMesh == null )
 				{
 					return false ;
 				}
 
-				return textMesh.enableWordWrapping ;
+				return textMesh.textWrappingMode != TextWrappingModes.NoWrap ;
 			}
 			set
 			{
-				TextMeshProUGUI textMesh = CTextMesh ;
+				var textMesh = CTextMesh ;
 				if( textMesh == null )
 				{
 					return ;
 				}
 
-				textMesh.enableWordWrapping = value ;
+				textMesh.textWrappingMode = value ? TextWrappingModes.Normal : TextWrappingModes.NoWrap ;
 			}
 		}
 
@@ -747,7 +757,7 @@ namespace uGUIHelper
 		{
 			get
 			{
-				TextMeshProUGUI textMesh = CTextMesh ;
+				var textMesh = CTextMesh ;
 				if( textMesh == null )
 				{
 					return false ;
@@ -757,7 +767,7 @@ namespace uGUIHelper
 			}
 			set
 			{
-				TextMeshProUGUI textMesh = CTextMesh ;
+				var textMesh = CTextMesh ;
 				if( textMesh == null )
 				{
 					return;
@@ -807,7 +817,7 @@ namespace uGUIHelper
 		/// <returns></returns>
 		private void ToLargeForTextMesh()
 		{
-			TextMeshProUGUI textMesh = CTextMesh ;
+			var textMesh = CTextMesh ;
 			if( textMesh == null )
 			{
 				return ;
@@ -1105,11 +1115,7 @@ namespace uGUIHelper
 		// 各派生クラスでの初期化処理を行う（メニューまたは AddView から生成される場合のみ実行れる）
 		protected override void OnBuild( string option = "" )
 		{
-			TextMeshProUGUI textMesh = CTextMesh ;
-			if( textMesh == null )
-			{
-				textMesh = gameObject.AddComponent<TextMeshProUGUI>() ;
-			}
+			var textMesh = CTextMesh != null ? CTextMesh : gameObject.AddComponent<TextMeshProUGUI>() ;
 			if( textMesh == null )
 			{
 				// 異常
@@ -1118,7 +1124,7 @@ namespace uGUIHelper
 
 			//----------------------------
 
-			Color	defaultTextColor = Color.white ;
+			Color	        defaultTextColor = Color.white ;
 
 			TMP_FontAsset	defaultFontAsset = null ;
 			Material		defaultFontMaterial = null ;
@@ -1129,7 +1135,7 @@ namespace uGUIHelper
 			if( Application.isPlaying == false )
 			{
 				// メニューから操作した場合のみ自動設定を行う
-				DefaultSettings ds = Resources.Load<DefaultSettings>( "uGUIHelper/DefaultSettings" ) ;
+				var ds = Resources.Load<DefaultSettings>( "uGUIHelper/DefaultSettings" ) ;
 				if( ds != null )
 				{
 					defaultTextColor	= ds.TextColor ;
@@ -1179,7 +1185,7 @@ namespace uGUIHelper
 
 			textMesh.alignment = TextAlignmentOptions.TopLeft ;
 
-			textMesh.enableWordWrapping = false ;
+			textMesh.textWrappingMode = TextWrappingModes.NoWrap ;
 			textMesh.overflowMode = TextOverflowModes.Overflow ;
 			
 			ResetRectTransform() ;
@@ -1428,15 +1434,15 @@ namespace uGUIHelper
 
 		protected void Resize()
 		{
-			TextMeshProUGUI t = CTextMesh ;
-			RectTransform r = GetRectTransform() ;
+			var t = CTextMesh ;
+			var r = GetRectTransform() ;
 			if( r != null && t != null )
 			{
 				Vector2 size = r.sizeDelta ;
 
 				if( r.anchorMin.x == r.anchorMax.x )
 				{
-					if( t.enableWordWrapping == false )
+					if( t.textWrappingMode == TextWrappingModes.NoWrap )
 					{
 						size.x = t.preferredWidth ;
 					}

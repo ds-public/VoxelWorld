@@ -15,7 +15,7 @@ using UnityEditorInternal ;
 namespace SpriteHelper
 {
 	/// <summary>
-	/// スプライト制御クラス  Version 2024/08/16
+	/// スプライト制御クラス  Version 2024/08/17
 	/// </summary>
 	[ExecuteAlways]
 	[DisallowMultipleComponent]
@@ -23,12 +23,58 @@ namespace SpriteHelper
 	public partial class SpriteImage : SpriteFrame
 	{
 #if UNITY_EDITOR
+
 		/// <summary>
-		/// Sprite を生成
+		/// Image Sprite を生成
 		/// </summary>
-		[MenuItem( "GameObject/SpriteHelper/SpriteImage", false, 22 )]	// メニューから
-		[MenuItem( "SpriteHelper/Add a SpriteImage" )]					// ポップアップメニューから
-		public static void CreateSpriteImage()
+		[MenuItem( "GameObject/SpriteHelper/SpriteImage/Default", false, 0 )]	// メニューから
+		[MenuItem( "SpriteHelper/Add a SpriteImage/Default" )]					// ポップアップメニューから
+		public static void CreateSpriteImage_Default()
+		{
+			CreateSpriteImage( string.Empty ) ;
+		}
+
+		/// <summary>
+		/// Image Sprite を生成
+		/// </summary>
+		[MenuItem( "GameObject/SpriteHelper/SpriteImage/for Top View - Overlap", false, 1 )]	// メニューから
+		[MenuItem( "SpriteHelper/Add a SpriteImage/for Top View - Overlap" )]					// ポップアップメニューから
+		public static void CreateSpriteImage_Top_Overlap()
+		{
+			CreateSpriteImage( "Image Top Overlap" ) ;
+		}
+
+		/// <summary>
+		/// Image Sprite を生成
+		/// </summary>
+		[MenuItem( "GameObject/SpriteHelper/SpriteImage/for Top View - Collide", false, 2 )]	// メニューから
+		[MenuItem( "SpriteHelper/Add a SpriteImage/for Top View - Collide" )]					// ポップアップメニューから
+		public static void CreateSpriteImage_Top_Collide()
+		{
+			CreateSpriteImage( "Image Top Collide" ) ;
+		}
+
+		/// <summary>
+		/// Image Sprite を生成
+		/// </summary>
+		[MenuItem( "GameObject/SpriteHelper/SpriteImage/for Side View - Overlap", false, 3 )]	// メニューから
+		[MenuItem( "SpriteHelper/Add a SpriteImage/for Side View - Overlap" )]					// ポップアップメニューから
+		public static void CreateSpriteImage_Side_Overlap()
+		{
+			CreateSpriteImage( "Image Side Overlap" ) ;
+		}
+
+		/// <summary>
+		/// Image Sprite を生成
+		/// </summary>
+		[MenuItem( "GameObject/SpriteHelper/SpriteImage/for Side View - Collide", false, 4 )]	// メニューから
+		[MenuItem( "SpriteHelper/Add a SpriteImage/for Side View - Collide" )]					// ポップアップメニューから
+		public static void CreateSpriteImage_Side_Collide()
+		{
+			CreateSpriteImage( "Image Side Collide" ) ;
+		}
+
+		public static void CreateSpriteImage( string typeName )
 		{
 			var go = Selection.activeGameObject ;
 			if( go == null )
@@ -51,7 +97,7 @@ namespace SpriteHelper
 			t.localScale = Vector3.one ;
 
 			var component = child.AddComponent<SpriteImage>() ;
-			component.SetDefault() ;	// 初期状態に設定する
+			component.SetDefault( typeName ) ;	// 初期状態に設定する
 
 			// 一番上に移動させる
 			while( ComponentUtility.MoveComponentUp( component ) ){}
@@ -91,14 +137,78 @@ namespace SpriteHelper
 		/// <summary>
 		/// 動的生成された際にデフォルト状態を設定する
 		/// </summary>
-		public override void SetDefault()
+		public override void SetDefault( string typeName )
 		{
-			base.SetDefault() ;
+			base.SetDefault( typeName ) ;
 
 			//-----------------------------------------------------------
 
 			// 予めキャッシュしておく
 			_ = CSpriteDrawer ;
+
+			//-----------------------------------------------------------
+
+			typeName = typeName.ToLower() ;
+
+			if( typeName == "image top overlap" )
+			{
+				// トップビュー用　接触◯　衝突✕
+
+				SetSize( 16, 16 ) ;
+
+				AddCollider<BoxCollider2D>() ;
+				ColliderAdjustment = true ;
+
+				IsTrigger		= true ;
+				BodyType		= RigidbodyType2D.Kinematic ;
+				GravityScale	= 0 ;
+				FreezeRotation	= true ;
+			}
+			else
+			if( typeName == "image top collide" )
+			{
+				// トップビュー用　接触✕　衝突◯
+
+				SetSize( 16, 16 ) ;
+
+				AddCollider<BoxCollider2D>() ;
+				ColliderAdjustment = true ;
+
+				IsTrigger		= false ;
+				BodyType		= RigidbodyType2D.Dynamic ;
+				GravityScale	= 0 ;
+				FreezeRotation	= false ;
+			}
+			else
+			if( typeName == "image side overlap" )
+			{
+				// サイドビュー用　接触◯　衝突✕
+
+				SetSize( 16, 16 ) ;
+
+				AddCollider<BoxCollider2D>() ;
+				ColliderAdjustment = true ;
+
+				IsTrigger		= true ;
+				BodyType		= RigidbodyType2D.Kinematic ;
+				GravityScale	= 0 ;
+				FreezeRotation	= true ;
+			}
+			else
+			if( typeName == "image side collide" )
+			{
+				// サイドビュー用　接触✕　衝突◯
+
+				SetSize( 16, 16 ) ;
+
+				AddCollider<BoxCollider2D>() ;
+				ColliderAdjustment = true ;
+
+				IsTrigger		= false ;
+				BodyType		= RigidbodyType2D.Dynamic ;
+				GravityScale	= 0 ;
+				FreezeRotation	= false ;
+			}
 		}
 
 		//-------------------------------------------------------------------------------------------
@@ -1692,173 +1802,32 @@ namespace SpriteHelper
 
 		//-----------------------------------------------------------
 
-		/// <summary>
-		/// コライダーの位置と大きさをメッシュと同じに合わせる(Flip に対応)
-		/// </summary>
-		public override void AdjustCollider()
+		// コライダーマージン用のパラメータを取得する
+		protected override ( float, float, float, float, float, float ) GetColliderMarginParameter()
 		{
-			if( CST == null )
+			float mx, my ;
+			float ml, mr, mt, mb ;
+
+			ml = m_ColliderMarginL ;
+			mr = m_ColliderMarginR ;
+
+			if( CSpriteDrawer.FlipX == true )
 			{
-				return ;
+				( ml, mr ) = ( mr, ml ) ;
 			}
 
-			//----------------------------------------------------------
+			mt = m_ColliderMarginT ;
+			mb = m_ColliderMarginB ;
 
-			var offset = CST.Offset ;
-			var size   = CST.DeltaSize ;
-
-			if( m_Collider is BoxCollider2D )
+			if( CSpriteDrawer.FlipY == true )
 			{
-				var collider2D = m_Collider as BoxCollider2D ;
-
-				float mx, my ;
-				float ml, mr, mt, mb ;
-
-				ml = m_ColliderMarginL ;
-				mr = m_ColliderMarginR ;
-
-				if( CSpriteDrawer.FlipX == true )
-				{
-					( ml, mr ) = ( mr, ml ) ;
-				}
-
-				mt = m_ColliderMarginT ;
-				mb = m_ColliderMarginB ;
-
-				if( CSpriteDrawer.FlipY == true )
-				{
-					( mt, mb ) = ( mb, mt ) ;
-				}
-
-				mx = ( ml - mr ) * 0.5f ;
-				my = ( mb - mt ) * 0.5f ;
-
-				collider2D.offset	= new ( offset.x + mx, offset.y + my ) ;
-				collider2D.size		= new ( size.x - ml - mr, size.y - mb - mt ) ;
-			}
-			else
-			if( m_Collider is CircleCollider2D )
-			{
-				var collider2D = m_Collider as CircleCollider2D ;
-
-				float mx, my ;
-				float ml, mr, mt, mb ;
-
-				ml = m_ColliderMarginL ;
-				mr = m_ColliderMarginR ;
-
-				if( CSpriteDrawer.FlipX == true )
-				{
-					( ml, mr ) = ( mr, ml ) ;
-				}
-
-				mt = m_ColliderMarginT ;
-				mb = m_ColliderMarginB ;
-
-				if( CSpriteDrawer.FlipY == true )
-				{
-					( mt, mb ) = ( mb, mt ) ;
-				}
-
-				mx = ( ml - mr ) * 0.5f ;
-				my = ( mb - mt ) * 0.5f ;
-
-				collider2D.offset	= new ( offset.x + mx, offset.y + my ) ;
-				collider2D.radius	= Mathf.Min( size.x - ml - mr, size.y - mb - mt ) * 0.5f ;
-			}
-			else
-			if( m_Collider is CapsuleCollider2D )
-			{
-				var collider2D = m_Collider as CapsuleCollider2D ;
-
-				float mx, my ;
-				float ml, mr, mt, mb ;
-
-				ml = m_ColliderMarginL ;
-				mr = m_ColliderMarginR ;
-
-				if( CSpriteDrawer.FlipX == true )
-				{
-					( ml, mr ) = ( mr, ml ) ;
-				}
-
-				mt = m_ColliderMarginT ;
-				mb = m_ColliderMarginB ;
-
-				if( CSpriteDrawer.FlipY == true )
-				{
-					( mt, mb ) = ( mb, mt ) ;
-				}
-
-				mx = ( ml - mr ) * 0.5f ;
-				my = ( mb - mt ) * 0.5f ;
-
-				collider2D.offset	= new ( offset.x + mx, offset.y + my ) ;
-				collider2D.size		= new ( size.x - ml - mr, size.y - mb - mt ) ;
-			}
-			else
-			if( m_Collider is EdgeCollider2D )
-			{
-				var collider2D = m_Collider as EdgeCollider2D ;
-
-				float mx, my ;
-				float ml, mr, mt, mb ;
-
-				ml = m_ColliderMarginL ;
-				mr = m_ColliderMarginR ;
-
-				if( CSpriteDrawer.FlipX == true )
-				{
-					( ml, mr ) = ( mr, ml ) ;
-				}
-
-				mt = m_ColliderMarginT ;
-				mb = m_ColliderMarginB ;
-
-				if( CSpriteDrawer.FlipY == true )
-				{
-					( mt, mb ) = ( mb, mt ) ;
-				}
-
-				mx = ( ml - mr ) * 0.5f ;
-				my = ( mb - mt ) * 0.5f ;
-
-				float ox = offset.x + mx,    oy = offset.y + my ;
-				float sx = size.x - ml - mr, sy = size.y - mb - mt ; 
-
-				float hx = sx * 0.5f ;
-				float hy = sy * 0.5f ;
-
-				float x0 = ox - hx ;
-				float x1 = ox + hx ;
-				float y0 = oy - hy ;
-				float y1 = oy + hy ;
-
-				float ew = m_ColliderEdgeWidth ;
-				if( ew <= 0 )
-				{
-					ew  = 0.1f ;
-				}
-
-				collider2D.points = new Vector2[]
-				{
-					new ( x0 + ew, y0 ),
-					new ( x0, y0 + ew ),
-
-					new ( x0, y1 - ew ),
-					new ( x0 + ew, y1 ),
-
-					new ( x1 - ew, y1 ),
-					new ( x1, y1 - ew ),
-
-					new ( x1, y0 + ew ),
-					new ( x1 - ew, y0 ),
-
-					new ( x0 + ew, y0 ),	// 最初に戻る
-				} ;
+				( mt, mb ) = ( mb, mt ) ;
 			}
 
-			m_IsColliderDirty = false ;
+			mx = ( ml - mr ) * 0.5f ;
+			my = ( mb - mt ) * 0.5f ;
+
+			return ( ml, mr, mt, mb, mx, my ) ;
 		}
 	}
 

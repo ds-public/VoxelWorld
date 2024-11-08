@@ -11,7 +11,7 @@ namespace uGUIHelper
 {
 	[RequireComponent( typeof( Canvas ) )]
 	[RequireComponent( typeof( CanvasScaler ) )]
-	[RequireComponent( typeof( GraphicRaycaster ) )]
+	[RequireComponent( typeof( GraphicRaycasterWrapper ) )]
 
 	/// <summary>
 	/// uGUI:Canvas クラスの機能拡張コンポーネントクラス

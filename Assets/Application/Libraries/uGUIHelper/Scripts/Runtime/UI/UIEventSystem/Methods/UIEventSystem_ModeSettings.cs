@@ -8,29 +8,46 @@ namespace uGUIHelper.InputAdapter
 {
 	public partial class UIEventSystem
 	{
-		// 現在の入力の処理タイプ
-		public InputProcessingTypes InputProcessingType = InputProcessingTypes.Parallel ;
+		/// <summary>
+		/// インスタンスが破棄されてしまう可能性があるためこれらの値はスタティックで保持する
+		/// </summary>
+		public static class Settings
+		{
+			// 現在の入力の処理タイプ
+			public static InputProcessingTypes  InputProcessingType = InputProcessingTypes.Parallel ;
+
+			// 現在の入力タイプ(UIEventSystem がシーン単位で破棄されてしまうため、この値のみ static で保持する)
+			public static InputTypes	        InputType	        = InputTypes.Pointer ;	// デフォルトはポインターモード
+
+			//-------------------------------------------------
+
+			// マウスカーソルの位置
+			public static Vector2               MousePosition ;
+
+			//-------------------------------------------------
+
+			// カーソルの制御状態
+			public static bool                  CursorProcessing = true ;
+
+			// カーソルの表示状態
+			public static bool                  ActiveCursorVisible = true ;
+
+			// システム制御のカーソルの表示状態
+			public static bool                  SystemCursorVisible = true ;
+
+			// カーソルの表示状態(public のフィールドにしてはいけない)
+			public static bool                  CursorVisible = true ;
+		}
+
+		//-------------------------------------------------------------------------------------------
 
 		/// <summary>
 		/// 入力の処理タイプを設定する
 		/// </summary>
 		/// <returns></returns>
-		public static bool SetInputProcessingType( InputProcessingTypes inputProcessingType )
+		public static void SetInputProcessingType( InputProcessingTypes inputProcessingType, InputTypes inputType = InputTypes.Pointer )
 		{
-			if( m_Instance == null )
-			{
-				// 失敗
-				return false ;
-			}
-
-			m_Instance.SetInputProcessingType_Private( inputProcessingType ) ;
-			return true ;
-		}
-
-		// 入力の処理タイプを設定する
-		private void SetInputProcessingType_Private( InputProcessingTypes inputProcessingType )
-		{
-			if( InputProcessingType == inputProcessingType )
+			if( Settings.InputProcessingType == inputProcessingType )
 			{
 				// 現在と同じなら何も処理しない
 				return ;
@@ -38,19 +55,26 @@ namespace uGUIHelper.InputAdapter
 
 			//----------------------------------------------------------
 
-			InputProcessingType = inputProcessingType ;
+			Settings.InputProcessingType = inputProcessingType ;
 
-			if( InputProcessingType == InputProcessingTypes.Switching )
+			if( Settings.InputProcessingType == InputProcessingTypes.Switching )
 			{
-				// シングルにする場合は初期状態はポインターとする
+				if( inputType == InputTypes.Pointer )
+				{
+					Settings.InputType = InputTypes.Pointer ;
 
-				m_InputType = InputTypes.Pointer ;
-				m_InputSwitching = false ;
+					UnityEngine.Cursor.visible = true ;
+				}
+				else
+				if( inputType == InputTypes.GamePad )
+				{
+					Settings.InputType = InputTypes.GamePad ;
 
-				UnityEngine.Cursor.visible = true ;
+					UnityEngine.Cursor.visible = false ;
+				}
 			}
 			else
-			if( InputProcessingType == InputProcessingTypes.Parallel )
+			if( Settings.InputProcessingType == InputProcessingTypes.Parallel )
 			{
 				// デュアルにする場合は念のためポインターを表示する(シングルのゲームパッド状態からの移行)
 
@@ -61,80 +85,25 @@ namespace uGUIHelper.InputAdapter
 		/// <summary>
 		/// 現在の入力の処理タイプ
 		/// </summary>
-		public static InputProcessingTypes GetInputProcessingType()
-		{
-			if( m_Instance == null )
-			{
-				return InputProcessingTypes.Unknown ;
-			}
-
-			return m_Instance.InputProcessingType ;
-		}
-
-		//-------------------------------------------------------------------------------------------
-
-		// 現在の入力タイプ
-		private InputTypes	m_InputType	= InputTypes.Pointer ;	// デフォルトはポインターモード
+		public static InputProcessingTypes InputProcessingType => Settings.InputProcessingType ;
 
 		/// <summary>
 		/// 現在の入力タイプ
 		/// </summary>
-		public static InputTypes InputType
-		{
-			get
-			{
-				if( m_Instance == null )
-				{
-					return InputTypes.Unknown ;
-				}
-
-				return m_Instance.m_InputType ;
-			}
-		}
+		public static InputTypes InputType  => Settings.InputType ;
 
 		/// <summary>
 		/// 最後の入力タイプ
 		/// </summary>
-		public InputTypes LastInputType => m_InputType ;
-
-		// 入力モードを切り替え中かどうか
-		private bool		m_InputSwitching	= false ;
-
-		/// <summary>
-		/// 入力モードを切り替え中かどうか
-		/// </summary>
-		public bool InputSwitching
-		{
-			get
-			{
-				if( m_IgnoreInputSwitching == true )
-				{
-					// 常に入力は有効
-					return false ;
-				}
-
-				return m_InputSwitching ;
-			}
-		}
-
-		// 入力モード切り替え中の値を無視して常に入力を有効にするかどうか
-		private bool        m_IgnoreInputSwitching = false ;
-
-		/// <summary>
-		/// 入力モード切り替え中の値を無視して常に入力を有効にするかどうか
-		/// </summary>
-		public bool IgnoreInputSwitching => m_IgnoreInputSwitching ;
+		public InputTypes LastInputType => Settings.InputType ;
 
 		//-------------------------------------------------------------------------------------------
-		// コンポーネントなので public フィールドを使ってはいけない(インスタンスが生成された際にデフォルト値で初期化されてしまい事前に設定した値は無効化される)
+		// コンポーネントなので Dynamic なフィールドを使ってはいけない(インスタンスが生成された際にデフォルト値で初期化されてしまい事前に設定した値は無効化される)
 
 		/// <summary>
 		/// カーソルの制御状態
 		/// </summary>
-		public static bool CursorProcessing => m_CursorProcessing ;
-
-		// カーソルの制御状態
-		private static bool m_CursorProcessing = true ;
+		public static bool CursorProcessing => Settings.CursorProcessing ;
 
 		/// <summary>
 		/// カーソルの制御の有無を設定する
@@ -142,40 +111,23 @@ namespace uGUIHelper.InputAdapter
 		/// <returns></returns>
 		public static void SetCursorProcessing( bool state )
 		{
-			m_CursorProcessing = state ;
+			Settings.CursorProcessing = state ;
 		}
 
 		//---------------
 
-		// カーソルの表示状態
-		private bool m_ActiveCursorVisible = true ;
-
-		// システム制御のカーソルの表示状態
-		private bool m_SystemCursorVisible = true ;
-
 		/// <summary>
 		/// カーソルの表示状態(public のフィールドにしてはいけない)
 		/// </summary>
-		public bool CursorVisible => m_CursorVisible ;
-
-		// カーソルの表示状態(public のフィールドにしてはいけない)
-		private bool m_CursorVisible = true ;
+		public bool CursorVisible => Settings.CursorVisible ;
 
 		/// <summary>
 		/// カーソルの表示状態のを設定する
 		/// </summary>
 		/// <returns></returns>
-		public static bool SetCursorVisible( bool state )
+		public static void SetCursorVisible( bool state )
 		{
-			if( m_Instance == null )
-			{
-				// 失敗
-				return false ;
-			}
-
-			m_Instance.m_CursorVisible = state ;
-
-			return true ;
+			Settings.CursorVisible = state ;
 		}
 	}
 }

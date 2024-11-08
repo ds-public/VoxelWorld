@@ -70,6 +70,14 @@ namespace uGUIHelper
 				EditorUtility.SetDirty( view ) ;
 			}
 
+			UIImage cursor = EditorGUILayout.ObjectField( "Cursor", view.Cursor, typeof( UIImage ), true ) as UIImage ;
+			if( cursor != view.Cursor )
+			{
+				Undo.RecordObject( view, "UIButton : Cursor Change" ) ;	// アンドウバッファに登録
+				view.Cursor = cursor ;
+				EditorUtility.SetDirty( view ) ;
+			}
+
 			bool clickTransitionEnabled = EditorGUILayout.Toggle( "Click Transition Enabled", view.ClickTransitionEnabled ) ;
 			if( clickTransitionEnabled != view.ClickTransitionEnabled )
 			{

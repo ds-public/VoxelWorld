@@ -51,7 +51,7 @@ namespace SpriteHelper
 			t.localScale = Vector3.one ;
 
 			var component = child.AddComponent<SpriteFrame>() ;
-			component.SetDefault() ;	// 初期状態に設定する
+			component.SetDefault( string.Empty ) ;	// 初期状態に設定する
 
 			// 一番上に移動させる
 			while( ComponentUtility.MoveComponentUp( component ) ){}
@@ -65,6 +65,32 @@ namespace SpriteHelper
 			Selection.activeGameObject = child ;
 
 			UnityEditor.SceneManagement.EditorSceneManager.MarkSceneDirty( UnityEditor.SceneManagement.EditorSceneManager.GetActiveScene() ) ;
+		}
+
+		public static SpriteFrame CreateSpriteFrame( Transform parent, string typeName )
+		{
+			var child = new GameObject( "SpriteFrame" ) ;
+
+			var t = child.transform ;
+			t.SetParent( parent, false ) ;
+			t.SetLocalPositionAndRotation( Vector3.zero, Quaternion.identity ) ;
+			t.localScale = Vector3.one ;
+
+			var component = child.AddComponent<SpriteFrame>() ;
+			component.SetDefault( typeName ) ;	// 初期状態に設定する
+
+			// 一番上に移動させる
+			while( ComponentUtility.MoveComponentUp( component ) ){}
+
+			if( component.TryGetComponent<SpriteTransform>( out var spriteTransform ) == true )
+			{
+				// SpriteTransform を一番上に移動させる
+				while( ComponentUtility.MoveComponentUp( spriteTransform ) ){}
+			}
+
+			UnityEditor.SceneManagement.EditorSceneManager.MarkSceneDirty( UnityEditor.SceneManagement.EditorSceneManager.GetActiveScene() ) ;
+
+			return component ;
 		}
 
 		private static bool WillLosePrefab( GameObject root )
@@ -91,7 +117,7 @@ namespace SpriteHelper
 		/// <summary>
 		/// 動的生成された際にデフォルト状態を設定する
 		/// </summary>
-		public virtual void SetDefault()
+		public virtual void SetDefault( string typeName )
 		{
 			// 予めキャッシュしておく
 
@@ -272,6 +298,48 @@ namespace SpriteHelper
 
 		//-------------------------------------------------------------------------------------------
 
+		/// <summary>
+		/// 位置
+		/// </summary>
+		public Vector2 Position
+		{
+			get
+			{
+				return CST.Position ;
+			}
+		}
+
+		/// <summary>
+		/// Ｘ位置
+		/// </summary>
+		public float PositionX
+		{
+			get
+			{
+				return CST.PositionX ;
+			}
+		}
+
+		/// <summary>
+		/// Ｙ位置
+		/// </summary>
+		public float PositionY
+		{
+			get
+			{
+				return CST.PositionY ;
+			}
+		}
+
+		/// <summary>
+		/// 位置を設定する
+		/// </summary>
+		/// <param name="x"></param>
+		/// <param name="y"></param>
+		public void SetPosition( Vector2 position )
+		{
+			CST.SetPosition( position ) ;
+		}
 
 		/// <summary>
 		/// 位置を設定する
@@ -281,6 +349,16 @@ namespace SpriteHelper
 		public void SetPosition( float x, float y )
 		{
 			CST.SetPosition( x, y ) ;
+		}
+
+		/// <summary>
+		/// サイズを設定する
+		/// </summary>
+		/// <param name="w"></param>
+		/// <param name="h"></param>
+		public void SetSize( float w, float h )
+		{
+			CST.SetSize( w, h ) ;
 		}
 
 
@@ -357,7 +435,7 @@ namespace SpriteHelper
 			}
 
 //			rigidbody.AddForceX( velocity, ForceMode2D.Impulse ) ;
-			m_Rigidbody.velocityX = velocity ;
+			m_Rigidbody.linearVelocityX = velocity ;
 		}
 
 		/// <summary>
@@ -373,10 +451,28 @@ namespace SpriteHelper
 			}
 
 //			rigidbody.AddForceY( velocity, ForceMode2D.Impulse ) ;
-			m_Rigidbody.velocityY = velocity ;
+			m_Rigidbody.linearVelocityY = velocity ;
 		}
 
 		//-----------------------------------
+
+		/// <summary>
+		/// 物理マテリアル(2D)を設定する
+		/// </summary>
+		/// <param name="physicsMaterial2D"></param>
+		/// <returns></returns>
+		public void SetPhysicsMaterial2D( PhysicsMaterial2D physicsMaterial2D )
+		{
+			if( CCollider != null )
+			{
+				m_Collider.sharedMaterial = physicsMaterial2D ;
+			}
+
+			if( CRigidbody != null )
+			{
+				m_Rigidbody.sharedMaterial = physicsMaterial2D ;
+			}
+		}
 
 		/// <summary>
 		/// コライダーのトリガー
@@ -473,6 +569,29 @@ namespace SpriteHelper
 			}
 		}
 
+		/// <summary>
+		/// 回転の有無
+		/// </summary>
+		public bool FreezeRotation
+		{
+			get
+			{
+				if( CRigidbody == null )
+				{
+					return false ;
+				}
+				return m_Rigidbody.freezeRotation ;
+			}
+			set
+			{
+				if( CRigidbody == null )
+				{
+					return ;
+				}
+				CRigidbody.freezeRotation = value ;
+			}
+		}
+
 		//-------------------------------------------------------------------------------------------
 
 		[SerializeField][HideInInspector]
@@ -513,6 +632,8 @@ namespace SpriteHelper
 		}
 
 		//-------------------------------------------------------------------------------------------
+		// 注意 : EdgeCollider2D 同士の衝突は行えない
+
 
 		// コライダー２Ｄキャッシュ
 		[SerializeField][HideInInspector]
@@ -856,6 +977,24 @@ namespace SpriteHelper
 			}
 		}
 
+		// コライダーマージン用のパラメータを取得する
+		protected virtual ( float, float, float, float, float, float ) GetColliderMarginParameter()
+		{
+			float mx, my ;
+			float ml, mr, mt, mb ;
+
+			ml = m_ColliderMarginL ;
+			mr = m_ColliderMarginR ;
+
+			mt = m_ColliderMarginT ;
+			mb = m_ColliderMarginB ;
+
+			mx = ( ml - mr ) * 0.5f ;
+			my = ( mb - mt ) * 0.5f ;
+
+			return ( ml, mr, mt, mb, mx, my ) ;
+		}
+
 		/// <summary>
 		/// コライダーの位置と大きさをメッシュと同じに合わせる
 		/// </summary>
@@ -871,21 +1010,12 @@ namespace SpriteHelper
 			var offset = CST.Offset ;
 			var size   = CST.DeltaSize ;
 
+			( float ml, float mr, float mt, float mb, float mx, float my ) =
+				GetColliderMarginParameter() ;
+
 			if( m_Collider is BoxCollider2D )
 			{
 				var collider2D = m_Collider as BoxCollider2D ;
-
-				float mx, my ;
-				float ml, mr, mt, mb ;
-
-				ml = m_ColliderMarginL ;
-				mr = m_ColliderMarginR ;
-
-				mt = m_ColliderMarginT ;
-				mb = m_ColliderMarginB ;
-
-				mx = ( ml - mr ) * 0.5f ;
-				my = ( mb - mt ) * 0.5f ;
 
 				collider2D.offset	= new ( offset.x + mx, offset.y + my ) ;
 				collider2D.size		= new ( size.x - ml - mr, size.y - mb - mt ) ;
@@ -895,18 +1025,6 @@ namespace SpriteHelper
 			{
 				var collider2D = m_Collider as CircleCollider2D ;
 
-				float mx, my ;
-				float ml, mr, mt, mb ;
-
-				ml = m_ColliderMarginL ;
-				mr = m_ColliderMarginR ;
-
-				mt = m_ColliderMarginT ;
-				mb = m_ColliderMarginB ;
-
-				mx = ( ml - mr ) * 0.5f ;
-				my = ( mb - mt ) * 0.5f ;
-
 				collider2D.offset	= new ( offset.x + mx, offset.y + my ) ;
 				collider2D.radius	= Mathf.Min( size.x - ml - mr, size.y - mb - mt ) * 0.5f ;
 			}
@@ -914,18 +1032,6 @@ namespace SpriteHelper
 			if( m_Collider is CapsuleCollider2D )
 			{
 				var collider2D = m_Collider as CapsuleCollider2D ;
-
-				float mx, my ;
-				float ml, mr, mt, mb ;
-
-				ml = m_ColliderMarginL ;
-				mr = m_ColliderMarginR ;
-
-				mt = m_ColliderMarginT ;
-				mb = m_ColliderMarginB ;
-
-				mx = ( ml - mr ) * 0.5f ;
-				my = ( mb - mt ) * 0.5f ;
 
 				collider2D.offset	= new ( offset.x + mx, offset.y + my ) ;
 				collider2D.size		= new ( size.x - ml - mr, size.y - mb - mt ) ;
@@ -935,17 +1041,44 @@ namespace SpriteHelper
 			{
 				var collider2D = m_Collider as EdgeCollider2D ;
 
-				float mx, my ;
-				float ml, mr, mt, mb ;
+				float ox = offset.x + mx,    oy = offset.y + my ;
+				float sx = size.x - ml - mr, sy = size.y - mb - mt ; 
 
-				ml = m_ColliderMarginL ;
-				mr = m_ColliderMarginR ;
+				float hx = sx * 0.5f ;
+				float hy = sy * 0.5f ;
 
-				mt = m_ColliderMarginT ;
-				mb = m_ColliderMarginB ;
+				float x0 = ox - hx ;
+				float x1 = ox + hx ;
+				float y0 = oy - hy ;
+				float y1 = oy + hy ;
 
-				mx = ( ml - mr ) * 0.5f ;
-				my = ( mb - mt ) * 0.5f ;
+				float ew = m_ColliderEdgeWidth ;
+				if( ew <= 0 )
+				{
+					ew  = 0.1f ;
+				}
+
+				collider2D.points = new Vector2[]
+				{
+					new ( x0 + ew, y0 ),
+					new ( x0, y0 + ew ),
+
+					new ( x0, y1 - ew ),
+					new ( x0 + ew, y1 ),
+
+					new ( x1 - ew, y1 ),
+					new ( x1, y1 - ew ),
+
+					new ( x1, y0 + ew ),
+					new ( x1 - ew, y0 ),
+
+					new ( x0 + ew, y0 ),	// 最初に戻る
+				} ;
+			}
+			else
+			if( m_Collider is PolygonCollider2D )
+			{
+				var collider2D = m_Collider as PolygonCollider2D ;
 
 				float ox = offset.x + mx,    oy = offset.y + my ;
 				float sx = size.x - ml - mr, sy = size.y - mb - mt ; 
@@ -983,6 +1116,24 @@ namespace SpriteHelper
 			}
 
 			m_IsColliderDirty = false ;
+		}
+
+		//-------------------------------------------------------------------------------------------
+
+		private Action<Collider2D> m_OnTriggerEnter ;
+
+		/// <summary>
+		/// コライダーに接触した際に呼び出されるコールバックを登録する
+		/// </summary>
+		/// <param name="onTRiggerEnter"></param>
+		public void SetOnTriggerEnter( Action<Collider2D> onTriggerEnter )
+		{
+			m_OnTriggerEnter = onTriggerEnter ;
+		}
+
+		internal void OnTriggerEnter2D( Collider2D collider )
+		{
+			m_OnTriggerEnter?.Invoke( collider ) ;
 		}
 	}
 }

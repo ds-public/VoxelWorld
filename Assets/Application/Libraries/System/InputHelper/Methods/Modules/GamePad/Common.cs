@@ -7,6 +7,8 @@ using System.Linq ;
 using UnityEngine.InputSystem ;
 #endif
 
+using _Owner = InputHelper.InputManager.Settings ;
+
 
 namespace InputHelper
 {
@@ -225,7 +227,7 @@ namespace InputHelper
 		/// <summary>
 		/// 完全アナログ値をデジタルと認識するしきい値
 		/// </summary>
-		public static float AnalogToDigitalThreshold { get ; set ; } = 0.75f ;
+		public static float AnalogToDigitalThreshold { get ; set ; } = 0.5f ;
 		
 		/// <summary>
 		/// ボタン１とボタン２の入れ替え
@@ -1566,7 +1568,7 @@ namespace InputHelper
 				return false ;
 			}
 
-			if( m_Owner.IgnoreInputSwitching == false && m_Owner.InputProcessingType == InputProcessingTypes.Switching )
+			if( m_Owner.IgnoreInputSwitching == false && _Owner.InputProcessingType == InputProcessingTypes.Switching )
 			{
 				if( m_Owner.LastInputType == InputTypes.Pointer )
 				{
@@ -1598,7 +1600,7 @@ namespace InputHelper
 				return false ;
 			}
 
-			if( m_Owner.IgnoreInputSwitching == false && m_Owner.InputProcessingType == InputProcessingTypes.Switching )
+			if( m_Owner.IgnoreInputSwitching == false && _Owner.InputProcessingType == InputProcessingTypes.Switching )
 			{
 				if( m_Owner.LastInputType == InputTypes.Pointer )
 				{
@@ -1630,7 +1632,7 @@ namespace InputHelper
 				return false ;
 			}
 
-			if( m_Owner.IgnoreInputSwitching == false && m_Owner.InputProcessingType == InputProcessingTypes.Switching )
+			if( m_Owner.IgnoreInputSwitching == false && _Owner.InputProcessingType == InputProcessingTypes.Switching )
 			{
 				if( m_Owner.LastInputType == InputTypes.Pointer )
 				{
@@ -1665,7 +1667,7 @@ namespace InputHelper
 				return 0 ;
 			}
 
-			if( m_Owner.IgnoreInputSwitching == false && m_Owner.InputProcessingType == InputProcessingTypes.Switching )
+			if( m_Owner.IgnoreInputSwitching == false && _Owner.InputProcessingType == InputProcessingTypes.Switching )
 			{
 				if( m_Owner.LastInputType == InputTypes.Pointer )
 				{
@@ -1703,7 +1705,7 @@ namespace InputHelper
 				return 0 ;
 			}
 
-			if( m_Owner.IgnoreInputSwitching == false && m_Owner.InputProcessingType == InputProcessingTypes.Switching )
+			if( m_Owner.IgnoreInputSwitching == false && _Owner.InputProcessingType == InputProcessingTypes.Switching )
 			{
 				if( m_Owner.LastInputType == InputTypes.Pointer )
 				{
@@ -1736,7 +1738,7 @@ namespace InputHelper
 				return false ;
 			}
 
-			if( m_Owner.IgnoreInputSwitching == false && m_Owner.InputProcessingType == InputProcessingTypes.Switching )
+			if( m_Owner.IgnoreInputSwitching == false && _Owner.InputProcessingType == InputProcessingTypes.Switching )
 			{
 				if( m_Owner.LastInputType == InputTypes.Pointer )
 				{
@@ -1769,7 +1771,7 @@ namespace InputHelper
 				return false ;
 			}
 
-			if( m_Owner.IgnoreInputSwitching == false && m_Owner.InputProcessingType == InputProcessingTypes.Switching )
+			if( m_Owner.IgnoreInputSwitching == false && _Owner.InputProcessingType == InputProcessingTypes.Switching )
 			{
 				if( m_Owner.LastInputType == InputTypes.Pointer )
 				{
@@ -1828,7 +1830,7 @@ namespace InputHelper
 				return false ;
 			}
 
-			if( m_Owner.IgnoreInputSwitching == false && m_Owner.InputProcessingType == InputProcessingTypes.Switching )
+			if( m_Owner.IgnoreInputSwitching == false && _Owner.InputProcessingType == InputProcessingTypes.Switching )
 			{
 				if( m_Owner.LastInputType == InputTypes.Pointer )
 				{
@@ -1887,7 +1889,7 @@ namespace InputHelper
 				return false ;
 			}
 
-			if( m_Owner.IgnoreInputSwitching == false && m_Owner.InputProcessingType == InputProcessingTypes.Switching )
+			if( m_Owner.IgnoreInputSwitching == false && _Owner.InputProcessingType == InputProcessingTypes.Switching )
 			{
 				if( m_Owner.LastInputType == InputTypes.Pointer )
 				{
@@ -1949,7 +1951,7 @@ namespace InputHelper
 				return Vector2.zero ;
 			}
 
-			if( m_Owner.IgnoreInputSwitching == false && m_Owner.InputProcessingType == InputProcessingTypes.Switching )
+			if( m_Owner.IgnoreInputSwitching == false && _Owner.InputProcessingType == InputProcessingTypes.Switching )
 			{
 				if( m_Owner.LastInputType == InputTypes.Pointer )
 				{
@@ -1982,7 +1984,7 @@ namespace InputHelper
 				return Vector2.zero ;
 			}
 
-			if( m_Owner.IgnoreInputSwitching == false && m_Owner.InputProcessingType == InputProcessingTypes.Switching )
+			if( m_Owner.IgnoreInputSwitching == false && _Owner.InputProcessingType == InputProcessingTypes.Switching )
 			{
 				if( m_Owner.LastInputType == InputTypes.Pointer )
 				{
@@ -2048,7 +2050,7 @@ namespace InputHelper
 				return Vector2.zero ;
 			}
 
-			if( m_Owner.IgnoreInputSwitching == false && m_Owner.InputProcessingType == InputProcessingTypes.Switching )
+			if( m_Owner.IgnoreInputSwitching == false && _Owner.InputProcessingType == InputProcessingTypes.Switching )
 			{
 				if( m_Owner.LastInputType == InputTypes.Pointer )
 				{
@@ -2114,7 +2116,7 @@ namespace InputHelper
 				return Vector2.zero ;
 			}
 
-			if( m_Owner.IgnoreInputSwitching == false && m_Owner.InputProcessingType == InputProcessingTypes.Switching )
+			if( m_Owner.IgnoreInputSwitching == false && _Owner.InputProcessingType == InputProcessingTypes.Switching )
 			{
 				if( m_Owner.LastInputType == InputTypes.Pointer )
 				{

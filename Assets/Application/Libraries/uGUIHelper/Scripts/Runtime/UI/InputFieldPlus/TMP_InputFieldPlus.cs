@@ -4530,9 +4530,9 @@ namespace TMPro
 				return;
 
 			if (multiLine)
-				m_TextComponent.enableWordWrapping = true;
+				m_TextComponent.textWrappingMode = TextWrappingModes.Normal ;
 			else
-				m_TextComponent.enableWordWrapping = false;
+				m_TextComponent.textWrappingMode = TextWrappingModes.NoWrap ;
 		}
 
 		// Control Rich Text option on the text component.

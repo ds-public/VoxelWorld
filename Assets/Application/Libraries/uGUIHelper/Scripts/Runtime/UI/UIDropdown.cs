@@ -125,6 +125,33 @@ namespace uGUIHelper
 			}
 		}
 
+		/// <summary>
+		/// AlphaFadeSpeed(ショートカット)
+		/// </summary>
+		public float AlphaFedeSpeed
+		{
+			get
+			{
+				var dropdown = CTMP_Dropdown ;
+				if( dropdown == null )
+				{
+					return 1 ;
+				}
+
+				return dropdown.alphaFadeSpeed ;
+			}
+			set
+			{
+				var dropdown = CTMP_Dropdown ;
+				if( dropdown == null )
+				{
+					return ;
+				}
+
+				dropdown.alphaFadeSpeed = value ;
+			}
+		}
+
 		//-------------------------------------------------------------------------------------------
 
 		// コールバックを一時的に無効化する
@@ -146,6 +173,8 @@ namespace uGUIHelper
 			}
 
 			var image = CImage ;
+
+//          dropdown.
 
 			//------------------------------------------
 
@@ -180,6 +209,8 @@ namespace uGUIHelper
 			} ;
 			dropdown.options.Add( dataC ) ;
 
+			//-------------------------------------------------
+
 			// Label
 			var label = AddView<UITextMesh>( "Label", "FitOff" ) ;
 			label.Text = dropdown.options[ 0 ].text ;
@@ -204,15 +235,20 @@ namespace uGUIHelper
 			arrow.SetSize( s, s ) ;
 
 
+			//-------------------------------------------------
+
 			// ScrollView
 			var scrollView = AddView<UIScrollView>( "Template", "Dropdown" ) ;
 			scrollView.SetAnchorToStretchBottom() ;
 			scrollView.SetPosition(  0,  2 ) ;
 			scrollView.SetSize(   0, this.Height * 5 ) ;
 			scrollView.SetPivot( 0.5f, 1.0f ) ;
-	//		scrollView.SetColor( 0xFFFFFFFF ) ;
+//			scrollView.SetColor( 0xFFFFFFFF ) ;
 			scrollView.IsVerticalScrollber = true ;
 			scrollView.CScrollRect.verticalScrollbarSpacing = -2 ;
+
+//          scrollView.Viewport.IsMask = true ;
+			scrollView.Viewport.IsRectMask2D = true ;
 			scrollView.Viewport.IsAlphaMaskWindow = true ;
 
 			scrollView.Content.Height = this.Height ;
@@ -222,8 +258,10 @@ namespace uGUIHelper
 			// テンプレートアイテムを１つ追加する
 			scrollView.dropdownItem.Height = this.Height ;
 
-			// 最後に無効化
+			// 最後に隠蔽
 			scrollView.SetActive( false ) ;
+
+			//-------------------------------------------------
 
 			ResetRectTransform() ;
 		}
@@ -246,7 +284,63 @@ namespace uGUIHelper
 			}
 		}
 
-		//-------------------------------------------------------------------------------------------
+		//-------------------------------------------------------------------------------------
+
+		/// <summary>
+		/// 項目を表示する
+		/// </summary>
+		/// <returns></returns>
+		public bool ShowElements()
+		{
+			var dropdown = CTMP_Dropdown ;
+			if( dropdown == null )
+			{
+				return false ;
+			}
+
+			dropdown.Show() ;
+
+			return true ;
+		}
+
+		/// <summary>
+		/// 項目を隠蔽する
+		/// </summary>
+		/// <returns></returns>
+		public bool HideElements()
+		{
+			var dropdown = CTMP_Dropdown ;
+			if( dropdown == null )
+			{
+				return false ;
+			}
+
+			dropdown.Hide() ;
+
+			return true ;
+		}
+
+
+		/// <summary>
+		/// 項目を隠蔽する
+		/// </summary>
+		/// <returns></returns>
+		public bool SetCursor( int index )
+		{
+			var dropdown = CTMP_Dropdown ;
+			if( dropdown == null )
+			{
+				return false ;
+			}
+
+			dropdown.SetValueWithoutNotify( index ) ;
+			dropdown.Select() ;
+
+			return true ;
+		}
+
+
+		//-------------------------------------------------------------------------------------
 
 		/// <summary>
 		/// 状態が変化した際に呼び出されるアクション

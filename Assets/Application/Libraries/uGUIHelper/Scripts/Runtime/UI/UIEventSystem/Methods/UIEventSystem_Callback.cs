@@ -129,7 +129,7 @@ namespace uGUIHelper.InputAdapter
 			// セットした直後に現在のモードでコールバックを呼ぶ
 			if( call == true && m_OnInputTypeChanged != null )
 			{
-				m_OnInputTypeChanged( m_InputType ) ;
+				m_OnInputTypeChanged( Settings.InputType ) ;
 			}
 		}
 
@@ -159,7 +159,7 @@ namespace uGUIHelper.InputAdapter
 			// セットした直後に現在のモードでコールバックを呼ぶ
 			if( call == true )
 			{
-				m_OnInputTypeChangedDelegate( m_InputType ) ;
+				m_OnInputTypeChangedDelegate( Settings.InputType ) ;
 			}
 		}
 

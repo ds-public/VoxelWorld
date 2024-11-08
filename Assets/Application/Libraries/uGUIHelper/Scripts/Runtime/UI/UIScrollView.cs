@@ -225,7 +225,7 @@ namespace uGUIHelper
 		/// 水平スクロールバーの基準位置(ショートカット)
 		/// </summary>
 		[SerializeField][HideInInspector]
-		private HorizontalScrollbarPositionTypes m_HorizontalScrollbarPositionType = HorizontalScrollbarPositionTypes.Bottom ;
+		protected HorizontalScrollbarPositionTypes m_HorizontalScrollbarPositionType = HorizontalScrollbarPositionTypes.Bottom ;
 		public  HorizontalScrollbarPositionTypes   HorizontalScrollbarPositionType
 		{
 			get
@@ -252,7 +252,7 @@ namespace uGUIHelper
 		/// 垂直スクロールバーの基準位置(ショートカット)
 		/// </summary>
 		[SerializeField][HideInInspector]
-		private VerticalScrollbarPositionTypes m_VerticalScrollbarPositionType = VerticalScrollbarPositionTypes.Right ;
+		protected VerticalScrollbarPositionTypes m_VerticalScrollbarPositionType = VerticalScrollbarPositionTypes.Right ;
 		public  VerticalScrollbarPositionTypes   VerticalScrollbarPositionType
 		{
 			get
@@ -273,7 +273,7 @@ namespace uGUIHelper
 		/// スクロールバーのフェード効果
 		/// </summary>
 		[SerializeField][HideInInspector]
-		private bool m_ScrollbarFadeEnabled      = true ;
+		protected bool m_ScrollbarFadeEnabled      = true ;
 		public  bool   ScrollbarFadeEnabled
 		{
 			get
@@ -307,7 +307,7 @@ namespace uGUIHelper
 		/// スクロールバーのフェードイン時間
 		/// </summary>
 		[SerializeField][HideInInspector]
-		private float m_ScrollbarFadeInDuration   = 0.2f ;
+		protected float m_ScrollbarFadeInDuration   = 0.2f ;
 		public  float   ScrollbarFadeInDuration
 		{
 			get
@@ -324,7 +324,7 @@ namespace uGUIHelper
 		/// スクロールバーのホールド時間
 		/// </summary>
 		[SerializeField][HideInInspector]
-		private float m_ScrollbarFadeHoldDuration = 1.0f ;
+		protected float m_ScrollbarFadeHoldDuration = 1.0f ;
 		public  float   ScrollbarFadeHoldDuration
 		{
 			get
@@ -341,7 +341,7 @@ namespace uGUIHelper
 		/// スクロールバーのフェードアウト時間
 		/// </summary>
 		[SerializeField][HideInInspector]
-		private float m_ScrollbarFadeOutDuration  = 0.2f ;
+		protected float m_ScrollbarFadeOutDuration  = 0.2f ;
 		public  float   ScrollbarFadeOutDuration
 		{
 			get
@@ -359,7 +359,7 @@ namespace uGUIHelper
 		/// コンイントがビューより小さい場合にスクロールバーを非表示にする
 		/// </summary>
 		[SerializeField][HideInInspector]
-		private bool m_HidingScrollbarIfContentFew  = true ;
+		protected bool m_HidingScrollbarIfContentFew  = true ;
 		public  bool   HidingScrollbarIfContentFew
 		{
 			get
@@ -376,7 +376,7 @@ namespace uGUIHelper
 		/// コンイントがビューより小さい場合にスクロールバーを非表示にする
 		/// </summary>
 		[SerializeField][HideInInspector]
-		private bool m_InvalidateScrollIfContentFew  = true ;
+		protected bool m_InvalidateScrollIfContentFew  = true ;
 		public  bool   InvalidateScrollIfContentFew
 		{
 			get
@@ -398,7 +398,7 @@ namespace uGUIHelper
 
 		// デフォルトのスクロールバーは Elastic にまともに対応していないので独自に制御する
 		[SerializeField][HideInInspector]
-		private UIScrollbar	m_HorizontalScrollbarElastic = null ;
+		protected UIScrollbar	m_HorizontalScrollbarElastic = null ;
 		public  UIScrollbar   HorizontalScrollbarElastic
 		{
 			get
@@ -413,7 +413,7 @@ namespace uGUIHelper
 
 		// デフォルトのスクロールバーは Elastic にまともに対応していないので独自に制御する
 		[SerializeField][HideInInspector]
-		private UIScrollbar	m_VerticalScrollbarElastic = null ;
+		protected UIScrollbar	m_VerticalScrollbarElastic = null ;
 		public  UIScrollbar   VerticalScrollbarElastic
 		{
 			get
@@ -454,7 +454,7 @@ namespace uGUIHelper
 			Unknown		= 0,
 			ScrollView	= 1,
 			ListView	= 2,
-			Dropdown	= 3,
+			Dropdown	= 9,
 		}
 
 		[SerializeField]
@@ -563,7 +563,7 @@ namespace uGUIHelper
 			else
 			{
 				// デフォルト
-				buildType = BuildTypes.ScrollView;
+				buildType = BuildTypes.ScrollView ;
 				directionType = DirectionTypes.Both ;
 			}
 
@@ -634,7 +634,7 @@ namespace uGUIHelper
 			{
 				scrollRect.content = content.GetRectTransform() ;
 				m_Content = content ;
-				
+
 				if( buildType == BuildTypes.Dropdown )
 				{
 					CreateDropdownItem( content ) ;

@@ -30,13 +30,6 @@ namespace uGUIHelper
 		/// ラベルのビューのインスタンス
 		/// </summary>
 		[SerializeField]
-		protected UIText m_Label ;
-		public UIText	   Label{ get{ return m_Label ; } set{ m_Label = value ; } }
-	
-		/// <summary>
-		/// ラベルのビューのインスタンス
-		/// </summary>
-		[SerializeField]
 		protected UITextMesh m_LabelMesh ;
 		public UITextMesh	   LabelMesh{ get{ return m_LabelMesh ; } set{ m_LabelMesh = value ; } }
 	
@@ -109,7 +102,7 @@ namespace uGUIHelper
 		}
 
 		/// <summary>
-		/// 値を設定する際にコールバックを発生させるかどうか設定できる
+		/// 値を設定する(コールバックを発生させるかどうか設定できる)
 		/// </summary>
 		/// <param name="isOn"></param>
 		/// <param name="callBackEnabled"></param>
@@ -130,6 +123,36 @@ namespace uGUIHelper
 			}
 
 			toggle.isOn = isOn ;
+
+			if( isCallbackEnabled == false )
+			{
+				// コールバックの一時的な無効化をオフ
+				m_DisableCallback = false ;
+			}
+		}
+
+		/// <summary>
+		/// 値を反転する(コールバックを発生させるかどうか設定できる)
+		/// </summary>
+		/// <param name="isOn"></param>
+		/// <param name="callBackEnabled"></param>
+		public void SwitchValue( bool isCallbackEnabled = true )
+		{
+			var toggle = CToggle ;
+			if( toggle == null )
+			{
+				return ;
+			}
+
+			//----------------------------------
+
+			if( isCallbackEnabled == false )
+			{
+				// コールバックの一時的な無効化をオン
+				m_DisableCallback = true ;
+			}
+
+			toggle.isOn = !toggle.isOn ;
 
 			if( isCallbackEnabled == false )
 			{
@@ -182,17 +205,35 @@ namespace uGUIHelper
 
 			//-------------------------
 
-			var size = GetCanvasSize() ;
-			if( size.x >  0 && size.y >  0 )
+			option = option.ToLower() ;
+
+			if( string.IsNullOrEmpty( option ) == true || transform.parent == null )
 			{
-				SetSize( size.y * 0.25f, size.y * 0.05f ) ;
+				var size = GetCanvasSize() ;
+				if( size.x >  0 && size.y >  0 )
+				{
+					SetSize( size.y * 0.25f, size.y * 0.05f ) ;
+				}
 			}
-			
+			else
+			{
+				transform.parent.TryGetComponent<UIView>( out var parentView ) ;
+				var size = new Vector2( parentView.Height * 0.8f, parentView.Height * 0.8f ) ;
+				SetSize( size ) ;
+			}
+
 			// Background	
 			m_Background = AddView<UIImage>( "Background" ) ;
-			m_Background.SetAnchorToLeftMiddle() ;
-			m_Background.SetPosition( this.Height * 0.5f, 0 ) ;
-			m_Background.SetSize( this.Height, this.Height ) ;
+			if( string.IsNullOrEmpty( option ) == true || transform.parent == null )
+			{
+				m_Background.SetAnchorToLeftMiddle() ;
+				m_Background.SetPosition( this.Height * 0.5f, 0 ) ;
+				m_Background.SetSize( this.Height, this.Height ) ;
+			}
+			else
+			{
+				m_Background.SetAnchorToStretch() ;
+			}
 			m_Background.Sprite = Resources.Load<Sprite>( "uGUIHelper/Textures/UIDefaultFrame" ) ;
 			m_Background.Type = Image.Type.Sliced ;
 			m_Background.FillCenter = true ;
@@ -219,33 +260,22 @@ namespace uGUIHelper
 
 			toggle.graphic = m_Checkmark.CImage ;
 
-#if false
-			// Label
-			m_Label = AddView<UIText>( "Label" ) ;
-			m_Label.SetAnchorToLeftMiddle() ;
-			m_Label.SetPosition( this.Height * 1.2f, 0 ) ;
-			m_Label.SetPivot( 0, 0.5f ) ;
-			m_Label.FontSize = ( int )( this.Height * 0.75f ) ;
-			
-			if( IsCanvasOverlay == true )
+			if( string.IsNullOrEmpty( option ) == true )
 			{
-				m_Label.Material = Resources.Load<Material>( "uGUIHelper/Shaders/UI-Overlay-Normal" ) ;
+				// LabelMesh
+				m_LabelMesh = AddView<UITextMesh>( "Label" ) ;
+				m_LabelMesh.SetAnchorToLeftMiddle() ;
+				m_LabelMesh.SetPosition( this.Height * 1.2f, 0 ) ;
+				m_LabelMesh.SetPivot( 0, 0.5f ) ;
+				m_LabelMesh.FontSize = ( int )( this.Height * 0.75f ) ;
 			}
-#endif
-
-			// LabelMesh
-			m_LabelMesh = AddView<UITextMesh>( "Label" ) ;
-			m_LabelMesh.SetAnchorToLeftMiddle() ;
-			m_LabelMesh.SetPosition( this.Height * 1.2f, 0 ) ;
-			m_LabelMesh.SetPivot( 0, 0.5f ) ;
-			m_LabelMesh.FontSize = ( int )( this.Height * 0.75f ) ;
 			
 			//----------------------------------------
 
 			if( option != "no group" )
 			{
 				// 親にグループがアタッチされていればグループとみなす
-				ToggleGroup toggleGroup = GetComponentInParent<ToggleGroup>() ;
+				var toggleGroup = GetComponentInParent<ToggleGroup>() ;
 				if( toggleGroup != null )
 				{
 					toggle.group = toggleGroup ;
