@@ -428,6 +428,9 @@ namespace InputHelper
 						// ナンバー
 						GetAxisByMappingKey_Number( axisIdentity, ref oAxisX, ref oAxisY ) ;
 
+						// 右側記号
+						GetAxisByMappingKey_RightSymbol( axisIdentity, ref oAxisX, ref oAxisY ) ;
+
 						// カスタム
 						GetAxisByMappingKey_Custom( axisIdentity, ref oAxisX, ref oAxisY ) ;
 					}

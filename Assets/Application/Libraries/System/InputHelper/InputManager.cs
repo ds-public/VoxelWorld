@@ -15,7 +15,7 @@ using UnityEditor ;
 namespace InputHelper
 {
 	/// <summary>
-	/// 入力操作クラス Version 2024/09/10 0
+	/// 入力操作クラス Version 2024/10/17 0
 	/// </summary>
 	[DefaultExecutionOrder( -90 )]
 	public partial class InputManager : MonoBehaviour

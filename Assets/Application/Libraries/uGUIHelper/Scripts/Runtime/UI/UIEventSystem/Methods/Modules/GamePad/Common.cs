@@ -1395,6 +1395,71 @@ namespace uGUIHelper.InputAdapter
 				}
 			}
 		}
+
+		//-----------------------------------
+
+		private static int[] m_MappingKeyboardToAxis_RightSymbol = new int[]{ 0, 1, 2 } ;
+
+		/// <summary>
+		/// 右側記号キーのアクシスへの割り当てを設定する
+		/// </summary>
+		/// <param name="axisNumbers"></param>
+		public static void SetMappingKeyboardToAxis_RightSymbol( params int[] axisIdentities )
+		{
+			if( axisIdentities == null || axisIdentities.Length == 0 )
+			{
+				m_MappingKeyboardToAxis_RightSymbol = null ;
+			}
+			else
+			{
+				m_MappingKeyboardToAxis_RightSymbol = axisIdentities ;
+			}
+		}
+
+		// 右側記号キーのアクシスへの反映
+		private static void GetAxisByMappingKey_RightSymbol( int axisIdentity, ref float oAxisX, ref float oAxisY )
+		{
+			if( m_MappingKeyboardToAxis_RightSymbol == null || m_MappingKeyboardToAxis_RightSymbol.Length == 0 || Enabled == false )
+			{
+				// 無し
+				return ;
+			}
+
+			if( m_MappingKeyboardToAxis_RightSymbol.Contains( axisIdentity ) == false )
+			{
+				// 無し
+				return ;
+			}
+
+			//----------------------------------
+
+			// SCX
+			if( oAxisX == 0 )
+			{
+				if( Keyboard.GetKey( KeyCodes.RightBracket ) == true )
+				{
+					oAxisX = +1 ;
+				}
+				if( Keyboard.GetKey( KeyCodes.Semicolon ) == true )
+				{
+					oAxisX = -1 ;
+				}
+			}
+
+			// SCY
+			if( oAxisY == 0 )
+			{
+				if( Keyboard.GetKey( KeyCodes.At ) == true )
+				{
+					oAxisY = +1 ;
+				}
+				if( Keyboard.GetKey( KeyCodes.Colon ) == true )
+				{
+					oAxisY = -1 ;
+				}
+			}
+		}
+
 		//-----------------------------------------------------------
 
 		/// <summary>
