@@ -14,7 +14,7 @@ using UnityEngine ;
 namespace DSW
 {
 	/// <summary>
-	/// WebSocket まのサーバー側のクライアント管理用クラスのラッパー Version 2022/09/27
+	/// WebSocket のサーバー側のクライアント管理用クラスのラッパー Version 2022/09/27
 	/// </summary>
 	public class ExWebSocketBehavior<T> : WebSocketBehavior where T : WebSocketBehavior
 	{

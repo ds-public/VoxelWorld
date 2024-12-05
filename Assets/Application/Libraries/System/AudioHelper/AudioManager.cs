@@ -24,7 +24,7 @@ using UnityEditor ;
 namespace AudioHelper
 {
 	/// <summary>
-	/// オーディオ全般の管理クラス Version 2024/03/20 0
+	/// オーディオ全般の管理クラス Version 2024/11/26
 	/// </summary>
 	public class AudioManager : MonoBehaviour
 	{
@@ -261,9 +261,19 @@ namespace AudioHelper
 	
 		// ミュートリスト
 		private readonly List<string> m_MuteList = new () ;
-	
+
+
 		/// <summary>
-		/// バックグラウンド再生を有効にするかどうか
+		/// リスナーを有効にするかどうか
+		/// </summary>
+		private bool	m_EnableListaner = true ;
+
+		// 初期化済みかの判定用
+		private bool	m_IsInitialized ;
+
+
+		/// <summary>
+		/// バックグラウンド時に再生を有効にするかどうか
 		/// </summary>
 		public bool m_RunInBackground = false ;
 
@@ -291,12 +301,36 @@ namespace AudioHelper
 		}
 
 		/// <summary>
-		/// リスナーを有効にするかどうか
+		/// バックグラウンド時に消音を有効にするかどうか
 		/// </summary>
-		private bool	m_EnableListaner = true ;
+		public bool m_MuteInBackground = false ;
 
-		// 初期化済みかの判定用
-		private bool	m_IsInitialized ;
+		/// <summary>
+		/// バックグラウンド消音を有効にするかどうか
+		/// </summary>
+		public	static bool		  MuteInBackground
+		{
+			get
+			{
+				if( m_Instance == null )
+				{
+					return false ;
+				}
+				return m_Instance.m_MuteInBackground ;
+			}
+			set
+			{
+				if( m_Instance == null )
+				{
+					return ;
+				}
+				m_Instance.m_MuteInBackground = value ;
+			}
+		}
+
+		// 現在サスペンド中かどうか
+		private bool m_IsSuspending = false ;
+
 
 		//-----------------------------------------------------
 
@@ -371,7 +405,8 @@ namespace AudioHelper
 		(
 			Transform parent = null,
 			bool enableListener = true,
-			bool runInbackground = false
+			bool runInbackground = false,
+			bool muteInBackground = true
 		)
 		{
 			if( m_Instance != null )
@@ -393,8 +428,9 @@ namespace AudioHelper
 				go.AddComponent<AudioManager>() ;
 			}
 
-			m_Instance.m_RunInBackground	= runInbackground ;
 			m_Instance.m_EnableListaner		= enableListener ;
+			m_Instance.m_RunInBackground	= runInbackground ;
+			m_Instance.m_MuteInBackground   = muteInBackground ;
 
 			return m_Instance ;
 		}
@@ -432,7 +468,7 @@ namespace AudioHelper
 				return ;
 			}
 		
-			AudioManager instanceOther = GameObject.FindAnyObjectByType( typeof( AudioManager ) ) as AudioManager ;
+			var instanceOther = GameObject.FindAnyObjectByType( typeof( AudioManager ) ) as AudioManager ;
 			if( instanceOther != null )
 			{
 				if( instanceOther != this )
@@ -476,6 +512,9 @@ namespace AudioHelper
 			m_FadeStopList.Clear() ;
 
 			//----------------------------------------------------------
+
+			// 現在のアプリケーションのサスペンド状態
+			m_IsSuspending = ( Application.isFocused == false ) ;
 		}
 
 		internal IEnumerator Start()
@@ -1049,13 +1088,19 @@ namespace AudioHelper
 		// サウンドを再生する(オーディオクリップから)
 		private int Play_Private( AudioClip audioClip, bool loop, float volume, float pan, float pitch, string tag )
 		{
+			if( m_RunInBackground == false && m_IsSuspending == true )
+			{
+				// サスペンド中
+				return -1 ;
+			}
+
 			string audioClipName = string.Empty ;
 			if( audioClip != null )
 			{
 				audioClipName = audioClip.name ;
 			}
 
-			AudioChannel audioChannel = GetChannel_Private( tag, audioClipName ) ;
+			var audioChannel = GetChannel_Private( tag, audioClipName ) ;
 			if( audioChannel == null )
 			{
 				// 空きがありません（古いやつから停止させるようにするかどうか）
@@ -1122,13 +1167,19 @@ namespace AudioHelper
 		// フェード付きでサウンドを再生する(オーディオクリップから)
 		private int PlayFade_Private( AudioClip audioClip, float duration, bool loop, float volume, float pan, float pitch, string tag )
 		{
+			if( m_RunInBackground == false && m_IsSuspending == true )
+			{
+				// サスペンド中
+				return -1 ;
+			}
+
 			string audioClipName = string.Empty ;
 			if( audioClip != null )
 			{
 				audioClipName = audioClip.name ;
 			}
 
-			AudioChannel audioChannel = GetChannel_Private( tag, audioClipName ) ;
+			var audioChannel = GetChannel_Private( tag, audioClipName ) ;
 			if( audioChannel == null )
 			{
 				// 空きがありません（古いやつから停止させるようにするかどうか）
@@ -1211,13 +1262,19 @@ namespace AudioHelper
 		// ３Ｄ空間想定でサウンドをワンショット再生する(オーディオクリップから)　※３Ｄ効果音用
 		private int Play3D_Private( AudioClip audioClip, Vector3 audioSourcePosition, Transform listenerTransform, float distanceScale, bool loop, float volume, float pitch, string tag )
 		{
+			if( m_RunInBackground == false && m_IsSuspending == true )
+			{
+				// サスペンド中
+				return -1 ;
+			}
+
 			string audioClipName = string.Empty ;
 			if( audioClip != null )
 			{
 				audioClipName = audioClip.name ;
 			}
 
-			AudioChannel audioChannel = GetChannel_Private( tag, audioClipName ) ;
+			var audioChannel = GetChannel_Private( tag, audioClipName ) ;
 			if( audioChannel == null )
 			{
 				// 空きがありません（古いやつから停止させるようにするかどうか）
@@ -1310,7 +1367,7 @@ namespace AudioHelper
 		// 指定された発音毎に割り振られるユニークな識別子で示される発音が継続しているかを取得する
 		private string GetName_Private( int playId )
 		{
-			AudioChannel audioChannel = GetChannelByPlayId( playId ) ;
+			var audioChannel = GetChannelByPlayId( playId ) ;
 			if( audioChannel == null )
 			{
 				// 失敗(元々存在しないか既に停止している)
@@ -1343,7 +1400,7 @@ namespace AudioHelper
 		// 再生中のオーディオクリップを取得する
 		private AudioClip GetClip_Private( int playId )
 		{
-			AudioChannel audioChannel = GetChannelByPlayId( playId ) ;
+			var audioChannel = GetChannelByPlayId( playId ) ;
 			if( audioChannel == null )
 			{
 				// 失敗(元々存在しないか既に停止している)
@@ -1376,7 +1433,7 @@ namespace AudioHelper
 		// 指定された発音毎に割り振られるユニークな識別子で示される発音が継続しているかを取得する
 		private bool IsPlaying_Private( int playId )
 		{
-			AudioChannel audioChannel = GetChannelByPlayId( playId ) ;
+			var audioChannel = GetChannelByPlayId( playId ) ;
 			if( audioChannel == null )
 			{
 				// 失敗(元々存在しないか既に停止している)
@@ -1407,7 +1464,7 @@ namespace AudioHelper
 		// 指定された発音毎に割り振られるユニークな識別子で示される発音が継続しているかを取得する
 		private bool IsPausing_Private( int playId )
 		{
-			AudioChannel audioChannel = GetChannelByPlayId( playId ) ;
+			var audioChannel = GetChannelByPlayId( playId ) ;
 			if( audioChannel == null )
 			{
 				// 失敗(元々存在しないか既に停止している)
@@ -1443,7 +1500,7 @@ namespace AudioHelper
 		// 指定された発音毎に割り振られるユニークな識別子で示される発音が継続しているかを取得する
 		private bool IsUsing_Private( int playId )
 		{
-			AudioChannel audioChannel = GetChannelByPlayId( playId ) ;
+			var audioChannel = GetChannelByPlayId( playId ) ;
 			if( audioChannel == null )
 			{
 				// 失敗(元々存在しないか既に停止している)
@@ -1479,7 +1536,7 @@ namespace AudioHelper
 		// オーディオチャンネルごとのミュート状態を設定する
 		private bool Mute_Private( int playId, bool state )
 		{
-			AudioChannel audioChannel = GetChannelByPlayId( playId ) ;
+			var audioChannel = GetChannelByPlayId( playId ) ;
 			if( audioChannel == null )
 			{
 				// 失敗(元々存在しないか既に停止している)
@@ -1511,7 +1568,7 @@ namespace AudioHelper
 		// オーディオチャンネルごとにサウンドを完全停止させる
 		private bool Stop_Private( int playId )
 		{
-			AudioChannel audioChannel = GetChannelByPlayId( playId ) ;
+			var audioChannel = GetChannelByPlayId( playId ) ;
 			if( audioChannel == null )
 			{
 				// 失敗(元々存在しないか既に停止している)
@@ -1560,7 +1617,7 @@ namespace AudioHelper
 		// オーディオチャンネルごとにフェードでサウンドを完全停止させる
 		private bool StopFade_Private( int playId, float duration )
 		{
-			AudioChannel audioChannel = GetChannelByPlayId( playId ) ;
+			var audioChannel = GetChannelByPlayId( playId ) ;
 			if( audioChannel == null )
 			{
 				// 失敗(元々存在しないか既に停止している)
@@ -1634,7 +1691,7 @@ namespace AudioHelper
 		// オーディオチャンネルごとにでサウンドを一時停止させる
 		private bool Pause_Private( int playId )
 		{
-			AudioChannel audioChannel = GetChannelByPlayId( playId ) ;
+			var audioChannel = GetChannelByPlayId( playId ) ;
 			if( audioChannel == null )
 			{
 				// 失敗(元々存在しないか既に停止している)
@@ -1674,7 +1731,7 @@ namespace AudioHelper
 		// オーディオチャンネルごとに一時停止を解除させる
 		private bool Unpause_Private( int playId )
 		{
-			AudioChannel audioChannel = GetChannelByPlayId( playId ) ;
+			var audioChannel = GetChannelByPlayId( playId ) ;
 			if( audioChannel == null )
 			{
 				// 失敗(元々存在しないか既に停止している)
@@ -1811,7 +1868,7 @@ namespace AudioHelper
 		// 再生中の位置(秒)を取得する
 		private float GetTime_Private( int playId )
 		{
-			AudioChannel audioChannel = GetChannelByPlayId( playId ) ;
+			var audioChannel = GetChannelByPlayId( playId ) ;
 			if( audioChannel == null )
 			{
 				// 失敗(元々存在しないか既に停止している)
@@ -1841,7 +1898,7 @@ namespace AudioHelper
 		// 再生中の位置(秒)を取得する
 		private int GetTimeSamples_Private( int playId )
 		{
-			AudioChannel audioChannel = GetChannelByPlayId( playId ) ;
+			var audioChannel = GetChannelByPlayId( playId ) ;
 			if( audioChannel == null )
 			{
 				// 失敗(元々存在しないか既に停止している)
@@ -1917,41 +1974,66 @@ namespace AudioHelper
 		// 全サスペンド
 		private bool SuspendAll_Private()
 		{
-			// マネージャを生成するのは一ヶ所だけなのでひとまず Application.runInBackground とは独立管理出来るようにしておく
-			if( m_RunInBackground == true )
-			{
-				return true ;
-			}
+			// サスペンド中
+			m_IsSuspending = true ;
 
 			int i, l = Channels.Count ;
-			for( i  = 0 ; i <  l ; i ++ )
+
+			//-------------------------------------------------
+
+			if( m_MuteInBackground == true )
 			{
-				if( Channels[ i ] != null )
+				// 再生は継続するが音は聴こえないようにする
+
+				for( i  = 0 ; i <  l ; i ++ )
 				{
-					if( Channels[ i ].IsPlaying == true )
+					Channels[ i ]?.SetSuspandingMuteRatio( 0 ) ;		
+				}
+			}
+
+			//-------------------------------------------------
+
+			// マネージャを生成するのは一ヶ所だけなのでひとまず Application.runInBackground とは独立管理出来るようにしておく
+			if( m_RunInBackground == false )
+			{
+				for( i  = 0 ; i <  l ; i ++ )
+				{
+					if( Channels[ i ] != null )
 					{
-						// ポーズ状態になるのでベースタイムとベースボリュームを更新する
-						PauseFadeList( Channels[ i ] ) ;
+						if( Channels[ i ].IsPlaying == true )
+						{
+							// ポーズ状態になるのでベースタイムとベースボリュームを更新する
+							PauseFadeList( Channels[ i ] ) ;
 					
-						Channels[ i ].Pause() ;	// 一時停止				
-						Channels[ i ].Suspend() ;
+							Channels[ i ].Pause() ;	// 一時停止				
+							Channels[ i ].Suspend() ;
+						}
 					}
 				}
 			}
 		
+			//-------------------------------------------------
+
 			return true ;
 		}
 	
 		// 全レジューム
 		private bool ResumeAll_Private()
 		{
-			// マネージャを生成するのは一ヶ所だけなのでひとまず Application.runInBackground とは独立管理出来るようにしておく
-			if( m_RunInBackground == true )
-			{
-				return true ;
-			}
+			// サスペンド外
+			m_IsSuspending = false ;
 
 			int i, l = Channels.Count ;
+
+			//-------------------------------------------------
+
+			for( i  = 0 ; i <  l ; i ++ )
+			{
+				Channels[ i ]?.SetSuspandingMuteRatio( 1 ) ;		
+			}
+
+			//-------------------------------------------------
+
 			for( i  = 0 ; i <  l ; i ++ )
 			{
 				if( Channels[ i ] != null )
@@ -1967,6 +2049,8 @@ namespace AudioHelper
 				}
 			}
 		
+			//-------------------------------------------------
+
 			return true ;
 		}
 		
@@ -2095,12 +2179,6 @@ namespace AudioHelper
 
 							audioChannel.IsUsing = false ;
 						}
-
-//						if( audioChannel.callback == true )
-//						{
-//							OnStoppedDelegate?.Invoke( audioChannel.PlayId ) ;
-//							audioChannel.callback = false ;
-//						}
 					}
 				}
 			}
@@ -2376,7 +2454,7 @@ namespace AudioHelper
 				volume  = 0 ;
 			}
 			
-			AudioChannel audioChannel = m_Instance.GetChannelByPlayId( playId ) ;
+			var audioChannel = m_Instance.GetChannelByPlayId( playId ) ;
 			if( audioChannel == null )
 			{
 				// 失敗(元々存在しないか既に停止している)
@@ -2543,7 +2621,7 @@ namespace AudioHelper
 			if( m_FadePlayList.Count >  0 )
 			{
 				l = m_FadePlayList.Count ;
-				AudioChannel[] audioChannelList = new AudioChannel[ l ] ;
+				var audioChannelList = new AudioChannel[ l ] ;
 			
 				m_FadePlayList.Keys.CopyTo( audioChannelList, 0 ) ;
 			
@@ -2582,7 +2660,7 @@ namespace AudioHelper
 			if( m_FadeStopList.Count >  0 )
 			{
 				l = m_FadeStopList.Count ;
-				AudioChannel[] audioChannelList = new AudioChannel[ l ] ;
+				var audioChannelList = new AudioChannel[ l ] ;
 			
 				m_FadeStopList.Keys.CopyTo( audioChannelList, 0 ) ;
 			
@@ -2835,6 +2913,11 @@ namespace AudioHelper
 		/// </summary>
 		private bool			m_Mute = false ;
 
+		/// <summary>
+		/// サスペンド状態時のミュートボリューム係数
+		/// </summary>
+		private float           m_SuspendingMuteRatio = 1.0f ;
+
 		//-----------------------------------
 
 		/// <summary>
@@ -3016,7 +3099,7 @@ namespace AudioHelper
 
 			if( m_Mute == false )
 			{
-				m_AudioSource.volume = m_BaseVolume * m_Volume * m_FadeVolume ;
+				m_AudioSource.volume = m_BaseVolume * m_Volume * m_FadeVolume * m_SuspendingMuteRatio ;
 			}
 			else
 			{
@@ -3200,13 +3283,28 @@ namespace AudioHelper
 				return ;
 			}
 
-			if(  m_AudioSource.isPlaying == false && m_IsPausing == true )
+			if( m_AudioSource.isPlaying == false && m_IsPausing == true )
 			{
 				m_AudioSource.UnPause() ;
 				m_IsPausing	= false ;
 			}
 		}
-		
+
+		/// <summary>
+		/// サスペンドにおける消音のボリューム設定(再生自体は継続する)
+		/// </summary>
+		/// <param name="muteRatio"></param>
+		internal protected void SetSuspandingMuteRatio( float muteRatio )
+		{
+			if( m_AudioSource == null )
+			{
+				return ;
+			}
+
+			m_SuspendingMuteRatio = muteRatio ;
+			UpdateVolume() ;
+		}
+
 		//-----------------------------------------------------------
 
 		internal protected void Lock()

@@ -13,7 +13,7 @@ using uGUIHelper.InputAdapter ;
 namespace uGUIHelper
 {
 	/// <summary>
-	/// メニューに生成機能追加 Version 2024/11/08
+	/// メニューに生成機能追加 Version 2024/11/12
 	/// </summary>
 	public static class MenuExtension
 	{
@@ -812,13 +812,27 @@ namespace uGUIHelper
 			UnityEditor.SceneManagement.EditorSceneManager.MarkSceneDirty( UnityEditor.SceneManagement.EditorSceneManager.GetActiveScene() ) ;
 		}
 
+		/// <summary>
+		/// Progressbar 生成
+		/// </summary>
+		[MenuItem( "uGUIHelper/Progressbar/Add a Progressbar(Rectangle)" )]
+		[MenuItem( "GameObject/uGUIHelper/Progressbar/Rectangle", false, 22 )]
+		public static void AddProgressbarR()
+		{
+            AddProgressbar( "Rectangle" ) ;
+        }
 
 		/// <summary>
 		/// Progressbar 生成
 		/// </summary>
-		[MenuItem( "uGUIHelper/Add a Progressbar" )]
-		[MenuItem( "GameObject/uGUIHelper/Progressbar", false, 22 )]
-		public static void AddProgressbar()
+		[MenuItem( "uGUIHelper/Progressbar/Add a Progressbar(Circle)" )]
+		[MenuItem( "GameObject/uGUIHelper/Progressbar/Circle", false, 22 )]
+		public static void AddProgressbarC()
+		{
+            AddProgressbar( "Circle" ) ;
+        }
+
+		public static void AddProgressbar( string type )
 		{
 			var go = Selection.activeGameObject ;
 			if( go == null )
@@ -833,7 +847,13 @@ namespace uGUIHelper
 
 			Undo.RecordObject( go, "Add a child UI Progressbar" ) ;	// アンドウバッファに登録
 
-			var child = new GameObject( GetName<UIProgressbar>(), typeof( RectTransform ) ) ;
+			string name = GetName<UIProgressbar>() ;
+			if( string.IsNullOrEmpty( type ) == false )
+			{
+				name = $"{name}({type})" ;
+			}
+
+			var child = new GameObject( name, typeof( RectTransform ) ) ;
 
 			var t = child.transform ;
 			t.SetParent( go.transform, false ) ;
@@ -841,7 +861,7 @@ namespace uGUIHelper
 			t.localScale = Vector3.one ;
 
 			var view = child.AddComponent<UIProgressbar>() ;
-			view.SetDefault() ;
+			view.SetDefault( type ) ;
 
 			Selection.activeGameObject = child ;
 

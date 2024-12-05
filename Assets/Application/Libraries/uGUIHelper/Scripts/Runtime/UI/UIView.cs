@@ -27,7 +27,7 @@ namespace uGUIHelper
 	/// </summary>
 	public class UIView : UIBehaviour
 	{
-		public const string Version = "Version 2024/11/08 0" ;
+		public const string Version = "Version 2024/11/12 0" ;
 
 		// ソースコード
 		// https://bitbucket.org/Unity-Technologies/ui/src/2019.1/
@@ -999,6 +999,17 @@ namespace uGUIHelper
 			}
 		}
 
+		//-------------------------------------------------------------------------------------
+
+		/// <summary>
+		/// 親 Canvas の実仮想解像度を取得する
+		/// </summary>
+		/// <returns></returns>
+		public Vector2 GetCanvasSize( bool isReal = false )
+		{
+			return GetCanvasSize( transform as RectTransform, isReal ) ;
+		}
+
 		/// <summary>
 		/// キャンバス上での座標を取得する(ＵＩのピボット)
 		/// </summary>
@@ -1006,116 +1017,16 @@ namespace uGUIHelper
 		{
 			get
 			{
-				// 属するキャンバスのサイズ
-				var ps = GetCanvasSize() ;
-
-				var hierarchyRects = new List<RectTransform>() ;
-				int i, l ;
-
-				var t = transform ;
-				RectTransform rt ;
-
-				// まずはキャンバスを検出するまでリストに格納する
-				while( t != null )
-				{
-					if( t.GetComponent<Canvas>() == null )
-					{
-						if( t is RectTransform )
-						{
-							hierarchyRects.Add( t as RectTransform ) ;
-						}
-					}
-					else
-					{
-						break ;	// 属するキャンバスが見つかったので終了
-					}
-
-					t = t.parent ;
-				}
-
-				if( hierarchyRects.Count <= 0 )
-				{
-					return Vector2.zero ;	// 異常
-				}
-
-				//---------------------------------
-
-				float pw = ps.x ;
-				float ph = ps.y ;
-
-				float px  = pw * 0.5f ;
-				float px0 = 0, px1 ;
-
-				float py  = ph * 0.5f ;
-				float py0 = 0, py1 ;
-
-				l = hierarchyRects.Count ;
-				for( i  = ( l - 1 ) ; i >= 0 ; i -- )
-				{
-					rt = hierarchyRects[ i ] ;
-
-					// X
-
-					// 自身の横幅(次の親の横幅)
-					if( rt.anchorMin.x != rt.anchorMax.x )
-					{
-						px0 += ( pw * rt.anchorMin.x ) ;		// 親の最小
-						px1  = px0 + ( pw * rt.anchorMax.x ) ;	// 親の最大
-						
-						// マージンの補正をかける
-						px0 -= ( ( rt.sizeDelta.x *       rt.pivot.x   ) - rt.anchoredPosition.x ) ;
-						px1 += ( ( rt.sizeDelta.x * ( 1 - rt.pivot.x ) ) + rt.anchoredPosition.x ) ;
-
-						pw = px1 - px0 ;
-
-						// 中心位置
-						px = px0 + ( pw * rt.pivot.x ) ;
-					}
-					else
-					{
-						// 中心位置
-						px = px0 + ( pw * rt.anchorMin.x ) + rt.anchoredPosition.x ;
-
-						pw = rt.sizeDelta.x ;
-					}
-
-					// 親の範囲更新
-					px0 = px - ( pw * rt.pivot.x ) ;
-
-					// Y
-					// 自身の横幅(次の親の横幅)
-					if( rt.anchorMin.y != rt.anchorMax.y )
-					{
-						py0 += ( ph * rt.anchorMin.y ) ;		// 親の最小
-						py1  = py0 + ( ph * rt.anchorMax.y ) ;	// 親の最大
-						
-						// マージンの補正をかける
-						py0 -= ( ( rt.sizeDelta.y *       rt.pivot.y   ) - rt.anchoredPosition.y ) ;
-						py1 += ( ( rt.sizeDelta.y * ( 1 - rt.pivot.y ) ) + rt.anchoredPosition.y ) ;
-
-						ph = py1 - py0 ;
-
-						// 中心位置
-						py = py0 + ( ph * rt.pivot.y ) ;
-					}
-					else
-					{
-						// 中心位置
-						py = py0 + ( ph * rt.anchorMin.y ) + rt.anchoredPosition.y ;
-
-						ph = rt.sizeDelta.y ;
-					}
-
-					// 親の範囲更新
-					py0 = py - ( ph * rt.pivot.y ) ;
-				}
-
-				// 画面の中心基準
-				px -= ( ps.x * 0.5f ) ;
-				py -= ( ps.y * 0.5f ) ;
-
-				return new Vector2( px, py ) ;
+				return GetPositionInCanvas( transform as RectTransform ) ;
 			}
+		}
+
+		/// <summary>
+		/// 特定のコンポーネントのついた GameObject を親としてその親上での位置を取得する
+		/// </summary>
+		public Vector2 GetPositionIn<T>() where T : Component
+		{
+			return GetPositionIn<T>( transform as RectTransform ) ;
 		}
 
 		/// <summary>
@@ -1125,162 +1036,7 @@ namespace uGUIHelper
 		{
 			get
 			{
-				// 属するキャンバスのサイズ
-				var ps = GetCanvasSize() ;
-
-//				Debug.LogWarning( "キャンバスの大きさ:" + ps ) ;
-
-				var hierarchyRects = new List<RectTransform>() ;
-				int i, l ;
-
-				var t = transform ;
-				RectTransform rt ;
-
-				// まずはキャンバスを検出するまでリストに格納する
-				while( t != null )
-				{
-					if( t.GetComponent<Canvas>() == null )
-					{
-						if( t is RectTransform )
-						{
-							hierarchyRects.Add( t as RectTransform ) ;
-						}
-					}
-					else
-					{
-						break ;	// 属するキャンバスが見つかったので終了
-					}
-
-					t = t.parent ;
-				}
-
-				if( hierarchyRects.Count <= 0 )
-				{
-					return new Rect() ;	// 異常
-				}
-
-				//---------------------------------
-
-				float pw = ps.x ;
-				float ph = ps.y ;
-
-				float px  = pw * 0.5f ;
-				float px0 = 0, px1 ;
-
-				float py  = ph * 0.5f ;
-				float py0 = 0, py1 ;
-
-				float sx = 1.0f ;   // 累積のスケール補正
-				float sy = 1.0f ;   // 累積のスケール補正
-
-				l = hierarchyRects.Count ;
-				for( i  = ( l - 1 ) ; i >= 0 ; i -- )
-				{
-					rt = hierarchyRects[ i ] ;
-
-					// X
-					// pw は補正済みの絶対的な値になっている
-
-					sx *= rt.localScale.x ;
-
-					// 自身の横幅(次の親の横幅)
-					if( rt.anchorMin.x != rt.anchorMax.x )
-					{
-						px0 += ( pw * rt.anchorMin.x ) ;		// 親の最小
-						px1 = px0 + ( pw * rt.anchorMax.x ) ;	// 親の最大
-						
-						// マージンの補正をかける
-						px0 -= ( ( ( rt.sizeDelta.x *       rt.pivot.x   ) - rt.anchoredPosition.x ) ) * sx ;
-						px1 += ( ( ( rt.sizeDelta.x * ( 1 - rt.pivot.x ) ) + rt.anchoredPosition.x ) ) * sx ;
-
-						pw = px1 - px0 ;
-
-						// 中心位置
-						px = px0 + ( pw * rt.pivot.x ) ;
-					}
-					else
-					{
-						// 中心位置
-						px = px0 + ( pw * rt.anchorMin.x ) + ( rt.anchoredPosition.x * sx ) ;
-
-						pw = rt.sizeDelta.x * sx ;
-					}
-
-					// 親の範囲更新
-					px0 = px - ( pw * rt.pivot.x ) ;
-
-					// Y
-					// ph は補正済みの絶対的な値になっている
-
-					sy *= rt.localScale.y ;
-
-					// 自身の横幅(次の親の横幅)
-					if( rt.anchorMin.y != rt.anchorMax.y )
-					{
-						py0 += ( ph * rt.anchorMin.y ) ;		// 親の最小
-						py1 = py0 + ( ph * rt.anchorMax.y ) ;	// 親の最大
-						
-						// マージンの補正をかける
-						py0 -= ( ( ( rt.sizeDelta.y *       rt.pivot.y   ) - rt.anchoredPosition.y ) ) * sy ;
-						py1 += ( ( ( rt.sizeDelta.y * ( 1 - rt.pivot.y ) ) + rt.anchoredPosition.y ) ) * sy ;
-
-						ph = py1 - py0 ;
-
-						// 中心位置
-						py = py0 + ( ph * rt.pivot.y ) ;
-					}
-					else
-					{
-						// 中心位置
-						py = py0 + ( ph * rt.anchorMin.y ) + ( rt.anchoredPosition.y * sy ) ;
-
-						ph = rt.sizeDelta.y * sy ;
-					}
-
-					// 親の範囲更新
-					py0 = py - ( ph * rt.pivot.y ) ;
-				}
-				
-				// 画面の中心基準
-				px -= ( ps.x * 0.5f ) ;
-				py -= ( ps.y * 0.5f ) ;
-
-//				pw *= GetRectTransform().localScale.x ;
-//				ph *= GetRectTransform().localScale.y ;
-
-				px -= ( pw * Pivot.x ) ;
-				py -= ( ph * Pivot.y ) ;
-
-				return new Rect( px, py, pw, ph ) ;
-			}
-		}
-
-		/// <summary>
-		/// スクリーン上での領域を取得する(画面左下が原点[0,0]・Rectの(x,y)は領域の左下の位置・４点をすべて使用する場合は(xMin,yMin,xMax,yMax)を参照する)
-		/// </summary>
-		public Rect RectInScreen
-		{
-			get
-			{
-				var r = RectInCanvas ;
-
-				var canvasSize = GetCanvasSize() ;
-
-				// 画面左下が原点(0,0)になるように値を補正する
-				r.x += canvasSize.x * 0.5f ;
-				r.y += canvasSize.y * 0.5f ;
-
-				// スケールを Screen / Canvas になるよう調整する
-
-				float ratioX = ( float )Screen.width  / canvasSize.x ;
-				float ratioY = ( float )Screen.height / canvasSize.y ;
-
-				r.x      *= ratioX ; 
-				r.y      *= ratioY ; 
-				r.width  *= ratioX ; 
-				r.height *= ratioY ;
-
-				return r ;
+				return GetRectInCanvas( transform as RectTransform ) ;
 			}
 		}
 
@@ -1291,135 +1047,315 @@ namespace uGUIHelper
 		{
 			get
 			{
-				// 属するキャンバスのサイズ
-				var ps = GetCanvasSize() ;
+				return GetViewInCanvas( transform as RectTransform ) ;
+			}
+		}
 
-				var hierarchyRects = new List<RectTransform>() ;
-				int i, l ;
+		/// <summary>
+		/// スクリーン上での領域を取得する(画面左下が原点[0,0]・Rectの(x,y)は領域の左下の位置・４点をすべて使用する場合は(xMin,yMin,xMax,yMax)を参照する)
+		/// </summary>
+		public Rect RectInScreen
+		{
+			get
+			{
+				return GetRectInScreen( transform as RectTransform ) ;
+			}
+		}
 
-				var t = transform ;
-				RectTransform rt ;
+		//------------------------------------------------------------------------------------------------------------
+		// RectTransform の Screen 上での絶対的な領域値を取得する
 
-				// まずはキャンバスを検出するまでリストに格納する
-				while( t != null )
+		/// <summary>
+		/// 親 Canvas の実仮想解像度を取得する
+		/// </summary>
+		/// <returns></returns>
+		public Vector2 GetCanvasSize( RectTransform target, bool isReal = false )
+		{
+			var canvas = target.GetComponentInParent<Canvas>() ;
+			if( canvas == null )
+			{
+				return new Vector2( Screen.width, Screen.height ) ;
+			}
+
+			float sw = Screen.width ;
+			float sh = Screen.height ;
+
+			if( canvas.worldCamera != null && canvas.worldCamera.targetTexture != null )
+			{
+				sw = canvas.worldCamera.targetTexture.width ;
+				sh = canvas.worldCamera.targetTexture.height ;
+			}
+
+			if( Application.isPlaying == false || isReal == true )
+			{
+				if( ( canvas.transform is RectTransform rt ) == false )
 				{
-					if( t.GetComponent<Canvas>() == null )
+					return  new Vector2( sw, sh ) ;
+				}
+	
+				return rt.sizeDelta ;
+			}
+
+			if( canvas.TryGetComponent<CanvasScaler>( out var scaler ) == false )
+			{
+				return new Vector2( sw, sh ) ;
+			}
+
+			if( scaler.uiScaleMode == CanvasScaler.ScaleMode.ConstantPixelSize )
+			{
+				return new Vector2( sw / scaler.scaleFactor, sh / scaler.scaleFactor ) ;
+			}
+			else
+			if( scaler.uiScaleMode == CanvasScaler.ScaleMode.ScaleWithScreenSize )
+			{
+				float rw = scaler.referenceResolution.x ;
+				float rh = scaler.referenceResolution.y ;
+
+				if( scaler.screenMatchMode == CanvasScaler.ScreenMatchMode.MatchWidthOrHeight )
+				{
+					float mf = scaler.matchWidthOrHeight ;
+
+					float wa0 = sw / sh ;
+					float wa1 = rw / rh ;
+					float wa = Mathf.Lerp( wa0, wa1, mf ) ;
+
+					float w  = rw * wa0 / wa ;
+
+					float ha0 = rh / rw ;
+					float ha1 = sw / sh ;
+					float ha = Mathf.Lerp( ha0, ha1, mf ) ;
+
+					float h  = rh * ha1 / ha ;
+
+					return new Vector2( w, h ) ;
+				}
+				else
+				if( scaler.screenMatchMode == CanvasScaler.ScreenMatchMode.Expand )
+				{
+					float w, h ;
+
+					if( sw >= sh )
 					{
-						if( t is RectTransform )
+						// 実スクリーンは横長
+						float sa = sw / sh ;
+						float ra = rw / rh ;
+
+						if( ra >= sa )
 						{
-							hierarchyRects.Add( t as RectTransform ) ;
+							// 横が１倍
+							w = rw ;
+							h = rh * ra / sa ;
+						}
+						else
+						{
+							// 縦が１倍
+							h = rh ;
+							w = rw * sa / ra ;
 						}
 					}
 					else
 					{
-						break ;	// 属するキャンバスが見つかったので終了
+						// 実スクリーンは縦長
+						float sa = sh / sw ;
+						float ra = rh / rw ;
+
+						if( ra >= sa )
+						{
+							// 縦が１倍
+							h = rh ;
+							w = rw * ra / sa ;
+						}
+						else
+						{
+							// 横が１倍
+							w = rw ;
+							h = rh * sa / ra ;
+						}
 					}
 
-					t = t.parent ;
+					return new Vector2( w, h ) ;
 				}
-
-				if( hierarchyRects.Count <= 0 )
+				else
+				if( scaler.screenMatchMode == CanvasScaler.ScreenMatchMode.Shrink )
 				{
-					return new Rect() ;	// 異常
-				}
+					float w, h ;
 
-				//---------------------------------
-
-				float pw = ps.x ;
-				float ph = ps.y ;
-
-				float px  = pw * 0.5f ;
-				float px0 = 0, px1 ;
-
-				float py  = ph * 0.5f ;
-				float py0 = 0, py1 ;
-
-				l = hierarchyRects.Count ;
-				for( i  = ( l - 1 ) ; i >= 0 ; i -- )
-				{
-					rt = hierarchyRects[ i ] ;
-
-					// X
-
-					// 自身の横幅(次の親の横幅)
-					if( rt.anchorMin.x != rt.anchorMax.x )
+					if( sw >= sh )
 					{
-						px0 += ( pw * rt.anchorMin.x ) ;		// 親の最小
-						px1 = px0 + ( pw * rt.anchorMax.x ) ;	// 親の最大
-						
-						// マージンの補正をかける
-						px0 -= ( ( rt.sizeDelta.x *       rt.pivot.x   ) - rt.anchoredPosition.x ) ;
-						px1 += ( ( rt.sizeDelta.x * ( 1 - rt.pivot.x ) ) + rt.anchoredPosition.x ) ;
+						// 実スクリーンは横長
+						float sa = sw / sh ;
+						float ra = rw / rh ;
 
-						pw = px1 - px0 ;
-
-						// 中心位置
-						px = px0 + ( pw * rt.pivot.x ) ;
+						if( ra >= sa )
+						{
+							// 仮想解像度の縦をスクリーンのの横に合わせる
+							h = rh ;
+							w = rh * sw / sh ;
+						}
+						else
+						{
+							// 仮想解像度の横をスクリーンのの横に合わせる
+							w = rw ;
+							h = rw * sh / sw ;
+						}
 					}
 					else
 					{
-						// 中心位置
-						px = px0 + ( pw * rt.anchorMin.x ) + rt.anchoredPosition.x ;
+						// 実スクリーンは縦長
+						float sa = sh / sw ;
+						float ra = rh / rw ;
 
-						pw = rt.sizeDelta.x ;
+						if( ra >= sa )
+						{
+							// 仮想解像度の横をスクリーンのの横に合わせる
+							w = rw ;
+							h = rw * sh / sw ;
+						}
+						else
+						{
+							// 仮想解像度の縦をスクリーンのの横に合わせる
+							h = rh ;
+							w = rh * sw / sh ;
+						}
 					}
 
-					// 親の範囲更新
-					px0 = px - ( pw * rt.pivot.x ) ;
-
-					// Y
-					// 自身の横幅(次の親の横幅)
-					if( rt.anchorMin.y != rt.anchorMax.y )
-					{
-						py0 += ( ph * rt.anchorMin.y ) ;		// 親の最小
-						py1 = py0 + ( ph * rt.anchorMax.y ) ;	// 親の最大
-						
-						// マージンの補正をかける
-						py0 -= ( ( rt.sizeDelta.y *       rt.pivot.y   ) - rt.anchoredPosition.y ) ;
-						py1 += ( ( rt.sizeDelta.y * ( 1 - rt.pivot.y ) ) + rt.anchoredPosition.y ) ;
-
-						ph = py1 - py0 ;
-
-						// 中心位置
-						py = py0 + ( ph * rt.pivot.y ) ;
-					}
-					else
-					{
-						// 中心位置
-						py = py0 + ( ph * rt.anchorMin.y ) + rt.anchoredPosition.y ;
-
-						ph = rt.sizeDelta.y ;
-					}
-
-					// 親の範囲更新
-					py0 = py - ( ph * rt.pivot.y ) ;
+					return new Vector2( w, h ) ;
 				}
-				
-				// 画面の中心基準
-				px -= ( ps.x * 0.5f ) ;
-				py -= ( ps.y * 0.5f ) ;
-
-				pw *= GetRectTransform().localScale.x ;
-				ph *= GetRectTransform().localScale.y ;
-
-				px -= ( pw * Pivot.x ) ;
-				py -= ( ph * Pivot.y ) ;
-				
-				//---------------------------------------------------------
-
-				float vx = ( px / ps.x ) * 2.0f ;
-				float vy = ( py / ps.y ) * 2.0f ;
-				float vw = ( pw / ps.x ) * 2.0f ;
-				float vh = ( ph / ps.y ) * 2.0f ;
-
-				return new Rect( vx, vy, vw, vh ) ;
 			}
+			else
+			if( scaler.uiScaleMode == CanvasScaler.ScaleMode.ConstantPhysicalSize )
+			{
+				if( ( canvas.transform is RectTransform rt ) == false )
+				{
+					return  new Vector2( sw, sh ) ;
+				}
+	
+				return rt.sizeDelta ;
+			}
+
+			return new Vector2( sw, sh ) ;
+		}
+
+		/// <summary>
+		/// キャンバス上での座標を取得する(ＵＩのピボット)
+		/// </summary>
+		public Vector2 GetPositionInCanvas( RectTransform target )
+		{
+			// 属するキャンバスのサイズ
+			var ps = GetCanvasSize( target ) ;
+
+			var hierarchyRects = new List<RectTransform>() ;
+			int i, l ;
+
+			Transform t = target ;
+			RectTransform rt ;
+
+			// まずはキャンバスを検出するまでリストに格納する
+			while( t != null )
+			{
+				if( t.GetComponent<Canvas>() == null )
+				{
+					if( t is RectTransform )
+					{
+						hierarchyRects.Add( t as RectTransform ) ;
+					}
+				}
+				else
+				{
+					break ;	// 属するキャンバスが見つかったので終了
+				}
+
+				t = t.parent ;
+			}
+
+			if( hierarchyRects.Count <= 0 )
+			{
+				return Vector2.zero ;	// 異常
+			}
+
+			//---------------------------------
+
+			float pw = ps.x ;
+			float ph = ps.y ;
+
+			float px  = pw * 0.5f ;
+			float px0 = 0, px1 ;
+
+			float py  = ph * 0.5f ;
+			float py0 = 0, py1 ;
+
+			l = hierarchyRects.Count ;
+			for( i  = ( l - 1 ) ; i >= 0 ; i -- )
+			{
+				rt = hierarchyRects[ i ] ;
+
+				// X
+
+				// 自身の横幅(次の親の横幅)
+				if( rt.anchorMin.x != rt.anchorMax.x )
+				{
+					px0 += ( pw * rt.anchorMin.x ) ;		// 親の最小
+					px1  = px0 + ( pw * rt.anchorMax.x ) ;	// 親の最大
+						
+					// マージンの補正をかける
+					px0 -= ( ( rt.sizeDelta.x *       rt.pivot.x   ) - rt.anchoredPosition.x ) ;
+					px1 += ( ( rt.sizeDelta.x * ( 1 - rt.pivot.x ) ) + rt.anchoredPosition.x ) ;
+
+					pw = px1 - px0 ;
+
+					// 中心位置
+					px = px0 + ( pw * rt.pivot.x ) ;
+				}
+				else
+				{
+					// 中心位置
+					px = px0 + ( pw * rt.anchorMin.x ) + rt.anchoredPosition.x ;
+
+					pw = rt.sizeDelta.x ;
+				}
+
+				// 親の範囲更新
+				px0 = px - ( pw * rt.pivot.x ) ;
+
+				// Y
+				// 自身の横幅(次の親の横幅)
+				if( rt.anchorMin.y != rt.anchorMax.y )
+				{
+					py0 += ( ph * rt.anchorMin.y ) ;		// 親の最小
+					py1  = py0 + ( ph * rt.anchorMax.y ) ;	// 親の最大
+						
+					// マージンの補正をかける
+					py0 -= ( ( rt.sizeDelta.y *       rt.pivot.y   ) - rt.anchoredPosition.y ) ;
+					py1 += ( ( rt.sizeDelta.y * ( 1 - rt.pivot.y ) ) + rt.anchoredPosition.y ) ;
+
+					ph = py1 - py0 ;
+
+					// 中心位置
+					py = py0 + ( ph * rt.pivot.y ) ;
+				}
+				else
+				{
+					// 中心位置
+					py = py0 + ( ph * rt.anchorMin.y ) + rt.anchoredPosition.y ;
+
+					ph = rt.sizeDelta.y ;
+				}
+
+				// 親の範囲更新
+				py0 = py - ( ph * rt.pivot.y ) ;
+			}
+
+			// 画面の中心基準
+			px -= ( ps.x * 0.5f ) ;
+			py -= ( ps.y * 0.5f ) ;
+
+			return new Vector2( px, py ) ;
 		}
 
 		/// <summary>
 		/// 特定のコンポーネントのついた GameObject を親としてその親上での位置を取得する
 		/// </summary>
-		public Vector2 GetPositionIn<T>() where T : Component
+		public Vector2 GetPositionIn<T>( RectTransform target ) where T : Component
 		{
 			int i, l ;
 
@@ -1429,7 +1365,7 @@ namespace uGUIHelper
 
 			var hierarchyRects = new List<RectTransform>() ;
 
-			var t = transform ;
+			Transform t = target ;
 			RectTransform rt ;
 
 			// まずはスクリーンを検出するまでリストに格納する
@@ -1549,15 +1485,306 @@ namespace uGUIHelper
 			//----------------------------------------------------------
 
 			// 中心位置に補正する
-			var pivot = Pivot ;
-			float w = Width ;
-			float h = Height ;
+			var pivot = target.pivot ;
+			float w = target.sizeDelta.x ;
+			float h = target.sizeDelta.y ;
 
 			position.x += ( ( 0.5f - pivot.x ) * w ) ;
 			position.y += ( ( 0.5f - pivot.y ) * h ) ;
 
 			return position ;
 		}
+
+		/// <summary>
+		/// キャンバス上での領域を取得する(画面中心が原点[0,0]・Rectの(x,y)は領域の左下の位置・４点をすべて使用する場合は(xMin,yMin,xMax,yMax)を参照する)
+		/// </summary>
+		public Rect GetRectInCanvas( RectTransform target )
+		{
+			// 属するキャンバスのサイズ
+			var ps = GetCanvasSize( target ) ;
+
+//			Debug.LogWarning( "キャンバスの大きさ:" + ps ) ;
+
+			var hierarchyRects = new List<RectTransform>() ;
+			int i, l ;
+
+			Transform t = target ;
+			RectTransform rt ;
+
+			// まずはキャンバスを検出するまでリストに格納する
+			while( t != null )
+			{
+				if( t.GetComponent<Canvas>() == null )
+				{
+					if( t is RectTransform )
+					{
+						hierarchyRects.Add( t as RectTransform ) ;
+					}
+				}
+				else
+				{
+					break ;	// 属するキャンバスが見つかったので終了
+				}
+
+				t = t.parent ;
+			}
+
+			if( hierarchyRects.Count <= 0 )
+			{
+				return new Rect() ;	// 異常
+			}
+
+			//---------------------------------
+
+			float pw = ps.x ;
+			float ph = ps.y ;
+
+			float px  = pw * 0.5f ;
+			float px0 = 0, px1 ;
+
+			float py  = ph * 0.5f ;
+			float py0 = 0, py1 ;
+
+			float sx = 1.0f ;   // 累積のスケール補正
+			float sy = 1.0f ;   // 累積のスケール補正
+
+			l = hierarchyRects.Count ;
+			for( i  = ( l - 1 ) ; i >= 0 ; i -- )
+			{
+				rt = hierarchyRects[ i ] ;
+
+				// X
+				// pw は補正済みの絶対的な値になっている
+
+				sx *= rt.localScale.x ;
+
+				// 自身の横幅(次の親の横幅)
+				if( rt.anchorMin.x != rt.anchorMax.x )
+				{
+					px0 += ( pw * rt.anchorMin.x ) ;		// 親の最小
+					px1 = px0 + ( pw * rt.anchorMax.x ) ;	// 親の最大
+						
+					// マージンの補正をかける
+					px0 -= ( ( ( rt.sizeDelta.x *       rt.pivot.x   ) - rt.anchoredPosition.x ) ) * sx ;
+					px1 += ( ( ( rt.sizeDelta.x * ( 1 - rt.pivot.x ) ) + rt.anchoredPosition.x ) ) * sx ;
+
+					pw = px1 - px0 ;
+
+					// 中心位置
+					px = px0 + ( pw * rt.pivot.x ) ;
+				}
+				else
+				{
+					// 中心位置
+					px = px0 + ( pw * rt.anchorMin.x ) + ( rt.anchoredPosition.x * sx ) ;
+
+					pw = rt.sizeDelta.x * sx ;
+				}
+
+				// 親の範囲更新
+				px0 = px - ( pw * rt.pivot.x ) ;
+
+				// Y
+				// ph は補正済みの絶対的な値になっている
+
+				sy *= rt.localScale.y ;
+
+				// 自身の横幅(次の親の横幅)
+				if( rt.anchorMin.y != rt.anchorMax.y )
+				{
+					py0 += ( ph * rt.anchorMin.y ) ;		// 親の最小
+					py1 = py0 + ( ph * rt.anchorMax.y ) ;	// 親の最大
+						
+					// マージンの補正をかける
+					py0 -= ( ( ( rt.sizeDelta.y *       rt.pivot.y   ) - rt.anchoredPosition.y ) ) * sy ;
+					py1 += ( ( ( rt.sizeDelta.y * ( 1 - rt.pivot.y ) ) + rt.anchoredPosition.y ) ) * sy ;
+
+					ph = py1 - py0 ;
+
+					// 中心位置
+					py = py0 + ( ph * rt.pivot.y ) ;
+				}
+				else
+				{
+					// 中心位置
+					py = py0 + ( ph * rt.anchorMin.y ) + ( rt.anchoredPosition.y * sy ) ;
+
+					ph = rt.sizeDelta.y * sy ;
+				}
+
+				// 親の範囲更新
+				py0 = py - ( ph * rt.pivot.y ) ;
+			}
+				
+			// 画面の中心基準
+			px -= ( ps.x * 0.5f ) ;
+			py -= ( ps.y * 0.5f ) ;
+
+//			pw *= target.localScale.x ;
+//			ph *= target.localScale.y ;
+
+			px -= ( pw * target.pivot.x ) ;
+			py -= ( ph * target.pivot.y ) ;
+
+			return new Rect( px, py, pw, ph ) ;
+		}
+
+		/// <summary>
+		/// キャンバス上でのビューポートを取得する(画面中心が原点[0,0]・値は -1 ～ +1 の範囲)
+		/// </summary>
+		public Rect GetViewInCanvas( RectTransform target )
+		{
+			// 属するキャンバスのサイズ
+			var ps = GetCanvasSize( target ) ;
+
+			var hierarchyRects = new List<RectTransform>() ;
+			int i, l ;
+
+			Transform t = target ;
+			RectTransform rt ;
+
+			// まずはキャンバスを検出するまでリストに格納する
+			while( t != null )
+			{
+				if( t.GetComponent<Canvas>() == null )
+				{
+					if( t is RectTransform )
+					{
+						hierarchyRects.Add( t as RectTransform ) ;
+					}
+				}
+				else
+				{
+					break ;	// 属するキャンバスが見つかったので終了
+				}
+
+				t = t.parent ;
+			}
+
+			if( hierarchyRects.Count <= 0 )
+			{
+				return new Rect() ;	// 異常
+			}
+
+			//---------------------------------
+
+			float pw = ps.x ;
+			float ph = ps.y ;
+
+			float px  = pw * 0.5f ;
+			float px0 = 0, px1 ;
+
+			float py  = ph * 0.5f ;
+			float py0 = 0, py1 ;
+
+			l = hierarchyRects.Count ;
+			for( i  = ( l - 1 ) ; i >= 0 ; i -- )
+			{
+				rt = hierarchyRects[ i ] ;
+
+				// X
+
+				// 自身の横幅(次の親の横幅)
+				if( rt.anchorMin.x != rt.anchorMax.x )
+				{
+					px0 += ( pw * rt.anchorMin.x ) ;		// 親の最小
+					px1 = px0 + ( pw * rt.anchorMax.x ) ;	// 親の最大
+						
+					// マージンの補正をかける
+					px0 -= ( ( rt.sizeDelta.x *       rt.pivot.x   ) - rt.anchoredPosition.x ) ;
+					px1 += ( ( rt.sizeDelta.x * ( 1 - rt.pivot.x ) ) + rt.anchoredPosition.x ) ;
+
+					pw = px1 - px0 ;
+
+					// 中心位置
+					px = px0 + ( pw * rt.pivot.x ) ;
+				}
+				else
+				{
+					// 中心位置
+					px = px0 + ( pw * rt.anchorMin.x ) + rt.anchoredPosition.x ;
+
+					pw = rt.sizeDelta.x ;
+				}
+
+				// 親の範囲更新
+				px0 = px - ( pw * rt.pivot.x ) ;
+
+				// Y
+				// 自身の横幅(次の親の横幅)
+				if( rt.anchorMin.y != rt.anchorMax.y )
+				{
+					py0 += ( ph * rt.anchorMin.y ) ;		// 親の最小
+					py1 = py0 + ( ph * rt.anchorMax.y ) ;	// 親の最大
+						
+					// マージンの補正をかける
+					py0 -= ( ( rt.sizeDelta.y *       rt.pivot.y   ) - rt.anchoredPosition.y ) ;
+					py1 += ( ( rt.sizeDelta.y * ( 1 - rt.pivot.y ) ) + rt.anchoredPosition.y ) ;
+
+					ph = py1 - py0 ;
+
+					// 中心位置
+					py = py0 + ( ph * rt.pivot.y ) ;
+				}
+				else
+				{
+					// 中心位置
+					py = py0 + ( ph * rt.anchorMin.y ) + rt.anchoredPosition.y ;
+
+					ph = rt.sizeDelta.y ;
+				}
+
+				// 親の範囲更新
+				py0 = py - ( ph * rt.pivot.y ) ;
+			}
+				
+			// 画面の中心基準
+			px -= ( ps.x * 0.5f ) ;
+			py -= ( ps.y * 0.5f ) ;
+
+			pw *= target.localScale.x ;
+			ph *= target.localScale.y ;
+
+			px -= ( pw * target.pivot.x ) ;
+			py -= ( ph * target.pivot.y ) ;
+				
+			//---------------------------------------------------------
+
+			float vx = ( px / ps.x ) * 2.0f ;
+			float vy = ( py / ps.y ) * 2.0f ;
+			float vw = ( pw / ps.x ) * 2.0f ;
+			float vh = ( ph / ps.y ) * 2.0f ;
+
+			return new Rect( vx, vy, vw, vh ) ;
+		}
+
+		/// <summary>
+		/// スクリーン上での領域を取得する(画面左下が原点[0,0]・Rectの(x,y)は領域の左下の位置・４点をすべて使用する場合は(xMin,yMin,xMax,yMax)を参照する)
+		/// </summary>
+		public Rect GetRectInScreen( RectTransform target )
+		{
+			var r = GetRectInCanvas( target ) ;
+
+			var canvasSize = GetCanvasSize( target ) ;
+
+			// 画面左下が原点(0,0)になるように値を補正する
+			r.x += canvasSize.x * 0.5f ;
+			r.y += canvasSize.y * 0.5f ;
+
+			// スケールを Screen / Canvas になるよう調整する
+
+			float ratioX = ( float )Screen.width  / canvasSize.x ;
+			float ratioY = ( float )Screen.height / canvasSize.y ;
+
+			r.x      *= ratioX ; 
+			r.y      *= ratioY ; 
+			r.width  *= ratioX ; 
+			r.height *= ratioY ;
+
+			return r ;
+		}
+
+		//-------------------------------------------------------------------------------------
 
 		/// <summary>
 		/// サイズを設定
@@ -4269,29 +4496,7 @@ namespace uGUIHelper
 		public Canvas GetParentCanvas()
 		{
 			return GetComponentInParent<Canvas>() ;
-#if false
-
-			int i, l = 64 ;
-
-			Transform t = gameObject.transform ;
-			for( i  =  0 ; i <  l ; i ++ )
-			{
-				if( t.gameObject.TryGetComponent<Canvas>( out var canvas ) == true )
-				{
-					return canvas ;
-				}
-			
-				t = t.parent ;
-				if( t == null )
-				{
-					break ;
-				}
-			}
-
-			return null ;
-#endif
 		}
-
 
 		/// <summary>
 		/// 親 Canvas の設定仮想解像度を取得する
@@ -4311,177 +4516,6 @@ namespace uGUIHelper
 			}
 
 			return canvasScaler.referenceResolution ;
-		}
-
-		/// <summary>
-		/// 親 Canvas の実仮想解像度を取得する
-		/// </summary>
-		/// <returns></returns>
-		public Vector2 GetCanvasSize( bool isReal = false )
-		{
-			Canvas canvas = GetParentCanvas() ;
-			if( canvas == null )
-			{
-				return new Vector2( Screen.width, Screen.height ) ;
-			}
-
-			float sw = Screen.width ;
-			float sh = Screen.height ;
-
-			if( canvas.worldCamera != null && canvas.worldCamera.targetTexture != null )
-			{
-				sw = canvas.worldCamera.targetTexture.width ;
-				sh = canvas.worldCamera.targetTexture.height ;
-			}
-
-			if( Application.isPlaying == false || isReal == true )
-			{
-				if( ( canvas.transform is RectTransform rt ) == false )
-				{
-					return  new Vector2( sw, sh ) ;
-				}
-	
-				return rt.sizeDelta ;
-			}
-
-			if( canvas.TryGetComponent<CanvasScaler>( out var scaler ) == false )
-			{
-				return new Vector2( sw, sh ) ;
-			}
-
-			if( scaler.uiScaleMode == CanvasScaler.ScaleMode.ConstantPixelSize )
-			{
-				return new Vector2( sw / scaler.scaleFactor, sh / scaler.scaleFactor ) ;
-			}
-			else
-			if( scaler.uiScaleMode == CanvasScaler.ScaleMode.ScaleWithScreenSize )
-			{
-				float rw = scaler.referenceResolution.x ;
-				float rh = scaler.referenceResolution.y ;
-
-				if( scaler.screenMatchMode == CanvasScaler.ScreenMatchMode.MatchWidthOrHeight )
-				{
-					float mf = scaler.matchWidthOrHeight ;
-
-					float wa0 = sw / sh ;
-					float wa1 = rw / rh ;
-					float wa = Mathf.Lerp( wa0, wa1, mf ) ;
-
-					float w  = rw * wa0 / wa ;
-
-					float ha0 = rh / rw ;
-					float ha1 = sw / sh ;
-					float ha = Mathf.Lerp( ha0, ha1, mf ) ;
-
-					float h  = rh * ha1 / ha ;
-
-					return new Vector2( w, h ) ;
-				}
-				else
-				if( scaler.screenMatchMode == CanvasScaler.ScreenMatchMode.Expand )
-				{
-					float w, h ;
-
-					if( sw >= sh )
-					{
-						// 実スクリーンは横長
-						float sa = sw / sh ;
-						float ra = rw / rh ;
-
-						if( ra >= sa )
-						{
-							// 横が１倍
-							w = rw ;
-							h = rh * ra / sa ;
-						}
-						else
-						{
-							// 縦が１倍
-							h = rh ;
-							w = rw * sa / ra ;
-						}
-					}
-					else
-					{
-						// 実スクリーンは縦長
-						float sa = sh / sw ;
-						float ra = rh / rw ;
-
-						if( ra >= sa )
-						{
-							// 縦が１倍
-							h = rh ;
-							w = rw * ra / sa ;
-						}
-						else
-						{
-							// 横が１倍
-							w = rw ;
-							h = rh * sa / ra ;
-						}
-					}
-
-					return new Vector2( w, h ) ;
-				}
-				else
-				if( scaler.screenMatchMode == CanvasScaler.ScreenMatchMode.Shrink )
-				{
-					float w, h ;
-
-					if( sw >= sh )
-					{
-						// 実スクリーンは横長
-						float sa = sw / sh ;
-						float ra = rw / rh ;
-
-						if( ra >= sa )
-						{
-							// 仮想解像度の縦をスクリーンのの横に合わせる
-							h = rh ;
-							w = rh * sw / sh ;
-						}
-						else
-						{
-							// 仮想解像度の横をスクリーンのの横に合わせる
-							w = rw ;
-							h = rw * sh / sw ;
-						}
-					}
-					else
-					{
-						// 実スクリーンは縦長
-						float sa = sh / sw ;
-						float ra = rh / rw ;
-
-						if( ra >= sa )
-						{
-							// 仮想解像度の横をスクリーンのの横に合わせる
-							w = rw ;
-							h = rw * sh / sw ;
-						}
-						else
-						{
-							// 仮想解像度の縦をスクリーンのの横に合わせる
-							h = rh ;
-							w = rh * sw / sh ;
-						}
-					}
-
-					return new Vector2( w, h ) ;
-				}
-			}
-			else
-			if( scaler.uiScaleMode == CanvasScaler.ScaleMode.ConstantPhysicalSize )
-			{
-				if( ( canvas.transform is RectTransform rt ) == false )
-				{
-					return  new Vector2( sw, sh ) ;
-				}
-	
-				return rt.sizeDelta ;
-			}
-
-			return new Vector2( sw, sh ) ;
 		}
 
 		/// <summary>
@@ -11405,13 +11439,16 @@ namespace uGUIHelper
 		// スクリーン上の矩形範囲を取得する
 		public ( Vector2[], Vector2 ) GetScreenArea( GameObject go )
 		{
-			if( go.TryGetComponent<UIView>( out var view ) == false )
+			if( go.transform as RectTransform == false )
 			{
-				// 取得出来ない
-				throw new Exception( "Not foud UIView." ) ;
+				// RectTransform が付いていないものは検査対象に出来ない
+				Debug.LogWarning( "Not found RectTransform = " + go.name + " CheckPath = " + GetPath( go ) + " Owner path = " + Path ) ;
+				return ( null, Vector2.zero ) ;
 			}
 
-			var p = view.RectInScreen ;
+			var p = GetRectInScreen( go.transform as RectTransform ) ;
+
+			//---------------------------------------------------------------------------------
 
 			var points = new Vector2[ 4 ]
 			{
@@ -11735,6 +11772,22 @@ namespace uGUIHelper
 				}
 				return path ;
 			}
+		}
+
+		/// <summary>
+		/// ヒエラルキーでの階層パス名を取得する
+		/// </summary>
+		public string GetPath( GameObject go )
+		{
+			string path = go.name ;
+
+			var t = go.transform.parent ;
+			while( t != null )
+			{
+				path = $"{t.name}/{path}" ;
+				t = t.parent ;
+			}
+			return path ;
 		}
 
 		//-------------------------------------------------------------------

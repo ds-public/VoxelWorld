@@ -177,9 +177,9 @@ namespace uGUIHelper
 			ResetRectTransform() ;
 			
 			SetAnchorToLeftBottom() ;
-            SetPivot( 0, 0 ) ;
+			SetPivot( 0, 0 ) ;
 			SetSize( 64, 64 ) ;
-            SetPosition( 16, 16 ) ;
+			SetPosition( 16, 16 ) ;
 
 			//----------------------------------
 
