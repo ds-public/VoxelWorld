@@ -380,8 +380,38 @@ namespace uGUIHelper
 				{
 					return false ;
 				}
+
 				return inputField.isFocused ;
 			}
+		}
+
+		/// <summary>
+		/// フォーカスを設定する
+		/// </summary>
+		/// <param name="index"></param>
+		/// <returns></returns>
+		public bool SetFocus( int index = 0 )
+		{
+			var inputField = CTMP_InputField ;
+			if( inputField == null )
+			{
+				return false ;
+			}
+
+			if( inputField.isFocused == false )
+			{
+				inputField.ActivateInputField() ;
+				inputField.selectionFocusPosition = index ;
+
+				m_IsFocused = true ;
+
+				if( m_IsFocusMonitering == false )
+				{
+					m_IsFocusMonitering  = true ;
+					uGUIHelper.InputAdapter.UIEventSystem.AddFocusedInputField( this ) ;
+				}
+			}
+			return true ;
 		}
 
 		//-------------------------------------------------------------------------------------------
@@ -481,6 +511,9 @@ namespace uGUIHelper
 
 		// 現在のフォーカス状態
 		protected bool		m_IsFocused ;
+
+		// フォーカス監視を行っているかどうか
+		protected bool		m_IsFocusMonitering ;
 
 		//-----------------------------------
 
@@ -768,32 +801,57 @@ namespace uGUIHelper
 					// ゲームパッドの方向ボタンで勝手にフォーカスが入ってしまうバグ対策
 
 
-					if( m_IsFocused != CTMP_InputField.isFocused )
+					if( ActiveInHierarchy == true )
 					{
-						m_IsFocused  = CTMP_InputField.isFocused ;
+						if( m_IsFocused != CTMP_InputField.isFocused )
+						{
+							m_IsFocused  = CTMP_InputField.isFocused ;
 
-						if( IsRaycastAvailable() == true )
-						{
-							OnFocusChangedInner( m_IsFocused ) ;
-						}
-						else
-						{
-							Debug.LogWarning( "<color=#FFFF00>レイキャストでブロックされているにも関わらずフォーカスに変化があった : Focus = " + m_IsFocused + " | Path = " + Path + "</color>" ) ;
+							if( m_IsFocused == true )
+							{
+								if( m_IsFocusMonitering == false )
+								{
+									m_IsFocusMonitering = true ;
+									uGUIHelper.InputAdapter.UIEventSystem.AddFocusedInputField( this ) ;
+								}
+							}
+							else
+							{
+								if( m_IsFocusMonitering == true )
+								{
+									m_IsFocusMonitering = false ;
+									uGUIHelper.InputAdapter.UIEventSystem.RemoveFocusedInputField( this ) ;
+								}
+							}
+
+							if( IsRaycastAvailable() == true )
+							{
+								OnFocusChangedInner( m_IsFocused ) ;
+							}
+							else
+							{
+								Debug.LogWarning( "<color=#FFFF00>レイキャストでブロックされているにも関わらずフォーカスに変化があった : Focus = " + m_IsFocused + " | Path = " + Path + "</color>" ) ;
+							}
 						}
 					}
 				}
+
+				OnEnterKeyInner() ;
 			}
 		}
 
 		protected override void OnDisable()
 		{
-			base.OnDestroy() ;
+			base.OnDisable() ;
 
-			if( IsFocused == true )
+			if( m_IsFocusMonitering == true )
 			{
 				// フォーカスを得ている場合に記録から削除する
+				m_IsFocusMonitering = false ;
 				uGUIHelper.InputAdapter.UIEventSystem.RemoveFocusedInputField( this ) ;
 			}
+
+			m_IsFocused = false ;
 		}
 
 		//-------------------------------------------------------------------------------------------
@@ -847,15 +905,6 @@ namespace uGUIHelper
 		private void OnFocusChangedInner( bool state )
 		{
 //			Debug.LogWarning( "状態変化:" + tValue + " : " + Input.compositionString + " : " + Input.inputString ) ;
-
-			if( state == true )
-			{
-				uGUIHelper.InputAdapter.UIEventSystem.AddFocusedInputField( this ) ;
-			}
-			else
-			{
-				uGUIHelper.InputAdapter.UIEventSystem.RemoveFocusedInputField( this ) ;
-			}
 
 			//----------------------------------------------------------
 
@@ -1135,11 +1184,16 @@ namespace uGUIHelper
 				OnEndEditAction?.Invoke( identity, this, value ) ;
 				OnEndEditDelegate?.Invoke( identity, this, value ) ;
 			}
+		}
 
-			if( InputAdapter.UIEventSystem.GetKey( InputAdapter.KeyCodes.Return ) == true )
+		private void OnEnterKeyInner()
+		{
+			if( OnEnterKeyPressedAction != null || OnEnterKeyPressedDelegate != null )
 			{
-				if( OnEnterKeyPressedAction != null || OnEnterKeyPressedDelegate != null )
+				if( IsRaycastAvailable() == true && InputAdapter.UIEventSystem.GetKey( InputAdapter.KeyCodes.Return ) == true )
 				{
+					string value = CTMP_InputField.text ;
+
 					string identity = Identity ;
 					if( string.IsNullOrEmpty( identity ) == true )
 					{

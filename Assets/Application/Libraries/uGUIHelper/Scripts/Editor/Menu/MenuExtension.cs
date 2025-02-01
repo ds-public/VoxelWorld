@@ -671,7 +671,7 @@ namespace uGUIHelper
 
 			UnityEditor.SceneManagement.EditorSceneManager.MarkSceneDirty( UnityEditor.SceneManagement.EditorSceneManager.GetActiveScene() ) ;
 		}
-
+#if false
 		/// <summary>
 		/// Dropdown 生成
 		/// </summary>
@@ -706,7 +706,7 @@ namespace uGUIHelper
 
 			UnityEditor.SceneManagement.EditorSceneManager.MarkSceneDirty( UnityEditor.SceneManagement.EditorSceneManager.GetActiveScene() ) ;
 		}
-
+#endif
 		/// <summary>
 		/// Pulldown 生成
 		/// </summary>

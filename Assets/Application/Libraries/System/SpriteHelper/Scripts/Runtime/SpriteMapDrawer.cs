@@ -19,21 +19,21 @@ using UnityEditor.SceneManagement ;
 namespace SpriteHelper
 {
 	/// <summary>
-	/// ２Ｄメッシュ Version 2024/08/25
+	/// ２Ｄメッシュ Version 2024/12/16
 	/// </summary>
 	[ExecuteAlways]
 	[DisallowMultipleComponent]
 	[RequireComponent( typeof( MeshRenderer ) )]
 	[RequireComponent( typeof( MeshFilter ) )]
-	public class SpriteDrawer : SpriteTransform
+	public class SpriteMapDrawer : SpriteTransform
 	{
 #if UNITY_EDITOR
 		/// <summary>
 		/// Sprite を生成
 		/// </summary>
-		[MenuItem( "GameObject/SpriteHelper/SpriteDrawer", false, 22 )]	// ポップアップメニューから
-		[MenuItem( "SpriteHelper/Add a SpriteDrawer" )]					// メニューから
-		public static void CreateSpriteDrawer()
+		[MenuItem( "GameObject/SpriteHelper/SpriteMapDrawer", false, 22 )]	// ポップアップメニューから
+		[MenuItem( "SpriteHelper/Add a SpriteMapDrawer" )]					// メニューから
+		public static void CreateSpriteMapDrawer()
 		{
 			var go = Selection.activeGameObject ;
 			if( go == null )
@@ -46,16 +46,16 @@ namespace SpriteHelper
 				return ;
 			}
 
-			Undo.RecordObject( go, "Add a child SpriteDrawer" ) ;	// アンドウバッファに登録
+			Undo.RecordObject( go, "Add a child SpriteMapDrawer" ) ;	// アンドウバッファに登録
 
-			var child = new GameObject( "SpriteDrawer" ) ;
+			var child = new GameObject( "SpriteMapDrawer" ) ;
 
 			var t = child.transform ;
 			t.SetParent( go.transform, false ) ;
 			t.SetLocalPositionAndRotation( Vector3.zero, Quaternion.identity ) ;
 			t.localScale = Vector3.one ;
 
-			var component = child.AddComponent<SpriteDrawer>() ;
+			var component = child.AddComponent<SpriteMapDrawer>() ;
 			component.SetDefault( true ) ;	// 初期状態に設定する
 
 			// 一番上に移動させる
@@ -858,6 +858,75 @@ namespace SpriteHelper
 			}
 		}
 
+		//-----------------------------------
+
+		[SerializeField][HideInInspector]
+		protected int m_GridX ;
+
+		/// <summary>
+		/// 横方向の分割数
+		/// </summary>
+		public int GridX
+		{
+			get
+			{
+				return m_GridX ;
+			}
+			set
+			{
+				m_GridX = value ;
+			}
+		}
+
+		[SerializeField][HideInInspector]
+		protected int m_GridY ;
+
+		/// <summary>
+		/// 縦方向の分割数
+		/// </summary>
+		public int GridY
+		{
+			get
+			{
+				return m_GridY ;
+			}
+			set
+			{
+				m_GridY = value ;
+			}
+		}
+
+		//-----------------------------------------------------------
+
+		[Serializable]
+		public class Cell
+		{
+			/// <summary>
+			/// チップのインデックス番号
+			/// </summary>
+			public int		Index ;
+
+			/// <summary>
+			/// チップの色
+			/// </summary>
+			public Color	Color ;
+
+			/// <summary>
+			/// 表示の横方向の反転
+			/// </summary>
+			public bool		FlipX ;
+
+			/// <summary>
+			/// 表示の縦方向の反転
+			/// </summary>
+			public bool		FlipY ;
+		}
+
+		// グリッドのセル
+		[SerializeField][HideInInspector]
+		private List<Cell>	m_Cells ;
+
+
 		//-------------------------------------------------------------------------------------------
 		// ショートカット系プロパティ
 
@@ -1017,21 +1086,31 @@ namespace SpriteHelper
 		private bool			m_IsOffsetAndSizeDirty		= true ;
 
 		[SerializeField][HideInInspector]
-		private Vector3[]		m_Mesh_vertices				= new Vector3[ 4 ] ;
+		private Vector3[]		m_Mesh_vertices	;
 
 		// カラーの更新が必要かどうか
 		private bool			m_IsVertexColorDirty		= true ;
 
 		[SerializeField][HideInInspector]
-		private Color[]			m_Mesh_colors				= new Color[ 4 ] ;
+		private Color[]			m_Mesh_colors ;
 
 		// スプライトの更新の必要かどうか
 		private bool			m_IsTextureCoordinateDirty	= true ;
 
 		[SerializeField][HideInInspector]
-		private Vector2[]		m_Mesh_uv					= new Vector2[ 4 ] ;
+		private Vector2[]		m_Mesh_uv ;
 
-		//---------------------------------------------------------------
+		[SerializeField][HideInInspector]
+		private int[]			m_Mesh_triangles ;
+
+
+		//-----------------------------------------------------------
+		// スプライトのハッシュ
+
+		// チップスプライト群
+		private Dictionary<int,Sprite>	m_ChipSprites ;
+
+		//-----------------------------------------------------------
 
 		internal void Awake()
 		{
@@ -1068,9 +1147,68 @@ namespace SpriteHelper
 
 			//----------------------------------
 
+			// チップのスプライト(ハッシュ)を生成する
+			m_ChipSprites = CreateChipSprites() ;
+
+			//----------------------------------
+
 			// 強制更新
 			Refresh() ;
 		}
+
+		// チップのスプライト(ハッシュ)を生成する
+		private Dictionary<int,Sprite> CreateChipSprites()
+		{
+			var chipSprites = new Dictionary<int,Sprite>() ;
+
+			var sprites = GetSprites() ;
+
+			if( sprites != null && sprites.Length >  0 )
+			{
+				// スプライト名の数値部分からハッシュに振り分ける
+
+				List<char> numberCodes = new List<char>() ;
+
+				foreach( var sprite in sprites )
+				{
+					string spriteName = sprite.name ;
+
+					numberCodes.Clear() ;
+
+					bool exist = false ;
+					foreach( var numberCode in spriteName )
+					{
+						if( numberCode >= '0' && numberCode <= '9' )
+						{
+							numberCodes.Add( numberCode ) ;
+							exist = true ;
+						}
+						else
+						{
+							if( exist == true )
+							{
+								break ;
+							}
+						}
+					}
+
+					if( numberCodes.Count >  0 )
+					{
+						spriteName = new string( numberCodes.ToArray() ) ;
+
+						int index = int.Parse( spriteName ) ;
+
+						if( chipSprites.ContainsKey( index ) == false )
+						{
+							chipSprites.Add( index, sprite ) ;
+						}
+					}
+				}
+			}
+
+			return chipSprites ;
+		}
+
 
 		/// <summary>
 		/// 更新される際に呼び出される(LateUpdate でなければならない。Mesh の変更要求を Update より後に実行すると、反映が次のフレームになってしまうため)
@@ -1357,6 +1495,45 @@ namespace SpriteHelper
 			m_IsMaterialDirty			= false ;
 		}
 
+
+		// グリッドが変化したら呼び出される
+		private void UpdateGrid()
+		{
+			int gridX = m_GridX ;
+			if( gridX <= 0 )
+			{
+				gridX  = 1 ;
+			}
+
+			int gridY = m_GridY ;
+			if( gridY <= 0 )
+			{
+				gridY  = 1 ;
+			}
+
+			//----------------------------------
+			// 頂点は         4 x gridX x gridY
+			// 配色は         4 x gridX x gridY
+			// ＵＶは         4 x gridX x gridY
+			// インデックスは 6 x gridX x gridY
+
+			int n = gridX * gridY ;
+
+			m_Mesh_vertices		= new Vector3[ 4 * n ] ;
+			m_Mesh_colors		= new Color[ 4 * n ] ;
+			m_Mesh_uv			= new Vector2[ 4 * n ] ;
+			m_Mesh_triangles	= new int[ 6 * n ] ;
+
+			//----------------------------------
+
+			m_IsOffsetAndSizeDirty		= true ;
+			m_IsVertexColorDirty		= true ;
+			m_IsTextureCoordinateDirty	= true ;
+		}
+
+
+
+
 		// オフセットとサイズをメッシュに設定する
 		private void UpdateOffsetAndSize( Mesh mesh )
 		{
@@ -1370,10 +1547,42 @@ namespace SpriteHelper
 
 			//----------------------------------
 
-			m_Mesh_vertices[ 0 ] = new ( xMin, yMin, 0 ) ;
-			m_Mesh_vertices[ 1 ] = new ( xMax, yMin, 0 ) ;
-			m_Mesh_vertices[ 2 ] = new ( xMin, yMax, 0 ) ;
-			m_Mesh_vertices[ 3 ] = new ( xMax, yMax, 0 ) ;
+			int gridX = m_GridX ;
+			if( gridX <= 0 )
+			{
+				gridX  = 1 ;
+			}
+
+			int gridY = m_GridY ;
+			if( gridY <= 0 )
+			{
+				gridY  = 1 ;
+			}
+
+			float deltaSizeX = m_DeltaSize.x / gridX ;
+			float deltaSizeY = m_DeltaSize.y / gridY ;
+
+			int x, y, o ;
+			float x0, y0, x1, y1 ;
+
+			o = 0 ;
+			for( y  = 0 ; y <  gridY ; y ++ )
+			{
+				for( x  = 0 ; x <  gridX ; x ++ )
+				{
+					x0 = x * deltaSizeX ;
+					y0 = y * deltaSizeY ;
+					x1 = x0 + deltaSizeX ;
+					y1 = y0 + deltaSizeY ;
+
+					m_Mesh_vertices[ o + 0 ] = new ( xMin + x0, yMin + y0, 0 ) ;
+					m_Mesh_vertices[ o + 1 ] = new ( xMin + x1, yMin + y0, 0 ) ;
+					m_Mesh_vertices[ o + 2 ] = new ( xMin + x0, yMin + y1, 0 ) ;
+					m_Mesh_vertices[ o + 3 ] = new ( xMin + x1, yMin + y1, 0 ) ;
+
+					o += 4 ;
+				}
+			}
 
 			mesh.vertices = m_Mesh_vertices ;
 
@@ -1385,10 +1594,33 @@ namespace SpriteHelper
 		// 頂点カラーをメッシュに設定する
 		private void UpdateVertexColor( Mesh mesh )
 		{
-			m_Mesh_colors[ 0 ] = m_VertexColor ;
-			m_Mesh_colors[ 1 ] = m_VertexColor ;
-			m_Mesh_colors[ 2 ] = m_VertexColor ;
-			m_Mesh_colors[ 3 ] = m_VertexColor ;
+			int gridX = m_GridX ;
+			if( gridX <= 0 )
+			{
+				gridX  = 1 ;
+			}
+
+			int gridY = m_GridY ;
+			if( gridY <= 0 )
+			{
+				gridY  = 1 ;
+			}
+
+			int x, y, o ;
+
+			o = 0 ;
+			for( y  = 0 ; y <  gridY ; y ++ )
+			{
+				for( x  = 0 ; x <  gridX ; x ++ )
+				{
+					m_Mesh_colors[ o + 0 ] = m_VertexColor ;
+					m_Mesh_colors[ o + 1 ] = m_VertexColor ;
+					m_Mesh_colors[ o + 2 ] = m_VertexColor ;
+					m_Mesh_colors[ o + 3 ] = m_VertexColor ;
+
+					o += 4 ;
+				}
+			}
 
 			mesh.colors = m_Mesh_colors ;
 
@@ -1400,47 +1632,63 @@ namespace SpriteHelper
 		// テクスチャＵＶをメッシュに設定する
 		private void UpdateTextureCoordinate( Mesh mesh )
 		{
-			float xMin, xMax ;
-			float yMin, yMax ;
-
-
-
-			if( m_Sprite != null )
+			int gridX = m_GridX ;
+			if( gridX <= 0 )
 			{
-				// 注意：textureRect でないと SpriteAtlas の際に正しいＵＶ座標が取れない
-				xMin = m_Sprite.textureRect.xMin / m_Sprite.texture.width  ;
-				yMin = m_Sprite.textureRect.yMin / m_Sprite.texture.height ;
-
-				xMax = m_Sprite.textureRect.xMax / m_Sprite.texture.width  ;
-				yMax = m_Sprite.textureRect.yMax / m_Sprite.texture.height ;
-			}
-			else
-			{
-				xMin = 0 ;
-				yMin = 0 ;
-
-				xMax = 1 ;
-				yMax = 1 ;
+				gridX  = 1 ;
 			}
 
-			if( m_FlipX == true )
+			int gridY = m_GridY ;
+			if( gridY <= 0 )
 			{
-				// 横方向のスワップ
-				( xMin, xMax ) = ( xMax, xMin ) ;
+				gridY  = 1 ;
 			}
 
-			if( m_FlipY == true )
+			int x, y, o ;
+			float x0, y0, x1, y1 ;
+
+			o = 0 ;
+			for( y  = 0 ; y <  gridY ; y ++ )
 			{
-				// 縦方向のスワップ
-				( yMin, yMax ) = ( yMax, yMin ) ;
+				for( x  = 0 ; x <  gridX ; x ++ )
+				{
+					var cell = GetCell( x, y ) ;
+					if( cell != null )
+					{
+						// このグリッドのセルは有効
+
+						var sprite = GetChipSprite( cell.Index ) ;
+						if( sprite != null )
+						{
+							// 有効
+							x0 = m_Sprite.textureRect.xMin / m_Sprite.texture.width  ;
+							y0 = m_Sprite.textureRect.yMin / m_Sprite.texture.height ;
+
+							x1 = m_Sprite.textureRect.xMax / m_Sprite.texture.width  ;
+							y1 = m_Sprite.textureRect.yMax / m_Sprite.texture.height ;
+
+							if( cell.FlipX == true )
+							{
+								// 横方向のスワップ
+								( x0, x1 ) = ( x1, x0 ) ;
+							}
+
+							if( cell.FlipY == true )
+							{
+								// 縦方向のスワップ
+								( y0, y1 ) = ( y1, y0 ) ;
+							}
+
+							m_Mesh_uv[ o + 0 ] = new ( x0, y0 ) ;
+							m_Mesh_uv[ o + 1 ] = new ( x1, y0 ) ;
+							m_Mesh_uv[ o + 2 ] = new ( x0, y1 ) ;
+							m_Mesh_uv[ o + 3 ] = new ( x1, y1 ) ;
+						}
+					}
+
+					o += 4 ;
+				}
 			}
-
-			//----------------------------------
-
-			m_Mesh_uv[ 0 ] = new ( xMin, yMin ) ;
-			m_Mesh_uv[ 1 ] = new ( xMax, yMin ) ;
-			m_Mesh_uv[ 2 ] = new ( xMin, yMax ) ;
-			m_Mesh_uv[ 3 ] = new ( xMax, yMax ) ;
 
 			mesh.uv = m_Mesh_uv ;
 
@@ -1448,121 +1696,58 @@ namespace SpriteHelper
 
 			m_IsTextureCoordinateDirty	= false ;
 		}
-	}
 
-	//--------------------------------------------------------------------------------------------------------------------
-#if UNITY_EDITOR
-	/// <summary>
-	/// エディターモード専用ユーティリティ関数
-	/// </summary>
-	public static class Utility
-	{
-		/// <summary>
-		/// プロジェクト内の指定のコンポーネントを列挙する
-		/// </summary>
-		/// <typeparam name="T"></typeparam>
-		/// <param name="onLoaded"></param>
-		/// <param name="rootPath"></param>
-		/// <returns></returns>
-		public static T[] FindComponents<T>( string rootPath, Action<T> onLoaded = null ) where T: UnityEngine.Component
+		//-----------------------------------------------------------
+
+		// 指定した位置のセル情報を取得する
+		private Cell GetCell( int x, int y )
 		{
-			var targets = new List<T>() ;
-
-			// Prefab
-			string[] prefabGuids = AssetDatabase.FindAssets( "t:prefab", new string[]{ rootPath } ) ;
-			if( prefabGuids != null && prefabGuids.Length >  0 )
+			if( x <  0 || y <  0 || m_Cells == null || m_Cells.Count == 0 )
 			{
-//				Debug.LogWarning( "全プレハブの数:" + prefabGuids.Length ) ;
-				foreach( var guid in prefabGuids )
-				{
-					string path = AssetDatabase.GUIDToAssetPath( guid ) ;
-					var go = AssetDatabase.LoadAssetAtPath<GameObject>( path ) ;
-
-					T[] targetsInPrefab = go.GetComponentsInChildren<T>( true ) ;
-					if( targetsInPrefab != null && targetsInPrefab.Length >  0 )
-					{
-//						Debug.LogWarning( "プレハブ " + path + " 内の UITween の数 = " + targetsInPrefab.Length ) ;
-
-						targets.AddRange( targetsInPrefab ) ;
-
-						if( onLoaded != null )
-						{
-							foreach( T target in targetsInPrefab )
-							{
-								onLoaded( target ) ;
-								EditorUtility.SetDirty( target ) ;
-							}
-						}
-					}
-				}
-
-				if( onLoaded != null )
-				{
-					AssetDatabase.SaveAssets() ;
-					AssetDatabase.Refresh() ;
-				}
-			}
-
-			// Scene
-			string[] sceneGuids = AssetDatabase.FindAssets( "t:scene", new string[]{ rootPath } ) ;
-			if( sceneGuids != null && sceneGuids.Length >  0 )
-			{
-				// 開いていたシーンを保存する
-				var activeScene = EditorSceneManager.GetActiveScene() ;
-//				Debug.LogWarning( "アクティブシーンのパス : " + activeScene.path ) ;
-				string activeScenepath = activeScene.path ;
-
-//				Debug.LogWarning( "全シーンの数:" + prefabGuids.Length ) ;
-				foreach( var guid in sceneGuids )
-				{
-					string path = AssetDatabase.GUIDToAssetPath( guid ) ;
-					var scene = EditorSceneManager.OpenScene( path ) ;
-					
-					T[] targetsInScene = Resources.FindObjectsOfTypeAll<T>() ;
-					if( targetsInScene != null && targetsInScene.Length >  0 )
-					{
-//						Debug.LogWarning( "シーン " + path + " 内の UITween の数 = " + targetsInScene.Length ) ;
-						targets.AddRange( targetsInScene ) ;
-
-						if( onLoaded != null )
-						{
-							foreach( T target in targetsInScene )
-							{
-								onLoaded( target ) ;
-							}
-
-							EditorSceneManager.SaveScene( scene, path ) ;
-						}
-					}
-				}
-
-				if( string.IsNullOrEmpty( activeScenepath ) == false )
-				{
-					// 開いていたシーンに戻す
-					activeScene = EditorSceneManager.GetActiveScene() ;
-					if( activeScene.path != activeScenepath )
-					{
-						EditorSceneManager.OpenScene( activeScenepath ) ;
-					}
-				}
-			}
-
-			if( onLoaded != null )
-			{
-				AssetDatabase.SaveAssets() ;
-				AssetDatabase.Refresh() ;
-			}
-
-//			Debug.LogWarning( "------>最終的な対象の数:" + targets.Count ) ;
-
-			if( targets.Count == 0 )
-			{
+				// 指定位置に問題あり
 				return null ;
 			}
 
-			return targets.ToArray() ;
+			int gridX = m_GridX ;
+			if( gridX <= 0 )
+			{
+				gridX  = 1 ;
+			}
+
+			int gridIndex = y * gridX + x ;
+
+			if( gridIndex >= m_Cells.Count )
+			{
+				// 位置指定に問題あり
+				return null ;
+			}
+
+			return m_Cells[ gridIndex ] ;
+		}
+
+		// セルのチップスプライトを取得する
+		private Sprite GetChipSprite( int index )
+		{
+			Dictionary<int,Sprite> chipSprites ;
+#if !UNITY_EDITOR
+			chipSprites = m_ChipSprites ;
+#else
+			chipSprites = CreateChipSprites() ;
+#endif
+			if( chipSprites == null || chipSprites.Count == 0 )
+			{
+				// 不可
+				return null ;
+			}
+
+			if( chipSprites.ContainsKey( index ) == false )
+			{
+				// 該当するものが存在しない
+				return null ;
+			}
+
+			return chipSprites[ index ] ;
 		}
 	}
-#endif
 }
 

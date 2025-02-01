@@ -35,8 +35,20 @@ namespace uGUIHelper.InputAdapter
 		/// <summary>
 		/// ポインターの位置
 		/// </summary>
-		public static Vector3 MousePosition
+		public static Vector3	MousePosition
 			=> Mouse.Position ;
+
+		/// <summary>
+		/// ポインターの移動量
+		/// </summary>
+		public static Vector3	MouseDelta
+			=> Mouse.Delta ;
+
+		/// <summary>
+		/// ポインターが画面内にあるかどうか
+		/// </summary>
+		public static bool		IsInside
+			=> Mouse.IsInside ;
 
 		/// <summary>
 		/// ボタンが押されているかどうかの判定

@@ -23,6 +23,9 @@ namespace InputHelper
 			private int m_TouchId = -1 ;
 			private Vector3 m_TouchPosition = Vector3.zero ;
 
+			private readonly Vector3[] m_PointerPosition	= new Vector3[ 2 ] ;
+			private readonly Vector3[] m_PointerDelta		= new Vector3[ 2 ] ;
+
 			/// <summary>
 			/// ボタン用状態
 			/// </summary>
@@ -36,7 +39,7 @@ namespace InputHelper
 				public bool		IsUp ;
 			}
 
-			private static ButtonState[,] m_ButtonStates ;
+			private ButtonState[,] m_ButtonStates ;
 
 			//-----------------------------------------------------------------------------------------
 
@@ -53,6 +56,10 @@ namespace InputHelper
 					m_ButtonStates[ buttonIndex, 0 ] = new ButtonState() ;	// Update 用
 					m_ButtonStates[ buttonIndex, 1 ] = new ButtonState() ;	// FixedUpdate 用
 				}
+
+				// 基準位置を初期化する
+				m_PointerPosition[ 0 ] = Position ;
+				m_PointerPosition[ 1 ] = Position ;
 			}
 
 			/// <summary>
@@ -121,10 +128,18 @@ namespace InputHelper
 						}
 					}
 				}
+
+				//---------------------------------
+				// 移動量を更新する
+
+				var pointerPosition = Position ;
+				m_PointerDelta[ slotNumber ] = pointerPosition - m_PointerPosition[ slotNumber ] ;
+				m_PointerPosition[ slotNumber ] = pointerPosition ;
 			}
 
 			//-----------------------------------------------------------------------------------------
 
+			/// <summary>
 			/// ポインターの位置
 			/// </summary>
 			public Vector3 Position
@@ -212,6 +227,60 @@ namespace InputHelper
 					}
 
 					return pointerPosition ;
+				}
+			}
+
+			/// <summary>
+			/// ポインターの移動量
+			/// </summary>
+			public Vector3 Delta
+			{
+				get
+				{
+					Vector3 pointerDelta = Vector3.zero ;
+
+					//---------------------------------------------------------
+					// マウス処理
+
+					UnityEngine.InputSystem.Mouse mouse = UnityEngine.InputSystem.Mouse.current ;
+					if( mouse != null )
+					{
+						// マウスは繋がっている
+						pointerDelta = mouse.delta.ReadValue() ;
+					}
+
+					if( pointerDelta.x == 0 && pointerDelta.y == 0 )
+					{
+						// 入力が無い場合はタッチも含めた値を使用する
+						pointerDelta = m_PointerDelta[ 0 ] ;	// ひとまず描画フレームレートの値を使用する
+					}
+
+					return pointerDelta ;
+				}
+			}
+
+			/// <summary>
+			/// ポインターが画面内にあるかどうか
+			/// </summary>
+			public bool IsInside
+			{
+				get
+				{
+					// マウス判定
+					UnityEngine.InputSystem.Mouse mouse = UnityEngine.InputSystem.Mouse.current ;
+					if( mouse != null )
+					{
+						// マウスは繋がっている
+						var pointerPosition = mouse.position.ReadValue() ;
+
+						float w = Screen.width ;
+						float h = Screen.height ;
+
+						return ( pointerPosition.x >= 0 && pointerPosition.y >= 0 && pointerPosition.x <  w && pointerPosition.y <  h ) ;
+					}
+
+					// タッチ判定
+					return ( Input.touchCount == 1 ) ;
 				}
 			}
 

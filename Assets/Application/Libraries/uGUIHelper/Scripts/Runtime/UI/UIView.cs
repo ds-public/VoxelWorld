@@ -27,7 +27,7 @@ namespace uGUIHelper
 	/// </summary>
 	public class UIView : UIBehaviour
 	{
-		public const string Version = "Version 2024/11/12 0" ;
+		public const string Version = "Version 2025/01/29 0" ;
 
 		// ソースコード
 		// https://bitbucket.org/Unity-Technologies/ui/src/2019.1/
@@ -11432,7 +11432,7 @@ namespace uGUIHelper
 
 			//----------------------------------
 
-			// バックキーが有効か無効か返す
+			// レイキャストがヒットしたか返す
 			return isAvailable ;
 		}
 

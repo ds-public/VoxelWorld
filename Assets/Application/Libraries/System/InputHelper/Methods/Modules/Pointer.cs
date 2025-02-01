@@ -75,8 +75,20 @@ namespace InputHelper
 		/// <summary>
 		/// ポインターの位置
 		/// </summary>
-		public static Vector3 Position
+		public static Vector3	Position
 			=> Mouse.Position ;
+
+		/// <summary>
+		/// ポインターの移動量
+		/// </summary>
+		public static Vector3	Delta
+			=> Mouse.Delta ;
+
+		/// <summary>
+		/// ポインターが画面内にあるかどうか
+		/// </summary>
+		public static bool		IsInside
+			=> Mouse.IsInside ;
 
 		/// <summary>
 		/// ポインターが押されているかどうか

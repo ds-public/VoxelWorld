@@ -75,6 +75,16 @@ namespace InputHelper
 			Vector3 Position{ get ; }
 
 			/// <summary>
+			/// ポインターの移動量
+			/// </summary>
+			Vector3 Delta{ get ; }
+
+			/// <summary>
+			/// ポインターのが画面内にあるかどうか
+			/// </summary>
+			bool IsInside{ get ; }
+
+			/// <summary>
 			/// ボタンが押されているかどうかの判定
 			/// </summary>
 			/// <param name="buttonNumber"></param>
@@ -178,6 +188,38 @@ namespace InputHelper
 				}
 
 				return m_Implementation.Position ;
+			}
+		}
+
+		/// <summary>
+		/// ポインターの移動量
+		/// </summary>
+		public static Vector3 Delta
+		{
+			get
+			{
+				if( m_Implementation == null )
+				{
+					throw new Exception( "Not implemented." ) ;
+				}
+
+				return m_Implementation.Delta ;
+			}
+		}
+
+		/// <summary>
+		/// ポインターがが画面内にあるかどうか
+		/// </summary>
+		public static bool IsInside
+		{
+			get
+			{
+				if( m_Implementation == null )
+				{
+					throw new Exception( "Not implemented." ) ;
+				}
+
+				return m_Implementation.IsInside ;
 			}
 		}
 

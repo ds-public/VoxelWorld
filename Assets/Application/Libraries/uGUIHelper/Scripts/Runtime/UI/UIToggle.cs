@@ -260,15 +260,12 @@ namespace uGUIHelper
 
 			toggle.graphic = m_Checkmark.CImage ;
 
-			if( string.IsNullOrEmpty( option ) == true )
-			{
-				// LabelMesh
-				m_LabelMesh = AddView<UITextMesh>( "Label" ) ;
-				m_LabelMesh.SetAnchorToLeftMiddle() ;
-				m_LabelMesh.SetPosition( this.Height * 1.2f, 0 ) ;
-				m_LabelMesh.SetPivot( 0, 0.5f ) ;
-				m_LabelMesh.FontSize = ( int )( this.Height * 0.75f ) ;
-			}
+			// LabelMesh
+			m_LabelMesh = AddView<UITextMesh>( "Label" ) ;
+			m_LabelMesh.SetAnchorToLeftMiddle() ;
+			m_LabelMesh.SetPosition( this.Height * 1.2f, 0 ) ;
+			m_LabelMesh.SetPivot( 0, 0.5f ) ;
+			m_LabelMesh.FontSize = ( int )( this.Height * 0.75f ) ;
 			
 			//----------------------------------------
 
