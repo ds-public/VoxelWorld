@@ -31,14 +31,16 @@ using System.Threading.Tasks ;
 // using System.Net ;
 using System.Net.Sockets ;
 
+#if UNITY
 using UnityEngine ;
+#endif
 //using Debug = DebugHelper.Debug ;	// Debug クラスは UnityEngine 側ではなく DebugHelper 側を優先させる
 
 
 namespace SocketHelper
 {
 	/// <summary>
-	/// Socket のクライアント側の管理用クラス Version 2024/12/27
+	/// Socket のクライアント側の管理用クラス Version 2025/03/22
 	/// </summary>
 	public class SocketClient
 	{
@@ -68,13 +70,7 @@ namespace SocketHelper
 
 
 		// インスタンスを所持しているオーナーのキャンセルトークン
-		private CancellationToken										m_OwnerCancellationToken ;
-
-		// タスクキャンセル用のトークンソース
-		private CancellationTokenSource									m_TcpCancellationTokenSource ;
-
-		// タスクキャンセル用のトークンソース
-		private CancellationTokenSource									m_UdpCancellationTokenSource ;
+		private readonly CancellationToken								m_OwnerCancellationToken ;
 
 		// 受信用バッファ
 		private readonly byte[]											m_ReceiveBuffer ;
@@ -136,8 +132,11 @@ namespace SocketHelper
 			SynchronizationContext		mainThreadContext			= null
 		)
 		{
-			// ソケットを生成する
-			m_SocketUdp = new UdpClient( 0 ) ;
+			if( onUdpReceived != null )
+			{
+				// ソケットを生成する
+				m_SocketUdp = new UdpClient( 0 ) ;
+			}
 
 			//----------------------------------
 
@@ -175,17 +174,11 @@ namespace SocketHelper
 			//----------------------------------
 			// UDP 用の CancellationTokenSource
 
-			if( m_OwnerCancellationToken == default )
+			if( onUdpReceived != null )
 			{
-				m_UdpCancellationTokenSource = new () ;
+				// ＵＤＰの受信を開始する
+				StartReceiveUdp() ;
 			}
-			else
-			{
-				m_UdpCancellationTokenSource = CancellationTokenSource.CreateLinkedTokenSource( m_OwnerCancellationToken ) ;
-			}
-
-			// ＵＤＰの受信を開始する
-			StartUdpReceive() ;
 		}
 
 		/// <summary>
@@ -225,22 +218,6 @@ namespace SocketHelper
 			// ソケットを生成する
 			m_SocketTcp = new Socket( SocketType.Stream, ProtocolType.Tcp ) ;
 
-			if( m_TcpCancellationTokenSource != null )
-			{
-				// 既に生成済みなら破棄する(保険)
-				m_TcpCancellationTokenSource.Cancel() ;
-				m_TcpCancellationTokenSource.Dispose() ;
-			}
-
-			if( m_OwnerCancellationToken == default )
-			{
-				m_TcpCancellationTokenSource = new () ;
-			}
-			else
-			{
-				m_TcpCancellationTokenSource = CancellationTokenSource.CreateLinkedTokenSource( m_OwnerCancellationToken ) ;
-			}
-
 			//----------------------------------------------------------
 
 			string url = serverAddress + ":" + serverPort.ToString() ;
@@ -252,6 +229,12 @@ namespace SocketHelper
 			// デバッグ用に記録しておく
 			m_ServerAddress = serverAddress ;
 			m_ServerPort	= serverPort ;
+
+			if( serverAddress == "localhost" )
+			{
+				// Socket は localhost を理解出来ないため変換が必要
+				serverAddress  = "127.0.0.1" ;
+			}
 
 			// 接続実行
 			bool isConnectRunning = true ;
@@ -268,44 +251,48 @@ namespace SocketHelper
 
 			//----------------------------------------------------------
 
-			CancellationTokenSource cancellationTokenSource ;
+			CancellationTokenSource cancellationTokenSource = null ;
+			CancellationToken activeCancellationToken = default ;
 
-			// ※ m_TcpCancellationTokenSource には必ず値が設定されている
-			if( cancellationToken == default )
+			if( m_OwnerCancellationToken != default && cancellationToken == default )
 			{
-				cancellationTokenSource = m_TcpCancellationTokenSource ;
+				activeCancellationToken = m_OwnerCancellationToken ;
 			}
 			else
+			if( m_OwnerCancellationToken == default && cancellationToken != default )
 			{
-				cancellationTokenSource = CancellationTokenSource.CreateLinkedTokenSource( m_TcpCancellationTokenSource.Token, cancellationToken ) ;
+				activeCancellationToken = cancellationToken ;
+			}
+			else
+			if( m_OwnerCancellationToken != default && cancellationToken != default )
+			{
+				cancellationTokenSource = CancellationTokenSource.CreateLinkedTokenSource( m_OwnerCancellationToken, cancellationToken ) ;
+				activeCancellationToken = cancellationTokenSource.Token ;
 			}
 
-			//--------------
-
-			bool isCanceled	= false ;
+			bool isCanceled = false ;
 
 			// 接続完了を待つ
 			while( m_SocketTcp != null )
 			{
-				if( isConnectRunning == false )
-				{
-					// 接続プロセス終了
-					break ;
-				}
-
-				if( cancellationToken.IsCancellationRequested == true )
+				if( activeCancellationToken != default && activeCancellationToken.IsCancellationRequested == true )
 				{
 					// ConnectAsync のみの停止要求が出された
 					isCanceled = true ;
 					break ;
 				}
 
+				if( isConnectRunning == false )
+				{
+					// 接続プロセス終了
+					break ;
+				}
+
 				await Task.Yield() ;
 			}
 
-			if( cancellationToken != default )
+			if( cancellationTokenSource != null )
 			{
-				// 一時的に生成したものなので破棄する
 				cancellationTokenSource.Dispose() ;
 			}
 
@@ -420,198 +407,200 @@ namespace SocketHelper
 		private void StartTcpReceive()
 		{
 			// 最初の受信待ちを呼ぶ
-			m_SocketTcp.BeginReceive( m_ReceiveBuffer, 0, m_ReceiveBuffer.Length, SocketFlags.None, StartTcpReceive_Callback, null ) ;
+			m_SocketTcp.BeginReceive( m_ReceiveBuffer, 0, m_ReceiveBuffer.Length, SocketFlags.None, StartReceiveTcp_Callback, m_SocketTcp ) ;
 		}
 
-		private int		m_ReceiveHeaderSize = 8 ;
-		private byte[]	m_ReceiveHeaderData = new byte[ 8 ] ;
-		private int		m_ReceiveHeaderStep = 0 ;
+		private readonly int	m_ReceiveHeaderSize = 8 ;
+		private readonly byte[]	m_ReceiveHeaderData = new byte[ 8 ] ;
+		private int				m_ReceiveHeaderStep = 0 ;
 
-		private int		m_ReceivePacketSize = 0 ;
-		private byte[]	m_ReceivePacketData = null ;
-		private int		m_ReceivePacketStep = 0 ;
+		private int				m_ReceivePacketSize = 0 ;
+		private byte[]			m_ReceivePacketData = null ;
+		private int				m_ReceivePacketStep = 0 ;
 
 		// データを受信した際に呼び出される(サブスレッドである事に注意)
-		private void StartTcpReceive_Callback( IAsyncResult ar )
+		private void StartReceiveTcp_Callback( IAsyncResult ar )
 		{
-			if( m_TcpCancellationTokenSource != null && m_TcpCancellationTokenSource.IsCancellationRequested == true )
+			if( ProcessReceiveTcp( ar ) == false )
 			{
-				// 中断
-				return ;
+				// 切断された
+				OnTcpDisconnectedFromServer() ;
 			}
+		}
 
-			if( m_SocketTcp == null )
-			{
-				// 既にソケットが破棄されている
-				return ;
-			}
-
-			// m_Socket.Available の値は使い物にならない(常に０)
-
-			bool isDisconnected = false ;
+		private bool ProcessReceiveTcp( IAsyncResult ar )
+		{
+			var socketTcp = ( Socket )ar.AsyncState ;
 
 			int	receiveSize = 0 ;
 			int	receiveStep = 0 ;
 
-			if( m_SocketTcp.Connected == true )
+			// ここの try ～ catch は必須(無いと m_Socket 切断後に isDisconnected の値設定に到達できない)
+			try
 			{
-				// ここの try ～ catch は必須(無いと m_Socket 切断後に isDisconnected の値設定に到達できない)
-
-				try
+				if( socketTcp.Connected == true )
 				{
-					receiveSize = m_SocketTcp.EndReceive( ar ) ;
+					receiveSize = socketTcp.EndReceive( ar ) ;
 					if( receiveSize == 0 )
 					{
-						Debug.Log( "[TCP] 受信待ち中に０バイト受信が発生した : " + m_SocketTcp.Connected + " , " + isDisconnected ) ;
-						
-						isDisconnected = true ;
+						Debug.Log( "[TCP] 受信待ち中に０バイト受信が発生した" ) ;
+
+						return false ;
 					}
-				}
-				catch( Exception e )
-				{
-					Debug.Log( e.Message ) ;
-					isDisconnected = true ;
-				}
-			}
-			else
-			{
-				// 切断された
-				isDisconnected = true ;
-			}
 
-			if( isDisconnected == true )
-			{
-				// 切断された
-				Debug.Log( "受信コールバック時にサーバーから切断された事を検知" ) ;
-				OnTcpDisconnectedByServer() ;
-				return ;
-			}
+					//----------------------------------
 
-			//----------------------------------
+					int		requiredSize ;
 
-			int		requiredSize ;
+					uint	crc ;
+					byte	xor = 0xAA ;
+					int		xor_index ;
 
-			uint	crc ;
-			byte	xor = 0xAA ;
-			int		xor_index ;
-
-			// 現在のフレームで受信したデータを全て処理しきるまで繰り返し処理する
-			while( receiveStep <  receiveSize )
-			{
-				if( m_ReceivePacketSize == 0 )
-				{
-					// パケットサイズが不明
-
-					while( m_ReceivePacketSize == 0 && receiveStep <  receiveSize )
+					// 現在のフレームで受信したデータを全て処理しきるまで繰り返し処理する
+					while( receiveStep <  receiveSize )
 					{
-						// ヘッダ部分の固定長のデータを取得する
-								
-						requiredSize = Math.Min( m_ReceiveHeaderSize - m_ReceiveHeaderStep, receiveSize - receiveStep ) ;
-
-						Array.Copy( m_ReceiveBuffer, receiveStep, m_ReceiveHeaderData, m_ReceiveHeaderStep, requiredSize ) ;
-						receiveStep += requiredSize ;
-						m_ReceiveHeaderStep  += requiredSize ;
-
-						if( m_ReceiveHeaderStep == m_ReceiveHeaderSize )
+						if( m_ReceivePacketSize == 0 )
 						{
-							// サイズ分が溜まった
+							// パケットサイズが不明
 
-							for( xor_index  = 0 ;  xor_index <  m_ReceiveHeaderSize ; xor_index ++ )
+							while( m_ReceivePacketSize == 0 && receiveStep <  receiveSize )
 							{
-								m_ReceiveHeaderData[ xor_index ] ^= xor ;
+								// ヘッダ部分の固定長のデータを取得する
+								
+								requiredSize = Math.Min( m_ReceiveHeaderSize - m_ReceiveHeaderStep, receiveSize - receiveStep ) ;
+
+								Array.Copy( m_ReceiveBuffer, receiveStep, m_ReceiveHeaderData, m_ReceiveHeaderStep, requiredSize ) ;
+								receiveStep += requiredSize ;
+								m_ReceiveHeaderStep  += requiredSize ;
+
+								if( m_ReceiveHeaderStep == m_ReceiveHeaderSize )
+								{
+									// サイズ分が溜まった
+
+									for( xor_index  = 0 ;  xor_index <  m_ReceiveHeaderSize ; xor_index ++ )
+									{
+										m_ReceiveHeaderData[ xor_index ] ^= xor ;
+									}
+
+									crc = ( uint )(
+										  m_ReceiveHeaderData[ 4 ]         |
+										( m_ReceiveHeaderData[ 5 ] <<  8 ) |
+										( m_ReceiveHeaderData[ 6 ] << 16 ) |
+										( m_ReceiveHeaderData[ 7 ] << 24 ) ) ;
+
+									if( crc != GetCRC32( m_ReceiveHeaderData, 0, 4 ) )
+									{
+										// サイズに異常が見られる
+
+										// 不正アクセスなので強制切断
+										return false ;
+									}
+
+									m_ReceivePacketSize =
+										  m_ReceiveHeaderData[ 0 ]         |
+										( m_ReceiveHeaderData[ 1 ] <<  8 ) |
+										( m_ReceiveHeaderData[ 2 ] << 16 ) |
+										( m_ReceiveHeaderData[ 3 ] << 24 ) ;
+
+									if( m_ReceivePacketSize >  m_MaxTcpPacketSize )
+									{
+										// 最大サイズを超えている
+
+										// 不正アクセスなので強制切断
+										return false ;
+									}
+
+									if( m_ReceivePacketSize >  0 )
+									{
+										m_ReceivePacketData = new byte[ m_ReceivePacketSize ] ;
+										m_ReceivePacketStep = 0 ;
+									}
+									else
+									{
+										// もう一度取り直し(ワーニングは出した方が良い)
+										m_ReceiveHeaderStep = 0 ;
+									}
+								}
 							}
+						}
 
-							crc = ( uint )(
-								  m_ReceiveHeaderData[ 4 ]         |
-								( m_ReceiveHeaderData[ 5 ] <<  8 ) |
-								( m_ReceiveHeaderData[ 6 ] << 16 ) |
-								( m_ReceiveHeaderData[ 7 ] << 24 ) ) ;
+						if( m_ReceivePacketSize >  0 && m_ReceivePacketStep <  m_ReceivePacketSize && receiveStep <  receiveSize )
+						{
+							// パケットサイズが確定
 
-							if( crc != GetCRC32( m_ReceiveHeaderData, 0, 4 ) )
+							// データ部をコピーする
+
+							requiredSize = Math.Min( m_ReceivePacketSize - m_ReceivePacketStep, receiveSize - receiveStep ) ;
+							Array.Copy( m_ReceiveBuffer, receiveStep, m_ReceivePacketData, m_ReceivePacketStep, requiredSize ) ;
+							receiveStep += requiredSize ;
+							m_ReceivePacketStep  += requiredSize ;
+
+							if( m_ReceivePacketStep == m_ReceivePacketSize )
 							{
-								// サイズに異常が見られる
+		//						Debug.Log( "受信パケット完成 [ " + m_ReceivePacketSize + " ]" ) ;
 
-								// 不正アクセスなので強制切断
-								Disconnect( true ) ;
-								return ;
-							}
+								// コピーしておかないと次の受信で上書きされてしまう
+								byte[] tcpPacket = new byte[ m_ReceivePacketSize ] ;
+								Array.Copy( m_ReceivePacketData, tcpPacket, m_ReceivePacketSize ) ;
 
-							m_ReceivePacketSize =
-								  m_ReceiveHeaderData[ 0 ]         |
-								( m_ReceiveHeaderData[ 1 ] <<  8 ) |
-								( m_ReceiveHeaderData[ 2 ] << 16 ) |
-								( m_ReceiveHeaderData[ 3 ] << 24 ) ;
+								//-------------------------------
 
-							if( m_ReceivePacketSize >  m_MaxTcpPacketSize )
-							{
-								// 最大サイズを超えている
+								// コールバックを呼ぶ
+								if( m_OnTcpReceived != null )
+								{
+									if( m_MainThreadContext != null )
+									{
+										if( SynchronizationContext.Current == m_MainThreadContext )
+										{
+											// パケットが完成した
+											m_OnTcpReceived( tcpPacket ) ;
+										}
+										else
+										{
+											m_MainThreadContext.Post( ( _ ) =>
+											{
+												// パケットが完成した
+												m_OnTcpReceived( tcpPacket ) ;
+											}, null ) ;
+										}
+									}
+									else
+									{
+										// パケットが完成した
+										m_OnTcpReceived( tcpPacket ) ;
+									}
+								}
 
-								// 不正アクセスなので強制切断
-								Disconnect( true ) ;
-								return ;
-							}
+								//-------------------------------
 
-							if( m_ReceivePacketSize >  0 )
-							{
-								m_ReceivePacketData = new byte[ m_ReceivePacketSize ] ;
-								m_ReceivePacketStep = 0 ;
-							}
-							else
-							{
-								// もう一度取り直し(ワーニングは出した方が良い)
+								// パケットサイズを０に初期化
+								m_ReceivePacketSize = 0 ;
 								m_ReceiveHeaderStep = 0 ;
 							}
 						}
 					}
-				}
 
-				if( m_ReceivePacketSize >  0 && m_ReceivePacketStep <  m_ReceivePacketSize && receiveStep <  receiveSize )
-				{
-					// パケットサイズが確定
+					// 今回受信したデータは全て処理した
 
-					// データ部をコピーする
-
-					requiredSize = Math.Min( m_ReceivePacketSize - m_ReceivePacketStep, receiveSize - receiveStep ) ;
-					Array.Copy( m_ReceiveBuffer, receiveStep, m_ReceivePacketData, m_ReceivePacketStep, requiredSize ) ;
-					receiveStep += requiredSize ;
-					m_ReceivePacketStep  += requiredSize ;
-
-					if( m_ReceivePacketStep == m_ReceivePacketSize )
-					{
-//						Debug.Log( "受信パケット完成 [ " + m_ReceivePacketSize + " ]" ) ;
-
-						// コピーしておかないと次の受信で上書きされてしまう
-						byte[] tcpPacket = new byte[ m_ReceivePacketSize ] ;
-						Array.Copy( m_ReceivePacketData, tcpPacket, m_ReceivePacketSize ) ;
-
-						// パケットが完成した
-						m_OnTcpReceived?.Invoke( tcpPacket ) ;
-
-						// パケットサイズを０に初期化
-						m_ReceivePacketSize = 0 ;
-						m_ReceiveHeaderStep = 0 ;
-					}
+					// 再び受信待ちを呼ぶ
+					socketTcp.BeginReceive( m_ReceiveBuffer, 0, m_ReceiveBuffer.Length, SocketFlags.None, StartReceiveTcp_Callback, socketTcp ) ;
 				}
 			}
-
-			// 今回受信したデータは全て処理した
-
-			// ユーザー受信コールバック内でＴＣＰソケットの破棄が行われる可能性がある
-			if( m_SocketTcp != null )
+			catch( Exception e )
 			{
-				// 再び受信待ちを呼ぶ
-				m_SocketTcp.BeginReceive( m_ReceiveBuffer, 0, m_ReceiveBuffer.Length, SocketFlags.None, StartTcpReceive_Callback, null ) ;
+				Debug.Log( e.Message ) ;
+				return false ;
 			}
+
+			// 通信継続
+			return true ;
 		}
 
 		//-----------------------------------
 
 		// 送信時のスレッド間の排他制御(複数のスレッドから同時参照があるので排他制御が必要)
-#if UNITY
-		private readonly object m_TcpSendLockObject = new () ;
-#else
-		private readonly Lock m_TcpSendLockObject = new () ;
-#endif
+		private readonly object m_SendTcpLockObject = new () ;
+
 		// 送信中かどうかのフラグ
 		private bool m_IsTcpSendRunning = false ;
 
@@ -636,7 +625,7 @@ namespace SocketHelper
 			//----------------------------------
 
 			// サブスレッドの排他制御
-			lock( m_TcpSendLockObject )
+			lock( m_SendTcpLockObject )
 			{
 				if( m_IsTcpSendRunning == false )
 				{
@@ -647,7 +636,7 @@ namespace SocketHelper
 					// トータルの送信データサイズ
 					int requiredSize = EncodeSendData( tcpPacket, m_SendBuffer ) ;
 
-					m_SocketTcp.BeginSend( m_SendBuffer, 0, requiredSize, SocketFlags.None, SendTcp_Callback, null ) ;
+					m_SocketTcp.BeginSend( m_SendBuffer, 0, requiredSize, SocketFlags.None, SendTcp_Callback, m_SocketTcp ) ;
 				}
 				else
 				{
@@ -664,31 +653,26 @@ namespace SocketHelper
 		// 送信終了時に呼び出される(別スレッドである事に注意する)
 		private void SendTcp_Callback( IAsyncResult ar )
 		{
-			// サブスレッドの排他制御
-			lock( m_TcpSendLockObject )
+			if( ProcessSendTcp( ar ) == false )
 			{
-				if( m_TcpCancellationTokenSource != null && m_TcpCancellationTokenSource.IsCancellationRequested == true )
-				{
-					// 中断
-					m_IsTcpSendRunning = false ;
-					return ;
-				}
+				// 切断された
+				OnTcpDisconnectedFromServer() ;
+			}
+		}
 
-				if( m_SocketTcp == null )
-				{
-					// ＴＣＰソケットは破棄されている
-					m_IsTcpSendRunning = false ;
-					return ;
-				}
+		private bool ProcessSendTcp( IAsyncResult ar )
+		{
+			var socketTcp = ( Socket )ar.AsyncState ;
 
-				bool isDisconnected = false ;
-
-				if( m_SocketTcp.Connected == true )
+			try
+			{
+				if( socketTcp.Connected == true )
 				{
-					try
+					int sendSize = socketTcp.EndSend( ar ) ;
+					if( sendSize >  0 )
 					{
-						int sendSize = m_SocketTcp.EndSend( ar ) ;
-						if( sendSize >  0 )
+						// サブスレッドの排他制御
+						lock( m_SendTcpLockObject )
 						{
 							if( m_SendTcpPackets.Count >  0 )
 							{
@@ -704,40 +688,33 @@ namespace SocketHelper
 								int requiredSize = EncodeSendData( tcpPacket, m_SendBuffer ) ;
 
 								// 送信を実行する
-								m_SocketTcp.BeginSend( m_SendBuffer, 0, requiredSize, SocketFlags.None, SendTcp_Callback, null ) ;
+								socketTcp.BeginSend( m_SendBuffer, 0, requiredSize, SocketFlags.None, SendTcp_Callback, socketTcp ) ;
 							}
 							else
 							{
-								// 送信終了
+								// 送信中ではなくなった
 								m_IsTcpSendRunning = false ;
-								return ;
 							}
 						}
-						else
-						{
-							isDisconnected = true ;
-						}
 					}
-					catch( Exception e )
+					else
 					{
-						Debug.Log( "ＴＣＰの送信で例外発生 " + e.Message ) ;
-						m_IsTcpSendRunning = false ;
-
-						isDisconnected = true ;
+						return false ;
 					}
 				}
 				else
 				{
-					// 切断された
-					isDisconnected = true ;
-				}
-
-				if( isDisconnected == true )
-				{
-					Debug.Log( "[TCP] 送信実行中にサーバーから切断された事を検知 : " + m_SocketTcp.Connected + " , " + isDisconnected ) ;
-					OnTcpDisconnectedByServer() ;
+					return false ;
 				}
 			}
+			catch( Exception e )
+			{
+				Debug.Log( "ＴＣＰの送信で例外発生 " + e.Message ) ;
+				return false ;
+			}
+
+			// 通信継続
+			return true ;
 		}
 
 		private int EncodeSendData( byte[] tcpPacket, byte[] tcpBuffer )
@@ -794,26 +771,35 @@ namespace SocketHelper
 			//----------------------------------
 			// バッファに積む事自体は成功したので終了を待つ
 
-			CancellationTokenSource cancellationTokenSource ;
+			CancellationTokenSource cancellationTokenSource = null ;
+			CancellationToken activeCancellationToken = default ;
 
-			// ※ m_TcpCancellationTokenSource には必ず値が設定されている
-			if( cancellationToken == default )
+			if( m_OwnerCancellationToken != default && cancellationToken == default )
 			{
-				cancellationTokenSource = m_TcpCancellationTokenSource ;
+				activeCancellationToken = m_OwnerCancellationToken ;
 			}
 			else
+			if( m_OwnerCancellationToken == default && cancellationToken != default )
 			{
-				cancellationTokenSource = CancellationTokenSource.CreateLinkedTokenSource( m_TcpCancellationTokenSource.Token, cancellationToken ) ;
+				activeCancellationToken = cancellationToken ;
 			}
-
-			//--------------
-
-			// 一時的に生成したキャンセレーショントークンソースをきちんと破棄するためにめんどくさい処理が必要
+			else
+			if( m_OwnerCancellationToken != default && cancellationToken != default )
+			{
+				cancellationTokenSource = CancellationTokenSource.CreateLinkedTokenSource( m_OwnerCancellationToken, cancellationToken ) ;
+				activeCancellationToken = cancellationTokenSource.Token ;
+			}
 
 			bool isCanceled	= false ;
 
-			while( m_SocketTcp != null && cancellationTokenSource.IsCancellationRequested == false )
+			while( m_SocketTcp != null )
 			{
+				if( activeCancellationToken != default && activeCancellationToken.IsCancellationRequested == true )
+				{
+					isCanceled = true ;
+					break ;
+				}
+
 				if( m_SendTcpPackets.Count == 0 )
 				{
 					// 送信パケットバッファが空になった
@@ -824,15 +810,8 @@ namespace SocketHelper
 				await Task.Yield() ;
 			}
 
-			if( cancellationTokenSource.IsCancellationRequested == true )
+			if( cancellationTokenSource != null )
 			{
-				// これらは中断扱いとする
-				isCanceled = true ;
-			}
-
-			if( cancellationToken != default )
-			{
-				// 一時的に生成したものなので破棄する
 				cancellationTokenSource.Dispose() ;
 			}
 
@@ -859,41 +838,63 @@ namespace SocketHelper
 		//-------------------------------------------------------------------------------------------
 
 		// ＵＤＰの受信を処理する(新)
-		private void StartUdpReceive()
+		private void StartReceiveUdp()
 		{
 			// 最初の受信受付開始
-			m_SocketUdp.BeginReceive( StartUdpReceive_Callback, m_SocketUdp ) ;
+			m_SocketUdp.BeginReceive( StartReceiveUdp_Callback, m_SocketUdp ) ;
 		}
 
 		// 受信した際に呼び出されるコールバック(サブスレッドである事に注意する)
-		private void StartUdpReceive_Callback( IAsyncResult ar )
+		private void StartReceiveUdp_Callback( IAsyncResult ar )
 		{
-			if( m_SocketUdp == null )
-			{
-				// 既にソケットが破棄されている
-				return ;
-			}
+			var socketUdp = ( UdpClient )ar.AsyncState ;
 
 			// データを取得する
 			try
 			{
 				IPEndPoint ipEndPoint = null ;
-				var packetData = m_SocketUdp.EndReceive( ar, ref ipEndPoint ) ;
+				var packetData = socketUdp.EndReceive( ar, ref ipEndPoint ) ;
 				if( packetData != null && packetData.Length >  0 )
 				{
 //					Debug.Log( "<color=#FF7F00>----------[UDP] データ受信 : データサイズ = " + packetData.Length + "</color>" ) ;
 
-					m_OnUdpReceived?.Invoke( packetData, ipEndPoint.Address.ToString(), ipEndPoint.Port ) ;
+					//--------------------------------
 
-					//-----------------------------
+					// コールバックを呼ぶ
+					if( m_OnUdpReceived != null )
+					{
+						if( m_MainThreadContext != null )
+						{
+							if( SynchronizationContext.Current == m_MainThreadContext )
+							{
+								// パケットが完成した
+								m_OnUdpReceived( packetData, ipEndPoint.Address.ToString(), ipEndPoint.Port ) ;
+							}
+							else
+							{
+								m_MainThreadContext.Post( ( _ ) =>
+								{
+									// パケットが完成した
+									m_OnUdpReceived( packetData, ipEndPoint.Address.ToString(), ipEndPoint.Port ) ;
+								}, null ) ;
+							}
+						}
+						else
+						{
+							// パケットが完成した
+							m_OnUdpReceived( packetData, ipEndPoint.Address.ToString(), ipEndPoint.Port ) ;
+						}
+					}
+
+					//--------------------------------
 
 					// 再び受信監視処理を呼ぶ
-					m_SocketUdp.BeginReceive( StartUdpReceive_Callback, m_SocketUdp ) ;
+					socketUdp.BeginReceive( StartReceiveUdp_Callback, socketUdp ) ;
 				}
 			}
-			catch( Exception ex )
+			catch( Exception e )
 			{
-				Debug.Log( "<color=#FF00FF>[UDP] 受信で何らかの異常発生 : " + ex.Message + "</color>" ) ;
+				Debug.Log( "<color=#FF00FF>[UDP] 受信で何らかの異常発生 : " + e.Message + "</color>" ) ;
 				return ;
 			}
 		}
@@ -901,11 +902,8 @@ namespace SocketHelper
 		//-----------------------------------
 
 		// 送信時のスレッド間の排他制御(複数のスレッドから同時参照があるので排他制御が必要)
-#if UNITY
-		private readonly object m_UdpSendLockObject = new () ;
-#else
-		private readonly Lock m_UdpSendLockObject = new () ;
-#endif
+		private readonly object m_SendUdpLockObject = new () ;
+
 		// 送信中かどうかのフラグ
 		private bool m_IsUdpSendRunning = false ;
 
@@ -928,15 +926,23 @@ namespace SocketHelper
 			//----------------------------------------------------------
 
 			// サブスレッドの排他制御
-			lock( m_UdpSendLockObject )
+			lock( m_SendUdpLockObject )
 			{
+#if UNITY_EDITOR
+				if( data.Length >  65500 )
+				{
+					Debug.LogWarning( $"<color=#FFFF00>ＵＤＰのデータサイズが 65500 バイトを超えています( {data.Length} ) 正常に送信されない可能性があります</color>" ) ;
+				}
+#endif
+				//---------------------------------
+
 				if( m_IsUdpSendRunning == false )
 				{
 					// 送信中ではない
 
 					m_IsUdpSendRunning = true ;	// 通信中に移行する
 
-					m_SocketUdp.BeginSend( data, data.Length, address, port, SendUdp_Callback, null ) ;
+					m_SocketUdp.BeginSend( data, data.Length, address, port, SendUdp_Callback, m_SocketUdp ) ;
 				}
 				else
 				{
@@ -953,48 +959,46 @@ namespace SocketHelper
 		// 送信終了時に呼び出される(別スレッドである事に注意する)
 		private void SendUdp_Callback( IAsyncResult ar )
 		{
-			// サブスレッドの排他制御
-			lock( m_UdpSendLockObject )
+			var socketUdp = ( UdpClient )ar.AsyncState ;
+
+			try
 			{
-				if( m_SocketUdp == null )
+				int sendSize = socketUdp.EndSend( ar ) ;
+				if( sendSize > 0 )
 				{
-					// ＵＤＰソケットは破棄されている
-					m_IsUdpSendRunning = false ;
-					return ;
-				}
-
-				try
-				{
-					int sendSize = m_SocketUdp.EndSend( ar ) ;
-//					Debug.Log( "<color=#00FFFF>UDP 送信完了 サイズ = " + sendSize + "</color>" ) ;
-
-					// 送信バッファに次以降のＵＤＰパケットが溜まっている場合は引き続きそれらを送信する
-					if( m_SendUdpPackets.Count >  0 )
+					// サブスレッドの排他制御
+					lock( m_SendUdpLockObject )
 					{
-						// パケットを取り出す
-						var udpPacket = m_SendUdpPackets[ 0 ] ;
-						m_SendUdpPackets.RemoveAt( 0 ) ;
+						// 送信バッファに次以降のＵＤＰパケットが溜まっている場合は引き続きそれらを送信する
+						if( m_SendUdpPackets.Count >  0 )
+						{
+							// パケットを取り出す
+							var udpPacket = m_SendUdpPackets[ 0 ] ;
+							m_SendUdpPackets.RemoveAt( 0 ) ;
 
-						//------------------------------
+							//------------------------------
 
-						var udpData = udpPacket.Data ;
+							var udpData = udpPacket.Data ;
 
-						Debug.Log( "<color=#FF7F00>再び送信 : " + udpData.Length + "</color>" ) ;
-						m_SocketUdp.BeginSend( udpData, udpData.Length, udpPacket.Address, udpPacket.Port, SendUdp_Callback, null ) ;
-					}
-					else
-					{
-						// 送信終了
-						m_IsUdpSendRunning = false ;
-						return ;
+	//						Debug.Log( "<color=#FF7F00>再び送信 : " + udpData.Length + "</color>" ) ;
+							socketUdp.BeginSend( udpData, udpData.Length, udpPacket.Address, udpPacket.Port, SendUdp_Callback, socketUdp ) ;
+						}
+						else
+						{
+							// 送信中ではなくなった
+							m_IsUdpSendRunning = false ;
+						}
 					}
 				}
-				catch( Exception ex )
+				else
 				{
-					Debug.Log( "<color=#FF0000>UDP 送信で例外発生 : " + ex.Message + "</color>" ) ;
-					m_IsUdpSendRunning = false ;
-					return ;
+					// 問題発生
 				}
+			}
+			catch( Exception e )
+			{
+				// 問題発生
+				Debug.Log( "<color=#FF0000>UDP 送信で例外発生 : " + e.Message + "</color>" ) ;
 			}
 		}
 
@@ -1009,13 +1013,13 @@ namespace SocketHelper
 
 		//-----------------------------------------------------------
 
-		private readonly object m_TcpDisconnectLockObject = new () ;
+		// ＴＣＰソケットの排他制御用のオブジェクト
+		private readonly object		m_DisconnectedTcpLockObject = new () ;
 
 		// サーバーよって切断された際に呼び出される
-		private void OnTcpDisconnectedByServer()
+		private void OnTcpDisconnectedFromServer()
 		{
-			// 切断の排他制御(複数のスレッドから実行される可能性がある)
-			lock( m_TcpDisconnectLockObject )
+			lock( m_DisconnectedTcpLockObject )
 			{
 				if( m_IsClosed == false )
 				{
@@ -1024,12 +1028,41 @@ namespace SocketHelper
 					// ブロッキングメソッドなのでコールしてはならない
 //					m_Socket.Shutdown( SocketShutdown.Both ) ;
 
-					m_SocketTcp.Close() ;
-					m_SocketTcp.Dispose() ;
-					m_SocketTcp = null ;
+					// タイミングによっては先に破棄されている可能性があるため null チェックは必要
+					if( m_SocketTcp != null )
+					{
+						m_SocketTcp.Close() ;
+						m_SocketTcp.Dispose() ;
+						m_SocketTcp = null ;
+					}
 
-					// 切断コールバックは自発的な切断では呼ばれないようにする
-					m_OnTcpDisconnected?.Invoke() ;
+					//-------------------------------
+
+					// コールバックを呼ぶ
+					if( m_OnTcpDisconnected != null )
+					{
+						if( m_MainThreadContext != null )
+						{
+							if( SynchronizationContext.Current == m_MainThreadContext )
+							{
+								// 切断コールバックは自発的な切断では呼ばれないようにする
+								m_OnTcpDisconnected() ;
+							}
+							else
+							{
+								m_MainThreadContext.Post( ( _ ) =>
+								{
+									// 切断コールバックは自発的な切断では呼ばれないようにする
+									m_OnTcpDisconnected() ;
+								}, null ) ;
+							}
+						}
+						else
+						{
+							// 切断コールバックは自発的な切断では呼ばれないようにする
+							m_OnTcpDisconnected() ;
+						}
+					}
 				}
 			}
 		}
@@ -1040,20 +1073,8 @@ namespace SocketHelper
 		public void Disconnect( bool callbackEnabled )
 		{
 			// 切断の排他制御(複数のスレッドから実行される可能性がある)
-			lock( m_TcpDisconnectLockObject )
+			lock( m_DisconnectedTcpLockObject )
 			{
-				if( m_TcpCancellationTokenSource != null )
-				{
-					if( m_TcpCancellationTokenSource.IsCancellationRequested == false )
-					{
-						Debug.Log( "<color=#FF7FFF>全てのタスクをキャンセルさせる " + m_ServerAddress + " : " + m_ServerPort + "</color>" ) ;
-						m_TcpCancellationTokenSource.Cancel() ;
-					}
-
-					m_TcpCancellationTokenSource.Dispose() ;
-					m_TcpCancellationTokenSource = null ;
-				}
-
 				// 切断なので UdpSocket については処理不要
 
 				if( m_SocketTcp != null )
@@ -1075,8 +1096,35 @@ namespace SocketHelper
 
 					if( callbackEnabled == true )
 					{
-						// 切断時のコールバックを呼ぶ
-						m_OnTcpDisconnected?.Invoke() ;
+						//-------------------------------
+
+						// コールバックを呼ぶ
+						if( m_OnTcpDisconnected != null )
+						{
+							if( m_MainThreadContext != null )
+							{
+								if( SynchronizationContext.Current == m_MainThreadContext )
+								{
+									// 切断コールバックは自発的な切断では呼ばれないようにする
+									m_OnTcpDisconnected() ;
+								}
+								else
+								{
+									m_MainThreadContext.Post( ( _ ) =>
+									{
+										// 切断コールバックは自発的な切断では呼ばれないようにする
+										m_OnTcpDisconnected() ;
+									}, null ) ;
+								}
+							}
+							else
+							{
+								// 切断コールバックは自発的な切断では呼ばれないようにする
+								m_OnTcpDisconnected() ;
+							}
+						}
+
+						//-------------------------------
 					}
 				}
 			}
@@ -1093,24 +1141,13 @@ namespace SocketHelper
 			bool isDisconectRunning = false ;
 
 			// タスクキャンセル用のトークンソース
-			CancellationTokenSource cancellationTokenSource = default ;
+			CancellationTokenSource cancellationTokenSource = null ;
 
 			//----------------------------------------------------------
 
 			// 切断の排他制御(複数のスレッドから実行される可能性がある)
-			lock( m_TcpDisconnectLockObject )
+			lock( m_DisconnectedTcpLockObject )
 			{
-				if( m_TcpCancellationTokenSource != null )
-				{
-					if( m_TcpCancellationTokenSource.IsCancellationRequested == false )
-					{
-						m_TcpCancellationTokenSource.Cancel() ;
-					}
-
-					m_TcpCancellationTokenSource.Dispose() ;
-					m_TcpCancellationTokenSource = null ;
-				}
-
 				// 切断なので UdpSocket については処理不要
 
 				if( m_SocketTcp != null )
@@ -1203,13 +1240,18 @@ namespace SocketHelper
 
 			//----------------------------------
 
-			lock( m_TcpDisconnectLockObject )
+			lock( m_DisconnectedTcpLockObject )
 			{
 				if( m_SocketTcp != null )
 				{
 					m_SocketTcp.Close() ;
 					m_SocketTcp.Dispose() ;
 					m_SocketTcp = null ;
+				}
+
+				if( cancellationTokenSource != null )
+				{
+					cancellationTokenSource.Dispose() ;
 				}
 
 				if( isCanceled == true )
@@ -1221,7 +1263,36 @@ namespace SocketHelper
 				if( callbackEnabled == true )
 				{
 					// 切断時のコールバックを呼ぶ
-					m_OnTcpDisconnected?.Invoke() ;
+
+					//-------------------------------
+
+					// コールバックを呼ぶ
+					if( m_OnTcpDisconnected != null )
+					{
+						if( m_MainThreadContext != null )
+						{
+							if( SynchronizationContext.Current == m_MainThreadContext )
+							{
+								// 切断コールバックは自発的な切断では呼ばれないようにする
+								m_OnTcpDisconnected() ;
+							}
+							else
+							{
+								m_MainThreadContext.Post( ( _ ) =>
+								{
+									// 切断コールバックは自発的な切断では呼ばれないようにする
+									m_OnTcpDisconnected() ;
+								}, null ) ;
+							}
+						}
+						else
+						{
+							// 切断コールバックは自発的な切断では呼ばれないようにする
+							m_OnTcpDisconnected() ;
+						}
+					}
+
+					//-------------------------------
 				}
 			}
 		}
@@ -1233,20 +1304,6 @@ namespace SocketHelper
 		{
 			// 念の為切断も実行する(保険)　※既に切断済みであれば何もしない
 			Disconnect( false ) ;
-
-			//----------------------------------
-
-			if( m_UdpCancellationTokenSource != null )
-			{
-				if( m_UdpCancellationTokenSource.IsCancellationRequested == false )
-				{
-					Debug.Log( "[UDP] タスクのキャンセルを要求する" ) ;
-					m_UdpCancellationTokenSource.Cancel() ;
-				}
-
-				m_UdpCancellationTokenSource.Dispose() ;
-				m_UdpCancellationTokenSource = null ;
-			}
 
 			//----------------------------------
 

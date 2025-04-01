@@ -60,16 +60,15 @@ namespace InputHelper
 		}
 
 		//-----------------------------------------------------------
-
+#if false
 		/// <summary>
 		/// 毎フレーム更新(引数 isFixed は FixedUpdate からの呼び出しかどうか)
 		/// </summary>
 		public static void Update( bool fromFixedUpdate )
 		{
-			Keyboard.Update( fromFixedUpdate ) ;
 			Mouse.Update( fromFixedUpdate ) ;
 		}
-
+#endif
 		//-----------------------------------
 
 		/// <summary>

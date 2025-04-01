@@ -465,6 +465,9 @@ namespace uGUIHelper.InputAdapter
 
 			//----------------------------------------------------------
 
+			// Keyboard
+			Keyboard.Update( false ) ;
+
 			if( Settings.InputProcessingType == InputProcessingTypes.Switching )
 			{
 				// いずれか片方の入力のみ可能(Pointer・GamePadの最初の入力は無効＝切り替え扱い)
@@ -505,7 +508,7 @@ namespace uGUIHelper.InputAdapter
 					else
 					{
 						// Pointer モード有効中
-						Pointer.Update( false ) ;
+						Mouse.Update( false ) ;
 
 						//-------------
 						// 一時的に入力を強制有効化
@@ -660,8 +663,8 @@ namespace uGUIHelper.InputAdapter
 
 				//---------------------------------
 
-				// Pointer
-				Pointer.Update( false ) ;
+				// Mouse
+				Mouse.Update( false ) ;
 
 				// GamePad
 				GamePad.Update( false ) ;
@@ -681,8 +684,11 @@ namespace uGUIHelper.InputAdapter
 
 			//----------------------------------------------------------
 
-			// Pointer
-			Pointer.Update( true ) ;
+			// Keyboard
+			Keyboard.Update( true ) ;
+
+			// Mouse
+			Mouse.Update( true ) ;
 
 			// GamePad
 			GamePad.Update( true ) ;

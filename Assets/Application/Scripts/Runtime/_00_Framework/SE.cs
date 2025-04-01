@@ -189,7 +189,7 @@ namespace DSW
 		/// <param name="listener">リスナーのトランスフォーム</param>
 		/// <param name="scale">距離係数(リスナーから音源までの距離にこの係数を掛け合わせたものが最終的な距離になる)</param>
 		/// <param name="volume">ボリューム係数(0～1)</param>
-		public static int Play3D( string path, Vector3 position, Transform listener = null, float scale = 1, float volume = 1.0f, float pitch = 0.0f, bool loop = false )
+		public static int Play3D( string path, Transform source, Transform listener = null, float scale = 1, bool isUpdating = true, float volume = 1.0f, float pitch = 0.0f, bool loop = false )
 		{
 			path = CorrectPath( path ) ;
 
@@ -203,7 +203,7 @@ namespace DSW
 			}
 			
 			// 再生する
-			return AudioManager.Play3D( audioClip, position, listener, scale, loop, volume, pitch, TagName ) ;
+			return AudioManager.Play3D( audioClip, source, listener, scale, isUpdating, loop, volume, pitch, TagName ) ;
 		}
 		
 		/// <summary>
@@ -215,7 +215,7 @@ namespace DSW
 		/// <param name="scale">距離係数(リスナーから音源までの距離にこの係数を掛け合わせたものが最終的な距離になる)</param>
 		/// <param name="volume">ボリューム係数(0～1)</param>
 		/// <returns>列挙子</returns>
-		public static async UniTask<int> Play3DAsync( string path, Vector3 position, Transform listener = null, float scale = 1, float volume = 1.0f, float pitch = 0.0f, bool loop = false )
+		public static async UniTask<int> Play3DAsync( string path, Transform source, Transform listener = null, float scale = 1, bool isUpdating = true, float volume = 1.0f, float pitch = 0.0f, bool loop = false )
 		{
 			string originalPath = path ;
 			path = CorrectPath( path ) ;
@@ -227,7 +227,7 @@ namespace DSW
 			if( Asset.Exists( path ) == true )
 			{
 				// 既にあるなら高速再生
-				return Play3D( originalPath, position, listener, scale, volume, pitch, loop ) ;
+				return Play3D( originalPath, source, listener, scale, isUpdating, volume, pitch, loop ) ;
 			}
 
 			// 複数を１つのアセットバンドルにまとめており同じシーンの中で何度も再生されるケースがあるのでリソース・アセットバンドル両方にキャッシュする
@@ -240,7 +240,7 @@ namespace DSW
 			}
 
 			// 再生する
-			playId = AudioManager.Play3D( audioClip, position, listener, scale, loop, volume, pitch, TagName ) ;
+			playId = AudioManager.Play3D( audioClip, source, listener, scale, isUpdating, loop, volume, pitch, TagName ) ;
 			if( playId <  0 )
 			{
 				// 失敗

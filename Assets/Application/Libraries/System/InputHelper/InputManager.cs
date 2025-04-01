@@ -15,7 +15,7 @@ using UnityEditor ;
 namespace InputHelper
 {
 	/// <summary>
-	/// 入力操作クラス Version 2025/01/29 0
+	/// 入力操作クラス Version 2025/03/11 0
 	/// </summary>
 	[DefaultExecutionOrder( -90 )]
 	public partial class InputManager : MonoBehaviour
@@ -449,6 +449,9 @@ namespace InputHelper
 
 			//----------------------------------------------------------
 
+			// Keyboard
+			Keyboard.Update( false ) ;
+
 			if( InputProcessingType == InputProcessingTypes.Switching )
 			{
 				// いずれか片方の入力のみ可能(Pointer・GamePadの最初の入力は無効＝切り替え扱い)
@@ -489,7 +492,7 @@ namespace InputHelper
 					else
 					{
 						// Pointer モード有効中
-						Pointer.Update( false ) ;
+						Mouse.Update( false ) ;
 
 						//-------------
 						// 一時的に入力を強制有効化
@@ -644,8 +647,8 @@ namespace InputHelper
 
 				//---------------------------------
 
-				// Pointer
-				Pointer.Update( false ) ;
+				// Mouse
+				Mouse.Update( false ) ;
 
 				// GamePad
 				GamePad.Update( false ) ;
@@ -665,8 +668,11 @@ namespace InputHelper
 
 			//----------------------------------------------------------
 
-			// Pointer
-			Pointer.Update( true ) ;
+			// Keyboard
+			Keyboard.Update( true ) ;
+
+			// Mouse
+			Mouse.Update( true ) ;
 
 			// GamePad
 			GamePad.Update( true ) ;
