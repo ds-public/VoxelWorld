@@ -23,8 +23,8 @@ namespace uGUIHelper.InputAdapter
 			private int m_TouchId = -1 ;
 			private Vector3 m_TouchPosition = Vector3.zero ;
 
-			private readonly Vector3[] m_PointerPosition	= new Vector3[ 2 ] ;
-			private readonly Vector3[] m_PointerDelta		= new Vector3[ 2 ] ;
+			private Vector3 m_PointerPosition	= Vector3.zero ;
+			private Vector3 m_PointerDelta		= Vector3.zero ;
 
 			/// <summary>
 			/// ボタン用状態
@@ -39,7 +39,7 @@ namespace uGUIHelper.InputAdapter
 				public bool		IsUp ;
 			}
 
-			private ButtonState[,] m_ButtonStates ;
+			private ButtonState[] m_ButtonStates ;
 
 			//-----------------------------------------------------------------------------------------
 
@@ -50,23 +50,27 @@ namespace uGUIHelper.InputAdapter
 			public void Initialize()
 			{
 				// ボタンの状態
-				m_ButtonStates = new ButtonState[ NumberOfButtons, 2 ] ;
+				m_ButtonStates = new ButtonState[ NumberOfButtons ] ;
 				for( int buttonIndex  = 0 ; buttonIndex <  NumberOfButtons ; buttonIndex ++ )
 				{
-					m_ButtonStates[ buttonIndex, 0 ] = new ButtonState() ;	// Update 用
-					m_ButtonStates[ buttonIndex, 1 ] = new ButtonState() ;	// FixedUpdate 用
+					m_ButtonStates[ buttonIndex ] = new ButtonState() ;	// Update 用
 				}
 
 				// 基準位置を初期化する
-				m_PointerPosition[ 0 ] = Position ;
-				m_PointerPosition[ 1 ] = Position ;
+				m_PointerPosition = Position ;
 			}
 
 			/// <summary>
 			/// フレーム毎の更新呼び出し
 			/// </summary>
-			public void Update( bool fromFixedUpdate )
+			public void Update( out bool button_0, out bool button_1, out bool button_2 )
 			{
+				button_0 = false ;
+				button_1 = false ;
+				button_2 = false ;
+
+				//---------------------------------------------------------
+
 				UnityEngine.InputSystem.Mouse mouse = UnityEngine.InputSystem.Mouse.current ;
 				if( mouse == null )
 				{
@@ -75,11 +79,6 @@ namespace uGUIHelper.InputAdapter
 				}
 
 				//-----------------------------------------------------------------------------
-
-				int slotNumber = ( fromFixedUpdate == false ? 0 : 1 ) ;
-
-				// SlotNumber = 0 : Update
-				// SlotNumber = 1 : FixedUpdate
 
 				int buttonIndex ;
 				int numberOfButtons = m_ButtonStates.GetLength( 0 ) ;
@@ -90,7 +89,7 @@ namespace uGUIHelper.InputAdapter
 
 				for( buttonIndex  = 0 ; buttonIndex <  numberOfButtons ; buttonIndex ++ )
 				{
-					state = m_ButtonStates[ buttonIndex, slotNumber ] ;
+					state = m_ButtonStates[ buttonIndex ] ;
 
 					//---------------------------------
 
@@ -125,6 +124,13 @@ namespace uGUIHelper.InputAdapter
 								}
 							}
 						}
+
+						switch( buttonIndex )
+						{
+							case 0 : button_0 = true ; break ;
+							case 1 : button_1 = true ; break ;
+							case 2 : button_2 = true ; break ;
+						}
 					}
 					else
 					{
@@ -142,8 +148,8 @@ namespace uGUIHelper.InputAdapter
 				// 移動量を更新する
 
 				var pointerPosition = Position ;
-				m_PointerDelta[ slotNumber ] = pointerPosition - m_PointerPosition[ slotNumber ] ;
-				m_PointerPosition[ slotNumber ] = pointerPosition ;
+				m_PointerDelta    = pointerPosition - m_PointerPosition ;
+				m_PointerPosition = pointerPosition ;
 			}
 
 			//-----------------------------------------------------------------------------------------
@@ -260,7 +266,7 @@ namespace uGUIHelper.InputAdapter
 					if( pointerDelta.x == 0 && pointerDelta.y == 0 )
 					{
 						// 入力が無い場合はタッチも含めた値を使用する
-						pointerDelta = m_PointerDelta[ 0 ] ;	// ひとまず描画フレームレートの値を使用する
+						pointerDelta = m_PointerDelta ;	// ひとまず描画フレームレートの値を使用する
 					}
 
 					return pointerDelta ;
@@ -339,14 +345,9 @@ namespace uGUIHelper.InputAdapter
 			/// </summary>
 			/// <param name="buttonNumber"></param>
 			/// <returns></returns>
-			public bool GetButtonDown( int buttonNumber, bool fromFixedUpdate )
+			public bool GetButtonDown( int buttonNumber )
 			{
-				int slotNumber = ( fromFixedUpdate == false ? 0 : 1 ) ;
-
-				// SlotNumber = 0 : Update
-				// SlotNumber = 1 : FixedUpdate
-
-				return m_ButtonStates[ buttonNumber, slotNumber ].IsDown ;
+				return m_ButtonStates[ buttonNumber ].IsDown ;
 			}
 
 			/// <summary>
@@ -354,14 +355,9 @@ namespace uGUIHelper.InputAdapter
 			/// </summary>
 			/// <param name="buttonNumber"></param>
 			/// <returns></returns>
-			public bool GetButtonUp( int buttonNumber, bool fromFixedUpdate )
+			public bool GetButtonUp( int buttonNumber )
 			{
-				int slotNumber = ( fromFixedUpdate == false ? 0 : 1 ) ;
-
-				// SlotNumber = 0 : Update
-				// SlotNumber = 1 : FixedUpdate
-
-				return m_ButtonStates[ buttonNumber, slotNumber ].IsUp ;
+				return m_ButtonStates[ buttonNumber ].IsUp ;
 			}
 
 			/// <summary>
@@ -369,14 +365,9 @@ namespace uGUIHelper.InputAdapter
 			/// </summary>
 			/// <param name="buttonNumber"></param>
 			/// <returns></returns>
-			public bool GetButtonRepeat( int buttonNumber, bool fromFixedUpdate )
+			public bool GetButtonRepeat( int buttonNumber )
 			{
-				int slotNumber = ( fromFixedUpdate == false ? 0 : 1 ) ;
-
-				// SlotNumber = 0 : Update
-				// SlotNumber = 1 : FixedUpdate
-
-				return m_ButtonStates[ buttonNumber, slotNumber ].IsRepeat ;
+				return m_ButtonStates[ buttonNumber ].IsRepeat ;
 			}
 
 			//----------------------------------

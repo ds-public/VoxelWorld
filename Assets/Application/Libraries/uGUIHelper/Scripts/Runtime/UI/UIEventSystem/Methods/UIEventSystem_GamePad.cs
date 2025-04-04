@@ -93,8 +93,8 @@ namespace uGUIHelper.InputAdapter
 		/// <param name="buttonIdentity"></param>
 		/// <param name="playerNumber"></param>
 		/// <returns></returns>
-		public static bool GetButtonDown( int buttonIdentity, int playerNumber = -1, bool isFixed = false )
-			=> GamePad.GetButtonDown( buttonIdentity, playerNumber, isFixed ) ;
+		public static bool GetButtonDown( int buttonIdentity, int playerNumber = -1 )
+			=> GamePad.GetButtonDown( buttonIdentity, playerNumber ) ;
 
 		/// <summary>
 		/// ボタンが離されたかどうか判定する
@@ -102,8 +102,8 @@ namespace uGUIHelper.InputAdapter
 		/// <param name="buttonIdentity"></param>
 		/// <param name="playerNumber"></param>
 		/// <returns></returns>
-		public static bool GetButtonUp( int buttonIdentity, int playerNumber = -1, bool isFixed = false )
-			=> GamePad.GetButtonUp( buttonIdentity, playerNumber, isFixed ) ;
+		public static bool GetButtonUp( int buttonIdentity, int playerNumber = -1 )
+			=> GamePad.GetButtonUp( buttonIdentity, playerNumber ) ;
 
 		/// <summary>
 		/// ボタンが押されているかどうか判定する(リピート有効)
@@ -111,8 +111,8 @@ namespace uGUIHelper.InputAdapter
 		/// <param name="buttonIdentity"></param>
 		/// <param name="playerNumber"></param>
 		/// <returns></returns>
-		public static bool GetButtonRepeat( int buttonIdentity, int playerNumber = -1, bool isFixed = false )
-			=> GamePad.GetButtonRepeat( buttonIdentity, playerNumber, isFixed ) ;
+		public static bool GetButtonRepeat( int buttonIdentity, int playerNumber = -1 )
+			=> GamePad.GetButtonRepeat( buttonIdentity, playerNumber ) ;
 
 		//---------------
 		// アクシス関連
@@ -132,8 +132,8 @@ namespace uGUIHelper.InputAdapter
 		/// <param name="axisIdentity"></param>
 		/// <param name="playerNumber"></param>
 		/// <returns></returns>
-		public static Vector2 GetAxisDown( int axisIdentity, int playerNumber = -1, bool isFixed = false )
-			=> GamePad.GetAxisDown( axisIdentity, playerNumber, isFixed ) ;
+		public static Vector2 GetAxisDown( int axisIdentity, int playerNumber = -1 )
+			=> GamePad.GetAxisDown( axisIdentity, playerNumber ) ;
 
 		/// <summary>
 		/// アクシス(デジタル扱い)が離されたかどうか判定する
@@ -141,8 +141,8 @@ namespace uGUIHelper.InputAdapter
 		/// <param name="axisIdentity"></param>
 		/// <param name="playerNumber"></param>
 		/// <returns></returns>
-		public static Vector2 GetAxisUp( int axisIdentity, int playerNumber = -1, bool isFixed = false )
-			=> GamePad.GetAxisUp( axisIdentity, playerNumber, isFixed ) ;
+		public static Vector2 GetAxisUp( int axisIdentity, int playerNumber = -1 )
+			=> GamePad.GetAxisUp( axisIdentity, playerNumber ) ;
 
 		/// <summary>
 		/// アクシス(デジタル扱い)が押されているかどうか判定する(リピート有効)
@@ -150,8 +150,8 @@ namespace uGUIHelper.InputAdapter
 		/// <param name="axisIdentity"></param>
 		/// <param name="playerNumber"></param>
 		/// <returns></returns>
-		public static Vector2 GetAxisRepeat( int axisIdentity, int playerNumber = -1, bool isFixed = false )
-			=> GamePad.GetAxisRepeat( axisIdentity, playerNumber, isFixed ) ;
+		public static Vector2 GetAxisRepeat( int axisIdentity, int playerNumber = -1 )
+			=> GamePad.GetAxisRepeat( axisIdentity, playerNumber ) ;
 
 		//---------------
 		// 振動関連

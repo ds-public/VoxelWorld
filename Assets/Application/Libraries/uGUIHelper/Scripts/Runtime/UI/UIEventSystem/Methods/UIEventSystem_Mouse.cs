@@ -63,24 +63,24 @@ namespace uGUIHelper.InputAdapter
 		/// </summary>
 		/// <param name="buttonNumber"></param>
 		/// <returns></returns>
-		public static bool GetMouseButtonDown( int buttonNumber, bool fromFixedUpdate = false )
-			=> Mouse.GetButtonDown( buttonNumber, fromFixedUpdate ) ;
+		public static bool GetMouseButtonDown( int buttonNumber )
+			=> Mouse.GetButtonDown( buttonNumber ) ;
 
 		/// <summary>
 		/// ボタンが離されたどうかの判定
 		/// </summary>
 		/// <param name="buttonNumber"></param>
 		/// <returns></returns>
-		public static bool GetMouseButtonUp( int buttonNumber, bool fromFixedUpdate = false )
-			=> Mouse.GetButtonUp( buttonNumber, fromFixedUpdate ) ;
+		public static bool GetMouseButtonUp( int buttonNumber )
+			=> Mouse.GetButtonUp( buttonNumber ) ;
 
 		/// <summary>
 		/// リピート付きでボタンが押されているかどうかの判定
 		/// </summary>
 		/// <param name="buttonNumber"></param>
 		/// <returns></returns>
-		public static bool GetMouseButtonRepeat( int buttonNumber, bool fromFixedUpdate = false )
-			=> Mouse.GetButtonRepeat( buttonNumber, fromFixedUpdate ) ;
+		public static bool GetMouseButtonRepeat( int buttonNumber )
+			=> Mouse.GetButtonRepeat( buttonNumber ) ;
 
 		/// <summary>
 		/// ホイールの移動量

@@ -427,6 +427,8 @@ namespace AssetBundleHelper
 
 			//----------------------------------------------------------
 
+			private readonly List<string> m_ClearTargetPaths = new () ;
+
 			/// <summary>
 			/// アセットバンドルキャッシュをクリアする
 			/// </summary>
@@ -442,7 +444,8 @@ namespace AssetBundleHelper
 				if( cacheReleaseType == CacheReleaseTypes.Limited )
 				{
 					// 非キャッシグ・非保持・異なるフレームカウントのものを破棄する
-					var paths = new List<string>() ;
+//					var paths = new List<string>() ;
+					m_ClearTargetPaths.Clear() ;
 
 					foreach( var element in m_AssetBundleCache )
 					{
@@ -451,26 +454,29 @@ namespace AssetBundleHelper
 							element.Value.AssetBundle.Unload( false ) ;
 							element.Value.AssetBundle = null ;
 
-							paths.Add( element.Key ) ;
+							m_ClearTargetPaths.Add( element.Key ) ;
 						}
 					}
 
-					if( paths.Count >  0 )
+					if( m_ClearTargetPaths.Count >  0 )
 					{
-						foreach( var path in paths )
+						foreach( var path in m_ClearTargetPaths )
 						{
 #if UNITY_EDITOR
 							m_AssetBundleCacheViewer.Remove( m_AssetBundleCache[ path ] ) ;
 #endif
 							m_AssetBundleCache.Remove( path ) ;
 						}
+
+						m_ClearTargetPaths.Clear() ;
 					}
 				}
 				else
 				if( cacheReleaseType == CacheReleaseTypes.Standard )
 				{
 					// 非保持のものを破棄する
-					var paths = new List<string>() ;
+//					var paths = new List<string>() ;
+					m_ClearTargetPaths.Clear() ;
 
 					foreach( var element in m_AssetBundleCache )
 					{
@@ -479,33 +485,32 @@ namespace AssetBundleHelper
 							element.Value.AssetBundle.Unload( false ) ;
 							element.Value.AssetBundle = null ;
 
-							paths.Add( element.Key ) ;
+							m_ClearTargetPaths.Add( element.Key ) ;
 						}
 					}
 
-					if( paths.Count >  0 )
+					if( m_ClearTargetPaths.Count >  0 )
 					{
-						foreach( var path in paths )
+						foreach( var path in m_ClearTargetPaths )
 						{
 #if UNITY_EDITOR
 							m_AssetBundleCacheViewer.Remove( m_AssetBundleCache[ path ] ) ;
 #endif
 							m_AssetBundleCache.Remove( path ) ;
 						}
+
+						m_ClearTargetPaths.Clear() ;
 					}
 				}
 				else
 				if( cacheReleaseType == CacheReleaseTypes.Perfect )
 				{
 					// 強制的に全てのアセットバンドルを破棄する
-					var paths = new List<string>() ;
 
 					foreach( var element in m_AssetBundleCache )
 					{
 						element.Value.AssetBundle.Unload( true ) ;
 						element.Value.AssetBundle = null ;
-
-						paths.Add( element.Key ) ;
 					}
 #if UNITY_EDITOR
 					m_AssetBundleCacheViewer.Clear() ;

@@ -533,25 +533,8 @@ namespace uGUIHelper.InputAdapter
 
 				//---------------------------------
 
-				int length ;
-
-				// ボタン
-				length = Math.Min( MaximumNumberOfButtons, m_ButtonIdentities.Length ) ;
-				m_ButtonStates = new ButtonState[ length, 2 ] ;
-				for( int buttonIndex  = 0 ; buttonIndex <  length ; buttonIndex ++ )
-				{
-					m_ButtonStates[ buttonIndex, 0 ] = new ButtonState() ;
-					m_ButtonStates[ buttonIndex, 1 ] = new ButtonState() ;
-				}
-
-				// アクシス
-				length = Math.Min( MaximumNumberOfAxes, m_AxisIdentities.Length ) ;
-				m_AxisStates = new AxisState[ length, 2 ] ;
-				for( int axisIndex  = 0 ; axisIndex <  length ; axisIndex ++ )
-				{
-					m_AxisStates[ axisIndex, 0 ] = new AxisState() ;
-					m_AxisStates[ axisIndex, 1 ] = new AxisState() ;
-				}
+				// 初期化
+				Initialize() ;
 			}
 
 			/// <summary>
@@ -567,7 +550,7 @@ namespace uGUIHelper.InputAdapter
 				public bool		IsUp ;
 			}
 
-			private readonly ButtonState[,] m_ButtonStates ;
+			private ButtonState[] m_ButtonStates ;
 
 			/// <summary>
 			/// アクシス用状態
@@ -583,7 +566,7 @@ namespace uGUIHelper.InputAdapter
 				public Vector2	IsUp ;
 			}
 
-			private readonly AxisState[,] m_AxisStates ;
+			private AxisState[] m_AxisStates ;
 
 			//--------------
 			// 振動関係
@@ -600,15 +583,37 @@ namespace uGUIHelper.InputAdapter
 			//------------------------------------------------------------------------------------------
 			// アクセス禁止メソッド
 
+			// 初期化
+			private void Initialize()
+			{
+				int length ;
+
+				// ボタン
+				length = MaximumNumberOfButtons <  m_ButtonIdentities.Length ? MaximumNumberOfButtons : m_ButtonIdentities.Length ;
+				m_ButtonStates = new ButtonState[ length ] ;
+				for( int buttonIndex  = 0 ; buttonIndex <  length ; buttonIndex ++ )
+				{
+					m_ButtonStates[ buttonIndex ] = new ButtonState() ;
+				}
+
+				// アクシス
+				length = MaximumNumberOfAxes <  m_AxisIdentities.Length ? MaximumNumberOfAxes : m_AxisIdentities.Length ;
+				m_AxisStates = new AxisState[ length ] ;
+				for( int axisIndex  = 0 ; axisIndex <  length ; axisIndex ++ )
+				{
+					m_AxisStates[ axisIndex ] = new AxisState() ;
+				}
+			}
+
 			/// <summary>
 			/// ボタンの状態更新を行う(アクセス禁止)
 			/// </summary>
 			/// <param name="buttonIndex"></param>
 			/// <param name="buttonIdentity"></param>
 			/// <param name="buttonFlags"></param>
-			public void UpdateButtonStates( int buttonIndex, int buttonIdentity, int buttonFlags, int slotNumber )
+			public void UpdateButtonStates( int buttonIndex, int buttonIdentity, int buttonFlags )
 			{
-				var state = m_ButtonStates[ buttonIndex, slotNumber ] ;
+				var state = m_ButtonStates[ buttonIndex ] ;
 
 				//---------------------------------
 
@@ -664,9 +669,9 @@ namespace uGUIHelper.InputAdapter
 			/// <param name="playerNumber"></param>
 			/// <param name="axisIndex"></param>
 			/// <param name="axis"></param>
-			public void UpdateAxisStates( int axisIndex, Vector2 axis, int slotNumber )
+			public void UpdateAxisStates( int axisIndex, Vector2 axis )
 			{
-				var state = m_AxisStates[ axisIndex, slotNumber ] ;
+				var state = m_AxisStates[ axisIndex ] ;
 
 				//---------------------------------
 
@@ -765,9 +770,9 @@ namespace uGUIHelper.InputAdapter
 			/// </summary>
 			/// <param name="buttonIndex"></param>
 			/// <returns></returns>
-			public bool GetButtonDown( int buttonIndex, int slotNumber )
+			public bool GetButtonDown( int buttonIndex )
 			{
-				return m_ButtonStates[ buttonIndex, slotNumber ].IsDown ;
+				return m_ButtonStates[ buttonIndex ].IsDown ;
 			}
 
 			/// <summary>
@@ -776,9 +781,9 @@ namespace uGUIHelper.InputAdapter
 			/// <param name="buttonIndex"></param>
 			/// <param name="isFixed"></param>
 			/// <returns></returns>
-			public bool GetButtonUp( int buttonIndex, int slotNumber )
+			public bool GetButtonUp( int buttonIndex )
 			{
-				return m_ButtonStates[ buttonIndex, slotNumber ].IsUp ;
+				return m_ButtonStates[ buttonIndex ].IsUp ;
 			}
 
 			/// <summary>
@@ -787,9 +792,9 @@ namespace uGUIHelper.InputAdapter
 			/// <param name="buttonIndex"></param>
 			/// <param name="isFixed"></param>
 			/// <returns></returns>
-			public bool GetRepeatButton( int buttonIndex, int slotNumber )
+			public bool GetRepeatButton( int buttonIndex )
 			{
-				return m_ButtonStates[ buttonIndex, slotNumber ].IsRepeat ;
+				return m_ButtonStates[ buttonIndex ].IsRepeat ;
 			}
 
 			//--------------
@@ -801,9 +806,9 @@ namespace uGUIHelper.InputAdapter
 			/// <param name="axisIndex"></param>
 			/// <param name="isFixed"></param>
 			/// <returns></returns>
-			public Vector2 GetAxisDown( int axisIndex, int slotNumber )
+			public Vector2 GetAxisDown( int axisIndex )
 			{
-				return m_AxisStates[ axisIndex, slotNumber ].IsDown ;
+				return m_AxisStates[ axisIndex ].IsDown ;
 			}
 
 			/// <summary>
@@ -812,9 +817,9 @@ namespace uGUIHelper.InputAdapter
 			/// <param name="axisIndex"></param>
 			/// <param name="isFixed"></param>
 			/// <returns></returns>
-			public Vector2 GetAxisUp( int axisIndex, int slotNumber )
+			public Vector2 GetAxisUp( int axisIndex )
 			{
-				return m_AxisStates[ axisIndex, slotNumber ].IsUp ;
+				return m_AxisStates[ axisIndex ].IsUp ;
 			}
 
 			/// <summary>
@@ -823,9 +828,9 @@ namespace uGUIHelper.InputAdapter
 			/// <param name="axisIndex"></param>
 			/// <param name="isFixed"></param>
 			/// <returns></returns>
-			public Vector2 GetRepeatAxis( int axisIndex, int slotNumber )
+			public Vector2 GetRepeatAxis( int axisIndex )
 			{
-				return m_AxisStates[ axisIndex, slotNumber ].IsRepeat ;
+				return m_AxisStates[ axisIndex ].IsRepeat ;
 			}
 
 			//--------------
@@ -1071,29 +1076,6 @@ namespace uGUIHelper.InputAdapter
 			return true ;
 		}
 
-		// ゲームパッドのボタンにマッピングされたキーボードのキーが押されているか判定する
-		private static bool GetButtonByMappingKey( int buttonIdentity )
-		{
-			var keyCodes = m_MappingKeyboardToButton[ buttonIdentity ] ;
-			if( keyCodes == null || keyCodes.Length == 0 || Enabled == false )
-			{
-				// 無効
-				return false ;
-			}
-
-			foreach( var keyCode in keyCodes )
-			{
-				if( Keyboard.GetKey( keyCode ) == true )
-				{
-					// 押されている
-					return true ;
-				}
-			}
-
-			// 押されていない
-			return false ;
-		}
-
 		//-------------------------------------------------------------------------------------------
 
 		// ゲームパッドの各アクシス方法へのキーボードのキーマッピング(デフォルト)
@@ -1148,64 +1130,6 @@ namespace uGUIHelper.InputAdapter
 			return true ;
 		}
 
-		// ゲームパッドのアクシス方向にマッピングされたキーボードのキーが押されているか判定する
-		private static bool GetAxisDirectionByMappingKey( int axisIdentity, int axisDirection )
-		{
-			var key = ( axisIdentity, axisDirection ) ;
-
-			var keyCodes = m_MappingKeyboardToAxisDirection[ key ] ;
-
-			if( keyCodes == null || keyCodes.Length == 0 || Enabled == false )
-			{
-				// 無効
-				return false ;
-			}
-
-			foreach( var keyCode in keyCodes )
-			{
-				if( Keyboard.GetKey( keyCode ) == true )
-				{
-					// 押されている
-					return true ;
-				}
-			}
-
-			// 押されていない
-			return false ;
-		}
-
-		// ナンバーキーのアクシスへの反映
-		private static void GetAxisByMappingKey_Custom( int axisIdentity, ref float oAxisX, ref float oAxisY )
-		{
-			//----------------------------------
-
-			// SX
-			if( oAxisX == 0 )
-			{
-				if( GetAxisDirectionByMappingKey( axisIdentity, 0 ) == true )
-				{
-					oAxisX = +1 ;
-				}
-				if( GetAxisDirectionByMappingKey( axisIdentity, 1 ) == true )
-				{
-					oAxisX = -1 ;
-				}
-			}
-
-			// SY
-			if( oAxisY == 0 )
-			{
-				if( GetAxisDirectionByMappingKey( axisIdentity, 2 ) == true )
-				{
-					oAxisY = +1 ;
-				}
-				if( GetAxisDirectionByMappingKey( axisIdentity, 3 ) == true )
-				{
-					oAxisY = -1 ;
-				}
-			}
-		}
-
 		//-------------------------------------------------------------------------------------------
 
 		private static int[] m_MappingKeyboardToAxis_WASD = new int[]{ 0, 1, 2 } ;
@@ -1223,50 +1147,6 @@ namespace uGUIHelper.InputAdapter
 			else
 			{
 				m_MappingKeyboardToAxis_WASD = axisIdentities ;
-			}
-		}
-
-		// ＷＡＳＤキーのアクシスへの反映
-		private static void GetAxisByMappingKey_WASD( int axisIdentity, ref float oAxisX, ref float oAxisY )
-		{
-			if( m_MappingKeyboardToAxis_WASD == null || m_MappingKeyboardToAxis_WASD.Length == 0 || Enabled == false )
-			{
-				// 無し
-				return ;
-			}
-
-			if( m_MappingKeyboardToAxis_WASD.Contains( axisIdentity ) == false )
-			{
-				// 無し
-				return ;
-			}
-
-			//----------------------------------
-
-			// SCX
-			if( oAxisX == 0 )
-			{
-				if( Keyboard.GetKey( KeyCodes.D ) == true )
-				{
-					oAxisX = +1 ;
-				}
-				if( Keyboard.GetKey( KeyCodes.A ) == true )
-				{
-					oAxisX = -1 ;
-				}
-			}
-
-			// SCY
-			if( oAxisY == 0 )
-			{
-				if( Keyboard.GetKey( KeyCodes.W ) == true )
-				{
-					oAxisY = +1 ;
-				}
-				if( Keyboard.GetKey( KeyCodes.S ) == true )
-				{
-					oAxisY = -1 ;
-				}
 			}
 		}
 
@@ -1290,50 +1170,6 @@ namespace uGUIHelper.InputAdapter
 			}
 		}
 
-		// カーソルキーのアクシスへの反映
-		private static void GetAxisByMappingKey_Cursor( int axisIdentity, ref float oAxisX, ref float oAxisY )
-		{
-			if( m_MappingKeyboardToAxis_Cursor == null || m_MappingKeyboardToAxis_Cursor.Length == 0 || Enabled == false )
-			{
-				// 無し
-				return ;
-			}
-
-			if( m_MappingKeyboardToAxis_Cursor.Contains( axisIdentity ) == false )
-			{
-				// 無し
-				return ;
-			}
-
-			//----------------------------------
-
-			// SCX
-			if( oAxisX == 0 )
-			{
-				if( Keyboard.GetKey( KeyCodes.RightArrow ) == true )
-				{
-					oAxisX = +1 ;
-				}
-				if( Keyboard.GetKey( KeyCodes.LeftArrow ) == true )
-				{
-					oAxisX = -1 ;
-				}
-			}
-
-			// SCY
-			if( oAxisY == 0 )
-			{
-				if( Keyboard.GetKey( KeyCodes.UpArrow ) == true )
-				{
-					oAxisY = +1 ;
-				}
-				if( Keyboard.GetKey( KeyCodes.DownArrow ) == true )
-				{
-					oAxisY = -1 ;
-				}
-			}
-		}
-
 		//-----------------------------------
 
 		private static int[] m_MappingKeyboardToAxis_Number = new int[]{ 0, 1, 2 } ;
@@ -1351,50 +1187,6 @@ namespace uGUIHelper.InputAdapter
 			else
 			{
 				m_MappingKeyboardToAxis_Number = axisIdentities ;
-			}
-		}
-
-		// ナンバーキーのアクシスへの反映
-		private static void GetAxisByMappingKey_Number( int axisIdentity, ref float oAxisX, ref float oAxisY )
-		{
-			if( m_MappingKeyboardToAxis_Number == null || m_MappingKeyboardToAxis_Number.Length == 0 || Enabled == false )
-			{
-				// 無し
-				return ;
-			}
-
-			if( m_MappingKeyboardToAxis_Number.Contains( axisIdentity ) == false )
-			{
-				// 無し
-				return ;
-			}
-
-			//----------------------------------
-
-			// SCX
-			if( oAxisX == 0 )
-			{
-				if( Keyboard.GetKey( KeyCodes.Keypad6 ) == true )
-				{
-					oAxisX = +1 ;
-				}
-				if( Keyboard.GetKey( KeyCodes.Keypad4 ) == true )
-				{
-					oAxisX = -1 ;
-				}
-			}
-
-			// SCY
-			if( oAxisY == 0 )
-			{
-				if( Keyboard.GetKey( KeyCodes.Keypad8 ) == true )
-				{
-					oAxisY = +1 ;
-				}
-				if( Keyboard.GetKey( KeyCodes.Keypad2 ) == true )
-				{
-					oAxisY = -1 ;
-				}
 			}
 		}
 
@@ -1418,50 +1210,6 @@ namespace uGUIHelper.InputAdapter
 			}
 		}
 
-		// 右側記号キーのアクシスへの反映
-		private static void GetAxisByMappingKey_RightSymbol( int axisIdentity, ref float oAxisX, ref float oAxisY )
-		{
-			if( m_MappingKeyboardToAxis_RightSymbol == null || m_MappingKeyboardToAxis_RightSymbol.Length == 0 || Enabled == false )
-			{
-				// 無し
-				return ;
-			}
-
-			if( m_MappingKeyboardToAxis_RightSymbol.Contains( axisIdentity ) == false )
-			{
-				// 無し
-				return ;
-			}
-
-			//----------------------------------
-
-			// SCX
-			if( oAxisX == 0 )
-			{
-				if( Keyboard.GetKey( KeyCodes.RightBracket ) == true )
-				{
-					oAxisX = +1 ;
-				}
-				if( Keyboard.GetKey( KeyCodes.Semicolon ) == true )
-				{
-					oAxisX = -1 ;
-				}
-			}
-
-			// SCY
-			if( oAxisY == 0 )
-			{
-				if( Keyboard.GetKey( KeyCodes.At ) == true )
-				{
-					oAxisY = +1 ;
-				}
-				if( Keyboard.GetKey( KeyCodes.Colon ) == true )
-				{
-					oAxisY = -1 ;
-				}
-			}
-		}
-
 		//-----------------------------------------------------------
 
 		/// <summary>
@@ -1476,20 +1224,21 @@ namespace uGUIHelper.InputAdapter
 		/// <summary>
 		/// Repeat 系の状態更新
 		/// </summary>
-		public static void Update( bool isFixed )
+		public static void Update()
 		{
 			int playerNumber ;
-			int buttonIndex, axisIndex ;
+			int buttonIndex ;
 			int buttonFlags ;
 
-			int buttonIndexMax	= Math.Min( MaximumNumberOfButtons,	m_ButtonIdentities.Length	) ;
-			int axisIndexMax	= Math.Min( MaximumNumberOfAxes,	m_AxisIdentities.Length		) ;
+			int buttonIndexMax	= MaximumNumberOfButtons <  m_ButtonIdentities.Length ? MaximumNumberOfButtons : m_ButtonIdentities.Length ;
 
-			// 接続しているしているプレイヤー(最大４)しかし０ならば１にする
-			int max = Math.Max( Math.Min( NumberOfGamePads, MaximumNumberOfPlayers ), 1 ) ;
+			// 接続しているしているプレイヤー(最大４)しかし０ならば１にする(キーボード入力のため)
+			int max = NumberOfGamePads <  MaximumNumberOfPlayers ? NumberOfGamePads : MaximumNumberOfPlayers ;
+			if( max <= 0 )
+			{
+				max  = 1 ;
+			}
 			
-			int slotNumber = ( isFixed == false ? 0 : 1 ) ;
-
 			for( playerNumber  = 0 ; playerNumber <  max ; playerNumber ++ )
 			{
 				// プレイヤー情報
@@ -1497,16 +1246,87 @@ namespace uGUIHelper.InputAdapter
 
 				// Button
 				buttonFlags = GetButtonAll( playerNumber ) ;	// ボタンの押下状態(ビット単位のフラグ)
-				for( buttonIndex  = 0 ; buttonIndex <  buttonIndexMax  ; buttonIndex ++ )
+				for( buttonIndex  = 0 ; buttonIndex <  buttonIndexMax ; buttonIndex ++ )
 				{
-					player.UpdateButtonStates( buttonIndex, m_ButtonIdentities[ buttonIndex ], buttonFlags, slotNumber ) ;
+					player.UpdateButtonStates( buttonIndex, m_ButtonIdentities[ buttonIndex ], buttonFlags ) ;
 				}
 
 				// Axis
-				for( axisIndex  = 0 ; axisIndex <  axisIndexMax ; axisIndex ++ )
+				player.UpdateAxisStates( 0, GetAxis( m_AxisIdentities[ 0 ], playerNumber ) ) ;
+				player.UpdateAxisStates( 1, GetAxis( m_AxisIdentities[ 1 ], playerNumber ) ) ;
+				player.UpdateAxisStates( 2, GetAxis( m_AxisIdentities[ 2 ], playerNumber ) ) ;
+
+				// Haptics
+				player.UpdateHapticsState() ;
+			}
+		}
+
+		/// <summary>
+		/// Repeat 系の状態更新
+		/// </summary>
+		public static void Update( out int buttonAll, out Vector2 axis_0, out Vector2 axis_1, out Vector2 axis_2 )
+		{
+			buttonAll = 0 ;
+			axis_0 = Vector2.zero ;
+			axis_1 = Vector2.zero ;
+			axis_2 = Vector2.zero ;
+
+			//----------------------------------
+
+			int playerNumber ;
+			int buttonIndex ;
+			int buttonFlags ;
+			Vector2 axis ;
+
+			int buttonIndexMax	= MaximumNumberOfButtons <  m_ButtonIdentities.Length ? MaximumNumberOfButtons : m_ButtonIdentities.Length ;
+
+			// 接続しているしているプレイヤー(最大４)しかし０ならば１にする(キーボード入力のため)
+			int max = NumberOfGamePads <  MaximumNumberOfPlayers ? NumberOfGamePads : MaximumNumberOfPlayers ;
+			if( max <= 0 )
+			{
+				max  = 1 ;
+			}
+			
+			for( playerNumber  = 0 ; playerNumber <  max ; playerNumber ++ )
+			{
+				// プレイヤー情報
+				var player = m_Players[ playerNumber ] ;
+
+				//-------------
+
+				// Button
+				buttonFlags = GetButtonAll( playerNumber ) ;	// ボタンの押下状態(ビット単位のフラグ)
+				for( buttonIndex  = 0 ; buttonIndex <  buttonIndexMax ; buttonIndex ++ )
 				{
-					player.UpdateAxisStates( axisIndex, GetAxis( m_AxisIdentities[ axisIndex ], playerNumber ), slotNumber ) ;
+					player.UpdateButtonStates( buttonIndex, m_ButtonIdentities[ buttonIndex ], buttonFlags ) ;
 				}
+
+				buttonAll |= buttonFlags ;
+
+				//-------------
+
+				// Axis
+				axis = GetAxis( m_AxisIdentities[ 0 ], playerNumber ) ;
+				player.UpdateAxisStates( 0, axis ) ;
+
+				if( axis.x != 0 ){ axis_0.x = axis.x ; }
+				if( axis.y != 0 ){ axis_0.y = axis.y ; }
+
+
+				axis = GetAxis( m_AxisIdentities[ 1 ], playerNumber ) ;
+				player.UpdateAxisStates( 1, axis ) ;
+
+				if( axis.x != 0 ){ axis_1.x = axis.x ; }
+				if( axis.y != 0 ){ axis_1.y = axis.y ; }
+
+
+				axis = GetAxis( m_AxisIdentities[ 2 ], playerNumber ) ;
+				player.UpdateAxisStates( 2, axis ) ;
+
+				if( axis.x != 0 ){ axis_2.x = axis.x ; }
+				if( axis.y != 0 ){ axis_2.y = axis.y ; }
+
+				//-------------
 
 				// Haptics
 				player.UpdateHapticsState() ;
@@ -1746,12 +1566,15 @@ namespace uGUIHelper.InputAdapter
 				}
 			}
 
+			// ゲームパッドの接続数が 0 でもキーボード入力があるので以下の処理は必要
+
 			//----------------------------------
 
 			if( m_Implementation == null )
 			{
 				throw new Exception( "Not implemented." ) ;
 			}
+
 			return m_Implementation.GetButton( buttonIdentity, playerNumber ) ;
 		}
 
@@ -1761,7 +1584,7 @@ namespace uGUIHelper.InputAdapter
 		/// <param name="buttonIdentity"></param>
 		/// <param name="playerNumber"></param>
 		/// <returns></returns>
-		public static bool GetButtonDown( int buttonIdentity, int playerNumber = -1, bool isFixed = false )
+		public static bool GetButtonDown( int buttonIdentity, int playerNumber = -1 )
 		{
 			// modeEnabled を判定条件に入れないのは、マウスとキーボードを同時入力するケースを考慮するため
 			if( m_Owner == null || m_Owner.ControlEnabled == false || m_Owner.InputSwitching == true || Enabled == false )
@@ -1779,6 +1602,8 @@ namespace uGUIHelper.InputAdapter
 				}
 			}
 
+			// ゲームパッドの接続数が 0 でもキーボード入力があるので以下の処理は必要
+
 			//----------------------------------
 
 			int buttonIndex = m_ButtonIdentityToIndex[ buttonIdentity ] ;
@@ -1786,7 +1611,11 @@ namespace uGUIHelper.InputAdapter
 			int p, ps, pe ;
 
 			// 接続しているしているプレイヤー(最大４)しかし０ならば１にする
-			int max = Math.Max( Math.Min( NumberOfGamePads, MaximumNumberOfPlayers ), 1 ) ;
+			int max = NumberOfGamePads <  MaximumNumberOfPlayers ? NumberOfGamePads : MaximumNumberOfPlayers ;
+			if( max <= 0 )
+			{
+				max  = 1 ;
+			}
 			
 			if( playerNumber <  0 || playerNumber >= max )
 			{
@@ -1801,11 +1630,9 @@ namespace uGUIHelper.InputAdapter
 				pe = playerNumber ;
 			}
 
-			int slotNumber = ( isFixed == false ? 0 : 1 ) ;
-
 			for( p  = ps ; p <= pe ; p ++ )
 			{
-				if( m_Players[ p ].GetButtonDown( buttonIndex, slotNumber ) == true )
+				if( m_Players[ p ].GetButtonDown( buttonIndex ) == true )
 				{
 					return true ;
 				}
@@ -1820,7 +1647,7 @@ namespace uGUIHelper.InputAdapter
 		/// <param name="buttonIdentity"></param>
 		/// <param name="playerNumber"></param>
 		/// <returns></returns>
-		public static bool GetButtonUp( int buttonIdentity, int playerNumber = -1, bool isFixed = false )
+		public static bool GetButtonUp( int buttonIdentity, int playerNumber = -1 )
 		{
 			// modeEnabled を判定条件に入れないのは、マウスとキーボードを同時入力するケースを考慮するため
 			if( m_Owner == null || m_Owner.ControlEnabled == false || m_Owner.InputSwitching == true || Enabled == false )
@@ -1838,6 +1665,8 @@ namespace uGUIHelper.InputAdapter
 				}
 			}
 
+			// ゲームパッドの接続数が 0 でもキーボード入力があるので以下の処理は必要
+
 			//----------------------------------
 
 			int buttonIndex = m_ButtonIdentityToIndex[ buttonIdentity ] ;
@@ -1845,26 +1674,28 @@ namespace uGUIHelper.InputAdapter
 			int p, ps, pe ;
 
 			// 接続しているしているプレイヤー(最大４)しかし０ならば１にする
-			int max = Math.Max( Math.Min( NumberOfGamePads, MaximumNumberOfPlayers ), 1 ) ;
-			
-			if( playerNumber <  0 || playerNumber >= max )
+			int max = NumberOfGamePads <  MaximumNumberOfPlayers ? NumberOfGamePads : MaximumNumberOfPlayers ;
+			if( max <= 0 )
+			{
+				max  = 1 ;
+			}
+
+			if( playerNumber < 0 || playerNumber >= max )
 			{
 				// 全プレイヤーで判定
-				ps = 0 ;
-				pe = max - 1 ;
+				ps = 0;
+				pe = max - 1;
 			}
 			else
 			{
 				// 各プレイヤーで判定
-				ps = playerNumber ;
-				pe = playerNumber ;
+				ps = playerNumber;
+				pe = playerNumber;
 			}
-
-			int slotNumber = ( isFixed == false ? 0 : 1 ) ;
 
 			for( p  = ps ; p <= pe ; p ++ )
 			{
-				if( m_Players[ p ].GetButtonUp( buttonIndex, slotNumber ) == true )
+				if( m_Players[ p ].GetButtonUp( buttonIndex ) == true )
 				{
 					return true ;
 				}
@@ -1879,7 +1710,7 @@ namespace uGUIHelper.InputAdapter
 		/// <param name="buttonIdentity"></param>
 		/// <param name="playerNumber"></param>
 		/// <returns></returns>
-		public static bool GetButtonRepeat( int buttonIdentity, int playerNumber = -1, bool isFixed = false )
+		public static bool GetButtonRepeat( int buttonIdentity, int playerNumber = -1 )
 		{
 			// modeEnabled を判定条件に入れないのは、マウスとキーボードを同時入力するケースを考慮するため
 			if( m_Owner == null || m_Owner.ControlEnabled == false || m_Owner.InputSwitching == true || Enabled == false )
@@ -1896,6 +1727,8 @@ namespace uGUIHelper.InputAdapter
 				}
 			}
 
+			// ゲームパッドの接続数が 0 でもキーボード入力があるので以下の処理は必要
+
 			//----------------------------------
 
 			int buttonIndex = m_ButtonIdentityToIndex[ buttonIdentity ] ;
@@ -1903,7 +1736,11 @@ namespace uGUIHelper.InputAdapter
 			int p, ps, pe ;
 
 			// 接続しているしているプレイヤー(最大４)しかし０ならば１にする
-			int max = Math.Max( Math.Min( NumberOfGamePads, MaximumNumberOfPlayers ), 1 ) ;
+			int max = NumberOfGamePads <  MaximumNumberOfPlayers ? NumberOfGamePads : MaximumNumberOfPlayers ;
+			if( max <= 0 )
+			{
+				max  = 1 ;
+			}
 			
 			if( playerNumber <  0 || playerNumber >= max )
 			{
@@ -1918,11 +1755,9 @@ namespace uGUIHelper.InputAdapter
 				pe = playerNumber ;
 			}
 
-			int slotNumber = ( isFixed == false ? 0 : 1 ) ;
-
 			for( p  = ps ; p <= pe ; p ++ )
 			{
-				if( m_Players[ p ].GetRepeatButton( buttonIndex, slotNumber ) == true )
+				if( m_Players[ p ].GetRepeatButton( buttonIndex ) == true )
 				{
 					return true ;
 				}
@@ -1958,6 +1793,8 @@ namespace uGUIHelper.InputAdapter
 				}
 			}
 
+			// ゲームパッドの接続数が 0 でもキーボード入力があるので以下の処理は必要
+
 			//----------------------------------
 
 			if( m_Implementation == null )
@@ -1973,7 +1810,7 @@ namespace uGUIHelper.InputAdapter
 		/// <param name="axisIdentity"></param>
 		/// <param name="playerNumber"></param>
 		/// <returns></returns>
-		public static Vector2 GetAxisDown( int axisIdentity, int playerNumber = -1, bool isFixed = false )
+		public static Vector2 GetAxisDown( int axisIdentity, int playerNumber = -1 )
 		{
 			// modeEnabled を判定条件に入れないのは、マウスとキーボードを同時入力するケースを考慮するため
 			if( m_Owner == null || m_Owner.ControlEnabled == false || m_Owner.InputSwitching == true || Enabled == false )
@@ -1991,6 +1828,8 @@ namespace uGUIHelper.InputAdapter
 				}
 			}
 
+			// ゲームパッドの接続数が 0 でもキーボード入力があるので以下の処理は必要
+
 			//----------------------------------
 
 			int axisIndex = m_AxisIdentityToIndex[ axisIdentity ] ;
@@ -1998,7 +1837,11 @@ namespace uGUIHelper.InputAdapter
 			int p, ps, pe ;
 
 			// 接続しているしているプレイヤー(最大４)しかし０ならば１にする
-			int max = Math.Max( Math.Min( NumberOfGamePads, MaximumNumberOfPlayers ), 1 ) ;
+			int max = NumberOfGamePads <  MaximumNumberOfPlayers ? NumberOfGamePads : MaximumNumberOfPlayers ;
+			if( max <= 0 )
+			{
+				max  = 1 ;
+			}
 			
 			if( playerNumber <  0 || playerNumber >= max )
 			{
@@ -2015,11 +1858,9 @@ namespace uGUIHelper.InputAdapter
 
 			Vector2 oAxis = Vector2.zero ;
 
-			int slotNumber = ( isFixed == false ? 0 : 1 ) ;
-
 			for( p  = ps ; p <= pe ; p ++ )
 			{
-				var axis = m_Players[ p ].GetAxisDown( axisIndex, slotNumber ) ;
+				var axis = m_Players[ p ].GetAxisDown( axisIndex ) ;
 				if( axis.x != 0 )
 				{
 					oAxis.x = axis.x ;
@@ -2039,7 +1880,7 @@ namespace uGUIHelper.InputAdapter
 		/// <param name="axisIdentity"></param>
 		/// <param name="playerNumber"></param>
 		/// <returns></returns>
-		public static Vector2 GetAxisUp( int axisIdentity, int playerNumber = -1, bool isFixed = false )
+		public static Vector2 GetAxisUp( int axisIdentity, int playerNumber = -1 )
 		{
 			// modeEnabled を判定条件に入れないのは、マウスとキーボードを同時入力するケースを考慮するため
 			if( m_Owner == null || m_Owner.ControlEnabled == false || m_Owner.InputSwitching == true || Enabled == false )
@@ -2057,6 +1898,8 @@ namespace uGUIHelper.InputAdapter
 				}
 			}
 
+			// ゲームパッドの接続数が 0 でもキーボード入力があるので以下の処理は必要
+
 			//----------------------------------
 
 			int axisIndex = m_AxisIdentityToIndex[ axisIdentity ] ;
@@ -2064,7 +1907,11 @@ namespace uGUIHelper.InputAdapter
 			int p, ps, pe ;
 
 			// 接続しているしているプレイヤー(最大４)しかし０ならば１にする
-			int max = Math.Max( Math.Min( NumberOfGamePads, MaximumNumberOfPlayers ), 1 ) ;
+			int max = NumberOfGamePads <  MaximumNumberOfPlayers ? NumberOfGamePads : MaximumNumberOfPlayers ;
+			if( max <= 0 )
+			{
+				max  = 1 ;
+			}
 			
 			if( playerNumber <  0 || playerNumber >= max )
 			{
@@ -2081,11 +1928,9 @@ namespace uGUIHelper.InputAdapter
 
 			Vector2 oAxis = Vector2.zero ;
 
-			int slotNumber = ( isFixed == false ? 0 : 1 ) ;
-
 			for( p  = ps ; p <= pe ; p ++ )
 			{
-				var axis = m_Players[ p ].GetAxisUp( axisIndex, slotNumber ) ;
+				var axis = m_Players[ p ].GetAxisUp( axisIndex ) ;
 				if( axis.x != 0 )
 				{
 					oAxis.x = axis.x ;
@@ -2105,7 +1950,7 @@ namespace uGUIHelper.InputAdapter
 		/// <param name="axisIdentity"></param>
 		/// <param name="playerNumber"></param>
 		/// <returns></returns>
-		public static Vector2 GetAxisRepeat( int axisIdentity, int playerNumber = -1, bool isFixed = false )
+		public static Vector2 GetAxisRepeat( int axisIdentity, int playerNumber = -1 )
 		{
 			// modeEnabled を判定条件に入れないのは、マウスとキーボードを同時入力するケースを考慮するため
 			if( m_Owner == null || m_Owner.ControlEnabled == false || m_Owner.InputSwitching == true || Enabled == false )
@@ -2123,6 +1968,8 @@ namespace uGUIHelper.InputAdapter
 				}
 			}
 
+			// ゲームパッドの接続数が 0 でもキーボード入力があるので以下の処理は必要
+
 			//----------------------------------
 
 			int axisIndex = m_AxisIdentityToIndex[ axisIdentity ] ;
@@ -2130,7 +1977,11 @@ namespace uGUIHelper.InputAdapter
 			int p, ps, pe ;
 
 			// 接続しているしているプレイヤー(最大４)しかし０ならば１にする
-			int max = Math.Max( Math.Min( NumberOfGamePads, MaximumNumberOfPlayers ), 1 ) ;
+			int max = NumberOfGamePads <  MaximumNumberOfPlayers ? NumberOfGamePads : MaximumNumberOfPlayers ;
+			if( max <= 0 )
+			{
+				max  = 1 ;
+			}
 			
 			if( playerNumber <  0 || playerNumber >= max )
 			{
@@ -2147,11 +1998,9 @@ namespace uGUIHelper.InputAdapter
 
 			Vector2 oAxis = Vector2.zero ;
 
-			int slotNumber = ( isFixed == false ? 0 : 1 ) ;
-
 			for( p  = ps ; p <= pe ; p ++ )
 			{
-				var axis = m_Players[ p ].GetRepeatAxis( axisIndex, slotNumber ) ;
+				var axis = m_Players[ p ].GetRepeatAxis( axisIndex ) ;
 				if( axis.x != 0 )
 				{
 					oAxis.x = axis.x ;

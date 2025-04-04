@@ -169,8 +169,6 @@ namespace InputHelper
 
 			//---------------------------------------------------------------------------------
 
-			private static KeyCodes[] m_KeyCodes ;
-
 			/// <summary>
 			/// ボタン用状態
 			/// </summary>
@@ -180,13 +178,20 @@ namespace InputHelper
 				public float	RepeatWakeTime ;
 				public float	RepeatLoopTime ;
 				public bool		IsRepeat ;
-				public bool		IsDown ;
-				public bool		IsUp ;
 			}
 
-			private static KeyState[,] m_KeyStates ;
+			//--------------
 
-			private static Dictionary<KeyCodes,int> m_KeyCodeToIndexMapper ;
+			// リピート監視対象キーと監視中の状態
+			private static Dictionary<KeyCodes,KeyState>	m_KeyHashStates ;
+
+			// リピート監視対象キーに入力が無い場合にリピート監視対象キーを解放するまでの時間
+			private const float m_RepeatCleaningTime		= 1.0f ;
+
+			//----------------------------------
+
+			// リピート監視対象から外す対象の種別
+			private static KeyCodes[]						m_RepeatCleaningTargets ;
 
 			//---------------------------------------------------------------------------------
 
@@ -195,96 +200,122 @@ namespace InputHelper
 			/// </summary>
 			public void Initialize()
 			{
-				// キーの全種
-				m_KeyCodes = m_KeyCodeMapper.Keys.ToArray() ;
+				// キーの状態(リピート処理専用)
+				m_KeyHashStates = new () ;
 
-				int keyIndex ;
-				int numberOfKeys = m_KeyCodes.Length ;
-
-				// キーの順番
-				m_KeyCodeToIndexMapper = new Dictionary<KeyCodes,int>() ;
-				for( keyIndex  = 0 ; keyIndex <  numberOfKeys ; keyIndex ++ )
-				{
-					m_KeyCodeToIndexMapper.Add( m_KeyCodes[ keyIndex ], keyIndex ) ;
-				}
-				
-				// キーの状態
-				m_KeyStates = new KeyState[ numberOfKeys, 2 ] ;
-				for( keyIndex  = 0 ; keyIndex <  numberOfKeys ; keyIndex ++ )
-				{
-					m_KeyStates[ keyIndex, 0 ] = new () ;	// Update 用
-					m_KeyStates[ keyIndex, 1 ] = new () ;	// FixedUpdate 用
-				}
+				// リピート監視対象から外す対象の種別
+				m_RepeatCleaningTargets = new KeyCodes[ m_KeyCodeMapper.Count ] ;
 			}
 
 			/// <summary>
 			/// フレーム毎の更新呼び出し
 			/// </summary>
-			public void Update( bool fromFixedUpdate )
+			public void Update()
 			{
-				int slotNumber = ( fromFixedUpdate == false ? 0 : 1 ) ;
-
-				// SlotNumber = 0 : Update
-				// SlotNumber = 1 : FixedUpdate
-
-				int keyIndex ;
-				int numberOfKeys = m_KeyCodes.Length ;
-
-				KeyState state ;
-
-				float time = Time.realtimeSinceStartup ;
-
-				for( keyIndex  = 0 ; keyIndex <  numberOfKeys ; keyIndex ++ )
+				if( m_KeyHashStates.Count >  0 )
 				{
-					state = m_KeyStates[ keyIndex, slotNumber ] ;
+					float time = Time.realtimeSinceStartup ;
 
-					//---------------------------------
+					// 監視の解放対象数
+					int count = 0 ;
 
-					state.IsRepeat	= false ;
-					state.IsDown	= false ;
-					state.IsUp		= false ;
-
-					bool isPressed = Input.GetKey( m_KeyCodeMapper[ m_KeyCodes[ keyIndex ] ] ) ;
-					if( isPressed == true )
+					foreach( ( var keyCode, var keyState ) in m_KeyHashStates )
 					{
-						if( state.RepeatKeepFlag == false )
+						//---------------------------------
+
+						keyState.IsRepeat	= false ;
+
+						bool isPressed = Input.GetKey( m_KeyCodeMapper[ keyCode ] ) ;
+						if( isPressed == true )
 						{
-							// リピート開始
-							state.IsRepeat	= true ;
+							if( keyState.RepeatKeepFlag == false )
+							{
+								// リピート開始
 
-							state.RepeatKeepFlag = true ;
-							state.RepeatWakeTime = time ;
-							state.RepeatLoopTime = time ;
+								keyState.RepeatKeepFlag = true ;
+								keyState.RepeatWakeTime = time ;
+								keyState.RepeatLoopTime = time ;
 
-							state.IsDown = true ;
+								keyState.IsRepeat		= true ;
+							}
+							else
+							{
+								// リピート最中
+								if( ( time - keyState.RepeatWakeTime ) >= RepeatStartingTime )
+								{
+									// リピート中
+									if( ( time - keyState.RepeatLoopTime ) >= RepeatIntervalTime )
+									{
+										keyState.RepeatLoopTime = time ;
+
+										keyState.IsRepeat = true ;
+									}
+								}
+							}
 						}
 						else
 						{
-							// リピート最中
-							if( ( time - state.RepeatWakeTime ) >= RepeatStartingTime )
+							if( keyState.RepeatKeepFlag == true )
 							{
-								// リピート中
-								if( ( time - state.RepeatLoopTime ) >= RepeatIntervalTime )
-								{
-									state.RepeatLoopTime = time ;
+								// リピート解除
 
-									state.IsRepeat = true ;
+								keyState.RepeatKeepFlag = false ;
+								keyState.RepeatWakeTime = time ;
+							}
+							else
+							{
+								if( ( time - keyState.RepeatWakeTime ) >= m_RepeatCleaningTime )
+								{
+									// このキーは監視対象から外れる
+									m_RepeatCleaningTargets[ count ] = keyCode ;
+									count ++ ;
 								}
 							}
 						}
 					}
-					else
-					{
-						// リピート解除
-						if( state.RepeatKeepFlag == true )
-						{
-							state.IsUp = true ;
 
-							state.RepeatKeepFlag  = false ;
-						}
+					//------------
+
+					// 監視が不要になった対象を監視対象から除外する
+					for( int index  = 0 ; index <  count ; index ++ )
+					{
+						m_KeyHashStates.Remove(	m_RepeatCleaningTargets[ index ] ) ;
 					}
 				}
 			}
+
+			// リピート監視対象キーの登録
+			private bool RegisterRepeatProcessingTarget( KeyCodes keyCode )
+			{
+				if( m_KeyHashStates.ContainsKey( keyCode ) == false )
+				{
+					var keyState = new KeyState() ;
+					m_KeyHashStates.Add( keyCode, keyState ) ;
+
+					float time = Time.realtimeSinceStartup ;
+
+					bool isPressed = Input.GetKey( m_KeyCodeMapper[ keyCode ] ) ;
+					if( isPressed == true )
+					{
+						// 登録時は押されていた
+						keyState.RepeatKeepFlag = true ;
+						keyState.RepeatWakeTime = time ;
+						keyState.RepeatLoopTime = time ;
+
+						keyState.IsRepeat		= true ;
+					}
+					else
+					{
+						// 登録時は離されていた
+						keyState.RepeatWakeTime = time ;
+					}
+				}
+
+				// 既に登録済みである
+				return m_KeyHashStates[ keyCode ].IsRepeat ;
+			}
+
+			//----------------------------------------------------------
 
 			/// <summary>
 			/// どのキーが押されているか確認する
@@ -317,16 +348,9 @@ namespace InputHelper
 			/// </summary>
 			/// <param name="keyCode"></param>
 			/// <returns></returns>
-			public bool GetKeyDown( KeyCodes keyCode, bool fromFixedUpdate )
+			public bool GetKeyDown( KeyCodes keyCode )
 			{
-				int slotNumber = ( fromFixedUpdate == false ? 0 : 1 ) ;
-
-				// SlotNumber = 0 : Update
-				// SlotNumber = 1 : FixedUpdate
-
-				int keyIndex = m_KeyCodeToIndexMapper[ keyCode ] ;
-
-				return m_KeyStates[ keyIndex, slotNumber ].IsDown ;
+				return Input.GetKeyDown( m_KeyCodeMapper[ keyCode ] ) ;
 			}
 
 			/// <summary>
@@ -334,16 +358,9 @@ namespace InputHelper
 			/// </summary>
 			/// <param name="keyCode"></param>
 			/// <returns></returns>
-			public bool GetKeyUp( KeyCodes keyCode, bool fromFixedUpdate )
+			public bool GetKeyUp( KeyCodes keyCode )
 			{
-				int slotNumber = ( fromFixedUpdate == false ? 0 : 1 ) ;
-
-				// SlotNumber = 0 : Update
-				// SlotNumber = 1 : FixedUpdate
-
-				int keyIndex = m_KeyCodeToIndexMapper[ keyCode ] ;
-
-				return m_KeyStates[ keyIndex, slotNumber ].IsUp ;
+				return Input.GetKeyUp( m_KeyCodeMapper[ keyCode ] ) ;
 			}
 
 			/// <summary>
@@ -351,16 +368,9 @@ namespace InputHelper
 			/// </summary>
 			/// <param name="keyCode"></param>
 			/// <returns></returns>
-			public bool GetKeyRepeat( KeyCodes keyCode, bool fromFixedUpdate )
+			public bool GetKeyRepeat( KeyCodes keyCode )
 			{
-				int slotNumber = ( fromFixedUpdate == false ? 0 : 1 ) ;
-
-				// SlotNumber = 0 : Update
-				// SlotNumber = 1 : FixedUpdate
-
-				int keyIndex = m_KeyCodeToIndexMapper[ keyCode ] ;
-
-				return m_KeyStates[ keyIndex, slotNumber ].IsRepeat ;
+				return RegisterRepeatProcessingTarget( keyCode ) ;
 			}
 		}
 	}

@@ -42,7 +42,7 @@ namespace InputHelper
 			/// <summary>
 			/// フレーム毎の更新
 			/// </summary>
-			void Update( bool fromFixedUpdate ) ;
+			void Update() ;
 
 			/// <summary>
 			/// どのキーが押されているか確認する
@@ -63,21 +63,21 @@ namespace InputHelper
 			/// </summary>
 			/// <param name="keyCode"></param>
 			/// <returns></returns>
-			bool GetKeyDown( KeyCodes keyCode, bool fromFixedUpdate ) ;
+			bool GetKeyDown( KeyCodes keyCode ) ;
 
 			/// <summary>
 			/// キーが離されたかどうかの判定
 			/// </summary>
 			/// <param name="keyCode"></param>
 			/// <returns></returns>
-			bool GetKeyUp( KeyCodes keyCode, bool fromFixedUpdate ) ;
+			bool GetKeyUp( KeyCodes keyCode ) ;
 
 			/// <summary>
 			/// キーがリピート付きで押されているかどうかの判定
 			/// </summary>
 			/// <param name="keyCode"></param>
 			/// <returns></returns>
-			bool GetKeyRepeat( KeyCodes keyCode, bool fromFixedUpdate ) ;
+			bool GetKeyRepeat( KeyCodes keyCode ) ;
 		}
 
 		// 実装のインスタンス
@@ -113,7 +113,7 @@ namespace InputHelper
 		/// </summary>
 		/// <param name="buttonNumber"></param>
 		/// <returns></returns>
-		public static bool Update( bool fromFixedUpdate )
+		public static bool Update()
 		{
 			// modeEnabled を判定条件に入れないのは、マウスとキーボードを同時入力するケースを考慮するため
 			if( m_Owner == null || m_Owner.ControlEnabled == false )
@@ -127,7 +127,7 @@ namespace InputHelper
 				throw new Exception( "Not implemented." ) ;
 			}
 
-			m_Implementation.Update( fromFixedUpdate ) ;
+			m_Implementation.Update() ;
 
 			return true ;
 		}
@@ -175,7 +175,7 @@ namespace InputHelper
 		/// </summary>
 		/// <param name="keyCode"></param>
 		/// <returns></returns>
-		public static bool GetKeyDown( KeyCodes keyCode, bool fromFixedUpdate = false )
+		public static bool GetKeyDown( KeyCodes keyCode )
 		{
 			// modeEnabled を判定条件に入れないのは、マウスとキーボードを同時入力するケースを考慮するため
 			if( m_Owner == null || m_Owner.ControlEnabled == false )
@@ -189,7 +189,7 @@ namespace InputHelper
 				throw new Exception( "Not implemented." ) ;
 			}
 
-			return m_Implementation.GetKeyDown( keyCode, fromFixedUpdate ) ;
+			return m_Implementation.GetKeyDown( keyCode ) ;
 		}
 
 		/// <summary>
@@ -197,7 +197,7 @@ namespace InputHelper
 		/// </summary>
 		/// <param name="keyCode"></param>
 		/// <returns></returns>
-		public static bool GetKeyUp( KeyCodes keyCode, bool fromFixedUpdate = false )
+		public static bool GetKeyUp( KeyCodes keyCode )
 		{
 			// modeEnabled を判定条件に入れないのは、マウスとキーボードを同時入力するケースを考慮するため
 			if( m_Owner == null || m_Owner.ControlEnabled == false )
@@ -211,7 +211,7 @@ namespace InputHelper
 				throw new Exception( "Not implemented." ) ;
 			}
 
-			return m_Implementation.GetKeyUp( keyCode, fromFixedUpdate ) ;
+			return m_Implementation.GetKeyUp( keyCode ) ;
 		}
 
 		/// <summary>
@@ -219,7 +219,7 @@ namespace InputHelper
 		/// </summary>
 		/// <param name="keyCode"></param>
 		/// <returns></returns>
-		public static bool GetKeyRepeat( KeyCodes keyCode, bool fromFixedUpdate = false )
+		public static bool GetKeyRepeat( KeyCodes keyCode )
 		{
 			// modeEnabled を判定条件に入れないのは、マウスとキーボードを同時入力するケースを考慮するため
 			if( m_Owner == null || m_Owner.ControlEnabled == false )
@@ -233,7 +233,7 @@ namespace InputHelper
 				throw new Exception( "Not implemented." ) ;
 			}
 
-			return m_Implementation.GetKeyRepeat( keyCode, fromFixedUpdate ) ;
+			return m_Implementation.GetKeyRepeat( keyCode ) ;
 		}
 	}
 }

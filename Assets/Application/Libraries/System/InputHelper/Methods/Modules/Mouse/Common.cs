@@ -65,7 +65,7 @@ namespace InputHelper
 			/// <summary>
 			/// フレーム毎の更新
 			/// </summary>
-			void Update( bool fromFixedUpdate ) ;
+			void Update( out bool button_0, out bool button_1, out bool button_2 ) ;
 
 			//-----------------------------------------------------------
 
@@ -96,14 +96,14 @@ namespace InputHelper
 			/// </summary>
 			/// <param name="buttonNumber"></param>
 			/// <returns></returns>
-			bool GetButtonDown( int buttonNumber, bool fromFixedUpdate ) ;
+			bool GetButtonDown( int buttonNumber ) ;
 
 			/// <summary>
 			/// ボタンが離されたどうかの判定
 			/// </summary>
 			/// <param name="buttonNumber"></param>
 			/// <returns></returns>
-			bool GetButtonUp( int buttonNumber, bool fromFixedUpdate ) ;
+			bool GetButtonUp( int buttonNumber ) ;
 
 			/// <summary>
 			/// リピート付きでボタンが押されているかどうかの判定
@@ -111,7 +111,7 @@ namespace InputHelper
 			/// <param name="buttonNumber"></param>
 			/// <param name="fromFixedUpdate"></param>
 			/// <returns></returns>
-			bool GetButtonRepeat( int buttonNumber, bool fromFixedUpdate ) ;
+			bool GetButtonRepeat( int buttonNumber ) ;
 
 			//----------------------------------
 
@@ -154,7 +154,7 @@ namespace InputHelper
 		/// </summary>
 		/// <param name="buttonNumber"></param>
 		/// <returns></returns>
-		public static bool Update( bool fromFixedUpdate )
+		public static bool Update()
 		{
 			// modeEnabled を判定条件に入れないのは、マウスとキーボードを同時入力するケースを考慮するため
 			if( m_Owner == null || m_Owner.ControlEnabled == false )
@@ -168,7 +168,37 @@ namespace InputHelper
 				throw new Exception( "Not implemented." ) ;
 			}
 
-			m_Implementation.Update( fromFixedUpdate ) ;
+			m_Implementation.Update( out _, out _, out _ ) ;
+
+			return true ;
+		}
+
+		/// <summary>
+		/// 毎フレーム実行する処理
+		/// </summary>
+		/// <param name="buttonNumber"></param>
+		/// <returns></returns>
+		public static bool Update( out bool button_0, out bool button_1, out bool button_2 )
+		{
+			button_0 = false ;
+			button_1 = false ;
+			button_2 = false ;
+
+			//----------------------------------
+
+			// modeEnabled を判定条件に入れないのは、マウスとキーボードを同時入力するケースを考慮するため
+			if( m_Owner == null || m_Owner.ControlEnabled == false )
+			{
+				// 無効
+				return false ;
+			}
+
+			if( m_Implementation == null )
+			{
+				throw new Exception( "Not implemented." ) ;
+			}
+
+			m_Implementation.Update( out button_0, out button_1, out button_2 ) ;
 
 			return true ;
 		}
@@ -250,7 +280,7 @@ namespace InputHelper
 		/// </summary>
 		/// <param name="buttonNumber"></param>
 		/// <returns></returns>
-		public static bool GetButtonDown( int buttonNumber, bool fromFixedUpdate = false )
+		public static bool GetButtonDown( int buttonNumber )
 		{
 			// modeEnabled を判定条件に入れないのは、マウスとキーボードを同時入力するケースを考慮するため
 			if( m_Owner == null || m_Owner.ControlEnabled == false )
@@ -264,7 +294,7 @@ namespace InputHelper
 				throw new Exception( "Not implemented." ) ;
 			}
 
-			return m_Implementation.GetButtonDown( buttonNumber, fromFixedUpdate ) ;
+			return m_Implementation.GetButtonDown( buttonNumber ) ;
 		}
 
 		/// <summary>
@@ -272,7 +302,7 @@ namespace InputHelper
 		/// </summary>
 		/// <param name="buttonNumber"></param>
 		/// <returns></returns>
-		public static bool GetButtonUp( int buttonNumber, bool fromFixedUpdate = false )
+		public static bool GetButtonUp( int buttonNumber )
 		{
 			// modeEnabled を判定条件に入れないのは、マウスとキーボードを同時入力するケースを考慮するため
 			if( m_Owner == null || m_Owner.ControlEnabled == false )
@@ -286,7 +316,7 @@ namespace InputHelper
 				throw new Exception( "Not implemented." ) ;
 			}
 
-			return m_Implementation.GetButtonUp( buttonNumber, fromFixedUpdate ) ;
+			return m_Implementation.GetButtonUp( buttonNumber ) ;
 		}
 
 		/// <summary>
@@ -294,7 +324,7 @@ namespace InputHelper
 		/// </summary>
 		/// <param name="buttonNumber"></param>
 		/// <returns></returns>
-		public static bool GetButtonRepeat( int buttonNumber, bool fromFixedUpdate = false )
+		public static bool GetButtonRepeat( int buttonNumber )
 		{
 			// modeEnabled を判定条件に入れないのは、マウスとキーボードを同時入力するケースを考慮するため
 			if( m_Owner == null || m_Owner.ControlEnabled == false )
@@ -308,7 +338,7 @@ namespace InputHelper
 				throw new Exception( "Not implemented." ) ;
 			}
 
-			return m_Implementation.GetButtonRepeat( buttonNumber, fromFixedUpdate ) ;
+			return m_Implementation.GetButtonRepeat( buttonNumber ) ;
 		}
 
 		//-----------------------------------------------------------

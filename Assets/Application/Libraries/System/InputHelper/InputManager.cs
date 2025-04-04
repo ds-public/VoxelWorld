@@ -15,7 +15,7 @@ using UnityEditor ;
 namespace InputHelper
 {
 	/// <summary>
-	/// 入力操作クラス Version 2025/03/11 0
+	/// 入力操作クラス Version 2025/04/04 0
 	/// </summary>
 	[DefaultExecutionOrder( -90 )]
 	public partial class InputManager : MonoBehaviour
@@ -158,8 +158,6 @@ namespace InputHelper
 			{
 				DontDestroyOnLoad( gameObject ) ;
 			}
-		
-	//		gameObject.hideFlags = HideFlags.HideInHierarchy ;
 		
 			//-----------------------------
 		
@@ -393,15 +391,6 @@ namespace InputHelper
 			ProcessUpdate() ;
 		}
 
-		/// <summary>
-		/// 毎フレーム呼び出される(物理)
-		/// </summary>
-		internal void FixedUpdate()
-		{
-			// 毎フレームの処理
-			ProcessFixedUpdate() ;
-		}
-
 		//-------------------------------------------------------------------------------------------
 		// 毎フレームの処理
 
@@ -450,7 +439,7 @@ namespace InputHelper
 			//----------------------------------------------------------
 
 			// Keyboard
-			Keyboard.Update( false ) ;
+			Keyboard.Update() ;
 
 			if( InputProcessingType == InputProcessingTypes.Switching )
 			{
@@ -491,8 +480,9 @@ namespace InputHelper
 					}
 					else
 					{
+
 						// Pointer モード有効中
-						Mouse.Update( false ) ;
+						Mouse.Update() ;
 
 						//-------------
 						// 一時的に入力を強制有効化
@@ -509,14 +499,20 @@ namespace InputHelper
 						//-------------
 
 						// ドリフト対策
-						float ax0 = Mathf.Abs( axis_0.x ) ;
-						float ay0 = Mathf.Abs( axis_0.y ) ;
-						float ax1 = Mathf.Abs( axis_1.x ) ;
-						float ay1 = Mathf.Abs( axis_1.y ) ;
-						float ax2 = Mathf.Abs( axis_2.x ) ;
-						float ay2 = Mathf.Abs( axis_2.y ) ;
-						float ax = Mathf.Max( ax0, ax1, ax2 ) ;
-						float ay = Mathf.Max( ay0, ay1, ay2 ) ;
+
+						// ※Mathf.Abs は特に問題ないがなんとなく使わない
+						float ax0 = axis_0.x < 0 ? - axis_0.x : axis_0.x ;
+						float ay0 = axis_0.y < 0 ? - axis_0.y : axis_0.y ;
+						float ax1 = axis_1.x < 0 ? - axis_1.x : axis_1.x ;
+						float ay1 = axis_1.y < 0 ? - axis_1.y : axis_1.y ;
+						float ax2 = axis_2.x < 0 ? - axis_2.x : axis_2.x ;
+						float ay2 = axis_2.y < 0 ? - axis_2.y : axis_2.y ;
+
+						// ※Mathf.Max はメモリを消費するので使ってはならない(GC.Alloc によるスパイク対策)
+						float ax = ax0 >  ax1 ? ax0 : ax1 ;
+						ax = ax >  ax2 ? ax : ax2 ;
+						float ay = ay0 >  ay1 ? ay0 : ay1 ;
+						ay = ay >  ay2 ? ay : ay2 ;
 
 						if( buttonAll != 0 || ax >  m_DriftThreshold || ay >  m_DriftThreshold )
 						{
@@ -546,14 +542,20 @@ namespace InputHelper
 						//-------------
 
 						// ドリフト対策
-						float ax0 = Mathf.Abs( axis_0.x ) ;
-						float ay0 = Mathf.Abs( axis_0.y ) ;
-						float ax1 = Mathf.Abs( axis_1.x ) ;
-						float ay1 = Mathf.Abs( axis_1.y ) ;
-						float ax2 = Mathf.Abs( axis_2.x ) ;
-						float ay2 = Mathf.Abs( axis_2.y ) ;
-						float ax = Mathf.Max( ax0, ax1, ax2 ) ;
-						float ay = Mathf.Max( ay0, ay1, ay2 ) ;
+
+						// ※Mathf.Abs は特に問題ないがなんとなく使わない
+						float ax0 = axis_0.x < 0 ? - axis_0.x : axis_0.x ;
+						float ay0 = axis_0.y < 0 ? - axis_0.y : axis_0.y ;
+						float ax1 = axis_1.x < 0 ? - axis_1.x : axis_1.x ;
+						float ay1 = axis_1.y < 0 ? - axis_1.y : axis_1.y ;
+						float ax2 = axis_2.x < 0 ? - axis_2.x : axis_2.x ;
+						float ay2 = axis_2.y < 0 ? - axis_2.y : axis_2.y ;
+
+						// ※Mathf.Max はメモリを消費するので使ってはならない(GC.Alloc によるスパイク対策)
+						float ax = ax0 >  ax1 ? ax0 : ax1 ;
+						ax = ax >  ax2 ? ax : ax2 ;
+						float ay = ay0 >  ay1 ? ay0 : ay1 ;
+						ay = ay >  ay2 ? ay : ay2 ;
 
 						if( buttonAll == 0 && ax <  m_DriftThreshold && ay <  m_DriftThreshold )
 						{
@@ -574,7 +576,7 @@ namespace InputHelper
 					else
 					{
 						// GamePad モード有効中
-						GamePad.Update( false ) ;
+						GamePad.Update() ;
 
 						//-------------
 						// 一時的に入力を強制有効化
@@ -601,6 +603,14 @@ namespace InputHelper
 			{
 				// 両方の入力が同時に可能(Pointer・GamePadの最初の入力は有効＝切り替えと同時に効果を発揮する)
 
+				// Mouse
+				Mouse.Update( out bool button_0, out bool button_1, out bool button_2 ) ;
+
+				// GamePad
+				GamePad.Update( out int buttonAll, out Vector2 axis_0, out Vector2 axis_1, out Vector2 axis_2 ) ;
+
+				//---------------------------------
+
 				m_InputSwitching = false ;
 				m_IgnoreInputSwitching = true ;
 
@@ -609,20 +619,21 @@ namespace InputHelper
 				{
 					// 現在は Pointer モード扱い
 
-					int buttonAll = GamePad.GetButtonAll() ;
-					var axis_0 = GamePad.GetAxis( 0 ) ;
-					var axis_1 = GamePad.GetAxis( 1 ) ;
-					var axis_2 = GamePad.GetAxis( 2 ) ;
-
 					// ドリフト対策
-					float ax0 = Mathf.Abs( axis_0.x ) ;
-					float ay0 = Mathf.Abs( axis_0.y ) ;
-					float ax1 = Mathf.Abs( axis_1.x ) ;
-					float ay1 = Mathf.Abs( axis_1.y ) ;
-					float ax2 = Mathf.Abs( axis_2.x ) ;
-					float ay2 = Mathf.Abs( axis_2.y ) ;
-					float ax = Mathf.Max( ax0, ax1, ax2 ) ;
-					float ay = Mathf.Max( ay0, ay1, ay2 ) ;
+
+					// ※Mathf.Abs は特に問題ないがなんとなく使わない
+					float ax0 = axis_0.x < 0 ? - axis_0.x : axis_0.x ;
+					float ay0 = axis_0.y < 0 ? - axis_0.y : axis_0.y ;
+					float ax1 = axis_1.x < 0 ? - axis_1.x : axis_1.x ;
+					float ay1 = axis_1.y < 0 ? - axis_1.y : axis_1.y ;
+					float ax2 = axis_2.x < 0 ? - axis_2.x : axis_2.x ;
+					float ay2 = axis_2.y < 0 ? - axis_2.y : axis_2.y ;
+
+					// ※Mathf.Max はメモリを消費するので使ってはならない(GC.Alloc によるスパイク対策)
+					float ax = ax0 >  ax1 ? ax0 : ax1 ;
+					ax = ax >  ax2 ? ax : ax2 ;
+					float ay = ay0 >  ay1 ? ay0 : ay1 ;
+					ay = ay >  ay2 ? ay : ay2 ;
 
 					if( buttonAll != 0 || ax >  m_DriftThreshold || ay >  m_DriftThreshold )
 					{
@@ -634,48 +645,16 @@ namespace InputHelper
 				{
 					// 現在は GamePad モード扱い
 
-					bool button_0 = GetMouseButton( 0 ) ;
-					bool button_1 = GetMouseButton( 1 ) ;
-					bool button_2 = GetMouseButton( 2 ) ;
-
 					if( Settings.MousePosition.Equals( MousePosition ) == false || button_0 == true || button_1 == true || button_2 == true )
 					{
 						// Pointer モードへ移行
 						SetInputType_Private( InputTypes.Pointer ) ;
 					}
 				}
-
-				//---------------------------------
-
-				// Mouse
-				Mouse.Update( false ) ;
-
-				// GamePad
-				GamePad.Update( false ) ;
 			}
 
 			// 共通ルーチンの呼び出し
 			ExecuteCommonProcessing() ;
-		}
-
-		// 毎フレーム呼び出される(物理)
-		private void ProcessFixedUpdate()
-		{
-			if( ControlEnabled == false )
-			{
-				return ;
-			}
-
-			//----------------------------------------------------------
-
-			// Keyboard
-			Keyboard.Update( true ) ;
-
-			// Mouse
-			Mouse.Update( true ) ;
-
-			// GamePad
-			GamePad.Update( true ) ;
 		}
 
 		//-------------------------------------------------------------------------------------------

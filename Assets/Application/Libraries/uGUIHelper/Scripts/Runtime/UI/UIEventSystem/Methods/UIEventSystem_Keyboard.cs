@@ -51,23 +51,23 @@ namespace uGUIHelper.InputAdapter
 		/// </summary>
 		/// <param name="keyCode"></param>
 		/// <returns></returns>
-		public static bool GetKeyDown( KeyCodes keyCode, bool fromFixedUpdate = false )
-			=> Keyboard.GetKeyDown( keyCode, fromFixedUpdate ) ;
+		public static bool GetKeyDown( KeyCodes keyCode )
+			=> Keyboard.GetKeyDown( keyCode ) ;
 
 		/// <summary>
 		/// キーが離されたかどうかの判定
 		/// </summary>
 		/// <param name="keyCode"></param>
 		/// <returns></returns>
-		public static bool GetKeyUp( KeyCodes keyCode, bool fromFixedUpdate = false )
-			=> Keyboard.GetKeyUp( keyCode, fromFixedUpdate ) ;
+		public static bool GetKeyUp( KeyCodes keyCode )
+			=> Keyboard.GetKeyUp( keyCode ) ;
 
 		/// <summary>
 		/// キーがリピート付きで押されているかどうか
 		/// </summary>
 		/// <param name="keyCode"></param>
 		/// <returns></returns>
-		public static bool GetKeyRepeat( KeyCodes keyCode, bool fromFixedUpdate = false )
-			=> Keyboard.GetKeyRepeat( keyCode, fromFixedUpdate ) ;
+		public static bool GetKeyRepeat( KeyCodes keyCode )
+			=> Keyboard.GetKeyRepeat( keyCode ) ;
 	}
 }

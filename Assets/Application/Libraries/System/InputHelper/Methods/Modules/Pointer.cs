@@ -102,23 +102,23 @@ namespace InputHelper
 		/// </summary>
 		/// <param name="index"></param>
 		/// <returns></returns>
-		public static bool GetButtonDown( int buttonIndex, bool fromFixedUpdate = false )
-			=> Mouse.GetButtonDown( buttonIndex, fromFixedUpdate ) ;
+		public static bool GetButtonDown( int buttonIndex )
+			=> Mouse.GetButtonDown( buttonIndex ) ;
 
 		/// <summary>
 		/// ポインターが離されたかどうか
 		/// </summary>
 		/// <param name="index"></param>
 		/// <returns></returns>
-		public static bool GetButtonUp( int buttonIndex, bool fromFixedUpdate = false )
-			=> Mouse.GetButtonUp( buttonIndex, fromFixedUpdate ) ;
+		public static bool GetButtonUp( int buttonIndex )
+			=> Mouse.GetButtonUp( buttonIndex ) ;
 
 		/// <summary>
 		/// リピート付きでポインターの状態を取得する
 		/// </summary>
 		/// <param name="index"></param>
 		/// <returns></returns>
-		public static bool GetButtonRepeat( int buttonIndex, bool fromFixedUpdate = false )
-			=> Mouse.GetButtonRepeat( buttonIndex, fromFixedUpdate ) ;
+		public static bool GetButtonRepeat( int buttonIndex )
+			=> Mouse.GetButtonRepeat( buttonIndex ) ;
 	}
 }
