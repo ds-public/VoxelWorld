@@ -24,7 +24,7 @@ using UnityEditor ;
 namespace AudioHelper
 {
 	/// <summary>
-	/// オーディオ全般の管理クラス Version 2025/03/13
+	/// オーディオ全般の管理クラス Version 2025/04/02
 	/// </summary>
 	public class AudioManager : MonoBehaviour
 	{
@@ -405,7 +405,7 @@ namespace AudioHelper
 		(
 			Transform parent = null,
 			bool enableListener = true,
-			bool runInbackground = false,
+			bool runInBackground = false,
 			bool muteInBackground = true
 		)
 		{
@@ -454,7 +454,7 @@ namespace AudioHelper
 			}
 
 			m_Instance.m_EnableListaner		= enableListener ;
-			m_Instance.m_RunInBackground	= runInbackground ;
+			m_Instance.m_RunInBackground	= runInBackground ;
 			m_Instance.m_MuteInBackground   = muteInBackground ;
 
 			return m_Instance ;

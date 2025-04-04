@@ -33,7 +33,7 @@ using UnityEditor ;
 namespace AudioHelper
 {
 	/// <summary>
-	/// オーディオ全般の管理クラス Version 2025/03/25 0
+	/// オーディオ全般の管理クラス Version 2025/04/04 0
 	/// </summary>
 	public class AudioManager_ADX2 : MonoBehaviour
 	{
@@ -1418,21 +1418,24 @@ namespace AudioHelper
 		}
 
 #if UNITY_EDITOR
+		private readonly List<string> m_MonitoringCueSheetNames = new () ;
+
 		// キューシートの登録状態を更新する
 		private void UpdateCueSheetMonitor()
 		{
 			if( m_CueSheetCache == null | m_CueSheetCache.Count == 0 )
 			{
-				m_CueSheetNames = new List<string>() ;
+				m_MonitoringCueSheetNames.Clear() ;
+				m_CueSheetNames = m_MonitoringCueSheetNames ;
 			}
 			else
 			{
-				var cueSheetNames = new List<string>() ;
+				m_MonitoringCueSheetNames.Clear() ;
 				foreach( var cueSheetCache in m_CueSheetCache )
 				{
-					cueSheetNames.Add( cueSheetCache.Name ) ;
+					m_MonitoringCueSheetNames.Add( cueSheetCache.Name ) ;
 				}
-				m_CueSheetNames = cueSheetNames ;
+				m_CueSheetNames = m_MonitoringCueSheetNames ;
 			}
 		}
 #endif
