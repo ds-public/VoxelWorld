@@ -8,21 +8,20 @@ using UnityEngine ;
 
 using Cysharp.Threading.Tasks ;
 
-using WebSocketSharp ;
-using WebSocketSharp.Net ;
-using WebSocketSharp.Server ;
-
-
 using MathHelper ;
 using uGUIHelper ;
 using TransformHelper ;
+
+using SocketHelper ;
 
 using DSW.WorldServerClasses ;
 
 using DSW.World.Packet ;
 
+
 namespace DSW.World
 {
+/*
 	/// <summary>
 	/// クライアントの管理クラス(定義のみ)
 	/// </summary>
@@ -42,4 +41,21 @@ namespace DSW.World
 		{
 		}
 	}
+*/
+
+
+	public class ActiveClient
+	{
+		/// <summary>
+		/// クライアント識別
+		/// </summary>
+		public ClientHandler	Client ;
+
+
+		/// <summary>
+		/// プレイヤーデータ
+		/// </summary>
+		public WorldPlayerData	Player ;
+	}
+
 }

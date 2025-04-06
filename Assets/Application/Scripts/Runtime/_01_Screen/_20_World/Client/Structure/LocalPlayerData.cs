@@ -29,7 +29,7 @@ namespace DSW.World
 		/// サーバーポート番号
 		/// </summary>
 		[SerializeField]
-		public int		ServerPortNumber ;
+		public int		ServerPort ;
 
 		/// <summary>
 		/// プレイヤー識別子

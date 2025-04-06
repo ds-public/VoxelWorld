@@ -15,7 +15,7 @@ namespace DSW.World
 	public partial class WorldServer
 	{
 		// 切断(ログアウト)の要求を受信したら呼び出される
-		private void WS_OnDisconnected( ActiveClient client )
+		private void WS_OnDisconnected( ActiveClient activeClient )
 		{
 			//----------------------------------------------------------
 			// サーバー側の処理
@@ -27,40 +27,40 @@ namespace DSW.World
 				return ;
 			}
 
-			if( m_ActiveClients.ContainsKey( client.ID ) == false )
+			if( m_ActiveClients.ContainsKey( activeClient.Client ) == false )
 			{
 				// 既にクライアントが管理下に無い
-				Debug.Log( "<color=#007F7F>[SERVER] Not found clint : ID = " + client.ID + "</color>" ) ;
+				Debug.Log( "<color=#007F7F>[SERVER] Not found clint = " + activeClient.Client.EndPoint + "</color>" ) ;
 				return ;
 			}
 
 			//----------------------------------------------------------
 
 			// ログアウトしたクライアントに関連するチャンクセットで破棄可能なものを全て破棄する
-			FreeChunkSetsWithClientId( client.ID ) ;
+			FreeChunkSetsWithClientId( activeClient.Client.Id.ToString() ) ;
 
 			//----------------------------------
 
-			if( client.Player != null )
+			if( activeClient.Player != null )
 			{
 				// プレイヤーを削除する(プレイヤーデータはログイン時にロードされるためログイン前の切断だとロードされていない可能性がある)
-				DeletePlayer( client.Player ) ;
-				client.Player = null ;
+				DeletePlayer( activeClient.Player ) ;
+				activeClient.Player = null ;
 			}
 
 			//----------------------------------
 
 			// クライアントを除外する
-			m_ActiveClients.Remove( client.ID ) ;
+			m_ActiveClients.Remove( activeClient.Client ) ;
 
 			//----------------------------------------------------------
 			// レスポンスを返す
 
-			WS_Send_Response_Logout_Other( client ) ;
+			WS_Send_Response_Logout_Other( activeClient ) ;
 		}
 
 		// ログアウトに対する応答を返す
-		private void WS_Send_Response_Logout_Other( ActiveClient client )
+		private void WS_Send_Response_Logout_Other( ActiveClient disconnectedActiveClient )
 		{
 			//----------------------------------------------------------
 			// 他人へのレスポンス
@@ -70,14 +70,14 @@ namespace DSW.World
 			{
 				var response = Packet.ServerResponseTypes.Logout_Other.Encode
 				(
-					client.ID	// 新しくログインしたプレイヤーのクライアント識別子
+					disconnectedActiveClient.Client.Id.ToString()	// 新しくログインしたプレイヤーのクライアント識別子
 				) ;
 
 				foreach( var activeClient in m_ActiveClients.Values )
 				{
-					if( activeClient.ID != client.ID )
+					if( activeClient.Client.Id != disconnectedActiveClient.Client.Id )
 					{
-						activeClient.SendData( response ) ;
+						activeClient.Client.SendTcp( response ) ;
 					}
 				}
 			}

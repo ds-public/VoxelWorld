@@ -46,6 +46,6 @@ namespace DSW
 		/// <summary>
 		/// サーバーポート番号
 		/// </summary>
-		public static int		ServerPortNumber ;
+		public static int		ServerPort ;
 	}
 }

@@ -17,6 +17,7 @@ using System.Text ;
 
 using UnityEngine ;
 
+
 namespace DSW
 {
 	/// <summary>
@@ -70,7 +71,7 @@ namespace DSW
 			// クライアントに返信するパケット情報
 
 			Debug.Log( "ServerPort : " + serverPort ) ;
-			Debug.Log( "ServerName ; " + serverName ) ;
+			Debug.Log( "ServerName : " + serverName ) ;
 
 			// 送信する情報を生成する
 			var data = new List<byte>() ;

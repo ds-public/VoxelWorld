@@ -8,17 +8,17 @@ using UnityEngine ;
 
 using Cysharp.Threading.Tasks ;
 
-using WebSocketSharp ;
-using WebSocketSharp.Net ;
-
-
 using uGUIHelper ;
 using TransformHelper ;
 
 using MathHelper ;
 using StorageHelper ;
 
+using SocketHelper ;
+
 using DSW.World.Packet ;
+
+
 
 namespace DSW.World
 {
@@ -27,8 +27,9 @@ namespace DSW.World
 	/// </summary>
 	public partial class WorldClient
 	{
-		// クライアント用の WebSocket
-		private ExWebSocket	m_WebSocket ;
+		// SocketClient のインスタンス
+		private SocketClient m_SocketClient ;
+
 
 		/// <summary>
 		/// 切断されたかどうか
@@ -55,7 +56,7 @@ namespace DSW.World
 		//-------------------------------------------------------------------------------------------
 
 		// クライアントの処理を開始する
-		private void StartWebSocketClient()
+		private void StartSocketClient()
 		{
 			// メインスレッドのコンテキストを取得する
 			m_MainThreadContext = SynchronizationContext.Current ;
@@ -66,23 +67,19 @@ namespace DSW.World
 			//----------------------------------------------------------
 
 			string serverAddress	= PlayerData.ServerAddress ;
-			int    serverPortNumber	= PlayerData.ServerPortNumber ;
+			int    serverPort		= PlayerData.ServerPort ;
 
-			Debug.Log( "<color=#00FF00>[CLIENT] Address = " + serverAddress + " PortNumber = " + serverPortNumber + " のサーバーに接続します</color>" ) ;
+			Debug.Log( "<color=#00FF00>[CLIENT] Address = " + serverAddress + " Port = " + serverPort + " のサーバーに接続します</color>" ) ;
 
-			// ソケットを生成する
-			m_WebSocket = new ExWebSocket
+			// SocketClient トを生成する
+			m_SocketClient = new SocketClient
 			(
-				m_MainThreadContext,
-
-				// メインスレッド
-				OnConnected_Main,
-				OnReceivedData_Main,
-				OnReceivedText_Main,
-				OnDisconnected_Main,
-				OnError_Main
-
-				// サブスレッド
+				OnTcpReceived,
+				OnTcpDisconnected,
+				null,
+				512 * 1024,
+				m_CancellationSource.Token,
+				m_MainThreadContext
 			) ;
 
 			//----------------------------------
@@ -93,27 +90,13 @@ namespace DSW.World
 			m_ErrorCode		= 0 ;
 			m_ErrorMessage	= string.Empty ;
 
-			// 非同期で接続を試みる
-			m_WebSocket.Connect( serverAddress, serverPortNumber, false ) ;
+			// 接続
+			m_SocketClient.Connect( serverAddress, serverPort, OnTcpConnected ) ;
 		}
 
 		// クライアントの処理を終了する
-		private void EndWebSocketClient()
+		private void CloseSocketClient()
 		{
-			// 切断する
-			if( m_WebSocket != null )
-			{
-				if( m_WebSocket.IsConnecting == true )
-				{
-					m_WebSocket.Disconnect() ;
-				}
-
-				m_WebSocket.Close() ;
-				m_WebSocket = null ;
-			}
-
-			//----------------------------------
-
 			// チャンク展開を中断するキャンセルトークンを破棄する
 			if( m_CancellationSource != null )
 			{
@@ -123,63 +106,47 @@ namespace DSW.World
 				m_CancellationSource  = null ;
 			}
 
+			// 切断する
+			if( m_SocketClient != null )
+			{
+				m_SocketClient.Disconnect( false ) ;
+				m_SocketClient.Dispose() ;
+				m_SocketClient = null ;
+			}
+
 			// メインスレッドのコンテキストを消去する
 			m_MainThreadContext = null ;
 		}
 
 		//-----------------------------------------------------------
 #region WebSocket_Callback_On_MainThread
+
 		// 接続(サーバーアドレスとポート番号が欲しい
-		private void OnConnected_Main( string serverAddress, int serverPortNumber )
+		private void OnTcpConnected( bool isSucceeded )
 		{
 		}
 
 		// 受信
-		private void OnReceivedData_Main( byte[] data )
+		private void OnTcpReceived( byte[] data )
 		{
 			WS_ProcessReceive( data ) ;
 		}
 
-		// 受信
-		private void OnReceivedText_Main( string text )
-		{
-		}
-
 		// 切断
-		private void OnDisconnected_Main( int code, string reason )
+		private void OnTcpDisconnected()
 		{
-			Debug.Log( $"<color=#FF7F00>サーバーから切断された CODE = {code} 理由 = {reason}</color>" ) ;
-
-			m_ErrorCode		= code ;
-			m_ErrorMessage	= reason ;
+			Debug.Log( $"<color=#FF7F00>サーバーから切断された</color>" ) ;
 
 			// 接続できなかった・サーバーから切断された
 			m_IsDisconnected = true ;
 
-			if( m_WebSocket != null )
+			if( m_SocketClient != null )
 			{
-				if( code == 1006 )
-				{
-					// 接続できなかった
-				}
-				else
-				{
-					// サーバーから切断された
-				}
-
-				//---------------------------------
-
-				m_WebSocket.Close() ;
-				m_WebSocket = null ;
+				m_SocketClient.Dispose() ;
+				m_SocketClient = null ;
 			}
 		}
 
-		// 異常
-		private void OnError_Main( string message )
-		{
-			Debug.LogWarning( "[CLIENT] Error : " + message ) ;
-			AddLog( "通信エラー:" + message ) ;
-		}
 #endregion
 		//-------------------------------------------------------------------------------------------
 

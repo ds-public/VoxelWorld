@@ -7,13 +7,16 @@ using UnityEngine ;
 
 using Cysharp.Threading.Tasks ;
 
+/*
 using WebSocketSharp ;
 using WebSocketSharp.Net ;
 using WebSocketSharp.Server ;
+*/
 
 using MathHelper ;
 
 using DSW.WorldServerClasses ;
+
 
 /// <summary>
 /// パッケージ
@@ -88,7 +91,7 @@ namespace DSW.World
 			//----------------------------------------------------------
 
 			// サーバー処理を開始する
-			var resultCode = CreateWebSocketServer() ;
+			var resultCode = CreateSocketServer( this.GetCancellationTokenOnDestroy() ) ;
 			if( resultCode != ResultCodes.Successful )
 			{
 				return resultCode ;
@@ -142,7 +145,7 @@ namespace DSW.World
 
 			//----------------------------------------------------------
 
-			bool isServer = ( m_WebSocketServer != null ) ;
+			bool isServer = ( m_SocketServer != null ) ;
 
 			Debug.Log( "<color=#00FFFF>[SERVER] シャットダウンを行います(サーバーの起動状態 = " + isServer + ")</color>" ) ;
 

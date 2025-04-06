@@ -80,14 +80,14 @@ namespace DSW.World
 		}
 
 		// ログインに対する応答を返す
-		private void WS_Send_Response_Login( ActiveClient client, WorldPlayerData player )
+		private void WS_Send_Response_Login( ActiveClient targetActiveClient, WorldPlayerData player )
 		{
 			//----------------------------------------------------------
 			// 自身へのレスポンス
 
 			var response = Packet.ServerResponseTypes.Login.Encode
 			(
-				client.ID,	// 自分自身に送ってもあまり意味は無いが他のクライアント側で他のプレイヤーとフォーマットを合わせるために送る
+				targetActiveClient.Client.Id.ToString(),	// 自分自身に送ってもあまり意味は無いが他のクライアント側で他のプレイヤーとフォーマットを合わせるために送る
 				player.Id,	// 初めてログインした時のために送る
 				player.Name,
 				player.ColorType,
@@ -95,20 +95,20 @@ namespace DSW.World
 				player.Direction
 			) ;
 
-			client.SendData( response ) ;
+			targetActiveClient.Client.SendTcp( response ) ;
 
 			// 既にログインしているプレイヤーの情報を送る
 			if( m_ActiveClients != null && m_ActiveClients.Count >  0 )
 			{
 				foreach( var activeClient in m_ActiveClients.Values )
 				{
-					if( activeClient.ID != client.ID )
+					if( activeClient.Client.Id != targetActiveClient.Client.Id )
 					{
 						var otherPlayer = activeClient.Player ;
 
 						response = Packet.ServerResponseTypes.Login_Other.Encode
 						(
-							activeClient.ID,	// 既にいるプレイヤーのクライアント識別子
+							activeClient.Client.Id.ToString(),	// 既にいるプレイヤーのクライアント識別子
 							false,
 							otherPlayer.Name,
 							otherPlayer.ColorType,
@@ -116,7 +116,7 @@ namespace DSW.World
 							otherPlayer.Direction
 						) ;
 
-						client.SendData( response ) ;
+						targetActiveClient.Client.SendTcp( response ) ;
 					}
 				}
 			}
@@ -129,7 +129,7 @@ namespace DSW.World
 			{
 				response = Packet.ServerResponseTypes.Login_Other.Encode
 				(
-					client.ID,	// 新しくログインしたプレイヤーのクライアント識別子
+					targetActiveClient.Client.Id.ToString(),	// 新しくログインしたプレイヤーのクライアント識別子
 					true,
 					player.Name,
 					player.ColorType,
@@ -139,9 +139,9 @@ namespace DSW.World
 
 				foreach( var activeClient in m_ActiveClients.Values )
 				{
-					if( activeClient.ID != client.ID )
+					if( activeClient.Client.Id != targetActiveClient.Client.Id )
 					{
-						activeClient.SendData( response ) ;
+						activeClient.Client.SendTcp( response ) ;
 					}
 				}
 			}

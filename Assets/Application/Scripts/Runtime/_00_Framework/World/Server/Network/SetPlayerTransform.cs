@@ -52,7 +52,7 @@ namespace DSW.World
 		}
 
 		// 他のプレイヤーへ位置と方向の通知
-		private void WS_Send_Response_SetPlayerTransform_Other( ActiveClient client, WorldPlayerData player )
+		private void WS_Send_Response_SetPlayerTransform_Other( ActiveClient targetActiveClient, WorldPlayerData player )
 		{
 			//----------------------------------------------------------
 			// 他人へのレスポンス
@@ -63,16 +63,16 @@ namespace DSW.World
 				// レスポンス
 				var response = Packet.ServerResponseTypes.SetPlayerTransform_Other.Encode
 				(
-					client.ID,
+					targetActiveClient.Client.Id.ToString(),
 					player.Position,
 					player.Direction
 				) ;
 
 				foreach( var activeClient in m_ActiveClients.Values )
 				{
-					if( activeClient.ID != client.ID )
+					if( activeClient.Client.Id != targetActiveClient.Client.Id )
 					{
-						activeClient.SendData( response ) ;
+						activeClient.Client.SendTcp( response ) ;
 					}
 				}
 			}

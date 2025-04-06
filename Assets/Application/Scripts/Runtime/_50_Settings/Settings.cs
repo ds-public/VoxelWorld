@@ -342,7 +342,7 @@ namespace DSW
 		//-------------------------------------------------------------------------------------------
 
 		[Header( "サーバーのポート番号" )]
-		public int	ServerPortNumber = 32760 ;
+		public int	ServerPort = 32760 ;
 	}
 }
 

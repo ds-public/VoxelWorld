@@ -106,6 +106,19 @@ namespace SpriteHelper
 			// スプライト
 			DrawSprite( component ) ;
 
+			GUILayout.BeginHorizontal() ;	// 横並び
+			{
+				bool isMaterialIndependence = EditorGUILayout.Toggle( component.IsMaterialIndependence, GUILayout.Width( 16f ) ) ;
+				if( component.IsMaterialIndependence != isMaterialIndependence )
+				{
+					Undo.RecordObject( component, "SpriteDrawer : IsMaterialIndependence Change" ) ;	// アンドウバッファに登録
+					component.IsMaterialIndependence  = isMaterialIndependence ;
+					EditorUtility.SetDirty( component ) ;
+				}
+				GUILayout.Label( new GUIContent( "IsMaterialIndependence", "マテリアルを個別化します(ドローコールが増加します)" ), GUILayout.Width( 320f ) ) ;
+			}
+			GUILayout.EndHorizontal() ;		// 横並び終了
+
 			//----------------------------------
 
 			// 区切り線

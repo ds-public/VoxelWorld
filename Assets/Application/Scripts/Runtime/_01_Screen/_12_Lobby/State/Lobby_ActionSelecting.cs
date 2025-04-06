@@ -32,7 +32,7 @@ namespace DSW.Screens
 			Blocker.Off() ;
 
 			// ループ
-			( PlayerData.PlayModes playMode, string playerName, byte colorType, string serverAddress, int serverPortNumber )
+			( PlayerData.PlayModes playMode, string playerName, byte colorType, string serverAddress, int serverPort )
 				= await m_ModeSettingPanel.WaitFor() ;
 
 			// 他の画面への受け渡し用に保存する
@@ -40,10 +40,10 @@ namespace DSW.Screens
 			PlayerData.PlayerName		= playerName ;
 			PlayerData.ColorType		= colorType ;
 			PlayerData.ServerAddress	= serverAddress ;
-			PlayerData.ServerPortNumber	= serverPortNumber ;
+			PlayerData.ServerPort		= serverPort ;
 
 
-			Debug.Log( "<color=#FF00FF>サーバーの待ち受けポート番号 : " + serverPortNumber + "</color>" ) ;
+			Debug.Log( "<color=#FF00FF>サーバーの待ち受けポート番号 : " + serverPort + "</color>" ) ;
 
 			// フェードアウト
 			await m_ModeSettingPanel.FadeOut() ;

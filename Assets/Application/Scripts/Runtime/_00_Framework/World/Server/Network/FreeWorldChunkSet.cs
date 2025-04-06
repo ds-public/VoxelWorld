@@ -15,7 +15,7 @@ namespace DSW.World
 	public partial class WorldServer
 	{
 		// チャンクセットのロード要求を受信したら呼び出される
-		private void WS_OnReceived_Request_FreeWorldChunkSet( ActiveClient client, byte[] data )
+		private void WS_OnReceived_Request_FreeWorldChunkSet( ActiveClient activeClient, byte[] data )
 		{
 			var context = Packet.ClientRequestTypes.FreeWorldChunkSet.Decode( data ) ;
 			if( context == null )
@@ -33,7 +33,7 @@ namespace DSW.World
 			// サーバー側の処理
 
 			// 必要に応じてチャンクを破棄する
-			FreeChunkSet( csId, client.ID ) ;
+			FreeChunkSet( csId, activeClient.Client.Id.ToString() ) ;
 		}
 
 	}

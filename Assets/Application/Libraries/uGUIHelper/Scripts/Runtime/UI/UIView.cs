@@ -27,7 +27,7 @@ namespace uGUIHelper
 	/// </summary>
 	public class UIView : UIBehaviour
 	{
-		public const string Version = "Version 2025/04/04 0" ;
+		public const string Version = "Version 2025/04/05 0" ;
 
 		// ソースコード
 		// https://bitbucket.org/Unity-Technologies/ui/src/2019.1/

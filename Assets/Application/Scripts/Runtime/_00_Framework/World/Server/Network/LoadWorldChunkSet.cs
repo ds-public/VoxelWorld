@@ -15,7 +15,7 @@ namespace DSW.World
 	public partial class WorldServer
 	{
 		// チャンクセットのロード要求を受信したら呼び出される
-		private void WS_OnReceived_Request_LoadWorldChunkSet( ActiveClient client, byte[] data )
+		private void WS_OnReceived_Request_LoadWorldChunkSet( ActiveClient activeClient, byte[] data )
 		{
 			var context = Packet.ClientRequestTypes.LoadWorldChunkSet.Decode( data ) ;
 			if( context == null )
@@ -33,16 +33,16 @@ namespace DSW.World
 			// サーバー側の処理
 
 			// チャンクセットを展開または取得する
-			var chunkSet = LoadChunkSet( csId, client.ID ) ;
+			var chunkSet = LoadChunkSet( csId, activeClient.Client.Id.ToString() ) ;
 
 			//----------------------------------------------------------
 			// レスポンスを返す
 
-			WS_Send_Response_LoadWorldChunkSet( client, csId, chunkSet ) ;
+			WS_Send_Response_LoadWorldChunkSet( activeClient, csId, chunkSet ) ;
 		}
 
 		// チャンクセット展開の応答
-		private void WS_Send_Response_LoadWorldChunkSet( ActiveClient client, int csId, byte[] chunkSet )
+		private void WS_Send_Response_LoadWorldChunkSet( ActiveClient activeClient, int csId, byte[] chunkSet )
 		{
 			//----------------------------------------------------------
 			// 自身へのレスポンス
@@ -53,7 +53,7 @@ namespace DSW.World
 				chunkSet
 			) ;
 
-			client.SendData( response ) ;
+			activeClient.Client.SendTcp( response ) ;
 		}
 	}
 }

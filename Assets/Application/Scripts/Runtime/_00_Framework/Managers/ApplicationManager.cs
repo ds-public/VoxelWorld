@@ -676,25 +676,25 @@ namespace DSW
 			// シングル
 			PlayerData.ServerAddress	= "localhost" ;
 
-			key = "ServerPortNumber" ;
+			key = "ServerPort" ;
 			if( Preference.HasKey( key ) == true )
 			{
-				PlayerData.ServerPortNumber = Preference.GetValue<int>( key ) ;
+				PlayerData.ServerPort = Preference.GetValue<int>( key ) ;
 			}
 			else
 			{
-				PlayerData.ServerPortNumber	= 0 ;
+				PlayerData.ServerPort	= 0 ;
 			}
 
-			if( PlayerData.ServerPortNumber	== 0 )
+			if( PlayerData.ServerPort	== 0 )
 			{
 				if( settings != null )
 				{
-					PlayerData.ServerPortNumber	= settings.ServerPortNumber ;
+					PlayerData.ServerPort	= settings.ServerPort ;
 				}
 				else
 				{
-					PlayerData.ServerPortNumber	= 32000 ;
+					PlayerData.ServerPort	= 32000 ;
 				}
 			}
 

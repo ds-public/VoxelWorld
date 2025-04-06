@@ -1303,7 +1303,8 @@ namespace SpriteHelper
 		internal virtual void LateUpdate()
 		{
 //			Debug.Log( "LateUpdate : " + name ) ;
-			if( transform.localPosition.x != m_LocalPositionX || transform.localPosition.y != m_LocalPositionY )
+			var p = transform.localPosition ;
+			if( p.x != m_LocalPositionX || p.y != m_LocalPositionY )
 			{
 				// AnchorPosition を先に更新する必要がある
 				UpdateSpriteTransformAnchorPosition() ;

@@ -40,7 +40,7 @@ using UnityEngine ;
 namespace SocketHelper
 {
 	/// <summary>
-	/// Socket のクライアント側の管理用クラス Version 2025/03/22
+	/// Socket のクライアント側の管理用クラス Version 2025/04/06
 	/// </summary>
 	public class SocketClient
 	{
@@ -185,11 +185,11 @@ namespace SocketHelper
 		/// サーバーへ接続を行う
 		/// </summary>
 		/// <param name="serverAddress"></param>
-		/// <param name="serverPortNumber"></param>
+		/// <param name="serverPort"></param>
 		/// <param name="onCnnected"></param>
-		public void Connect( string serverAddress, int serverPortNumber, Action<bool> onCnnected = null )
+		public void Connect( string serverAddress, int serverPort, Action<bool> onTcpConnected = null )
 		{
-			_ = ConnectAsync( serverAddress, serverPortNumber, onCnnected ) ;
+			_ = ConnectAsync( serverAddress, serverPort, onTcpConnected ) ;
 		}
 
 		/// <summary>
@@ -197,7 +197,7 @@ namespace SocketHelper
 		/// </summary>
 		/// <param name="serverAddress"></param>
 		/// <param name="serverPortNumber"></param>
-		public async Task<bool> ConnectAsync( string serverAddress, int serverPort, Action<bool> onConnected = null, CancellationToken cancellationToken = default )
+		public async Task<bool> ConnectAsync( string serverAddress, int serverPort, Action<bool> onTcpConnected = null, CancellationToken cancellationToken = default )
 		{
 			if( m_SocketTcp != null )
 			{
@@ -305,7 +305,7 @@ namespace SocketHelper
 			if( m_SocketTcp == null )
 			{
 				// 切断された可能性がある
-				onConnected?.Invoke( false ) ;
+				onTcpConnected?.Invoke( false ) ;
 				return false ;
 			}
 
@@ -318,7 +318,7 @@ namespace SocketHelper
 				Disconnect( false ) ;
 
 				// 接続出来なかった(例外が発生したか中断された)
-				onConnected?.Invoke( false ) ;
+				onTcpConnected?.Invoke( false ) ;
 				return false ;
 			}
 
@@ -326,7 +326,7 @@ namespace SocketHelper
 			Debug.Log( "<color=#FFFF00>接続自体は成功 : " + serverAddress + " : " + serverPort + "</color>" ) ;
 
 			// 接続時のコールバックを呼ぶ
-			onConnected?.Invoke( true ) ;
+			onTcpConnected?.Invoke( true ) ;
 
 			//----------------------------------------------------------
 

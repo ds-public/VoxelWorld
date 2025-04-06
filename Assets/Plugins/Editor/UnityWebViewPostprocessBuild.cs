@@ -1,21 +1,17 @@
 #if UNITY_EDITOR
-using System.Collections ;
-using System.IO ;
-using System.Text ;
-using System.Xml ;
-
-#if !UNITY_EDITOR && UNITY_ANDROID
-using UnityEditor.Android ;
+using System.Collections;
+using System.IO;
+using System.Text;
+using System.Xml;
+using UnityEditor.Android;
+using UnityEditor.Callbacks;
+#if UNITY_IOS
+using UnityEditor.iOS.Xcode;
 #endif
+using UnityEditor;
+using UnityEngine;
 
-using UnityEditor.Callbacks ;
-#if !UNITY_EDITOR && ( UNITY_IOS || UNITY_IPHONE )
-using UnityEditor.iOS.Xcode ;
-#endif
-using UnityEditor ;
-using UnityEngine ;
-
-#if UNITY_2018_1_OR_NEWER && !UNITY_EDITOR && UNITY_ANDROID
+#if UNITY_2018_1_OR_NEWER
 public class UnityWebViewPostprocessBuild : IPostGenerateGradleAndroidProject
 #else
 public class UnityWebViewPostprocessBuild
@@ -97,13 +93,11 @@ public class UnityWebViewPostprocessBuild
             }
         }
 #endif
-
-#if !UNITY_EDITOR && ( UNITY_IOS || UNITY_IPHONE )
+#if UNITY_IOS
 		if (buildTarget == BuildTarget.iOS) {
             string projPath = path + "/Unity-iPhone.xcodeproj/project.pbxproj";
             PBXProject proj = new PBXProject();
             proj.ReadFromString(File.ReadAllText(projPath));
-
 #if UNITY_2019_3_OR_NEWER
             proj.AddFrameworkToProject(proj.GetUnityFrameworkTargetGuid(), "WebKit.framework", false);
 #else
@@ -116,7 +110,7 @@ public class UnityWebViewPostprocessBuild
 }
 
 internal class AndroidXmlDocument : XmlDocument {
-    private string m_Path;
+    private readonly string m_Path;
     protected XmlNamespaceManager nsMgr;
     public readonly string AndroidXmlNamespace = "http://schemas.android.com/apk/res/android";
 

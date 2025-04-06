@@ -418,14 +418,14 @@ namespace DSW.World
 			while( true )
 			{
 				// ソケットを開く(サーバーに接続を試みる)
-				StartWebSocketClient() ;
+				StartSocketClient() ;
 
 				Progress.On( "サーバーへ接続中" ) ;
 
 				// 接続待ち
 				while( true )
 				{
-					if( m_WebSocket == null || m_IsDisconnected == true )
+					if( m_SocketClient == null || m_IsDisconnected == true )
 					{
 						// 問題発生
 
@@ -442,7 +442,7 @@ namespace DSW.World
 						else
 						{
 							// 切断を実行する(Shutdown まで実行する必要は無い)
-							EndWebSocketClient() ;
+							CloseSocketClient() ;
 
 							// リブート
 //							ApplicationManager.Reboot() ;
@@ -455,19 +455,19 @@ namespace DSW.World
 						}
 					}
 					else
-					if( m_WebSocket.IsConnecting == true )
+					if( m_SocketClient.IsConnected == true )
 					{
 						// 接続した
 						await Progress.OffAsync() ;
 
-						AddLog( "サーバー(" + PlayerData.ServerAddress + ":" + PlayerData.ServerPortNumber +")に接続しました" ) ;
+						AddLog( "サーバー(" + PlayerData.ServerAddress + ":" + PlayerData.ServerPort +")に接続しました" ) ;
 						break ;
 					}
 
 					await Yield() ;
 				}
 
-				if( m_WebSocket != null && m_WebSocket.IsConnecting == true )
+				if( m_SocketClient != null && m_SocketClient.IsConnected == true )
 				{
 					// 接続した(外側のループを抜ける)
 					break ;
@@ -772,7 +772,7 @@ namespace DSW.World
 			m_IsLogin	= false ;
 
 			// ソケットを閉じる(Ready 状態に関係なく実行が必要)
-			EndWebSocketClient() ;
+			CloseSocketClient() ;
 
 			m_IsQuit	= true ;	// 終了			
 			m_IsReady	= false ;

@@ -39,7 +39,7 @@ namespace DSW.Screens
 
 				if( resultCode == WorldServer.ResultCodes.PortNumberAlreadyInUse )
 				{
-					await Dialog.Open( "エラー", "サーバーの起動に失敗しました\nポート番号(" + PlayerData.ServerPortNumber + ")が既に使用中の可能性があります\n\nタイトル画面に取ります", new string[]{ "タイトル" } ) ;
+					await Dialog.Open( "エラー", "サーバーの起動に失敗しました\nポート番号(" + PlayerData.ServerPort + ")が既に使用中の可能性があります\n\nタイトル画面に取ります", new string[]{ "タイトル" } ) ;
 					ApplicationManager.Reboot() ;
 					return State.Unknown ;
 				}
@@ -49,9 +49,9 @@ namespace DSW.Screens
 				//---------------------------------
 				// レスポンダーも起動する
 
-				Debug.Log( "<color=#00FF00>[CLIENT] レスポンダーを起動します" + 55555 + " " + PlayerData.ServerPortNumber + "</color>" ) ;
+				Debug.Log( "<color=#00FF00>[CLIENT] レスポンダーを起動します" + 55555 + " " + PlayerData.ServerPort + "</color>" ) ;
 
-				clientResponder = new ClientResponder( 55555, PlayerData.ServerPortNumber ) ;
+				clientResponder = new ClientResponder( 55555, PlayerData.ServerPort ) ;
 				clientResponder.Run() ;
 			}
 

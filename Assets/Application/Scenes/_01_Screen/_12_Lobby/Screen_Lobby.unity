@@ -13,7 +13,7 @@ OcclusionCullingSettings:
 --- !u!104 &2
 RenderSettings:
   m_ObjectHideFlags: 0
-  serializedVersion: 9
+  serializedVersion: 10
   m_Fog: 0
   m_FogColor: {r: 0.5, g: 0.5, b: 0.5, a: 1}
   m_FogMode: 3
@@ -38,13 +38,12 @@ RenderSettings:
   m_ReflectionIntensity: 1
   m_CustomReflection: {fileID: 0}
   m_Sun: {fileID: 0}
-  m_IndirectSpecularColor: {r: 0.3708985, g: 0.3783704, b: 0.35722548, a: 1}
   m_UseRadianceAmbientProbe: 0
 --- !u!157 &3
 LightmapSettings:
   m_ObjectHideFlags: 0
-  serializedVersion: 12
-  m_GIWorkflowMode: 1
+  serializedVersion: 13
+  m_BakeOnSceneLoad: 0
   m_GISettings:
     serializedVersion: 2
     m_BounceScale: 1
@@ -192,7 +191,7 @@ MonoBehaviour:
   m_MosaicSquareization: 0
   m_TimeScale: 1
   m_BackKeyEnabled: 0
-  m_IsBackKeyIgnoreRaycastTarget: 0
+  m_IsForceRaycastTargetEnabled: 0
   m_ClickExclusionEnabled: 1
   m_PadAutoFocusEnabled: 1
   m_SpriteAtlas: {fileID: 0}
@@ -310,7 +309,7 @@ MonoBehaviour:
   m_MosaicSquareization: 0
   m_TimeScale: 1
   m_BackKeyEnabled: 0
-  m_IsBackKeyIgnoreRaycastTarget: 0
+  m_IsForceRaycastTargetEnabled: 0
   m_ClickExclusionEnabled: 1
   m_PadAutoFocusEnabled: 1
   m_AutoSizeFitting: 1
@@ -385,15 +384,17 @@ MonoBehaviour:
   m_lineSpacingMax: 0
   m_paragraphSpacing: 0
   m_charWidthMaxAdj: 0
-  m_enableWordWrapping: 0
+  m_TextWrappingMode: 0
   m_wordWrappingRatios: 0.4
   m_overflowMode: 0
   m_linkedTextComponent: {fileID: 0}
   parentLinkedComponent: {fileID: 0}
   m_enableKerning: 1
+  m_ActiveFontFeatures: 6e72656b
   m_enableExtraPadding: 0
   checkPaddingRequired: 0
   m_isRichText: 1
+  m_EmojiFallbackSupport: 1
   m_parseCtrlCharacters: 1
   m_isOrthographic: 1
   m_isCullingEnabled: 0
@@ -490,7 +491,7 @@ MonoBehaviour:
   m_MosaicSquareization: 0
   m_TimeScale: 1
   m_BackKeyEnabled: 0
-  m_IsBackKeyIgnoreRaycastTarget: 0
+  m_IsForceRaycastTargetEnabled: 0
   m_ClickExclusionEnabled: 1
   m_PadAutoFocusEnabled: 1
   m_AutoSizeFitting: 1
@@ -565,15 +566,17 @@ MonoBehaviour:
   m_lineSpacingMax: 0
   m_paragraphSpacing: 0
   m_charWidthMaxAdj: 0
-  m_enableWordWrapping: 0
+  m_TextWrappingMode: 0
   m_wordWrappingRatios: 0.4
   m_overflowMode: 0
   m_linkedTextComponent: {fileID: 0}
   parentLinkedComponent: {fileID: 0}
   m_enableKerning: 1
+  m_ActiveFontFeatures: 6e72656b
   m_enableExtraPadding: 0
   checkPaddingRequired: 0
   m_isRichText: 1
+  m_EmojiFallbackSupport: 1
   m_parseCtrlCharacters: 1
   m_isOrthographic: 1
   m_isCullingEnabled: 0
@@ -670,7 +673,7 @@ MonoBehaviour:
   m_MosaicSquareization: 0
   m_TimeScale: 1
   m_BackKeyEnabled: 0
-  m_IsBackKeyIgnoreRaycastTarget: 0
+  m_IsForceRaycastTargetEnabled: 0
   m_ClickExclusionEnabled: 1
   m_PadAutoFocusEnabled: 1
   m_AutoSizeFitting: 1
@@ -745,15 +748,17 @@ MonoBehaviour:
   m_lineSpacingMax: 0
   m_paragraphSpacing: 0
   m_charWidthMaxAdj: 0
-  m_enableWordWrapping: 0
+  m_TextWrappingMode: 0
   m_wordWrappingRatios: 0.4
   m_overflowMode: 0
   m_linkedTextComponent: {fileID: 0}
   parentLinkedComponent: {fileID: 0}
   m_enableKerning: 1
+  m_ActiveFontFeatures: 6e72656b
   m_enableExtraPadding: 0
   checkPaddingRequired: 0
   m_isRichText: 1
+  m_EmojiFallbackSupport: 1
   m_parseCtrlCharacters: 1
   m_isOrthographic: 1
   m_isCullingEnabled: 0
@@ -866,7 +871,7 @@ MonoBehaviour:
   m_MosaicSquareization: 0
   m_TimeScale: 1
   m_BackKeyEnabled: 0
-  m_IsBackKeyIgnoreRaycastTarget: 0
+  m_IsForceRaycastTargetEnabled: 0
   m_ClickExclusionEnabled: 1
   m_PadAutoFocusEnabled: 1
   m_SpriteAtlas: {fileID: 0}
@@ -984,7 +989,7 @@ MonoBehaviour:
   m_MosaicSquareization: 0
   m_TimeScale: 1
   m_BackKeyEnabled: 0
-  m_IsBackKeyIgnoreRaycastTarget: 0
+  m_IsForceRaycastTargetEnabled: 0
   m_ClickExclusionEnabled: 1
   m_PadAutoFocusEnabled: 1
 --- !u!1 &426580560
@@ -1074,7 +1079,7 @@ MonoBehaviour:
   m_MosaicSquareization: 0
   m_TimeScale: 1
   m_BackKeyEnabled: 0
-  m_IsBackKeyIgnoreRaycastTarget: 0
+  m_IsForceRaycastTargetEnabled: 0
   m_ClickExclusionEnabled: 1
   m_PadAutoFocusEnabled: 1
   m_SpriteAtlas: {fileID: 0}
@@ -1192,7 +1197,7 @@ MonoBehaviour:
   m_MosaicSquareization: 0
   m_TimeScale: 1
   m_BackKeyEnabled: 0
-  m_IsBackKeyIgnoreRaycastTarget: 0
+  m_IsForceRaycastTargetEnabled: 0
   m_ClickExclusionEnabled: 1
   m_PadAutoFocusEnabled: 1
   m_AutoSizeFitting: 1
@@ -1267,15 +1272,17 @@ MonoBehaviour:
   m_lineSpacingMax: 0
   m_paragraphSpacing: 0
   m_charWidthMaxAdj: 0
-  m_enableWordWrapping: 0
+  m_TextWrappingMode: 0
   m_wordWrappingRatios: 0.4
   m_overflowMode: 0
   m_linkedTextComponent: {fileID: 0}
   parentLinkedComponent: {fileID: 0}
   m_enableKerning: 1
+  m_ActiveFontFeatures: 6e72656b
   m_enableExtraPadding: 0
   checkPaddingRequired: 0
   m_isRichText: 1
+  m_EmojiFallbackSupport: 1
   m_parseCtrlCharacters: 1
   m_isOrthographic: 1
   m_isCullingEnabled: 0
@@ -1372,7 +1379,7 @@ MonoBehaviour:
   m_MosaicSquareization: 0
   m_TimeScale: 1
   m_BackKeyEnabled: 0
-  m_IsBackKeyIgnoreRaycastTarget: 0
+  m_IsForceRaycastTargetEnabled: 0
   m_ClickExclusionEnabled: 1
   m_PadAutoFocusEnabled: 1
   m_AutoSizeFitting: 1
@@ -1447,15 +1454,17 @@ MonoBehaviour:
   m_lineSpacingMax: 0
   m_paragraphSpacing: 0
   m_charWidthMaxAdj: 0
-  m_enableWordWrapping: 0
+  m_TextWrappingMode: 0
   m_wordWrappingRatios: 0.4
   m_overflowMode: 0
   m_linkedTextComponent: {fileID: 0}
   parentLinkedComponent: {fileID: 0}
   m_enableKerning: 1
+  m_ActiveFontFeatures: 6e72656b
   m_enableExtraPadding: 0
   checkPaddingRequired: 0
   m_isRichText: 1
+  m_EmojiFallbackSupport: 1
   m_parseCtrlCharacters: 1
   m_isOrthographic: 1
   m_isCullingEnabled: 0
@@ -1494,7 +1503,7 @@ GameObject:
   - component: {fileID: 517981114}
   - component: {fileID: 517981113}
   m_Layer: 5
-  m_Name: ServerPortNumberBase
+  m_Name: ServerPortBase
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -1594,7 +1603,7 @@ MonoBehaviour:
   m_MosaicSquareization: 0
   m_TimeScale: 1
   m_BackKeyEnabled: 0
-  m_IsBackKeyIgnoreRaycastTarget: 0
+  m_IsForceRaycastTargetEnabled: 0
   m_ClickExclusionEnabled: 1
   m_PadAutoFocusEnabled: 1
 --- !u!1 &583668149
@@ -1931,7 +1940,7 @@ MonoBehaviour:
   m_MosaicSquareization: 0
   m_TimeScale: 1
   m_BackKeyEnabled: 0
-  m_IsBackKeyIgnoreRaycastTarget: 0
+  m_IsForceRaycastTargetEnabled: 0
   m_ClickExclusionEnabled: 1
   m_PadAutoFocusEnabled: 1
   m_SpriteAtlas: {fileID: 0}
@@ -1945,6 +1954,7 @@ MonoBehaviour:
   m_LabelMesh: {fileID: 1433640640}
   m_Icon: {fileID: 0}
   m_DisableMask: {fileID: 0}
+  m_Cursor: {fileID: 0}
   m_ClickTransitionEnabled: 0
   m_WaitForTransition: 0
   m_TargetButtonGroup: {fileID: 0}
@@ -2101,7 +2111,7 @@ MonoBehaviour:
   m_MosaicSquareization: 0
   m_TimeScale: 1
   m_BackKeyEnabled: 0
-  m_IsBackKeyIgnoreRaycastTarget: 0
+  m_IsForceRaycastTargetEnabled: 0
   m_ClickExclusionEnabled: 1
   m_PadAutoFocusEnabled: 1
   m_AutoSizeFitting: 1
@@ -2176,15 +2186,17 @@ MonoBehaviour:
   m_lineSpacingMax: 0
   m_paragraphSpacing: 0
   m_charWidthMaxAdj: 0
-  m_enableWordWrapping: 0
+  m_TextWrappingMode: 0
   m_wordWrappingRatios: 0.4
   m_overflowMode: 0
   m_linkedTextComponent: {fileID: 0}
   parentLinkedComponent: {fileID: 0}
   m_enableKerning: 1
+  m_ActiveFontFeatures: 6e72656b
   m_enableExtraPadding: 0
   checkPaddingRequired: 0
   m_isRichText: 1
+  m_EmojiFallbackSupport: 1
   m_parseCtrlCharacters: 1
   m_isOrthographic: 1
   m_isCullingEnabled: 0
@@ -2281,7 +2293,7 @@ MonoBehaviour:
   m_MosaicSquareization: 0
   m_TimeScale: 1
   m_BackKeyEnabled: 0
-  m_IsBackKeyIgnoreRaycastTarget: 0
+  m_IsForceRaycastTargetEnabled: 0
   m_ClickExclusionEnabled: 1
   m_PadAutoFocusEnabled: 1
   m_SpriteAtlas: {fileID: 0}
@@ -2399,7 +2411,7 @@ MonoBehaviour:
   m_MosaicSquareization: 0
   m_TimeScale: 1
   m_BackKeyEnabled: 0
-  m_IsBackKeyIgnoreRaycastTarget: 0
+  m_IsForceRaycastTargetEnabled: 0
   m_ClickExclusionEnabled: 1
   m_PadAutoFocusEnabled: 1
   m_AutoSizeFitting: 1
@@ -2474,15 +2486,17 @@ MonoBehaviour:
   m_lineSpacingMax: 0
   m_paragraphSpacing: 0
   m_charWidthMaxAdj: 0
-  m_enableWordWrapping: 0
+  m_TextWrappingMode: 0
   m_wordWrappingRatios: 0.4
   m_overflowMode: 0
   m_linkedTextComponent: {fileID: 0}
   parentLinkedComponent: {fileID: 0}
   m_enableKerning: 1
+  m_ActiveFontFeatures: 6e72656b
   m_enableExtraPadding: 0
   checkPaddingRequired: 0
   m_isRichText: 1
+  m_EmojiFallbackSupport: 1
   m_parseCtrlCharacters: 1
   m_isOrthographic: 1
   m_isCullingEnabled: 0
@@ -2579,7 +2593,7 @@ MonoBehaviour:
   m_MosaicSquareization: 0
   m_TimeScale: 1
   m_BackKeyEnabled: 0
-  m_IsBackKeyIgnoreRaycastTarget: 0
+  m_IsForceRaycastTargetEnabled: 0
   m_ClickExclusionEnabled: 1
   m_PadAutoFocusEnabled: 1
   m_SpriteAtlas: {fileID: 0}
@@ -2697,7 +2711,7 @@ MonoBehaviour:
   m_MosaicSquareization: 0
   m_TimeScale: 1
   m_BackKeyEnabled: 0
-  m_IsBackKeyIgnoreRaycastTarget: 0
+  m_IsForceRaycastTargetEnabled: 0
   m_ClickExclusionEnabled: 1
   m_PadAutoFocusEnabled: 1
   m_SpriteAtlas: {fileID: 0}
@@ -2815,7 +2829,7 @@ MonoBehaviour:
   m_MosaicSquareization: 0
   m_TimeScale: 1
   m_BackKeyEnabled: 0
-  m_IsBackKeyIgnoreRaycastTarget: 0
+  m_IsForceRaycastTargetEnabled: 0
   m_ClickExclusionEnabled: 1
   m_PadAutoFocusEnabled: 1
 --- !u!1 &783591510
@@ -2877,7 +2891,7 @@ MonoBehaviour:
   m_LocalPosition: {x: 0, y: -24, z: 0}
   m_AutoPivotToCenter: 0
   m_LocalRotation: {x: -0, y: 0, z: 0}
-  m_LocalScale: {x: 0.9999945, y: 0.9999945, z: 0.9999945}
+  m_LocalScale: {x: 1, y: 1, z: 1}
   m_LocalAlpha: 1
   m_MaterialType: 0
   m_SepiaDark: 0.1
@@ -2889,7 +2903,7 @@ MonoBehaviour:
   m_MosaicSquareization: 0
   m_TimeScale: 1
   m_BackKeyEnabled: 0
-  m_IsBackKeyIgnoreRaycastTarget: 0
+  m_IsForceRaycastTargetEnabled: 0
   m_ClickExclusionEnabled: 1
   m_PadAutoFocusEnabled: 1
   m_AutoSizeFitting: 1
@@ -2964,15 +2978,17 @@ MonoBehaviour:
   m_lineSpacingMax: 0
   m_paragraphSpacing: 0
   m_charWidthMaxAdj: 0
-  m_enableWordWrapping: 0
+  m_TextWrappingMode: 0
   m_wordWrappingRatios: 0.4
   m_overflowMode: 0
   m_linkedTextComponent: {fileID: 0}
   parentLinkedComponent: {fileID: 0}
   m_enableKerning: 1
+  m_ActiveFontFeatures: 6e72656b
   m_enableExtraPadding: 0
   checkPaddingRequired: 0
   m_isRichText: 1
+  m_EmojiFallbackSupport: 1
   m_parseCtrlCharacters: 1
   m_isOrthographic: 1
   m_isCullingEnabled: 0
@@ -3072,7 +3088,7 @@ MonoBehaviour:
   m_MosaicSquareization: 0
   m_TimeScale: 1
   m_BackKeyEnabled: 0
-  m_IsBackKeyIgnoreRaycastTarget: 0
+  m_IsForceRaycastTargetEnabled: 0
   m_ClickExclusionEnabled: 1
   m_PadAutoFocusEnabled: 1
   m_SpriteAtlas: {fileID: 0}
@@ -3244,7 +3260,7 @@ MonoBehaviour:
   m_MosaicSquareization: 0
   m_TimeScale: 1
   m_BackKeyEnabled: 0
-  m_IsBackKeyIgnoreRaycastTarget: 0
+  m_IsForceRaycastTargetEnabled: 0
   m_ClickExclusionEnabled: 1
   m_PadAutoFocusEnabled: 1
 --- !u!1 &940672643
@@ -3582,7 +3598,7 @@ MonoBehaviour:
   m_MosaicSquareization: 0
   m_TimeScale: 1
   m_BackKeyEnabled: 0
-  m_IsBackKeyIgnoreRaycastTarget: 0
+  m_IsForceRaycastTargetEnabled: 0
   m_ClickExclusionEnabled: 1
   m_PadAutoFocusEnabled: 1
   m_SpriteAtlas: {fileID: 0}
@@ -3596,6 +3612,7 @@ MonoBehaviour:
   m_LabelMesh: {fileID: 1295886952}
   m_Icon: {fileID: 0}
   m_DisableMask: {fileID: 0}
+  m_Cursor: {fileID: 0}
   m_ClickTransitionEnabled: 0
   m_WaitForTransition: 0
   m_TargetButtonGroup: {fileID: 1675575025}
@@ -3752,10 +3769,10 @@ MonoBehaviour:
   m_IgnoreParentEffectiveColor: 0
   m_EffectiveColorReplacing: 1
   m_EffectiveColor: {r: 1, g: 1, b: 1, a: 1}
-  m_LocalPosition: {x: 442, y: 254.25, z: 0}
+  m_LocalPosition: {x: 513.5, y: 271.125, z: 0}
   m_AutoPivotToCenter: 0
   m_LocalRotation: {x: -0, y: 0, z: 0}
-  m_LocalScale: {x: 0.92083335, y: 0.92083335, z: 0.92083335}
+  m_LocalScale: {x: 1.0041667, y: 1.0041667, z: 1.0041667}
   m_LocalAlpha: 1
   m_MaterialType: 0
   m_SepiaDark: 0.1
@@ -3767,7 +3784,7 @@ MonoBehaviour:
   m_MosaicSquareization: 0
   m_TimeScale: 1
   m_BackKeyEnabled: 0
-  m_IsBackKeyIgnoreRaycastTarget: 0
+  m_IsForceRaycastTargetEnabled: 0
   m_ClickExclusionEnabled: 1
   m_PadAutoFocusEnabled: 1
   IsOverlay: 0
@@ -3912,7 +3929,7 @@ MonoBehaviour:
   m_MosaicSquareization: 0
   m_TimeScale: 1
   m_BackKeyEnabled: 0
-  m_IsBackKeyIgnoreRaycastTarget: 0
+  m_IsForceRaycastTargetEnabled: 0
   m_ClickExclusionEnabled: 1
   m_PadAutoFocusEnabled: 1
 --- !u!114 &991134824
@@ -3949,8 +3966,8 @@ MonoBehaviour:
   m_ServerAddress_Label: {fileID: 1577268648}
   m_ServerAddress_InputField: {fileID: 1824293334}
   m_ServerSearchButton: {fileID: 583668153}
-  m_ServerPortNumber_Label: {fileID: 498849493}
-  m_ServerPortNumber_InputField: {fileID: 1929579077}
+  m_ServerPort_Label: {fileID: 498849493}
+  m_ServerPort_InputField: {fileID: 1929579077}
   m_StartButton: {fileID: 2080650380}
 --- !u!114 &991134825
 MonoBehaviour:
@@ -4387,7 +4404,7 @@ MonoBehaviour:
   m_MosaicSquareization: 0
   m_TimeScale: 1
   m_BackKeyEnabled: 0
-  m_IsBackKeyIgnoreRaycastTarget: 0
+  m_IsForceRaycastTargetEnabled: 0
   m_ClickExclusionEnabled: 1
   m_PadAutoFocusEnabled: 1
   m_SpriteAtlas: {fileID: 0}
@@ -4505,7 +4522,7 @@ MonoBehaviour:
   m_MosaicSquareization: 0
   m_TimeScale: 1
   m_BackKeyEnabled: 0
-  m_IsBackKeyIgnoreRaycastTarget: 0
+  m_IsForceRaycastTargetEnabled: 0
   m_ClickExclusionEnabled: 1
   m_PadAutoFocusEnabled: 1
   m_AutoSizeFitting: 1
@@ -4580,15 +4597,17 @@ MonoBehaviour:
   m_lineSpacingMax: 0
   m_paragraphSpacing: 0
   m_charWidthMaxAdj: 0
-  m_enableWordWrapping: 0
+  m_TextWrappingMode: 0
   m_wordWrappingRatios: 0.4
   m_overflowMode: 0
   m_linkedTextComponent: {fileID: 0}
   parentLinkedComponent: {fileID: 0}
   m_enableKerning: 1
+  m_ActiveFontFeatures: 6e72656b
   m_enableExtraPadding: 0
   checkPaddingRequired: 0
   m_isRichText: 1
+  m_EmojiFallbackSupport: 1
   m_parseCtrlCharacters: 1
   m_isOrthographic: 1
   m_isCullingEnabled: 0
@@ -4701,7 +4720,7 @@ MonoBehaviour:
   m_MosaicSquareization: 0
   m_TimeScale: 1
   m_BackKeyEnabled: 0
-  m_IsBackKeyIgnoreRaycastTarget: 0
+  m_IsForceRaycastTargetEnabled: 0
   m_ClickExclusionEnabled: 1
   m_PadAutoFocusEnabled: 1
   m_SpriteAtlas: {fileID: 0}
@@ -4870,12 +4889,12 @@ MonoBehaviour:
   m_RequiresColorTexture: 0
   m_Version: 2
   m_TaaSettings:
-    quality: 3
-    frameInfluence: 0.1
-    jitterScale: 1
-    mipBias: 0
-    varianceClampScale: 0.9
-    contrastAdaptiveSharpening: 0
+    m_Quality: 3
+    m_FrameInfluence: 0.1
+    m_JitterScale: 1
+    m_MipBias: 0
+    m_VarianceClampScale: 0.9
+    m_ContrastAdaptiveSharpening: 0
 --- !u!1 &1250465466
 GameObject:
   m_ObjectHideFlags: 0
@@ -4949,7 +4968,7 @@ MonoBehaviour:
   m_MosaicSquareization: 0
   m_TimeScale: 1
   m_BackKeyEnabled: 0
-  m_IsBackKeyIgnoreRaycastTarget: 0
+  m_IsForceRaycastTargetEnabled: 0
   m_ClickExclusionEnabled: 1
   m_PadAutoFocusEnabled: 1
   m_SpriteAtlas: {fileID: 0}
@@ -5170,7 +5189,7 @@ MonoBehaviour:
   m_MosaicSquareization: 0
   m_TimeScale: 1
   m_BackKeyEnabled: 0
-  m_IsBackKeyIgnoreRaycastTarget: 0
+  m_IsForceRaycastTargetEnabled: 0
   m_ClickExclusionEnabled: 1
   m_PadAutoFocusEnabled: 1
   m_AutoSizeFitting: 1
@@ -5245,15 +5264,17 @@ MonoBehaviour:
   m_lineSpacingMax: 0
   m_paragraphSpacing: 0
   m_charWidthMaxAdj: 0
-  m_enableWordWrapping: 0
+  m_TextWrappingMode: 0
   m_wordWrappingRatios: 0.4
   m_overflowMode: 0
   m_linkedTextComponent: {fileID: 0}
   parentLinkedComponent: {fileID: 0}
   m_enableKerning: 1
+  m_ActiveFontFeatures: 6e72656b
   m_enableExtraPadding: 0
   checkPaddingRequired: 0
   m_isRichText: 1
+  m_EmojiFallbackSupport: 1
   m_parseCtrlCharacters: 1
   m_isOrthographic: 1
   m_isCullingEnabled: 0
@@ -5350,7 +5371,7 @@ MonoBehaviour:
   m_MosaicSquareization: 0
   m_TimeScale: 1
   m_BackKeyEnabled: 0
-  m_IsBackKeyIgnoreRaycastTarget: 0
+  m_IsForceRaycastTargetEnabled: 0
   m_ClickExclusionEnabled: 1
   m_PadAutoFocusEnabled: 1
   m_AutoSizeFitting: 1
@@ -5425,15 +5446,17 @@ MonoBehaviour:
   m_lineSpacingMax: 0
   m_paragraphSpacing: 0
   m_charWidthMaxAdj: 0
-  m_enableWordWrapping: 0
+  m_TextWrappingMode: 0
   m_wordWrappingRatios: 0.4
   m_overflowMode: 0
   m_linkedTextComponent: {fileID: 0}
   parentLinkedComponent: {fileID: 0}
   m_enableKerning: 1
+  m_ActiveFontFeatures: 6e72656b
   m_enableExtraPadding: 0
   checkPaddingRequired: 0
   m_isRichText: 1
+  m_EmojiFallbackSupport: 1
   m_parseCtrlCharacters: 1
   m_isOrthographic: 1
   m_isCullingEnabled: 0
@@ -5530,7 +5553,7 @@ MonoBehaviour:
   m_MosaicSquareization: 0
   m_TimeScale: 1
   m_BackKeyEnabled: 0
-  m_IsBackKeyIgnoreRaycastTarget: 0
+  m_IsForceRaycastTargetEnabled: 0
   m_ClickExclusionEnabled: 1
   m_PadAutoFocusEnabled: 1
   m_AutoSizeFitting: 1
@@ -5605,15 +5628,17 @@ MonoBehaviour:
   m_lineSpacingMax: 0
   m_paragraphSpacing: 0
   m_charWidthMaxAdj: 0
-  m_enableWordWrapping: 0
+  m_TextWrappingMode: 0
   m_wordWrappingRatios: 0.4
   m_overflowMode: 0
   m_linkedTextComponent: {fileID: 0}
   parentLinkedComponent: {fileID: 0}
   m_enableKerning: 1
+  m_ActiveFontFeatures: 6e72656b
   m_enableExtraPadding: 0
   checkPaddingRequired: 0
   m_isRichText: 1
+  m_EmojiFallbackSupport: 1
   m_parseCtrlCharacters: 1
   m_isOrthographic: 1
   m_isCullingEnabled: 0
@@ -5739,7 +5764,7 @@ MonoBehaviour:
   m_MosaicSquareization: 0
   m_TimeScale: 1
   m_BackKeyEnabled: 0
-  m_IsBackKeyIgnoreRaycastTarget: 0
+  m_IsForceRaycastTargetEnabled: 0
   m_ClickExclusionEnabled: 1
   m_PadAutoFocusEnabled: 1
 --- !u!1 &1497379752
@@ -5817,7 +5842,7 @@ MonoBehaviour:
   m_MosaicSquareization: 0
   m_TimeScale: 1
   m_BackKeyEnabled: 0
-  m_IsBackKeyIgnoreRaycastTarget: 0
+  m_IsForceRaycastTargetEnabled: 0
   m_ClickExclusionEnabled: 1
   m_PadAutoFocusEnabled: 1
   m_SpriteAtlas: {fileID: 0}
@@ -5935,7 +5960,7 @@ MonoBehaviour:
   m_MosaicSquareization: 0
   m_TimeScale: 1
   m_BackKeyEnabled: 0
-  m_IsBackKeyIgnoreRaycastTarget: 0
+  m_IsForceRaycastTargetEnabled: 0
   m_ClickExclusionEnabled: 1
   m_PadAutoFocusEnabled: 1
   m_AutoSizeFitting: 1
@@ -6010,15 +6035,17 @@ MonoBehaviour:
   m_lineSpacingMax: 0
   m_paragraphSpacing: 0
   m_charWidthMaxAdj: 0
-  m_enableWordWrapping: 0
+  m_TextWrappingMode: 0
   m_wordWrappingRatios: 0.4
   m_overflowMode: 0
   m_linkedTextComponent: {fileID: 0}
   parentLinkedComponent: {fileID: 0}
   m_enableKerning: 1
+  m_ActiveFontFeatures: 6e72656b
   m_enableExtraPadding: 0
   checkPaddingRequired: 0
   m_isRichText: 1
+  m_EmojiFallbackSupport: 1
   m_parseCtrlCharacters: 1
   m_isOrthographic: 1
   m_isCullingEnabled: 0
@@ -6115,7 +6142,7 @@ MonoBehaviour:
   m_MosaicSquareization: 0
   m_TimeScale: 1
   m_BackKeyEnabled: 0
-  m_IsBackKeyIgnoreRaycastTarget: 0
+  m_IsForceRaycastTargetEnabled: 0
   m_ClickExclusionEnabled: 1
   m_PadAutoFocusEnabled: 1
   m_SpriteAtlas: {fileID: 0}
@@ -6233,7 +6260,7 @@ MonoBehaviour:
   m_MosaicSquareization: 0
   m_TimeScale: 1
   m_BackKeyEnabled: 0
-  m_IsBackKeyIgnoreRaycastTarget: 0
+  m_IsForceRaycastTargetEnabled: 0
   m_ClickExclusionEnabled: 1
   m_PadAutoFocusEnabled: 1
   m_AutoSizeFitting: 1
@@ -6308,15 +6335,17 @@ MonoBehaviour:
   m_lineSpacingMax: 0
   m_paragraphSpacing: 0
   m_charWidthMaxAdj: 0
-  m_enableWordWrapping: 0
+  m_TextWrappingMode: 0
   m_wordWrappingRatios: 0.4
   m_overflowMode: 0
   m_linkedTextComponent: {fileID: 0}
   parentLinkedComponent: {fileID: 0}
   m_enableKerning: 1
+  m_ActiveFontFeatures: 6e72656b
   m_enableExtraPadding: 0
   checkPaddingRequired: 0
   m_isRichText: 1
+  m_EmojiFallbackSupport: 1
   m_parseCtrlCharacters: 1
   m_isOrthographic: 1
   m_isCullingEnabled: 0
@@ -6413,7 +6442,7 @@ MonoBehaviour:
   m_MosaicSquareization: 0
   m_TimeScale: 1
   m_BackKeyEnabled: 0
-  m_IsBackKeyIgnoreRaycastTarget: 0
+  m_IsForceRaycastTargetEnabled: 0
   m_ClickExclusionEnabled: 1
   m_PadAutoFocusEnabled: 1
   m_SpriteAtlas: {fileID: 0}
@@ -6573,7 +6602,7 @@ MonoBehaviour:
   m_MosaicSquareization: 0
   m_TimeScale: 1
   m_BackKeyEnabled: 0
-  m_IsBackKeyIgnoreRaycastTarget: 0
+  m_IsForceRaycastTargetEnabled: 0
   m_ClickExclusionEnabled: 1
   m_PadAutoFocusEnabled: 1
 --- !u!1 &1675575023
@@ -6703,7 +6732,7 @@ MonoBehaviour:
   m_MosaicSquareization: 0
   m_TimeScale: 1
   m_BackKeyEnabled: 0
-  m_IsBackKeyIgnoreRaycastTarget: 0
+  m_IsForceRaycastTargetEnabled: 0
   m_ClickExclusionEnabled: 1
   m_PadAutoFocusEnabled: 1
 --- !u!1 &1736519351
@@ -6777,7 +6806,7 @@ MonoBehaviour:
   m_MosaicSquareization: 0
   m_TimeScale: 1
   m_BackKeyEnabled: 0
-  m_IsBackKeyIgnoreRaycastTarget: 0
+  m_IsForceRaycastTargetEnabled: 0
   m_ClickExclusionEnabled: 1
   m_PadAutoFocusEnabled: 1
   m_SpriteAtlas: {fileID: 0}
@@ -6895,7 +6924,7 @@ MonoBehaviour:
   m_MosaicSquareization: 0
   m_TimeScale: 1
   m_BackKeyEnabled: 0
-  m_IsBackKeyIgnoreRaycastTarget: 0
+  m_IsForceRaycastTargetEnabled: 0
   m_ClickExclusionEnabled: 1
   m_PadAutoFocusEnabled: 1
   m_AutoSizeFitting: 1
@@ -6970,15 +6999,17 @@ MonoBehaviour:
   m_lineSpacingMax: 0
   m_paragraphSpacing: 0
   m_charWidthMaxAdj: 0
-  m_enableWordWrapping: 0
+  m_TextWrappingMode: 0
   m_wordWrappingRatios: 0.4
   m_overflowMode: 0
   m_linkedTextComponent: {fileID: 0}
   parentLinkedComponent: {fileID: 0}
   m_enableKerning: 1
+  m_ActiveFontFeatures: 6e72656b
   m_enableExtraPadding: 0
   checkPaddingRequired: 0
   m_isRichText: 1
+  m_EmojiFallbackSupport: 1
   m_parseCtrlCharacters: 1
   m_isOrthographic: 1
   m_isCullingEnabled: 0
@@ -7077,7 +7108,7 @@ MonoBehaviour:
   m_MosaicSquareization: 0
   m_TimeScale: 1
   m_BackKeyEnabled: 0
-  m_IsBackKeyIgnoreRaycastTarget: 0
+  m_IsForceRaycastTargetEnabled: 0
   m_ClickExclusionEnabled: 1
   m_PadAutoFocusEnabled: 1
   m_SpriteAtlas: {fileID: 0}
@@ -7298,7 +7329,7 @@ MonoBehaviour:
   m_MosaicSquareization: 0
   m_TimeScale: 1
   m_BackKeyEnabled: 0
-  m_IsBackKeyIgnoreRaycastTarget: 0
+  m_IsForceRaycastTargetEnabled: 0
   m_ClickExclusionEnabled: 1
   m_PadAutoFocusEnabled: 1
 --- !u!1 &1921413149
@@ -7636,7 +7667,7 @@ MonoBehaviour:
   m_MosaicSquareization: 0
   m_TimeScale: 1
   m_BackKeyEnabled: 0
-  m_IsBackKeyIgnoreRaycastTarget: 0
+  m_IsForceRaycastTargetEnabled: 0
   m_ClickExclusionEnabled: 1
   m_PadAutoFocusEnabled: 1
   m_SpriteAtlas: {fileID: 0}
@@ -7650,6 +7681,7 @@ MonoBehaviour:
   m_LabelMesh: {fileID: 2025110822}
   m_Icon: {fileID: 0}
   m_DisableMask: {fileID: 0}
+  m_Cursor: {fileID: 0}
   m_ClickTransitionEnabled: 0
   m_WaitForTransition: 0
   m_TargetButtonGroup: {fileID: 1675575025}
@@ -7761,7 +7793,7 @@ GameObject:
   - component: {fileID: 1929579078}
   - component: {fileID: 1929579077}
   m_Layer: 5
-  m_Name: ServerPortNumber_InputField
+  m_Name: ServerPort_InputField
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -7820,7 +7852,7 @@ MonoBehaviour:
   m_MosaicSquareization: 0
   m_TimeScale: 1
   m_BackKeyEnabled: 0
-  m_IsBackKeyIgnoreRaycastTarget: 0
+  m_IsForceRaycastTargetEnabled: 0
   m_ClickExclusionEnabled: 1
   m_PadAutoFocusEnabled: 1
   m_SpriteAtlas: {fileID: 0}
@@ -8117,7 +8149,7 @@ MonoBehaviour:
   m_MosaicSquareization: 0
   m_TimeScale: 1
   m_BackKeyEnabled: 0
-  m_IsBackKeyIgnoreRaycastTarget: 0
+  m_IsForceRaycastTargetEnabled: 0
   m_ClickExclusionEnabled: 1
   m_PadAutoFocusEnabled: 1
   m_SpriteAtlas: {fileID: 0}
@@ -8235,7 +8267,7 @@ MonoBehaviour:
   m_MosaicSquareization: 0
   m_TimeScale: 1
   m_BackKeyEnabled: 0
-  m_IsBackKeyIgnoreRaycastTarget: 0
+  m_IsForceRaycastTargetEnabled: 0
   m_ClickExclusionEnabled: 1
   m_PadAutoFocusEnabled: 1
   m_AutoSizeFitting: 1
@@ -8310,15 +8342,17 @@ MonoBehaviour:
   m_lineSpacingMax: 0
   m_paragraphSpacing: 0
   m_charWidthMaxAdj: 0
-  m_enableWordWrapping: 0
+  m_TextWrappingMode: 0
   m_wordWrappingRatios: 0.4
   m_overflowMode: 0
   m_linkedTextComponent: {fileID: 0}
   parentLinkedComponent: {fileID: 0}
   m_enableKerning: 1
+  m_ActiveFontFeatures: 6e72656b
   m_enableExtraPadding: 0
   checkPaddingRequired: 0
   m_isRichText: 1
+  m_EmojiFallbackSupport: 1
   m_parseCtrlCharacters: 1
   m_isOrthographic: 1
   m_isCullingEnabled: 0
@@ -8458,7 +8492,7 @@ MonoBehaviour:
   m_MosaicSquareization: 0
   m_TimeScale: 1
   m_BackKeyEnabled: 0
-  m_IsBackKeyIgnoreRaycastTarget: 0
+  m_IsForceRaycastTargetEnabled: 0
   m_ClickExclusionEnabled: 1
   m_PadAutoFocusEnabled: 1
 --- !u!1 &2080650376
@@ -8795,7 +8829,7 @@ MonoBehaviour:
   m_MosaicSquareization: 0
   m_TimeScale: 1
   m_BackKeyEnabled: 0
-  m_IsBackKeyIgnoreRaycastTarget: 0
+  m_IsForceRaycastTargetEnabled: 0
   m_ClickExclusionEnabled: 1
   m_PadAutoFocusEnabled: 1
   m_SpriteAtlas: {fileID: 0}
@@ -8809,6 +8843,7 @@ MonoBehaviour:
   m_LabelMesh: {fileID: 589742534}
   m_Icon: {fileID: 0}
   m_DisableMask: {fileID: 0}
+  m_Cursor: {fileID: 0}
   m_ClickTransitionEnabled: 0
   m_WaitForTransition: 0
   m_TargetButtonGroup: {fileID: 0}
@@ -8965,7 +9000,7 @@ MonoBehaviour:
   m_MosaicSquareization: 0
   m_TimeScale: 1
   m_BackKeyEnabled: 0
-  m_IsBackKeyIgnoreRaycastTarget: 0
+  m_IsForceRaycastTargetEnabled: 0
   m_ClickExclusionEnabled: 1
   m_PadAutoFocusEnabled: 1
 --- !u!222 &67813768368166184
@@ -9024,7 +9059,7 @@ MonoBehaviour:
   m_MosaicSquareization: 0
   m_TimeScale: 1
   m_BackKeyEnabled: 0
-  m_IsBackKeyIgnoreRaycastTarget: 0
+  m_IsForceRaycastTargetEnabled: 0
   m_ClickExclusionEnabled: 1
   m_PadAutoFocusEnabled: 1
   m_SpriteAtlas: {fileID: 0}
@@ -9086,7 +9121,7 @@ MonoBehaviour:
   m_MosaicSquareization: 0
   m_TimeScale: 1
   m_BackKeyEnabled: 0
-  m_IsBackKeyIgnoreRaycastTarget: 0
+  m_IsForceRaycastTargetEnabled: 0
   m_ClickExclusionEnabled: 1
   m_PadAutoFocusEnabled: 1
   m_BlurIntensity: 1
@@ -9236,7 +9271,7 @@ MonoBehaviour:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 887506435096158980}
-  m_Enabled: 0
+  m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 1344c3c82d62a2a41a3576d8abb8e3ea, type: 3}
   m_Name: 
@@ -9570,7 +9605,7 @@ MonoBehaviour:
   m_MosaicSquareization: 0
   m_TimeScale: 1
   m_BackKeyEnabled: 0
-  m_IsBackKeyIgnoreRaycastTarget: 0
+  m_IsForceRaycastTargetEnabled: 0
   m_ClickExclusionEnabled: 1
   m_PadAutoFocusEnabled: 1
   m_AutoSizeFitting: 1
@@ -9963,10 +9998,10 @@ MonoBehaviour:
   m_IgnoreParentEffectiveColor: 0
   m_EffectiveColorReplacing: 1
   m_EffectiveColor: {r: 1, g: 1, b: 1, a: 1}
-  m_LocalPosition: {x: 447, y: 202.25, z: 0}
+  m_LocalPosition: {x: 513.5, y: 271.125, z: 0}
   m_AutoPivotToCenter: 0
   m_LocalRotation: {x: -0, y: 0, z: 0}
-  m_LocalScale: {x: 0.7490741, y: 0.7490741, z: 0.7490741}
+  m_LocalScale: {x: 1.0041667, y: 1.0041667, z: 1.0041667}
   m_LocalAlpha: 1
   m_MaterialType: 0
   m_SepiaDark: 0.1
@@ -9978,7 +10013,7 @@ MonoBehaviour:
   m_MosaicSquareization: 0
   m_TimeScale: 1
   m_BackKeyEnabled: 0
-  m_IsBackKeyIgnoreRaycastTarget: 0
+  m_IsForceRaycastTargetEnabled: 0
   m_ClickExclusionEnabled: 1
   m_PadAutoFocusEnabled: 1
   IsOverlay: 0
@@ -10015,7 +10050,7 @@ MonoBehaviour:
   m_MosaicSquareization: 0
   m_TimeScale: 1
   m_BackKeyEnabled: 0
-  m_IsBackKeyIgnoreRaycastTarget: 0
+  m_IsForceRaycastTargetEnabled: 0
   m_ClickExclusionEnabled: 1
   m_PadAutoFocusEnabled: 1
   m_AutoSizeFitting: 1
@@ -10167,7 +10202,7 @@ MonoBehaviour:
   m_MosaicSquareization: 0
   m_TimeScale: 1
   m_BackKeyEnabled: 0
-  m_IsBackKeyIgnoreRaycastTarget: 0
+  m_IsForceRaycastTargetEnabled: 0
   m_ClickExclusionEnabled: 1
   m_PadAutoFocusEnabled: 1
   m_SpriteAtlas: {fileID: 0}
@@ -10181,6 +10216,7 @@ MonoBehaviour:
   m_LabelMesh: {fileID: 8754280043906757642}
   m_Icon: {fileID: 0}
   m_DisableMask: {fileID: 0}
+  m_Cursor: {fileID: 0}
   m_ClickTransitionEnabled: 0
   m_WaitForTransition: 0
   m_TargetButtonGroup: {fileID: 0}
@@ -10464,7 +10500,7 @@ MonoBehaviour:
   m_MosaicSquareization: 0
   m_TimeScale: 1
   m_BackKeyEnabled: 0
-  m_IsBackKeyIgnoreRaycastTarget: 0
+  m_IsForceRaycastTargetEnabled: 0
   m_ClickExclusionEnabled: 1
   m_PadAutoFocusEnabled: 1
 --- !u!224 &3112322585661768532
@@ -10572,7 +10608,7 @@ MonoBehaviour:
   m_MosaicSquareization: 0
   m_TimeScale: 1
   m_BackKeyEnabled: 0
-  m_IsBackKeyIgnoreRaycastTarget: 0
+  m_IsForceRaycastTargetEnabled: 0
   m_ClickExclusionEnabled: 1
   m_PadAutoFocusEnabled: 1
   m_SpriteAtlas: {fileID: 0}
@@ -10652,15 +10688,17 @@ MonoBehaviour:
   m_lineSpacingMax: 0
   m_paragraphSpacing: 0
   m_charWidthMaxAdj: 0
-  m_enableWordWrapping: 0
+  m_TextWrappingMode: 0
   m_wordWrappingRatios: 0.4
   m_overflowMode: 0
   m_linkedTextComponent: {fileID: 0}
   parentLinkedComponent: {fileID: 0}
   m_enableKerning: 1
+  m_ActiveFontFeatures: 00000000
   m_enableExtraPadding: 0
   checkPaddingRequired: 0
   m_isRichText: 1
+  m_EmojiFallbackSupport: 1
   m_parseCtrlCharacters: 1
   m_isOrthographic: 1
   m_isCullingEnabled: 0
@@ -11037,10 +11075,10 @@ RectTransform:
   - {fileID: 5923712904233766505}
   m_Father: {fileID: 3202945494091793094}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
-  m_AnchorMin: {x: 0, y: 0}
-  m_AnchorMax: {x: 1, y: 1}
+  m_AnchorMin: {x: 0.5, y: 0.5}
+  m_AnchorMax: {x: 0.5, y: 0.5}
   m_AnchoredPosition: {x: 0, y: 0}
-  m_SizeDelta: {x: 0, y: 0}
+  m_SizeDelta: {x: 1022.7385, y: 540}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &3837151169354761640
 MonoBehaviour:
@@ -11149,15 +11187,17 @@ MonoBehaviour:
   m_lineSpacingMax: 0
   m_paragraphSpacing: 0
   m_charWidthMaxAdj: 0
-  m_enableWordWrapping: 0
+  m_TextWrappingMode: 0
   m_wordWrappingRatios: 0.4
   m_overflowMode: 0
   m_linkedTextComponent: {fileID: 0}
   parentLinkedComponent: {fileID: 0}
   m_enableKerning: 1
+  m_ActiveFontFeatures: 6e72656b
   m_enableExtraPadding: 0
   checkPaddingRequired: 0
   m_isRichText: 1
+  m_EmojiFallbackSupport: 1
   m_parseCtrlCharacters: 1
   m_isOrthographic: 1
   m_isCullingEnabled: 0
@@ -11238,15 +11278,17 @@ MonoBehaviour:
   m_lineSpacingMax: 0
   m_paragraphSpacing: 0
   m_charWidthMaxAdj: 0
-  m_enableWordWrapping: 0
+  m_TextWrappingMode: 0
   m_wordWrappingRatios: 0.4
   m_overflowMode: 0
   m_linkedTextComponent: {fileID: 0}
   parentLinkedComponent: {fileID: 0}
   m_enableKerning: 1
+  m_ActiveFontFeatures: 6e72656b
   m_enableExtraPadding: 0
   checkPaddingRequired: 0
   m_isRichText: 1
+  m_EmojiFallbackSupport: 1
   m_parseCtrlCharacters: 1
   m_isOrthographic: 1
   m_isCullingEnabled: 0
@@ -11552,7 +11594,7 @@ MonoBehaviour:
   m_MosaicSquareization: 0
   m_TimeScale: 1
   m_BackKeyEnabled: 0
-  m_IsBackKeyIgnoreRaycastTarget: 0
+  m_IsForceRaycastTargetEnabled: 0
   m_ClickExclusionEnabled: 1
   m_PadAutoFocusEnabled: 1
   m_SpriteAtlas: {fileID: 0}
@@ -11613,7 +11655,7 @@ MonoBehaviour:
   m_MosaicSquareization: 0
   m_TimeScale: 1
   m_BackKeyEnabled: 0
-  m_IsBackKeyIgnoreRaycastTarget: 0
+  m_IsForceRaycastTargetEnabled: 0
   m_ClickExclusionEnabled: 1
   m_PadAutoFocusEnabled: 1
   m_AutoSizeFitting: 1
@@ -11688,15 +11730,17 @@ MonoBehaviour:
   m_lineSpacingMax: 0
   m_paragraphSpacing: 0
   m_charWidthMaxAdj: 0
-  m_enableWordWrapping: 0
+  m_TextWrappingMode: 0
   m_wordWrappingRatios: 0.4
   m_overflowMode: 0
   m_linkedTextComponent: {fileID: 0}
   parentLinkedComponent: {fileID: 0}
   m_enableKerning: 1
+  m_ActiveFontFeatures: 00000000
   m_enableExtraPadding: 0
   checkPaddingRequired: 0
   m_isRichText: 1
+  m_EmojiFallbackSupport: 1
   m_parseCtrlCharacters: 1
   m_isOrthographic: 1
   m_isCullingEnabled: 0
@@ -11777,15 +11821,17 @@ MonoBehaviour:
   m_lineSpacingMax: 0
   m_paragraphSpacing: 0
   m_charWidthMaxAdj: 0
-  m_enableWordWrapping: 0
+  m_TextWrappingMode: 0
   m_wordWrappingRatios: 0.4
   m_overflowMode: 0
   m_linkedTextComponent: {fileID: 0}
   parentLinkedComponent: {fileID: 0}
   m_enableKerning: 1
+  m_ActiveFontFeatures: 00000000
   m_enableExtraPadding: 0
   checkPaddingRequired: 0
   m_isRichText: 1
+  m_EmojiFallbackSupport: 1
   m_parseCtrlCharacters: 1
   m_isOrthographic: 1
   m_isCullingEnabled: 0
@@ -12032,7 +12078,7 @@ MonoBehaviour:
   m_MosaicSquareization: 0
   m_TimeScale: 1
   m_BackKeyEnabled: 0
-  m_IsBackKeyIgnoreRaycastTarget: 0
+  m_IsForceRaycastTargetEnabled: 0
   m_ClickExclusionEnabled: 1
   m_PadAutoFocusEnabled: 1
   m_AutoSizeFitting: 1
@@ -12137,15 +12183,17 @@ MonoBehaviour:
   m_lineSpacingMax: 0
   m_paragraphSpacing: 0
   m_charWidthMaxAdj: 0
-  m_enableWordWrapping: 0
+  m_TextWrappingMode: 0
   m_wordWrappingRatios: 0.4
   m_overflowMode: 0
   m_linkedTextComponent: {fileID: 0}
   parentLinkedComponent: {fileID: 0}
   m_enableKerning: 1
+  m_ActiveFontFeatures: 6e72656b
   m_enableExtraPadding: 0
   checkPaddingRequired: 0
   m_isRichText: 1
+  m_EmojiFallbackSupport: 1
   m_parseCtrlCharacters: 1
   m_isOrthographic: 1
   m_isCullingEnabled: 0
@@ -12204,7 +12252,7 @@ MonoBehaviour:
   m_MosaicSquareization: 0
   m_TimeScale: 1
   m_BackKeyEnabled: 0
-  m_IsBackKeyIgnoreRaycastTarget: 0
+  m_IsForceRaycastTargetEnabled: 0
   m_ClickExclusionEnabled: 1
   m_PadAutoFocusEnabled: 1
   m_BlurIntensity: 1
@@ -12355,15 +12403,17 @@ MonoBehaviour:
   m_lineSpacingMax: 0
   m_paragraphSpacing: 0
   m_charWidthMaxAdj: 0
-  m_enableWordWrapping: 0
+  m_TextWrappingMode: 0
   m_wordWrappingRatios: 0.4
   m_overflowMode: 0
   m_linkedTextComponent: {fileID: 0}
   parentLinkedComponent: {fileID: 0}
   m_enableKerning: 1
+  m_ActiveFontFeatures: 6e72656b
   m_enableExtraPadding: 0
   checkPaddingRequired: 0
   m_isRichText: 1
+  m_EmojiFallbackSupport: 1
   m_parseCtrlCharacters: 1
   m_isOrthographic: 1
   m_isCullingEnabled: 0
@@ -12716,7 +12766,7 @@ MonoBehaviour:
   m_MosaicSquareization: 0
   m_TimeScale: 1
   m_BackKeyEnabled: 0
-  m_IsBackKeyIgnoreRaycastTarget: 0
+  m_IsForceRaycastTargetEnabled: 0
   m_ClickExclusionEnabled: 1
   m_PadAutoFocusEnabled: 1
   m_AutoSizeFitting: 1
@@ -13386,7 +13436,7 @@ MonoBehaviour:
   m_MosaicSquareization: 0
   m_TimeScale: 1
   m_BackKeyEnabled: 0
-  m_IsBackKeyIgnoreRaycastTarget: 0
+  m_IsForceRaycastTargetEnabled: 0
   m_ClickExclusionEnabled: 1
   m_PadAutoFocusEnabled: 1
   m_SpriteAtlas: {fileID: 0}
@@ -13726,7 +13776,7 @@ MonoBehaviour:
   m_MosaicSquareization: 0
   m_TimeScale: 1
   m_BackKeyEnabled: 0
-  m_IsBackKeyIgnoreRaycastTarget: 0
+  m_IsForceRaycastTargetEnabled: 0
   m_ClickExclusionEnabled: 1
   m_PadAutoFocusEnabled: 1
   m_SpriteAtlas: {fileID: 0}
@@ -13816,7 +13866,7 @@ MonoBehaviour:
   m_MosaicSquareization: 0
   m_TimeScale: 1
   m_BackKeyEnabled: 0
-  m_IsBackKeyIgnoreRaycastTarget: 0
+  m_IsForceRaycastTargetEnabled: 0
   m_ClickExclusionEnabled: 1
   m_PadAutoFocusEnabled: 1
   m_SpriteAtlas: {fileID: 0}
@@ -13889,19 +13939,19 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   m_IgnoreSizeFitting: 0
   m_SafeAreaEnabled: 1
-  m_ParentRectTransform: {fileID: 0}
-  m_ParentWidth: 0
-  m_ParentHeight: 0
-  m_BasicWidth: 0
-  m_BasicHeight: 0
-  m_LimitWidth: 0
-  m_LimitHeight: 0
-  m_ScreenWidth: 0
-  m_ScreenHeight: 0
+  m_ParentRectTransform: {fileID: 3202945494091793094}
+  m_ParentWidth: 1022.7385
+  m_ParentHeight: 540
+  m_BasicWidth: 960
+  m_BasicHeight: 540
+  m_LimitWidth: 1280
+  m_LimitHeight: 720
+  m_ScreenWidth: 614
+  m_ScreenHeight: 872
   m_SafeArea_xMin: 0
-  m_SafeArea_xMax: 0
+  m_SafeArea_xMax: 614
   m_SafeArea_yMin: 0
-  m_SafeArea_yMax: 0
+  m_SafeArea_yMax: 872
 --- !u!224 &7454892663758851323
 RectTransform:
   m_ObjectHideFlags: 0
@@ -13954,7 +14004,7 @@ MonoBehaviour:
   m_MosaicSquareization: 0
   m_TimeScale: 1
   m_BackKeyEnabled: 0
-  m_IsBackKeyIgnoreRaycastTarget: 0
+  m_IsForceRaycastTargetEnabled: 0
   m_ClickExclusionEnabled: 1
   m_PadAutoFocusEnabled: 1
   m_SpriteAtlas: {fileID: 0}
@@ -13981,7 +14031,7 @@ MonoBehaviour:
   m_Item: {fileID: 7171381083813931476}
   m_ItemEmptyPresentment: {fileID: 0}
   m_WorkingItemCount: 10
-  m_WorkingMargin: 128
+  m_MarginEnabled: 0
   m_Infinity: 0
   m_ItemCount: 20
   m_Snap: 0
@@ -14069,7 +14119,7 @@ MonoBehaviour:
   m_MosaicSquareization: 0
   m_TimeScale: 1
   m_BackKeyEnabled: 0
-  m_IsBackKeyIgnoreRaycastTarget: 0
+  m_IsForceRaycastTargetEnabled: 0
   m_ClickExclusionEnabled: 1
   m_PadAutoFocusEnabled: 1
   m_AutoSizeFitting: 1
@@ -14114,7 +14164,7 @@ MonoBehaviour:
   m_MosaicSquareization: 0
   m_TimeScale: 1
   m_BackKeyEnabled: 0
-  m_IsBackKeyIgnoreRaycastTarget: 0
+  m_IsForceRaycastTargetEnabled: 0
   m_ClickExclusionEnabled: 1
   m_PadAutoFocusEnabled: 1
   m_SpriteAtlas: {fileID: 0}
@@ -14128,6 +14178,7 @@ MonoBehaviour:
   m_LabelMesh: {fileID: 4872703407886182433}
   m_Icon: {fileID: 0}
   m_DisableMask: {fileID: 0}
+  m_Cursor: {fileID: 0}
   m_ClickTransitionEnabled: 0
   m_WaitForTransition: 0
   m_TargetButtonGroup: {fileID: 0}
@@ -14228,7 +14279,7 @@ MonoBehaviour:
   m_MosaicSquareization: 0
   m_TimeScale: 1
   m_BackKeyEnabled: 0
-  m_IsBackKeyIgnoreRaycastTarget: 0
+  m_IsForceRaycastTargetEnabled: 0
   m_ClickExclusionEnabled: 1
   m_PadAutoFocusEnabled: 1
   m_SpriteAtlas: {fileID: 0}
@@ -14294,7 +14345,7 @@ MonoBehaviour:
   m_MosaicSquareization: 0
   m_TimeScale: 1
   m_BackKeyEnabled: 0
-  m_IsBackKeyIgnoreRaycastTarget: 0
+  m_IsForceRaycastTargetEnabled: 0
   m_ClickExclusionEnabled: 1
   m_PadAutoFocusEnabled: 1
   m_SpriteAtlas: {fileID: 0}
@@ -14369,7 +14420,7 @@ MonoBehaviour:
   m_MosaicSquareization: 0
   m_TimeScale: 1
   m_BackKeyEnabled: 0
-  m_IsBackKeyIgnoreRaycastTarget: 0
+  m_IsForceRaycastTargetEnabled: 0
   m_ClickExclusionEnabled: 1
   m_PadAutoFocusEnabled: 1
   m_AutoSizeFitting: 1
@@ -14847,7 +14898,7 @@ MonoBehaviour:
   m_MosaicSquareization: 0
   m_TimeScale: 1
   m_BackKeyEnabled: 0
-  m_IsBackKeyIgnoreRaycastTarget: 0
+  m_IsForceRaycastTargetEnabled: 0
   m_ClickExclusionEnabled: 1
   m_PadAutoFocusEnabled: 1
   m_AutoSizeFitting: 1
@@ -14892,7 +14943,7 @@ MonoBehaviour:
   m_MosaicSquareization: 0
   m_TimeScale: 1
   m_BackKeyEnabled: 0
-  m_IsBackKeyIgnoreRaycastTarget: 0
+  m_IsForceRaycastTargetEnabled: 0
   m_ClickExclusionEnabled: 1
   m_PadAutoFocusEnabled: 1
 --- !u!114 &8778117393816205187
@@ -15196,7 +15247,7 @@ MonoBehaviour:
   m_MosaicSquareization: 0
   m_TimeScale: 1
   m_BackKeyEnabled: 0
-  m_IsBackKeyIgnoreRaycastTarget: 0
+  m_IsForceRaycastTargetEnabled: 0
   m_ClickExclusionEnabled: 1
   m_PadAutoFocusEnabled: 1
   m_SpriteAtlas: {fileID: 0}
@@ -15472,15 +15523,17 @@ MonoBehaviour:
   m_lineSpacingMax: 0
   m_paragraphSpacing: 0
   m_charWidthMaxAdj: 0
-  m_enableWordWrapping: 0
+  m_TextWrappingMode: 0
   m_wordWrappingRatios: 0.4
   m_overflowMode: 0
   m_linkedTextComponent: {fileID: 0}
   parentLinkedComponent: {fileID: 0}
   m_enableKerning: 1
+  m_ActiveFontFeatures: 00000000
   m_enableExtraPadding: 0
   checkPaddingRequired: 0
   m_isRichText: 1
+  m_EmojiFallbackSupport: 1
   m_parseCtrlCharacters: 1
   m_isOrthographic: 1
   m_isCullingEnabled: 0

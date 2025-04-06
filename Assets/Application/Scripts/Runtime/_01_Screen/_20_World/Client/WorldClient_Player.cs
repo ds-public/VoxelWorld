@@ -62,7 +62,7 @@ namespace DSW.World
 			var player = new LocalPlayerData()
 			{
 				ServerAddress		= PlayerData.ServerAddress,
-				ServerPortNumber	= PlayerData.ServerPortNumber,
+				ServerPort			= PlayerData.ServerPort,
 				PlayerId			= m_PlayerId	// プレイヤー識別子を更新する
 			} ;
 

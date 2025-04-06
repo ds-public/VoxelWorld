@@ -7,7 +7,7 @@ using UnityEngine ;
 namespace SpriteHelper
 {
 	/// <summary>
-	/// マルチタイプのスプライト管理用のクラス
+	/// マルチタイプのスプライト管理用のクラス Version 2025/04/06
 	/// </summary>
 	[Serializable]
 	public class SpriteSet
@@ -38,6 +38,12 @@ namespace SpriteHelper
 		[SerializeField][HideInInspector]
 		private List<string> m_Names ;
 
+		//-----------------------------------
+
+		// 個々のスプライトの参照高速化のためのインデックス(ハッシュ)
+		private Dictionary<string, Sprite> m_Indices ;
+
+
 		//-----------------------------------------------------------
 
 		/// <summary>
@@ -67,16 +73,29 @@ namespace SpriteHelper
 			m_Sprites = new List<Sprite>() ;
 			m_Names = new List<string>() ;
 
+			if( m_Indices == null )
+			{
+				m_Indices = new Dictionary<string, Sprite>() ;
+			}
+			else
+			{
+				m_Indices.Clear() ;
+			}
+
 			int i, l = sprites.Length ;
 			for( i  = 0 ; i <  l ; i ++ )
 			{
 				m_Sprites.Add( sprites[ i ] ) ;
 				m_Names.Add( sprites[ i ].name ) ;
+
+				m_Indices.Add( sprites[ i ].name, sprites[ i ] ) ;
 			}
 
 			// テクスチャはどこも共通
 			m_Texture = sprites[ 0 ].texture ;
 		}
+
+
 
 		/// <summary>
 		/// 全ての有効なスプライトを取得する
@@ -89,9 +108,11 @@ namespace SpriteHelper
 				return null ;
 			}
 
-			int i, l = m_Sprites.Count ;
+			CreateIndicesIfEmpty() ;
 
 			var sprites = new List<Sprite>() ;
+
+			int i, l = m_Sprites.Count ;
 
 			for( i  = 0 ; i <  l ; i ++ )
 			{
@@ -132,18 +153,45 @@ namespace SpriteHelper
 				return null ;
 			}
 
+			CreateIndicesIfEmpty() ;
+
+			if( m_Indices.ContainsKey( spriteName ) == false )
+			{
+				return null ;
+			}
+
+			return m_Indices[ spriteName ] ;
+		}
+
+		// スプライトのインデックス(ハッシュ)を生成する(個々のスプライトの参照の高速化のため)
+		private void CreateIndicesIfEmpty()
+		{
+			if( m_Indices != null )
+			{
+				return ;
+			}
+
+			//----------------------------------
+
+			if( m_Indices == null )
+			{
+				m_Indices = new Dictionary<string, Sprite>() ;
+			}
+			else
+			{
+				m_Indices.Clear() ;
+			}
+
 			int i, l = m_Sprites.Count ;
 			for( i  = 0 ; i <  l ; i ++ )
 			{
-				if( m_Sprites[ i ] != null && m_Sprites[ i ].name == spriteName )
+				if( m_Sprites[ i ] != null )
 				{
-					return m_Sprites[ i ] ;
+					m_Indices.Add( m_Sprites[ i ].name, m_Sprites[ i ] ) ;
 				}
 			}
-
-			return null ;
-
 		}
+
 
 		/// <summary>
 		/// インデクサを使ってアクセスを簡易化

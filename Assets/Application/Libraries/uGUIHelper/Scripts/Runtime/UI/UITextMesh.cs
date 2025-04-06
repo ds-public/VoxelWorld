@@ -191,7 +191,7 @@ namespace uGUIHelper
 				}
 			}
 		}
-		
+
 		/// <summary>
 		/// テキスト(ショートカット)
 		/// </summary>
@@ -225,11 +225,67 @@ namespace uGUIHelper
 					textMesh.text = text ;
 				}
 
+				text = value ;
+
+				if( textMesh.text != text )
+				{
+					textMesh.text  = text ;
+
+					// 実行時のみ全角化する
+					if( m_Zenkaku == true )
+					{
+						ToLargeForTextMesh() ;
+					}
+					else
+					{
+						if( m_AutoSizeFitting == true )
+						{
+							Resize() ;
+						}
+					}
+				}
+			}
+		}
+
+		/// <summary>
+		/// テキスト(ショートカット)
+		/// </summary>
+		public string FormattedText
+		{
+			get
+			{
+				TextMeshProUGUI textMesh = CTextMesh ;
+				if( textMesh == null )
+				{
+					return null ;
+				}
+
+				return textMesh.text ;
+			}
+			set
+			{
+				TextMeshProUGUI textMesh = CTextMesh ;
+				if( textMesh == null )
+				{
+					return ;
+				}
+
+				string text ;
+
+				if( textMesh.text != null && textMesh.text.Length >  0 && textMesh.preferredHeight == 0 )
+				{
+					// インスタンス複製などで preferredHeight の値がおかしくなっている
+					text = textMesh.text ;
+					textMesh.text = string.Empty ;	// 一度文字列をリセットする
+					textMesh.text = text ;
+				}
+
+				// ショートタグ部分を解釈・変換する
 				( text, _ ) = ParseWait( value ) ;
 
 				if( textMesh.text != text )
 				{
-					textMesh.text	= text ;
+					textMesh.text  = text ;
 
 					// 実行時のみ全角化する
 					if( m_Zenkaku == true )
@@ -2142,7 +2198,7 @@ namespace uGUIHelper
 
 			//----------------------------------------------------------
 
-			// 文字単位にバラす
+			// 文字(コード)単位にバラす
 			List<List<CodeData>>	lineCodes = new () ;
 			List<CodeData> codes ;
 

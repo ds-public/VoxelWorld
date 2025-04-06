@@ -19,7 +19,7 @@ using UnityEditor.SceneManagement ;
 namespace SpriteHelper
 {
 	/// <summary>
-	/// ２Ｄメッシュ Version 2024/08/25
+	/// ２Ｄメッシュ Version 2025/04/06
 	/// </summary>
 	[ExecuteAlways]
 	[DisallowMultipleComponent]
@@ -771,9 +771,6 @@ namespace SpriteHelper
 		[SerializeField][HideInInspector]
 		private Material m_Material ;
 
-		// 複製マテリアル
-		private Material m_DuplicatedMaterial ;
-
 		/// <summary>
 		/// マテリアル(ショートカット)
 		/// </summary>
@@ -814,6 +811,50 @@ namespace SpriteHelper
 				}
 			}
 		}
+
+		//-----------------------------------------------------------
+
+		// マテリアルを独立させるかどうか
+		[SerializeField][HideInInspector]
+		private bool		m_IsMaterialIndependence = true ;
+
+		/// <summary>
+		/// マテリアルを独立させるかどうか
+		/// </summary>
+		public bool IsMaterialIndependence
+		{
+			get
+			{
+				return m_IsMaterialIndependence ;
+			}
+			set
+			{
+				if( m_IsMaterialIndependence != value )
+				{
+					m_IsMaterialIndependence  = value ;
+
+					if( m_IsMaterialIndependence == false )
+					{
+						if( m_DuplicatedMaterial != null )
+						{
+							if( Application.isPlaying == false )
+							{
+								DestroyImmediate( m_DuplicatedMaterial ) ;
+							}
+							else
+							{
+								Destroy( m_DuplicatedMaterial ) ;
+							}
+							m_DuplicatedMaterial = null ;
+						}
+					}
+				}
+			}
+		}
+
+
+		// 複製マテリアル
+		private Material	m_DuplicatedMaterial ;
 
 		/// <summary>
 		/// 複製されたマテリアル
@@ -1244,9 +1285,6 @@ namespace SpriteHelper
 		// 更新する
 		private void Refresh()
 		{
-			// 名前は常に更新
-			m_Mesh.name = name ;
-
 			// テクスチャ設定の保険
 			if( m_Texture == null && m_Sprite != null )
 			{
@@ -1306,16 +1344,36 @@ namespace SpriteHelper
 
 			if( m_Material != null )
 			{
-				if( m_DuplicatedMaterial == null )
+				if( m_IsMaterialIndependence == true )
 				{
-					if( m_Material.color.Equals( color ) == false || ( texture != null && m_Material.mainTexture != texture ) || isForceMaterialDuplication == true )
+					if( m_DuplicatedMaterial == null )
 					{
-						if( m_DuplicatedMaterial == null )
+						if( m_Material.color.Equals( color ) == false || ( texture != null && m_Material.mainTexture != texture ) || isForceMaterialDuplication == true )
 						{
-							m_DuplicatedMaterial = Instantiate( m_Material ) ;
+							if( m_DuplicatedMaterial == null )
+							{
+								m_DuplicatedMaterial = Instantiate( m_Material ) ;
+							}
 						}
 					}
 				}
+				else
+				{
+					if( m_DuplicatedMaterial != null )
+					{
+						if( Application.isPlaying == false )
+						{
+							DestroyImmediate( m_DuplicatedMaterial ) ;
+						}
+						else
+						{
+							Destroy( m_DuplicatedMaterial ) ;
+						}
+						m_DuplicatedMaterial = null ;
+					}
+				}
+
+				//---------------------------------
 
 				if( m_DuplicatedMaterial == null )
 				{
@@ -1329,15 +1387,22 @@ namespace SpriteHelper
 					else
 					{
 						// Runtime
-						m_MeshRenderer.material = m_Material ;
+						if( m_IsMaterialIndependence == true )
+						{
+							m_MeshRenderer.material = m_Material ;
+						}
+						else
+						{
+							m_MeshRenderer.sharedMaterial = m_Material ;
+						}
 					}
 				}
 				else
 				{
 					// 既に複製が生成済み
 
-					m_DuplicatedMaterial.color			= color ;
-					m_DuplicatedMaterial.mainTexture	= texture ;
+					m_DuplicatedMaterial.color = color ;
+					m_DuplicatedMaterial.mainTexture = texture ;
 
 					if( Application.isPlaying == false )
 					{
@@ -1402,8 +1467,6 @@ namespace SpriteHelper
 		{
 			float xMin, xMax ;
 			float yMin, yMax ;
-
-
 
 			if( m_Sprite != null )
 			{

@@ -8,10 +8,6 @@ using UnityEngine ;
 
 using Cysharp.Threading.Tasks ;
 
-using WebSocketSharp ;
-using WebSocketSharp.Net ;
-
-
 using uGUIHelper ;
 using TransformHelper ;
 
@@ -30,7 +26,7 @@ namespace DSW.World
 		// サーバーにブロック設定のリクエストを送る
 		private bool WS_Send_Request_SetWorldBlock( short x, short z, short y, short block )
 		{
-			if( m_WebSocket == null )
+			if( m_SocketClient == null )
 			{
 				return false ;
 			}
@@ -47,7 +43,7 @@ namespace DSW.World
 			) ;
 
 			// サーバーにパケットを送信する
-			m_WebSocket.Send( request ) ;
+			m_SocketClient.SendTcp( request ) ;
 
 			return true ;
 		}

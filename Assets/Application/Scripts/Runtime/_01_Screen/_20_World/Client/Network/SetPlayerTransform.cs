@@ -8,10 +8,6 @@ using UnityEngine ;
 
 using Cysharp.Threading.Tasks ;
 
-using WebSocketSharp ;
-using WebSocketSharp.Net ;
-
-
 using uGUIHelper ;
 using TransformHelper ;
 
@@ -19,6 +15,7 @@ using MathHelper ;
 using StorageHelper ;
 
 using DSW.World.Packet ;
+
 
 namespace DSW.World
 {
@@ -30,7 +27,7 @@ namespace DSW.World
 		// プレイヤーの位置と方向を設定する
 		private bool WS_Send_Request_SetPlayerTransform( Vector3 playerPosition, Vector3 playerDirection )
 		{
-			if( m_WebSocket == null )
+			if( m_SocketClient == null )
 			{
 				return false ;
 			}
@@ -45,7 +42,7 @@ namespace DSW.World
 			) ;
 
 			// サーバーにパケットを送信する
-			m_WebSocket.Send( request ) ;
+			m_SocketClient.SendTcp( request ) ;
 
 			return true ;
 		}

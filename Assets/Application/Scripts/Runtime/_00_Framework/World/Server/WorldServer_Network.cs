@@ -8,9 +8,7 @@ using UnityEngine ;
 
 using Cysharp.Threading.Tasks ;
 
-using WebSocketSharp ;
-using WebSocketSharp.Net ;
-using WebSocketSharp.Server ;
+using SocketHelper ;
 
 
 using MathHelper ;
@@ -21,6 +19,7 @@ using DSW.WorldServerClasses ;
 
 using DSW.World.Packet ;
 
+
 namespace DSW.World
 {
 	/// <summary>
@@ -28,11 +27,11 @@ namespace DSW.World
 	/// </summary>
 	public partial class WorldServer
 	{
-		// WebSocketServer のインスタンス
-		private WebSocketServer m_WebSocketServer ;
+		// SocketServer のインスタンス
+		private SocketServer	m_SocketServer ;
 
 		// クライアントの制御用インスタンス群を保持する
-		private readonly Dictionary<string,ActiveClient> m_ActiveClients = new Dictionary<string,ActiveClient>() ;
+		private readonly Dictionary<ClientHandler,ActiveClient> m_ActiveClients = new () ;
 
 		// メインスレッドのコンテキスト
 		private SynchronizationContext	m_MainThreadContext ;
@@ -49,21 +48,19 @@ namespace DSW.World
 		}
 
 		// サーバーの処理を開始する
-		private ResultCodes CreateWebSocketServer()
+		private ResultCodes CreateSocketServer( CancellationToken cancellationToken )
 		{
 			// WebSocket 準備
-			int serverPortNumber	= PlayerData.ServerPortNumber ;
+			int serverPort	= PlayerData.ServerPort ;
 
-			// ポート番号の使用状況を確認する
-			if( ExWebSocket.IsTcpPortNumberUsing( serverPortNumber ) == true )
+			// ポート番号の使用状況を確認する(後で修正) ※SocketHelper に取り込む
+			if( SocketServer.IsTcpPortNumberUsing( serverPort ) == true )
 			{
 				// 指定したポート番号は既に使用されている
 				return ResultCodes.PortNumberAlreadyInUse ;
 			}
 
-			m_WebSocketServer = new WebSocketServer( serverPortNumber ) ;
-
-			Debug.Log( "<color=#00FFFF>[SERVER] PortNumber = " + serverPortNumber + " でサーバーを起動します</color>" ) ;
+			Debug.Log( "<color=#00FFFF>[SERVER] Port = " + serverPort + " でサーバーを起動します</color>" ) ;
 
 			//----------------------------------------------------------
 			// WebSocketServer 準備
@@ -71,36 +68,21 @@ namespace DSW.World
 			// メインスレッドのコンテキストを取得する
 			m_MainThreadContext = SynchronizationContext.Current ;
 
-			m_WebSocketServer.AddWebSocketService<ActiveClient>( "/", ( ActiveClient client ) =>
-			{
-				if( client != null )
-				{
-					// メインスレッドで呼び出してくれるイベントコールバック群を登録する
-					client.SetEventCallbacks
-					(
-						m_MainThreadContext,
-
-						// メインスレッド
-						OnConnected_Main,
-						OnReceivedData_Main,
-						OnReceivedText_Main,
-						OnDisconnected_Main,
-
-						// サブスレッド
-						OnConnected,
-						OnReceivedData,
-						OnReceivedText,
-						OnDisconnected
-					) ;
-
-					// このタイミングではまだ client.ID は不明である事に注意する
-				}
-			} ) ;
+			m_SocketServer = new SocketServer
+			(
+				// 以下のコールバックを設定せよ
+				OnTcpAccepted,
+				OnTcpReceived,
+				OnTcpDisconnected,
+				null,
+				cancellationToken,
+				m_MainThreadContext
+			) ;
 
 			// サーバー開始
-			m_WebSocketServer.Start() ;
+			m_SocketServer.Start( null, serverPort, 0 ) ;
 
-			Debug.Log( "<color=#00FFFF>[SERVER ] WebSocketServer 開始</color>" ) ;
+			Debug.Log( "<color=#00FFFF>[SERVER] SocketServer 開始</color>" ) ;
 
 			return ResultCodes.Successful ;
 		}
@@ -108,78 +90,46 @@ namespace DSW.World
 		// サーバーの処理を終了する
 		private void DeleteWebSocketServer()
 		{
-			// WebSocketServer をシャットダウンする
-			if( m_WebSocketServer != null )
+			// SocketServer をシャットダウンする
+			if( m_SocketServer != null )
 			{
-				m_WebSocketServer.Stop() ;
-				m_WebSocketServer  = null ;
+				m_SocketServer.Stop() ;
+				m_SocketServer.Dispose() ;
+				m_SocketServer = null ;
 			}
 		}
 
 		//-----------------------------------------------------------
-		// メインスレッド用
-#region WebSocket_Callback_On_MainThread
-		private void OnConnected_Main( ActiveClient client )
-		{
-			// 接続(string client.ID)
-			Debug.Log( "<color=#00FFFF>[SERVER] クライアント(CID:" + client.ID + ")が接続しました</color>" ) ;
 
-			// 接続はメインスレッドで処理する
-			m_ActiveClients.Add( client.ID, client ) ;
-		}
-
-		private void OnReceivedData_Main( ActiveClient client, byte[] data )
-		{
-			// バイナリ受信
-		}
-
-		private void OnReceivedText_Main( ActiveClient client, string text )
-		{
-			// テキスト受信
-		}
-
-		private void OnDisconnected_Main( ActiveClient client )
-		{
-			// 接続(string client.ID)
-			Debug.Log( "<color=#00FFFF>[SERVER] クライアント(CID:" + client.ID + ")が切断しました</color>" ) ;
-
-			// 切断はメインスレッドで処理する
-			WS_OnDisconnected( client ) ;
-		}
-#endregion
-		//---------------
-		// サブスレッド用
-#region WebSocket_Callback_On_SubThread
 		private bool m_IsReceiving = false ;
 
-		// 接続された際に呼び出される
-		private void OnConnected( ActiveClient client )
+		// 接続があった
+		private void OnTcpAccepted( ClientHandler client )
 		{
 			// 接続(string client.ID)
+			Debug.Log( "<color=#00FFFF>[SERVER] クライアント(" + client.EndPoint + ")が接続しました</color>" ) ;
+
+			// 接続はメインスレッドで処理する
+
+			m_ActiveClients.Add( client, new ActiveClient(){ Client = client } ) ;
 		}
 
-
-		// 受信した際に呼び出される(バイナリ)
-		private void OnReceivedData( ActiveClient client, byte[] data )
+		// 受信があった
+		private void OnTcpReceived( ClientHandler client, byte[] data )
 		{
 			// バイナリ受信
 			m_IsReceiving = true ;
-			WS_ProcessReceive( client, data ) ;
+			WS_ProcessReceive( m_ActiveClients[ client ], data ) ;
 			m_IsReceiving = false ;
 		}
 
-		// 受信した際に呼び出される(テキスト)
-		private void OnReceivedText( ActiveClient client, string text )
+		// 切断があった
+		private void OnTcpDisconnected( ClientHandler client )
 		{
-			// テキスト受信
+			// 切断はメインスレッドで処理する
+			WS_OnDisconnected( m_ActiveClients[ client ] ) ;
 		}
 
-		// 切断した際に呼び出される
-		private void OnDisconnected( ActiveClient client )
-		{
-			// 切断(string client.ID)
-		}
-#endregion
 		//-------------------------------------------------------------------------------------------
 
 		// 受信処理

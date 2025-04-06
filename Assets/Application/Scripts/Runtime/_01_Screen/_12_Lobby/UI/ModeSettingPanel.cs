@@ -76,10 +76,10 @@ namespace DSW.Screens.LobbyClasses.UI
 		protected UIButton						m_ServerSearchButton ;
 
 		[SerializeField]
-		protected UITextMesh					m_ServerPortNumber_Label ;
+		protected UITextMesh					m_ServerPort_Label ;
 
 		[SerializeField]
-		protected UIInputField					m_ServerPortNumber_InputField ;
+		protected UIInputField					m_ServerPort_InputField ;
 
 
 		[Header( "アクション" )]
@@ -94,13 +94,13 @@ namespace DSW.Screens.LobbyClasses.UI
 
 		private int		m_TabIndex				= -1 ;
 
-		private int		m_SystemServerPortNumber ;
+		private int		m_SystemServerPort ;
 
 
 		private string	m_PlayerName			= string.Empty ;
 		private byte	m_ColorType				=  0 ;
 		private string	m_ServerAddress			= string.Empty ;
-		private int		m_ServerPortNumber		= -1 ;
+		private int		m_ServerPort			= -1 ;
 
 		private string	m_AlertMessage			= string.Empty ;
 
@@ -254,17 +254,17 @@ namespace DSW.Screens.LobbyClasses.UI
 			var settings = ApplicationManager.LoadSettings() ;
 			if( settings != null )
 			{
-				m_SystemServerPortNumber = settings.ServerPortNumber ;
+				m_SystemServerPort = settings.ServerPort ;
 			}
-			m_ServerPortNumber = m_SystemServerPortNumber ;
+			m_ServerPort = m_SystemServerPort ;
 
-			key = "ServerPortNumber" ;
+			key = "ServerPort" ;
 			if( Preference.HasKey( key ) == true )
 			{
-				m_ServerPortNumber = Preference.GetValue<int>( key ) ;
+				m_ServerPort = Preference.GetValue<int>( key ) ;
 			}
 			
-			m_ServerPortNumber_InputField.SetOnEndEdit( ( string identity, UIInputField inputField, string text ) =>
+			m_ServerPort_InputField.SetOnEndEdit( ( string identity, UIInputField inputField, string text ) =>
 			{
 				if( int.TryParse( text, out int serverPortNumber ) == false )
 				{
@@ -274,7 +274,7 @@ namespace DSW.Screens.LobbyClasses.UI
 				{
 					serverPortNumber = -1 ;
 				}
-				m_ServerPortNumber = serverPortNumber ;
+				m_ServerPort = serverPortNumber ;
 
 				UpdateServerPortNumber() ;
 				UpdateStartButton() ;
@@ -287,7 +287,7 @@ namespace DSW.Screens.LobbyClasses.UI
 
 			m_ServerSearchButton.SetOnSimpleClick( () =>
 			{
-				OpenAddressSelectionDialog( m_ServerPortNumber ).Forget() ;
+				OpenAddressSelectionDialog( m_ServerPort ).Forget() ;
 			} ) ;
 
 			//----------------------------------------------------------
@@ -434,16 +434,16 @@ namespace DSW.Screens.LobbyClasses.UI
 //			if( m_TabIndex == 1 )
 //			{
 				// マルチ
-				m_ServerPortNumber_Label.Color = m_PositiveColor ;
-				if( m_ServerPortNumber >= 0 )
+				m_ServerPort_Label.Color = m_PositiveColor ;
+				if( m_ServerPort >= 0 )
 				{
-					m_ServerPortNumber_InputField.Text = m_ServerPortNumber.ToString() ;
+					m_ServerPort_InputField.Text = m_ServerPort.ToString() ;
 				}
 				else
 				{
-					m_ServerPortNumber_InputField.Text = string.Empty ;
+					m_ServerPort_InputField.Text = string.Empty ;
 				}
-				m_ServerPortNumber_InputField.Interactable = true ;
+				m_ServerPort_InputField.Interactable = true ;
 //			}
 		}
 
@@ -468,7 +468,7 @@ namespace DSW.Screens.LobbyClasses.UI
 				}
 			}
 
-			if( isReady == true && m_ServerPortNumber <  0 )
+			if( isReady == true && m_ServerPort <  0 )
 			{
 				isReady = false ;
 				m_AlertMessage = "サーバーポート番号が入力されていません" ;
@@ -478,7 +478,7 @@ namespace DSW.Screens.LobbyClasses.UI
 		}
 
 		// サーバー検索ダイアログを開く
-		private async UniTask OpenAddressSelectionDialog( int serverPort )
+		private async UniTask OpenAddressSelectionDialog( int detectorServerPort )
 		{
 			string endPoint = await m_Owner.DialogController.AddressSelectionDialog.Open() ;
 			if( string.IsNullOrEmpty( endPoint ) == false )
@@ -491,11 +491,11 @@ namespace DSW.Screens.LobbyClasses.UI
 					m_ServerAddress_InputField.Text = m_ServerAddress ;
 
 					i ++ ;
-					string serverPortNumberName = endPoint[ i.. ] ;
-					if( int.TryParse( serverPortNumberName, out int serverPortNumber ) == true )
+					string serverPortName = endPoint[ i.. ] ;
+					if( int.TryParse( serverPortName, out int serverPort ) == true )
 					{
-						m_ServerPortNumber = serverPortNumber ;
-						m_ServerPortNumber_InputField.Text = serverPortNumber.ToString() ;
+						m_ServerPort = serverPort ;
+						m_ServerPort_InputField.Text = serverPort.ToString() ;
 					}
 				}
 				else
@@ -594,10 +594,10 @@ namespace DSW.Screens.LobbyClasses.UI
 				isSet = true ;
 			}
 
-			if( m_ServerPortNumber >= 0 )
+			if( m_ServerPort >= 0 )
 			{
-				key = "ServerPortNumber" ;
-				Preference.SetValue( key, m_ServerPortNumber ) ;
+				key = "ServerPort" ;
+				Preference.SetValue( key, m_ServerPort ) ;
 				isSet = true ;
 			}
 
@@ -612,23 +612,23 @@ namespace DSW.Screens.LobbyClasses.UI
 			// ワールドに受け渡す
 
 			string	serverAddress			= string.Empty ;
-			int		serverPortNumber		= 0 ;
+			int		serverPort				= 0 ;
 
 			if( playMode == PlayerData.PlayModes.Single )
 			{
 				// シングル
 				serverAddress		= "localhost" ;
-				serverPortNumber	= m_ServerPortNumber ;
+				serverPort			= m_ServerPort ;
 			}
 			else
 			if( playMode == PlayerData.PlayModes.Multi )
 			{
 				// マルチ
 				serverAddress		= m_ServerAddress ;
-				serverPortNumber	= m_ServerPortNumber ;
+				serverPort			= m_ServerPort ;
 			}
 
-			return ( playMode, m_PlayerName, m_ColorType, serverAddress, serverPortNumber ) ;
+			return ( playMode, m_PlayerName, m_ColorType, serverAddress, serverPort ) ;
 		}
 	}
 }
