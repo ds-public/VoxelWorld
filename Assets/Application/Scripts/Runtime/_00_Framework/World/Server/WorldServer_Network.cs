@@ -75,8 +75,7 @@ namespace DSW.World
 				OnTcpReceived,
 				OnTcpDisconnected,
 				null,
-				cancellationToken,
-				m_MainThreadContext
+				cancellationToken
 			) ;
 
 			// サーバー開始

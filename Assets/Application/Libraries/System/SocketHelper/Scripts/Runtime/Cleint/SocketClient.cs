@@ -40,7 +40,7 @@ using UnityEngine ;
 namespace SocketHelper
 {
 	/// <summary>
-	/// Socket のクライアント側の管理用クラス Version 2025/04/06
+	/// Socket のクライアント側の管理用クラス Version 2025/04/07
 	/// </summary>
 	public class SocketClient
 	{
@@ -304,7 +304,7 @@ namespace SocketHelper
 
 			if( m_SocketTcp == null )
 			{
-				// 切断された可能性がある
+				// 切断された可能性がある(※この呼び出しはメインスレッド)
 				onTcpConnected?.Invoke( false ) ;
 				return false ;
 			}
@@ -544,33 +544,35 @@ namespace SocketHelper
 								Array.Copy( m_ReceivePacketData, tcpPacket, m_ReceivePacketSize ) ;
 
 								//-------------------------------
-
+#if !UNITY
+								// コールバックを呼ぶ
+								m_OnTcpReceived?.Invoke( tcpPacket ) ;
+#else
 								// コールバックを呼ぶ
 								if( m_OnTcpReceived != null )
 								{
 									if( m_MainThreadContext != null )
 									{
+										// メインスレッド限定あり呼び出し
 										if( SynchronizationContext.Current == m_MainThreadContext )
 										{
-											// パケットが完成した
 											m_OnTcpReceived( tcpPacket ) ;
 										}
 										else
 										{
 											m_MainThreadContext.Post( ( _ ) =>
 											{
-												// パケットが完成した
 												m_OnTcpReceived( tcpPacket ) ;
 											}, null ) ;
 										}
 									}
 									else
 									{
-										// パケットが完成した
+										// メインスレッド限定なし呼び出し
 										m_OnTcpReceived( tcpPacket ) ;
 									}
 								}
-
+#endif
 								//-------------------------------
 
 								// パケットサイズを０に初期化
@@ -853,13 +855,15 @@ namespace SocketHelper
 			try
 			{
 				IPEndPoint ipEndPoint = null ;
-				var packetData = socketUdp.EndReceive( ar, ref ipEndPoint ) ;
-				if( packetData != null && packetData.Length >  0 )
+				var udpPacket = socketUdp.EndReceive( ar, ref ipEndPoint ) ;
+				if( udpPacket != null && udpPacket.Length >  0 )
 				{
 //					Debug.Log( "<color=#FF7F00>----------[UDP] データ受信 : データサイズ = " + packetData.Length + "</color>" ) ;
 
 					//--------------------------------
-
+#if !UNITY
+					m_OnUdpReceived?.Invoke( udpPacket, ipEndPoint.Address.ToString(), ipEndPoint.Port ) ;
+#else
 					// コールバックを呼ぶ
 					if( m_OnUdpReceived != null )
 					{
@@ -868,24 +872,24 @@ namespace SocketHelper
 							if( SynchronizationContext.Current == m_MainThreadContext )
 							{
 								// パケットが完成した
-								m_OnUdpReceived( packetData, ipEndPoint.Address.ToString(), ipEndPoint.Port ) ;
+								m_OnUdpReceived( udpPacket, ipEndPoint.Address.ToString(), ipEndPoint.Port ) ;
 							}
 							else
 							{
 								m_MainThreadContext.Post( ( _ ) =>
 								{
 									// パケットが完成した
-									m_OnUdpReceived( packetData, ipEndPoint.Address.ToString(), ipEndPoint.Port ) ;
+									m_OnUdpReceived( udpPacket, ipEndPoint.Address.ToString(), ipEndPoint.Port ) ;
 								}, null ) ;
 							}
 						}
 						else
 						{
 							// パケットが完成した
-							m_OnUdpReceived( packetData, ipEndPoint.Address.ToString(), ipEndPoint.Port ) ;
+							m_OnUdpReceived( udpPacket, ipEndPoint.Address.ToString(), ipEndPoint.Port ) ;
 						}
 					}
-
+#endif
 					//--------------------------------
 
 					// 再び受信監視処理を呼ぶ
@@ -1038,31 +1042,8 @@ namespace SocketHelper
 
 					//-------------------------------
 
-					// コールバックを呼ぶ
-					if( m_OnTcpDisconnected != null )
-					{
-						if( m_MainThreadContext != null )
-						{
-							if( SynchronizationContext.Current == m_MainThreadContext )
-							{
-								// 切断コールバックは自発的な切断では呼ばれないようにする
-								m_OnTcpDisconnected() ;
-							}
-							else
-							{
-								m_MainThreadContext.Post( ( _ ) =>
-								{
-									// 切断コールバックは自発的な切断では呼ばれないようにする
-									m_OnTcpDisconnected() ;
-								}, null ) ;
-							}
-						}
-						else
-						{
-							// 切断コールバックは自発的な切断では呼ばれないようにする
-							m_OnTcpDisconnected() ;
-						}
-					}
+					// 切断時のコールバックを呼ぶ
+					CallOnTcpDisconnected() ;
 				}
 			}
 		}
@@ -1096,35 +1077,8 @@ namespace SocketHelper
 
 					if( callbackEnabled == true )
 					{
-						//-------------------------------
-
-						// コールバックを呼ぶ
-						if( m_OnTcpDisconnected != null )
-						{
-							if( m_MainThreadContext != null )
-							{
-								if( SynchronizationContext.Current == m_MainThreadContext )
-								{
-									// 切断コールバックは自発的な切断では呼ばれないようにする
-									m_OnTcpDisconnected() ;
-								}
-								else
-								{
-									m_MainThreadContext.Post( ( _ ) =>
-									{
-										// 切断コールバックは自発的な切断では呼ばれないようにする
-										m_OnTcpDisconnected() ;
-									}, null ) ;
-								}
-							}
-							else
-							{
-								// 切断コールバックは自発的な切断では呼ばれないようにする
-								m_OnTcpDisconnected() ;
-							}
-						}
-
-						//-------------------------------
+						// 切断時のコールバックを呼ぶ
+						CallOnTcpDisconnected() ;
 					}
 				}
 			}
@@ -1263,38 +1217,45 @@ namespace SocketHelper
 				if( callbackEnabled == true )
 				{
 					// 切断時のコールバックを呼ぶ
+					CallOnTcpDisconnected() ;
+				}
+			}
+		}
 
-					//-------------------------------
-
-					// コールバックを呼ぶ
-					if( m_OnTcpDisconnected != null )
+		// 切断コールバックを呼ぶ
+		private void CallOnTcpDisconnected()
+		{
+#if !UNITY
+			// コールバックを呼ぶ
+			m_OnTcpDisconnected?.Invoke() ;
+#else
+			// コールバックを呼ぶ
+			if( m_OnTcpDisconnected != null )
+			{
+				if( m_MainThreadContext != null )
+				{
+					if( SynchronizationContext.Current == m_MainThreadContext )
 					{
-						if( m_MainThreadContext != null )
-						{
-							if( SynchronizationContext.Current == m_MainThreadContext )
-							{
-								// 切断コールバックは自発的な切断では呼ばれないようにする
-								m_OnTcpDisconnected() ;
-							}
-							else
-							{
-								m_MainThreadContext.Post( ( _ ) =>
-								{
-									// 切断コールバックは自発的な切断では呼ばれないようにする
-									m_OnTcpDisconnected() ;
-								}, null ) ;
-							}
-						}
-						else
+						// 切断コールバックは自発的な切断では呼ばれないようにする
+						m_OnTcpDisconnected() ;
+					}
+					else
+					{
+						m_MainThreadContext.Post( ( _ ) =>
 						{
 							// 切断コールバックは自発的な切断では呼ばれないようにする
 							m_OnTcpDisconnected() ;
-						}
+						}, null ) ;
 					}
+				}
+				else
+				{
+					// 切断コールバックは自発的な切断では呼ばれないようにする
+					m_OnTcpDisconnected() ;
 
-					//-------------------------------
 				}
 			}
+#endif
 		}
 
 		/// <summary>

@@ -61,4 +61,4 @@ MonoBehaviour:
   EndPoint: 1
   DevelopmentMode: 1
   SecurityEnabled: 1
-  ServerPortNumber: 32760
+  ServerPort: 32760

@@ -59,6 +59,14 @@ namespace SocketHelper
 		// ＴＣＰの最大パケットサイズ
 		private readonly int										m_MaxTcpPacketSize ;
 
+		// オーナーのキャンセレーショントークン
+		private readonly CancellationToken							m_OwnerCancellationToken ;
+
+		// メインスレッドのコンテキスト
+		private readonly SynchronizationContext						m_MainThreadContext ;
+
+		//-----------------------------------------------------------
+
 		// 受信用バッファ
 		private readonly byte[]										m_ReceiveBuffer ;
 
@@ -111,7 +119,8 @@ namespace SocketHelper
 			Action<ClientHandler,byte[]>				onTcpReceived,
 			Action<ClientHandler>						onTcpDisconnected,
 			int											maxTcpPacketSize,
-			CancellationToken							ownerCancellationToken
+			CancellationToken							ownerCancellationToken,
+			SynchronizationContext						mainThreadContext
 		)
 		{
 			// 識別子を保持する
@@ -127,12 +136,16 @@ namespace SocketHelper
 
 			m_MaxTcpPacketSize							= maxTcpPacketSize ;
 
+			m_OwnerCancellationToken					= ownerCancellationToken ;
+
+			m_MainThreadContext							= mainThreadContext ;
+
 			//----------------------------------
 
 			// 受信バッファはひとまず最大６４ＫＢ
 			m_ReceiveBuffer = new byte[ 65536 ] ;
 
-			// 受信バッファはひとまず最大６４ＫＢ
+			// 送信バッファはひとまず最大６４ＫＢ
 			m_SendBuffer = new byte[ 4 + 65536 ] ;
 
 			// 送信パケット群
@@ -157,8 +170,10 @@ namespace SocketHelper
 
 			// 参考 https://devlights.hatenablog.com/entry/2023/06/28/073000
 			m_SocketTcp.SetSocketOption( SocketOptionLevel.Socket, SocketOptionName.KeepAlive, true ) ;
-//			m_SocketTcp.SetSocketOption( SocketOptionLevel.Tcp,    SocketOptionName.TcpKeepAliveTime, 10 ) ;	// 受信までの待機時間
-//			m_SocketTcp.SetSocketOption( SocketOptionLevel.Tcp,    SocketOptionName.TcpKeepAliveInterval, 5 ) ;	// 送信間隔
+#if !UNITY
+			m_SocketTcp.SetSocketOption( SocketOptionLevel.Tcp,    SocketOptionName.TcpKeepAliveTime, 10 ) ;	// 受信までの待機時間
+			m_SocketTcp.SetSocketOption( SocketOptionLevel.Tcp,    SocketOptionName.TcpKeepAliveInterval, 5 ) ;	// 送信間隔
+#endif
 		}
 
 		/// <summary>
@@ -318,8 +333,37 @@ namespace SocketHelper
 								Array.Copy( m_ReceivePacketData, tcpPacket, m_ReceivePacketSize ) ;
 
 								// パケットが完成した
+#if !UNITY
+								// コールバックを呼ぶ
 								m_OnTcpReceived?.Invoke( this, tcpPacket ) ;
-
+#else
+								// コールバックを呼ぶ
+								if( m_OnTcpReceived != null )
+								{
+									if( m_MainThreadContext != null )
+									{
+										// メインスレッド限定あり呼び出し
+										if( SynchronizationContext.Current == m_MainThreadContext )
+										{
+											// パケットが完成した
+											m_OnTcpReceived( this, tcpPacket ) ;
+										}
+										else
+										{
+											m_MainThreadContext.Post( ( _ ) =>
+											{
+												// パケットが完成した
+												m_OnTcpReceived( this, tcpPacket ) ;
+											}, null ) ;
+										}
+									}
+									else
+									{
+										// メインスレッド限定なし呼び出し
+										m_OnTcpReceived( this, tcpPacket ) ;
+									}
+								}
+#endif
 								// パケットサイズを０に初期化
 								m_ReceivePacketSize = 0 ;
 								m_ReceiveHeaderStep = 0 ;
@@ -523,7 +567,7 @@ namespace SocketHelper
 				{
 					m_IsClosed  = true ;
 
-					// 切断コールバック
+					// 切断コールバック(※ServerSocket 側でメインスレッド限定化処理が施されるためメインスレッド限定化処理をここで行う必要は無い)
 					m_OnTcpDisconnected?.Invoke( this ) ;
 				}
 			}
@@ -560,11 +604,12 @@ namespace SocketHelper
 				{
 					m_IsClosed  = true ;
 
+					// 切断コールバックはデフォルトでは呼ばれないようにする
 					if( callbakEnabled == true )
 					{
 						Debug.Log( "[ClientHandler] OnTcpDisconnected コールバックを呼ぶ : " + m_OnTcpDisconnected ) ;
 
-						// 切断コールバックはデフォルトでは呼ばれないようにする
+						// 切断コールバック(※ServerSocket 側でメインスレッド限定化処理が施されるためメインスレッド限定化処理をここで行う必要は無い)
 						m_OnTcpDisconnected?.Invoke( this ) ;
 					}
 				}

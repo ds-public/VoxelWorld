@@ -37,7 +37,7 @@ using UnityEngine ;
 namespace SocketHelper
 {
 	/// <summary>
-	/// SocketServer Version 2025/04/06
+	/// SocketServer Version 2025/04/07
 	/// </summary>
 	public partial class SocketServer
 	{
@@ -155,7 +155,7 @@ namespace SocketHelper
 			Action<ClientHandler> onTcpDisconnected,
 			Action<byte[],string,int> onUdpReceived,
 			CancellationToken ownerCancellationToken,
-			SynchronizationContext mainThreadContext
+			SynchronizationContext mainThreadContext = null
 		)
 		{
 			m_OnTcpAccepted				= onTcpAccepted ;
@@ -317,12 +317,40 @@ namespace SocketHelper
 			try
 			{
 				IPEndPoint ipEndPoint = null ;
-				var packetData = serverSocketUdp.EndReceive( ar, ref ipEndPoint ) ;
-				if( packetData != null && packetData.Length >  0 )
+				var udpPacket = serverSocketUdp.EndReceive( ar, ref ipEndPoint ) ;
+				if( udpPacket != null && udpPacket.Length >  0 )
 				{
-					// ライブラリを利用している側のコールバックを呼ぶ
-					m_OnUdpReceived?.Invoke( packetData, ipEndPoint.Address.ToString(), ipEndPoint.Port ) ;
-
+#if !UNITY
+					// コールバックを呼ぶ
+					m_OnUdpReceived?.Invoke( udpPacket, ipEndPoint.Address.ToString(), ipEndPoint.Port ) ;
+#else
+					// コールバックを呼ぶ
+					if( m_OnUdpReceived != null )
+					{
+						if( m_MainThreadContext != null )
+						{
+							// メインスレッド限定あり呼び出し
+							if( SynchronizationContext.Current == m_MainThreadContext )
+							{
+								// パケットが完成した
+								m_OnUdpReceived( udpPacket, ipEndPoint.Address.ToString(), ipEndPoint.Port ) ;
+							}
+							else
+							{
+								m_MainThreadContext.Post( ( _ ) =>
+								{
+									// パケットが完成した
+									m_OnUdpReceived( udpPacket, ipEndPoint.Address.ToString(), ipEndPoint.Port  ) ;
+								}, null ) ;
+							}
+						}
+						else
+						{
+							// メインスレッド限定なし呼び出し
+							m_OnUdpReceived( udpPacket, ipEndPoint.Address.ToString(), ipEndPoint.Port ) ;
+						}
+					}
+#endif
 					//-----------------------------
 					// 再び受信監視処理を呼ぶ
 					serverSocketUdp.BeginReceive( StartReceiveUdp_Callback, serverSocketUdp ) ;
@@ -447,14 +475,16 @@ namespace SocketHelper
 				m_OnTcpReceived,
 				OnTcpDisconnected,
 				m_MaxTcpPacketSize,
-				m_MainCancellationTokenSource.Token
+				m_MainCancellationTokenSource.Token,
+				m_MainThreadContext
 			) ;
-
-			m_ClientIdentity ++ ;
 
 			// 要素数が変化する際は排他処理を行う
 			lock( m_ClientHandlersLockObject )
 			{
+				// クライアントハンドラーに割り振る識別子を変化させる
+				m_ClientIdentity ++ ;
+
 				// 新しいクライアントハンドラーを追加する
 				m_ClientHandlers.Add( clientHandler ) ;
 			}
@@ -466,9 +496,36 @@ namespace SocketHelper
 			// ※各クライアントの Start を呼ぶより先に呼ぶこと
 			// 　でないとクライアントがこのコールバックを呼ぶ前に切断を実行している場合
 			// 　既に無効になったソケットを接続コールバックに受け渡す事になる
-
+#if !UNITY
 			m_OnTcpAccepted?.Invoke( clientHandler ) ;
-
+#else
+			// コールバックを呼ぶ
+			if( m_OnTcpAccepted != null )
+			{
+				if( m_MainThreadContext != null )
+				{
+					// メインスレッド限定あり呼び出し
+					if( SynchronizationContext.Current == m_MainThreadContext )
+					{
+						// パケットが完成した
+						m_OnTcpAccepted( clientHandler ) ;
+					}
+					else
+					{
+						m_MainThreadContext.Post( ( _ ) =>
+						{
+							// パケットが完成した
+							m_OnTcpAccepted( clientHandler ) ;
+						}, null ) ;
+					}
+				}
+				else
+				{
+					// メインスレッド限定なし呼び出し
+					m_OnTcpAccepted( clientHandler ) ;
+				}
+			}
+#endif
 			//----------------------------------
 
 			// 新しいクライアントハンドラーの処理を開始する
@@ -487,7 +544,36 @@ namespace SocketHelper
 			//----------------------------------
 			// コールバックを呼ぶ
 
+#if !UNITY
 			m_OnTcpDisconnected?.Invoke( clientHandler ) ;
+#else
+			// コールバックを呼ぶ
+			if( m_OnTcpDisconnected != null )
+			{
+				if( m_MainThreadContext != null )
+				{
+					// メインスレッド限定あり呼び出し
+					if( SynchronizationContext.Current == m_MainThreadContext )
+					{
+						// パケットが完成した
+						m_OnTcpDisconnected( clientHandler ) ;
+					}
+					else
+					{
+						m_MainThreadContext.Post( ( _ ) =>
+						{
+							// パケットが完成した
+							m_OnTcpDisconnected( clientHandler ) ;
+						}, null ) ;
+					}
+				}
+				else
+				{
+					// メインスレッド限定なし呼び出し
+					m_OnTcpDisconnected( clientHandler ) ;
+				}
+			}
+#endif
 		}
 
 		//-------------------------------------------------------------------------------------------
@@ -598,8 +684,5 @@ namespace SocketHelper
 			// 未使用
 			return false ;
 		}
-
-
-
 	}
 }
