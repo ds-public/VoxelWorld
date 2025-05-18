@@ -461,30 +461,30 @@ namespace uGUIHelper
 		//-------------------------------------------------------------------------------------------
 
 		// 基本的なプルダウンの縦幅
-		protected float					m_BasePulldownHeight ;
+		protected float					            m_BasePulldownHeight ;
 
 		// 実際の表示用のアイテム
-		protected List<PulldownItem>	m_DisplayItems ;
+		protected List<PulldownItem>	            m_DisplayItems ;
 
 		// プルダウン用のキャンバス
-		protected UICanvas				m_PulldownCanvas ;
+		protected UICanvas				            m_PulldownCanvas ;
 
 		// プルダウン用のマスク
-		protected UIImage				m_PulldownMask ;
+		protected UIImage				            m_PulldownMask ;
 
 		// プルダウン
-		protected UIListView			m_Pulldown ;
+		protected UIListView			            m_Pulldown ;
 
 		// コールバック
-		protected Action<UIPulldown>    m_OnPulldownOpened ;
+		protected Action<UIPulldown>                m_OnPulldownOpened ;
 
-		protected Action<InputTypes>    m_OnInputTypeChanged ;
+		protected Action<InputTypes,InputTypes>     m_OnInputTypeChanged ;
 
-		protected Action<UIPulldown>    m_OnPulldownUpdate ;
+		protected Action<UIPulldown>                m_OnPulldownUpdate ;
 
-		protected Action<UIPulldown>    m_OnPulldownClosed ;
+		protected Action<UIPulldown>                m_OnPulldownClosed ;
 
-		protected bool                  m_IsPulldownReady ;
+		protected bool                              m_IsPulldownReady ;
 
 		//-------------------------------------------------------------------------------------------
 
@@ -683,9 +683,9 @@ namespace uGUIHelper
 			UIEventSystem.RemoveOnInputTypeChanged( OnInputTypeChanged ) ;
 		}
 
-		protected void OnInputTypeChanged( InputTypes type )
+		protected void OnInputTypeChanged( InputTypes basisInputType, InputTypes extraInputType )
 		{
-			m_OnInputTypeChanged?.Invoke( type ) ;
+			m_OnInputTypeChanged?.Invoke( basisInputType, extraInputType ) ;
 
 			UpdatePulldown() ;
 		}
@@ -825,7 +825,7 @@ namespace uGUIHelper
 		/// 入力タイプが変化した際に呼び出すコールバックを設定する
 		/// </summary>
 		/// <param name="onInputTypeChanged"></param>
-		public void SetOnInputTypeChanged( Action<InputTypes> onInputTypeChanged )
+		public void SetOnInputTypeChanged( Action<InputTypes,InputTypes> onInputTypeChanged )
 		{
 			m_OnInputTypeChanged    = onInputTypeChanged ;
 		}
@@ -866,7 +866,7 @@ namespace uGUIHelper
 		/// <param name="onPulldownClosed"></param>
 		public void SetCallbacks
 		(
-			Action<InputTypes> onInputTypeChanged,
+			Action<InputTypes,InputTypes> onInputTypeChanged,
 			Action<UIPulldown> onPulldownOpened,
 			Action<UIPulldown> onPulldownUpdate,
 			Action<UIPulldown> onPulldownClosed

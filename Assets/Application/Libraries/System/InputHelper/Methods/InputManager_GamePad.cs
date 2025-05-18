@@ -35,7 +35,7 @@ namespace InputHelper
 		/// <param name="buttonName"></param>
 		/// <returns></returns>
 		public static bool GetButton( string buttonName )
-			=> GamePad.GetButton( buttonName ) ;
+			=> GamePad.GetButton_Compatible( buttonName ) ;
 
 		/// <summary>
 		/// ボタンが押されたかどうかの判定
@@ -43,7 +43,7 @@ namespace InputHelper
 		/// <param name="buttonName"></param>
 		/// <returns></returns>
 		public static bool GetButtonDown( string buttonName )
-			=> GamePad.GetButtonDown( buttonName ) ;
+			=> GamePad.GetButtonDown_Compatible( buttonName ) ;
 
 		/// <summary>
 		/// ボタンが離されたかどうかの判定
@@ -51,7 +51,7 @@ namespace InputHelper
 		/// <param name="buttonName"></param>
 		/// <returns></returns>
 		public static bool GetButtonUp( string buttonName )
-			=> GamePad.GetButtonUp( buttonName ) ;
+			=> GamePad.GetButtonUp_Compatible( buttonName ) ;
 
 		//---------------
 		// アクシス関連
@@ -62,7 +62,7 @@ namespace InputHelper
 		/// <param name="axisName"></param>
 		/// <returns></returns>
 		public static float GetAxis( string axisName )
-			=> GamePad.GetAxis( axisName ) ;
+			=> GamePad.GetAxis_Compatible( axisName ) ;
 
 		//-----------------------------------------------------------
 		// 独自メソッド
@@ -272,24 +272,6 @@ namespace InputHelper
 		}
 
 		/// <summary>
-		/// キーボードのボタンマッピング
-		/// </summary>
-		public static bool MappingKeyboardToButtonEnabled
-		{
-			get{ return GamePad.MappingKeyboardToButtonEnabled ; }
-			set{ GamePad.MappingKeyboardToButtonEnabled = value ; }
-		}
-
-		/// <summary>
-		/// キーボードのアクシスマッピング
-		/// </summary>
-		public static bool MappingKeyboardToAxisEnabled
-		{
-			get{ return GamePad.MappingKeyboardToAxisEnabled ; }
-			set{ GamePad.MappingKeyboardToAxisEnabled = value ; }
-		}
-
-		/// <summary>
 		/// プロファィル情報を追加する
 		/// </summary>
 		/// <param name="profileNumber">0～</param>
@@ -337,34 +319,6 @@ namespace InputHelper
 		/// <returns></returns>
 		public static bool SetProfileNumber( int playerNumber, int profileNumber )
 			=> GamePad.SetProfileNumber( playerNumber, profileNumber ) ;
-
-		/// <summary>
-		/// ボタンへの任意のキー群のマッピングを行う
-		/// </summary>
-		/// <param name="axisNumbers"></param>
-		public static bool SetMappingKeyboardToButton( int buttonIdentity, params KeyCodes[] keyCodes )
-			=> GamePad.SetMappingKeyboardToButton( buttonIdentity, keyCodes ) ;
-
-		/// <summary>
-		/// ＷＡＳＤキーのアクシスへの割り当てを設定する
-		/// </summary>
-		/// <param name="axisNumbers"></param>
-		public static void SetMappingKeyboardToAxis_WASD( params int[] axisIdentities )
-			=> GamePad.SetMappingKeyboardToAxis_WASD( axisIdentities ) ;
-
-		/// <summary>
-		/// カーソルキーのアクシスへの割り当てを設定する
-		/// </summary>
-		/// <param name="axisNumbers"></param>
-		public static void SetMappingKeyboardToAxis_Cursor( params int[] axisIdentities )
-			=> GamePad.SetMappingKeyboardToAxis_Cursor( axisIdentities ) ;
-
-		/// <summary>
-		/// ナンバーキーのアクシスへの割り当てを設定する
-		/// </summary>
-		/// <param name="axisNumbers"></param>
-		public static void SetMappingKeyboardToAxis_Number( params int[] axisIdentities )
-			=> GamePad.SetMappingKeyboardToAxis_Number( axisIdentities ) ;
 
 		/// <summary>
 		/// 接続中のゲームパッドの名前を取得する

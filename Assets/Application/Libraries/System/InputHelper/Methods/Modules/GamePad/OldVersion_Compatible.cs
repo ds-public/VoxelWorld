@@ -64,7 +64,7 @@ namespace InputHelper
 			/// </summary>
 			/// <param name="buttonName"></param>
 			/// <returns></returns>
-			public bool GetButton( string buttonName )
+			public bool GetButton_Compatible( string buttonName )
 			{
 				return Input.GetButton( buttonName ) ;
 			}
@@ -74,7 +74,7 @@ namespace InputHelper
 			/// </summary>
 			/// <param name="buttonName"></param>
 			/// <returns></returns>
-			public bool GetButtonDown( string buttonName )
+			public bool GetButtonDown_Compatible( string buttonName )
 			{
 				return Input.GetButtonDown( buttonName ) ;
 			}
@@ -84,7 +84,7 @@ namespace InputHelper
 			/// </summary>
 			/// <param name="buttonName"></param>
 			/// <returns></returns>
-			public bool GetButtonUp( string buttonName )
+			public bool GetButtonUp_Compatible( string buttonName )
 			{
 				return Input.GetButtonUp( buttonName ) ;
 			}
@@ -94,7 +94,7 @@ namespace InputHelper
 			/// </summary>
 			/// <param name="axisName"></param>
 			/// <returns></returns>
-			public float GetAxis( string axisName )
+			public float GetAxis_Compatible( string axisName )
 			{
 				var value = Input.GetAxis( axisName ) ;
 

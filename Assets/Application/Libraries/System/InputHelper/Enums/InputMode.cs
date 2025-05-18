@@ -6,9 +6,9 @@ namespace InputHelper
 	public enum InputProcessingTypes
 	{
 		/// <summary>
-		/// 不明
+		/// 処理しない
 		/// </summary>
-		Unknown	= 0 ,
+		None	    = 0 ,
 
 		/// <summary>
 		/// どちらか片方の入力のみ出来る
@@ -29,18 +29,44 @@ namespace InputHelper
 		/// <summary>
 		/// 不明
 		/// </summary>
-		Unknown =  0,
+		Unknown     =  0,
 
 		/// <summary>
 		/// ポインター(マウス・タッチ)　※nputProcessingType が Single
 		/// </summary>
-		Pointer	=  1,
+		Pointer	    =  1,
+
+		/// <summary>
+		/// マウス
+		/// </summary>
+		Mouse       =  2,
+
+		/// <summary>
+		/// キーボード
+		/// </summary>
+		Keyboard    =  3,
 
 		/// <summary>
 		/// ゲームパッド　※InputProcessingType が Single
 		/// </summary>
-		GamePad	=  2,
+		GamePad     =  4,
 
 		// 注意 : Dual 入力モードの場合は最後に切り替わった(現在)のモードになる
+	}
+
+	/// <summary>
+	/// 入力の分類
+	/// </summary>
+	public enum InputCategories
+	{
+		/// <summary>
+		/// 基本入力操作
+		/// </summary>
+		Basis,
+
+		/// <summary>
+		/// 拡張入力操作
+		/// </summary>
+		Extra,
 	}
 }

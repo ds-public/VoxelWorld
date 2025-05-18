@@ -141,22 +141,22 @@ namespace uGUIHelper.InputAdapter
 		/// <summary>
 		/// 方向ボタン
 		/// </summary>
-		public const int DP = 0 ;
+		public const int DPad = 0 ;
 
 		/// <summary>
 		/// 左スティック
 		/// </summary>
-		public const int LS = 1 ; 
+		public const int LStick = 1 ; 
 
 		/// <summary>
 		/// 右スティック
 		/// </summary>
-		public const int RS = 2 ;
+		public const int RStick = 2 ;
 
 		/// <summary>
 		/// トリガーボタン(アナログ取得)
 		/// </summary>
-		public const int TB = 3 ;
+		public const int TriggerButton = 3 ;
 
 		//-----------------------------------------------------------
 
@@ -239,16 +239,6 @@ namespace uGUIHelper.InputAdapter
 		/// </summary>
 		public static bool SwapB3toB4 { get ; set ; } = false ;	// ボタン３とボタン４を入れ替えるかどうか
 
-		/// <summary>
-		/// キーボードのボタンマッピング
-		/// </summary>
-		public static bool MappingKeyboardToButtonEnabled { get ; set ; } = true ;
-
-		/// <summary>
-		/// キーボードのアクシスマッピング
-		/// </summary>
-		public static bool MappingKeyboardToAxisEnabled { get ; set ; } = true ;
-
 		//-------------------------------------------------------------------------------------------
 
 		// ボタン識別子群(インデックス番号→ボタン識別子)
@@ -270,15 +260,15 @@ namespace uGUIHelper.InputAdapter
 		//-----
 
 		// アクシス識別子群(インデックス番号→アクシス識別子)
-		private static readonly int[] m_AxisIdentities =
+		private static readonly int[] m_AxisNumbers =
 		{
-			DP, LS, RS, TB,
+			DPad, LStick, RStick, TriggerButton,
 		} ;
 
 		// アクシス識別子のインデックス番号との関係(アクシス番号ではない事に注意)　アクシス識別子には対応する順番値(インデックス)が存在する
-		private static readonly Dictionary<int,int> m_AxisIdentityToIndex = new ()
+		private static readonly Dictionary<int,int> m_AxisNumberToIndex = new ()
 		{
-			{ DP,  0 }, { LS,  1 }, { RS,  2 }, { TB,  3 },
+			{ DPad,  0 }, { LStick,  1 }, { RStick,  2 }, { TriggerButton,  3 },
 		} ;
 
 		//-------------------------------------------------------------------------------------------
@@ -597,7 +587,7 @@ namespace uGUIHelper.InputAdapter
 				}
 
 				// アクシス
-				length = MaximumNumberOfAxes <  m_AxisIdentities.Length ? MaximumNumberOfAxes : m_AxisIdentities.Length ;
+				length = MaximumNumberOfAxes <  m_AxisNumbers.Length ? MaximumNumberOfAxes : m_AxisNumbers.Length ;
 				m_AxisStates = new AxisState[ length ] ;
 				for( int axisIndex  = 0 ; axisIndex <  length ; axisIndex ++ )
 				{
@@ -753,14 +743,6 @@ namespace uGUIHelper.InputAdapter
 
 			//------------------------------------------------------------------------------------------
 			// 公開メソッド
-
-
-			//----------------------------------------------------------
-			// 互換メソッド
-
-
-			//----------------------------------------------------------
-			// 独自メソッド
 
 			//--------------
 			// ボタン関連
@@ -926,28 +908,28 @@ namespace uGUIHelper.InputAdapter
 			/// </summary>
 			/// <param name="buttonName"></param>
 			/// <returns></returns>
-			bool GetButton( string buttonName ) ;
+			bool GetButton_Compatible( string buttonName ) ;
 
 			/// <summary>
 			/// ボタンが押されたかどうかの判定
 			/// </summary>
 			/// <param name="buttonName"></param>
 			/// <returns></returns>
-			bool GetButtonDown( string buttonName ) ;
+			bool GetButtonDown_Compatible( string buttonName ) ;
 
 			/// <summary>
 			/// ボタンが離されたかどうかの判定
 			/// </summary>
 			/// <param name="buttonName"></param>
 			/// <returns></returns>
-			bool GetButtonUp( string buttonName ) ;
+			bool GetButtonUp_Compatible( string buttonName ) ;
 
 			/// <summary>
 			/// アクシスの状態を所得
 			/// </summary>
 			/// <param name="axisName"></param>
 			/// <returns></returns>
-			float GetAxis( string axisName ) ;
+			float GetAxis_Compatible( string axisName ) ;
 
 			//----------------------------------------------------------
 			// 独自メソッド
@@ -1027,190 +1009,232 @@ namespace uGUIHelper.InputAdapter
 		private static IImplementation m_Implementation ;
 
 		//-------------------------------------------------------------------------------------------
-		// 共通
-
-		// ゲームパッドの各ボタンへのキーボードのキーマッピング(デフォルト)
-		private static readonly Dictionary<int,KeyCodes[]> m_MappingKeyboardToButton = new ()
-		{
-			{ GamePad.B1, new KeyCodes[]{ KeyCodes.Z,			KeyCodes.Comma,		KeyCodes.Less		} },
-			{ GamePad.B2, new KeyCodes[]{ KeyCodes.X,			KeyCodes.Period,	KeyCodes.Greater	} },
-			{ GamePad.B3, new KeyCodes[]{ KeyCodes.C,			KeyCodes.Slash,		KeyCodes.Question	} },
-			{ GamePad.B4, new KeyCodes[]{ KeyCodes.V,			KeyCodes.Backslash,	KeyCodes.Underscore	} },
-
-			{ GamePad.R1, new KeyCodes[]{ KeyCodes.E,			KeyCodes.Keypad9						} },
-			{ GamePad.L1, new KeyCodes[]{ KeyCodes.Q,			KeyCodes.Keypad7						} },
-			{ GamePad.R2, new KeyCodes[]{ KeyCodes.RightShift,	KeyCodes.Keypad3						} },
-			{ GamePad.L2, new KeyCodes[]{ KeyCodes.LeftShift,	KeyCodes.Keypad1						} },
-			{ GamePad.R3, new KeyCodes[]{ KeyCodes.RightControl											} },
-			{ GamePad.L3, new KeyCodes[]{ KeyCodes.LeftControl											} },
-
-			{ GamePad.O1, new KeyCodes[]{ KeyCodes.Insert												} },
-			{ GamePad.O2, new KeyCodes[]{ KeyCodes.Delete												} },
-			{ GamePad.O3, new KeyCodes[]{ KeyCodes.Home													} },
-			{ GamePad.O4, new KeyCodes[]{ KeyCodes.End													} },
-		} ;
+		// 新しいマッピングシステム用
 
 		/// <summary>
-		/// ボタンへの任意のキー群のマッピングを行う
+		/// アクションの要素ボタンの定義
 		/// </summary>
-		/// <param name="axisNumbers"></param>
-		public static bool SetMappingKeyboardToButton( int buttonIdentity, params KeyCodes[] keyCodes )
+		public class ButtonActionElement
 		{
-			if( m_MappingKeyboardToButton.ContainsKey( buttonIdentity ) == false )
+			public int[]			ButtonIdentities ;
+			public KeyCodes[]		ButtonKeyCodes ;
+			public InputCategories	InputCategory ;
+
+			//----------------------------------
+
+			public bool				KeyRepeatKeepFlag ;
+			public float			KeyRepeatWakeTime ;
+			public float			KeyRepeatLoopTime ;
+
+			public bool				IsKeyRepeat ;
+			public bool				IsKeyDown ;
+			public bool				IsKeyUp ;
+		}
+
+		private static readonly Dictionary<string,ButtonActionElement>	m_ButtonActionElements = new () ;
+
+		/// <summary>
+		/// 任意の名前で識別するボタンアクションを登録(上書)する
+		/// </summary>
+		/// <param name="actionName"></param>
+		/// <param name="buttonIdentities"></param>
+		/// <param name="buttonKeyCodes"></param>
+		/// <param name="inputCategory"></param>
+		/// <returns></returns>
+		public static bool RegisterButtonAction( string actionName, int[] buttonIdentities, KeyCodes[] buttonKeyCodes = null, InputCategories inputCategory = InputCategories.Basis )
+		{
+			if( string.IsNullOrEmpty( actionName ) == true )
 			{
-				// ボタン番号が不正
+				// 不可
+				return false ;
+			}
+
+			if( ( buttonIdentities == null || buttonIdentities.Length == 0 ) && ( buttonKeyCodes == null || buttonKeyCodes.Length == 0 ) )
+			{
+				// 不可
+				return false ;
+			}
+
+			//----------------------------------------------------------
+
+			if( m_ButtonActionElements.ContainsKey( actionName ) == false )
+			{
+				// 登録が無い
+
+				// 登録
+				m_ButtonActionElements.Add( actionName, new ButtonActionElement()
+				{
+					ButtonIdentities	= buttonIdentities,
+					ButtonKeyCodes		= buttonKeyCodes,
+					InputCategory		= inputCategory
+				} ) ;
+			}
+			else
+			{
+				// 登録が有る
+
+				// 上書
+				m_ButtonActionElements[ actionName ] = new ButtonActionElement()
+				{
+					ButtonIdentities	= buttonIdentities,
+					ButtonKeyCodes		= buttonKeyCodes,
+					InputCategory		= inputCategory
+				} ;
+			}
+
+			// 成功
+			return true ;
+		}
+
+		/// <summary>
+		/// 任意の名前で識別するボタンアクションを削除する
+		/// </summary>
+		/// <param name="actionName"></param>
+		/// <returns></returns>
+		public static bool UnregisterButtonAction( string actionName )
+		{
+			if( string.IsNullOrEmpty( actionName ) == true )
+			{
+				// 不可
+				return false ;
+			}
+
+			if( m_ButtonActionElements.ContainsKey( actionName ) == false )
+			{
+				// 登録が無い
 				return false ;
 			}
 
 			//----------------------------------
 
-			if( keyCodes == null || keyCodes.Length == 0 )
-			{
-				m_MappingKeyboardToButton[ buttonIdentity ] = null ;
-			}
-			else
-			{
-				m_MappingKeyboardToButton[ buttonIdentity ] = keyCodes ;
-			}
+			m_ButtonActionElements.Remove( actionName ) ;
 
 			return true ;
 		}
 
-		//-------------------------------------------------------------------------------------------
-
-		// ゲームパッドの各アクシス方法へのキーボードのキーマッピング(デフォルト)
-		private static readonly Dictionary<( int, int ),KeyCodes[]> m_MappingKeyboardToAxisDirection = new ()
+		/// <summary>
+		/// 任意の名前で識別するボタンアクションを全て削除する
+		/// </summary>
+		/// <returns></returns>
+		public static void ClearAllButtonActions()
 		{
-			{ ( 0, 0 ), null },	// →
-			{ ( 0, 1 ), null },	// ←
-			{ ( 0, 2 ), null },	// ↑
-			{ ( 0, 3 ), null },	// ↓
+			m_ButtonActionElements.Clear() ;
+		}
 
-			{ ( 1, 0 ), null },	// →
-			{ ( 1, 1 ), null },	// ←
-			{ ( 1, 2 ), null },	// ↑
-			{ ( 1, 3 ), null },	// ↓
-
-			{ ( 2, 0 ), null },	// →
-			{ ( 2, 1 ), null },	// ←
-			{ ( 2, 2 ), null },	// ↑
-			{ ( 2, 3 ), null },	// ↓
-
-			{ ( 3, 0 ), null },	// R3
-			{ ( 3, 1 ), null },	// L3
-			{ ( 3, 2 ), null },	//
-			{ ( 3, 3 ), null },	//
-		} ;
+		//-----------------------------------
 
 		/// <summary>
-		/// ボタンへの任意のキー群のマッピングを行う
+		/// アクションの要素アクシスの定義
 		/// </summary>
-		/// <param name="axisNumbers"></param>
-		public static bool SetMappingKeyboardToAxisDirection( int axisIdentity, int axisDirection, params KeyCodes[] keyCodes )
+		public class AxisActionElement
 		{
-			var key = ( axisIdentity, axisDirection ) ;
+			public int[]			AxisNumbers ;
+			public KeyCodes[][]		AxisKeyCodes ;
+			public InputCategories	InputCategory ;
 
-			if( m_MappingKeyboardToAxisDirection.ContainsKey( key ) == false )
+			//----------------------------------
+
+			public bool				KeyRepeatKeepFlag ;
+			public Vector2			KeyRepeatKeepData ;
+			public float			KeyRepeatWakeTime ;
+			public float			KeyRepeatLoopTime ;
+
+			public Vector2			IsKeyRepeat ;
+			public Vector2			IsKeyDown ;
+			public Vector2			IsKeyUp ;
+		}
+
+		private static readonly Dictionary<string,AxisActionElement>	m_AxisActionElements = new () ;
+
+		/// <summary>
+		/// 任意の名前で識別するアクシスアクションを登録(上書)する
+		/// </summary>
+		/// <param name="actionName"></param>
+		/// <param name="buttonIdentities"></param>
+		/// <param name="buttonKeyCodes"></param>
+		/// <param name="inputCategory"></param>
+		/// <returns></returns>
+		public static bool RegisterAxisAction( string actionName, int[] axisNumbers, KeyCodes[][] axisKeyCodes = null, InputCategories inputCategory = InputCategories.Basis )
+		{
+			if( string.IsNullOrEmpty( actionName ) == true )
 			{
-				// ボタン番号が不正
+				// 不可
+				return false ;
+			}
+
+			if( ( axisNumbers == null || axisNumbers.Length == 0 ) && ( axisKeyCodes == null || axisKeyCodes.Length == 0 ) )
+			{
+				// 不可
+				return false ;
+			}
+
+			//----------------------------------------------------------
+
+			if( m_AxisActionElements.ContainsKey( actionName ) == false )
+			{
+				// 登録が無い
+
+				// 登録
+				m_AxisActionElements.Add( actionName, new AxisActionElement()
+				{
+					AxisNumbers			= axisNumbers,
+					AxisKeyCodes		= axisKeyCodes,
+					InputCategory		= inputCategory
+				} ) ;
+			}
+			else
+			{
+				// 登録が有る
+
+				// 上書
+				m_AxisActionElements[ actionName ] = new AxisActionElement()
+				{
+					AxisNumbers			= axisNumbers,
+					AxisKeyCodes		= axisKeyCodes,
+					InputCategory		= inputCategory
+				} ;
+			}
+
+			// 成功
+			return true ;
+		}
+
+		/// <summary>
+		/// 任意の名前で識別するアクシスアクションを削除する
+		/// </summary>
+		/// <param name="actionName"></param>
+		/// <returns></returns>
+		public static bool UnregisterAxisAction( string actionName )
+		{
+			if( string.IsNullOrEmpty( actionName ) == true )
+			{
+				// 不可
+				return false ;
+			}
+
+			if( m_AxisActionElements.ContainsKey( actionName ) == false )
+			{
+				// 登録が無い
 				return false ;
 			}
 
 			//----------------------------------
 
-			if( keyCodes == null || keyCodes.Length == 0 )
-			{
-				m_MappingKeyboardToAxisDirection[ key ] = null ;
-			}
-			else
-			{
-				m_MappingKeyboardToAxisDirection[ key ] = keyCodes ;
-			}
+			m_AxisActionElements.Remove( actionName ) ;
 
 			return true ;
 		}
 
+		/// <summary>
+		/// 任意の名前で識別するアクシスアクションを全て削除する
+		/// </summary>
+		/// <returns></returns>
+		public static void ClearAllAxisActions()
+		{
+			m_AxisActionElements.Clear() ;
+		}
+
 		//-------------------------------------------------------------------------------------------
-
-		private static int[] m_MappingKeyboardToAxis_WASD = new int[]{ 0, 1, 2 } ;
-
-		/// <summary>
-		/// ＷＡＳＤキーのアクシスへの割り当てを設定する
-		/// </summary>
-		/// <param name="axisNumbers"></param>
-		public static void SetMappingKeyboardToAxis_WASD( params int[] axisIdentities )
-		{
-			if( axisIdentities == null || axisIdentities.Length == 0 )
-			{
-				m_MappingKeyboardToAxis_WASD = null ;
-			}
-			else
-			{
-				m_MappingKeyboardToAxis_WASD = axisIdentities ;
-			}
-		}
-
-		//-----------------------------------
-
-		private static int[] m_MappingKeyboardToAxis_Cursor = new int[]{ 0, 1, 2 } ;
-
-		/// <summary>
-		/// カーソルキーのアクシスへの割り当てを設定する
-		/// </summary>
-		/// <param name="axisNumbers"></param>
-		public static void SetMappingKeyboardToAxis_Cursor( params int[] axisIdentities )
-		{
-			if( axisIdentities == null || axisIdentities.Length == 0 )
-			{
-				m_MappingKeyboardToAxis_Cursor = null ;
-			}
-			else
-			{
-				m_MappingKeyboardToAxis_Cursor = axisIdentities ;
-			}
-		}
-
-		//-----------------------------------
-
-		private static int[] m_MappingKeyboardToAxis_Number = new int[]{ 0, 1, 2 } ;
-
-		/// <summary>
-		/// ナンバーキーのアクシスへの割り当てを設定する
-		/// </summary>
-		/// <param name="axisNumbers"></param>
-		public static void SetMappingKeyboardToAxis_Number( params int[] axisIdentities )
-		{
-			if( axisIdentities == null || axisIdentities.Length == 0 )
-			{
-				m_MappingKeyboardToAxis_Number = null ;
-			}
-			else
-			{
-				m_MappingKeyboardToAxis_Number = axisIdentities ;
-			}
-		}
-
-		//-----------------------------------
-
-		private static int[] m_MappingKeyboardToAxis_RightSymbol = new int[]{ 0, 1, 2 } ;
-
-		/// <summary>
-		/// 右側記号キーのアクシスへの割り当てを設定する
-		/// </summary>
-		/// <param name="axisNumbers"></param>
-		public static void SetMappingKeyboardToAxis_RightSymbol( params int[] axisIdentities )
-		{
-			if( axisIdentities == null || axisIdentities.Length == 0 )
-			{
-				m_MappingKeyboardToAxis_RightSymbol = null ;
-			}
-			else
-			{
-				m_MappingKeyboardToAxis_RightSymbol = axisIdentities ;
-			}
-		}
-
-		//-----------------------------------------------------------
 
 		/// <summary>
 		/// 接続中のゲームパッドの名前を取得する
@@ -1218,120 +1242,6 @@ namespace uGUIHelper.InputAdapter
 		/// <returns></returns>
 		public static string[] GetNames()
 			=> GetJoystickNames() ;
-
-		//-------------------------------------------------------------------------------------------
-
-		/// <summary>
-		/// Repeat 系の状態更新
-		/// </summary>
-		public static void Update()
-		{
-			int playerNumber ;
-			int buttonIndex ;
-			int buttonFlags ;
-
-			int buttonIndexMax	= MaximumNumberOfButtons <  m_ButtonIdentities.Length ? MaximumNumberOfButtons : m_ButtonIdentities.Length ;
-
-			// 接続しているしているプレイヤー(最大４)しかし０ならば１にする(キーボード入力のため)
-			int max = NumberOfGamePads <  MaximumNumberOfPlayers ? NumberOfGamePads : MaximumNumberOfPlayers ;
-			if( max <= 0 )
-			{
-				max  = 1 ;
-			}
-			
-			for( playerNumber  = 0 ; playerNumber <  max ; playerNumber ++ )
-			{
-				// プレイヤー情報
-				var player = m_Players[ playerNumber ] ;
-
-				// Button
-				buttonFlags = GetButtonAll( playerNumber ) ;	// ボタンの押下状態(ビット単位のフラグ)
-				for( buttonIndex  = 0 ; buttonIndex <  buttonIndexMax ; buttonIndex ++ )
-				{
-					player.UpdateButtonStates( buttonIndex, m_ButtonIdentities[ buttonIndex ], buttonFlags ) ;
-				}
-
-				// Axis
-				player.UpdateAxisStates( 0, GetAxis( m_AxisIdentities[ 0 ], playerNumber ) ) ;
-				player.UpdateAxisStates( 1, GetAxis( m_AxisIdentities[ 1 ], playerNumber ) ) ;
-				player.UpdateAxisStates( 2, GetAxis( m_AxisIdentities[ 2 ], playerNumber ) ) ;
-
-				// Haptics
-				player.UpdateHapticsState() ;
-			}
-		}
-
-		/// <summary>
-		/// Repeat 系の状態更新
-		/// </summary>
-		public static void Update( out int buttonAll, out Vector2 axis_0, out Vector2 axis_1, out Vector2 axis_2 )
-		{
-			buttonAll = 0 ;
-			axis_0 = Vector2.zero ;
-			axis_1 = Vector2.zero ;
-			axis_2 = Vector2.zero ;
-
-			//----------------------------------
-
-			int playerNumber ;
-			int buttonIndex ;
-			int buttonFlags ;
-			Vector2 axis ;
-
-			int buttonIndexMax	= MaximumNumberOfButtons <  m_ButtonIdentities.Length ? MaximumNumberOfButtons : m_ButtonIdentities.Length ;
-
-			// 接続しているしているプレイヤー(最大４)しかし０ならば１にする(キーボード入力のため)
-			int max = NumberOfGamePads <  MaximumNumberOfPlayers ? NumberOfGamePads : MaximumNumberOfPlayers ;
-			if( max <= 0 )
-			{
-				max  = 1 ;
-			}
-			
-			for( playerNumber  = 0 ; playerNumber <  max ; playerNumber ++ )
-			{
-				// プレイヤー情報
-				var player = m_Players[ playerNumber ] ;
-
-				//-------------
-
-				// Button
-				buttonFlags = GetButtonAll( playerNumber ) ;	// ボタンの押下状態(ビット単位のフラグ)
-				for( buttonIndex  = 0 ; buttonIndex <  buttonIndexMax ; buttonIndex ++ )
-				{
-					player.UpdateButtonStates( buttonIndex, m_ButtonIdentities[ buttonIndex ], buttonFlags ) ;
-				}
-
-				buttonAll |= buttonFlags ;
-
-				//-------------
-
-				// Axis
-				axis = GetAxis( m_AxisIdentities[ 0 ], playerNumber ) ;
-				player.UpdateAxisStates( 0, axis ) ;
-
-				if( axis.x != 0 ){ axis_0.x = axis.x ; }
-				if( axis.y != 0 ){ axis_0.y = axis.y ; }
-
-
-				axis = GetAxis( m_AxisIdentities[ 1 ], playerNumber ) ;
-				player.UpdateAxisStates( 1, axis ) ;
-
-				if( axis.x != 0 ){ axis_1.x = axis.x ; }
-				if( axis.y != 0 ){ axis_1.y = axis.y ; }
-
-
-				axis = GetAxis( m_AxisIdentities[ 2 ], playerNumber ) ;
-				player.UpdateAxisStates( 2, axis ) ;
-
-				if( axis.x != 0 ){ axis_2.x = axis.x ; }
-				if( axis.y != 0 ){ axis_2.y = axis.y ; }
-
-				//-------------
-
-				// Haptics
-				player.UpdateHapticsState() ;
-			}
-		}
 
 		//-------------------------------------------------------------------------------------------------------------------
 		// 公開メソッド
@@ -1378,22 +1288,13 @@ namespace uGUIHelper.InputAdapter
 		/// </summary>
 		/// <param name="buttonName"></param>
 		/// <returns></returns>
-		public static bool GetButton( string buttonName )
+		public static bool GetButton_Compatible( string buttonName )
 		{
 			// modeEnabled を判定条件に入れないのは、マウスとキーボードを同時入力するケースを考慮するため
-			if( m_Owner == null || m_Owner.ControlEnabled == false || m_Owner.InputSwitching == true || Enabled == false )
+			if( m_Owner == null || m_Owner.ControlEnabled == false || Enabled == false )
 			{
 				// 無効
 				return false ;
-			}
-
-			if( m_Owner.IgnoreInputSwitching == false && _Owner.InputProcessingType == InputProcessingTypes.Switching )
-			{
-				if( m_Owner.LastInputType == InputTypes.Pointer )
-				{
-					// 無効
-					return false ;
-				}
 			}
 
 			//----------------------------------
@@ -1402,7 +1303,7 @@ namespace uGUIHelper.InputAdapter
 			{
 				throw new Exception( "Not implemented." ) ;
 			}
-			return m_Implementation.GetButton( buttonName ) ;
+			return m_Implementation.GetButton_Compatible( buttonName ) ;
 		}
 
 		/// <summary>
@@ -1410,22 +1311,13 @@ namespace uGUIHelper.InputAdapter
 		/// </summary>
 		/// <param name="buttonName"></param>
 		/// <returns></returns>
-		public static bool GetButtonDown( string buttonName )
+		public static bool GetButtonDown_Compatible( string buttonName )
 		{
 			// modeEnabled を判定条件に入れないのは、マウスとキーボードを同時入力するケースを考慮するため
-			if( m_Owner == null || m_Owner.ControlEnabled == false || m_Owner.InputSwitching == true || Enabled == false )
+			if( m_Owner == null || m_Owner.ControlEnabled == false || Enabled == false )
 			{
 				// 無効
 				return false ;
-			}
-
-			if( m_Owner.IgnoreInputSwitching == false && _Owner.InputProcessingType == InputProcessingTypes.Switching )
-			{
-				if( m_Owner.LastInputType == InputTypes.Pointer )
-				{
-					// 無効
-					return false ;
-				}
 			}
 
 			//----------------------------------
@@ -1434,7 +1326,7 @@ namespace uGUIHelper.InputAdapter
 			{
 				throw new Exception( "Not implemented." ) ;
 			}
-			return m_Implementation.GetButtonDown( buttonName ) ;
+			return m_Implementation.GetButtonDown_Compatible( buttonName ) ;
 		}
 
 		/// <summary>
@@ -1442,22 +1334,13 @@ namespace uGUIHelper.InputAdapter
 		/// </summary>
 		/// <param name="buttonName"></param>
 		/// <returns></returns>
-		public static bool GetButtonUp( string buttonName )
+		public static bool GetButtonUp_Compatible( string buttonName )
 		{
 			// modeEnabled を判定条件に入れないのは、マウスとキーボードを同時入力するケースを考慮するため
-			if( m_Owner == null || m_Owner.ControlEnabled == false || m_Owner.InputSwitching == true || Enabled == false )
+			if( m_Owner == null || m_Owner.ControlEnabled == false || Enabled == false )
 			{
 				// 無効
 				return false ;
-			}
-
-			if( m_Owner.IgnoreInputSwitching == false && _Owner.InputProcessingType == InputProcessingTypes.Switching )
-			{
-				if( m_Owner.LastInputType == InputTypes.Pointer )
-				{
-					// 無効
-					return false ;
-				}
 			}
 
 			//----------------------------------
@@ -1466,7 +1349,7 @@ namespace uGUIHelper.InputAdapter
 			{
 				throw new Exception( "Not implemented." ) ;
 			}
-			return m_Implementation.GetButtonUp( buttonName ) ;
+			return m_Implementation.GetButtonUp_Compatible( buttonName ) ;
 		}
 
 		//---------------
@@ -1477,22 +1360,13 @@ namespace uGUIHelper.InputAdapter
 		/// </summary>
 		/// <param name="axisName"></param>
 		/// <returns></returns>
-		public static float GetAxis( string axisName )
+		public static float GetAxis_Compatible( string axisName )
 		{
 			// modeEnabled を判定条件に入れないのは、マウスとキーボードを同時入力するケースを考慮するため
-			if( m_Owner == null || m_Owner.ControlEnabled == false || m_Owner.InputSwitching == true || Enabled == false )
+			if( m_Owner == null || m_Owner.ControlEnabled == false || Enabled == false )
 			{
 				// 無効
 				return 0 ;
-			}
-
-			if( m_Owner.IgnoreInputSwitching == false && _Owner.InputProcessingType == InputProcessingTypes.Switching )
-			{
-				if( m_Owner.LastInputType == InputTypes.Pointer )
-				{
-					// 無効
-					return 0 ;
-				}
 			}
 
 			//----------------------------------
@@ -1501,36 +1375,237 @@ namespace uGUIHelper.InputAdapter
 			{
 				throw new Exception( "Not implemented." ) ;
 			}
-			return m_Implementation.GetAxis( axisName ) ;
+			return m_Implementation.GetAxis_Compatible( axisName ) ;
 		}
 
-		//-----------------------------------------------------------
+		//-------------------------------------------------------------------------------------------
 		// 独自メソッド
+
+		/// <summary>
+		/// Repeat 系の状態更新
+		/// </summary>
+		public static void Update()
+		{
+			int playerNumber ;
+			int buttonIndex ;
+			int buttonFlags ;
+
+			int buttonIndexMax	= MaximumNumberOfButtons <  m_ButtonIdentities.Length ? MaximumNumberOfButtons : m_ButtonIdentities.Length ;
+
+			// 接続しているしているプレイヤー(最大４)しかし０ならば１にする(キーボード入力のため)
+			int max = NumberOfGamePads <  MaximumNumberOfPlayers ? NumberOfGamePads : MaximumNumberOfPlayers ;
+			if( max <= 0 )
+			{
+				max  = 1 ;
+			}
+			
+			for( playerNumber  = 0 ; playerNumber <  max ; playerNumber ++ )
+			{
+				// プレイヤー情報
+				var player = m_Players[ playerNumber ] ;
+
+				// Button
+				buttonFlags = CheckButtonAll( playerNumber ) ;	// ボタンの押下状態(ビット単位のフラグ)
+				for( buttonIndex  = 0 ; buttonIndex <  buttonIndexMax ; buttonIndex ++ )
+				{
+					player.UpdateButtonStates( buttonIndex, m_ButtonIdentities[ buttonIndex ], buttonFlags ) ;
+				}
+
+				// Axis
+				player.UpdateAxisStates( 0, GetAxis( m_AxisNumbers[ 0 ], playerNumber ) ) ;
+				player.UpdateAxisStates( 1, GetAxis( m_AxisNumbers[ 1 ], playerNumber ) ) ;
+				player.UpdateAxisStates( 2, GetAxis( m_AxisNumbers[ 2 ], playerNumber ) ) ;
+
+				// Haptics
+				player.UpdateHapticsState() ;
+			}
+
+			//------------------------------------------------------------------------------------------
+			// アクション系のアップデート(キーボードのみ)
+
+			float time = Time.realtimeSinceStartup ;
+
+			// ボタン
+			foreach( var buttonActionElement in m_ButtonActionElements.Values )
+			{
+				buttonActionElement.IsKeyRepeat	= false ;
+				buttonActionElement.IsKeyDown	= false ;
+				buttonActionElement.IsKeyUp		= false ;
+
+				if( m_Owner.InputSwitching == false )
+				{
+					bool isPressed = false ;
+
+					// キーボード
+					var buttonKeyCodes = buttonActionElement.ButtonKeyCodes ;
+					if( buttonKeyCodes != null && buttonKeyCodes.Length >  0 )
+					{
+						foreach( var buttonKeyCode in buttonKeyCodes )
+						{
+							if( Keyboard.GetKey( buttonKeyCode ) == true )
+							{
+								isPressed = true ;
+								break ;
+							}
+						}
+					}
+
+					//------------
+
+					if( isPressed == true )
+					{
+						// 押されている
+
+						if( buttonActionElement.KeyRepeatKeepFlag == false )
+						{
+							// リピート開始
+							buttonActionElement.IsKeyRepeat = true ;
+
+							buttonActionElement.KeyRepeatKeepFlag = true ;
+							buttonActionElement.KeyRepeatWakeTime = time ;
+							buttonActionElement.KeyRepeatLoopTime = time ;
+
+							buttonActionElement.IsKeyDown = true ;
+						}
+						else
+						{
+							// リピート最中
+							if( ( time - buttonActionElement.KeyRepeatWakeTime ) >= RepeatStartingTime )
+							{
+								// リピート中
+								if( ( time - buttonActionElement.KeyRepeatLoopTime ) >= RepeatIntervalTime )
+								{
+									buttonActionElement.IsKeyRepeat = true ;
+								
+									buttonActionElement.KeyRepeatLoopTime = time ;
+								}
+							}
+						}
+					}
+					else
+					{
+						// 離されている
+
+						if( buttonActionElement.KeyRepeatKeepFlag == true )
+						{
+							// リピート解除
+							buttonActionElement.IsKeyUp = true ;
+
+							buttonActionElement.KeyRepeatKeepFlag  = false ;
+						}
+					}
+				}
+			}
+
+			// アクシス
+			foreach( var axisActionElement in m_AxisActionElements.Values )
+			{
+				axisActionElement.IsKeyRepeat	= Vector2.zero ;
+				axisActionElement.IsKeyDown		= Vector2.zero ;
+				axisActionElement.IsKeyUp		= Vector2.zero ;
+
+				if( m_Owner.InputSwitching == false )
+				{
+					Vector2 axis = Vector2.zero ;
+
+					// キーボード
+					var axisKeyCodes = axisActionElement.AxisKeyCodes ;
+					if( axisKeyCodes != null && axisKeyCodes.Length >  0 )
+					{
+						foreach( var axisKeyCode in axisKeyCodes )
+						{
+							if( axisKeyCode != null && axisKeyCode.Length == 4 )
+							{
+								if( axis.x == 0 )
+								{
+									// →
+									if( Keyboard.GetKey( axisKeyCode[ 0 ] ) == true )
+									{
+										axis.x += 1 ;
+									}
+									// ←
+									if( Keyboard.GetKey( axisKeyCode[ 1 ] ) == true )
+									{
+										axis.x -= 1 ;
+									}
+								}
+								if( axis.y == 0 )
+								{
+									// ↑
+									if( Keyboard.GetKey( axisKeyCode[ 2 ] ) == true )
+									{
+										axis.y += 1 ;
+									}
+									// ↓
+									if( Keyboard.GetKey( axisKeyCode[ 3 ] ) == true )
+									{
+										axis.y -= 1 ;
+									}
+								}
+							}
+						}
+					}
+
+					//------------
+
+					if( axis.x != 0 || axis.y != 0 )
+					{
+						// 押されている
+						if( axisActionElement.KeyRepeatKeepFlag == false )
+						{
+							// リピート開始
+							axisActionElement.IsKeyRepeat = axis ;
+
+							axisActionElement.KeyRepeatKeepFlag = true ;
+							axisActionElement.KeyRepeatKeepData = axis ;
+							axisActionElement.KeyRepeatWakeTime = time ;
+							axisActionElement.KeyRepeatLoopTime = time ;
+
+							axisActionElement.IsKeyDown = axis ;
+						}
+						else
+						{
+							// リピート最中
+							if( ( time - axisActionElement.KeyRepeatWakeTime ) >= RepeatStartingTime )
+							{
+								// リピート中
+								if( ( time - axisActionElement.KeyRepeatLoopTime ) >= RepeatIntervalTime )
+								{
+									axisActionElement.IsKeyRepeat = axis ;
+	
+									axisActionElement.KeyRepeatLoopTime = time ;
+								}
+							}
+						}
+					}
+					else
+					{
+						// 離されている
+
+						if( axisActionElement.KeyRepeatKeepFlag == true )
+						{
+							// リピート解除
+							axisActionElement.IsKeyUp = axisActionElement.KeyRepeatKeepData ;
+
+							axisActionElement.KeyRepeatKeepFlag = false ;
+							axisActionElement.KeyRepeatKeepData = Vector2.zero ;
+						}
+					}
+				}
+			}
+		}
 
 		//---------------
 		// ボタン関連
 
-		/// <summary>
-		/// 全てのボタンが押されているかどうか判定する
-		/// </summary>
-		/// <param name="playerNumber"></param>
-		/// <returns></returns>
-		public static int GetButtonAll( int playerNumber = -1 )
+		// 全てのボタンが押されているかどうか判定する
+		private static int CheckButtonAll( int playerNumber = -1 )
 		{
 			// modeEnabled を判定条件に入れないのは、マウスとキーボードを同時入力するケースを考慮するため
 			if( m_Owner == null || m_Owner.ControlEnabled == false || m_Owner.InputSwitching == true || Enabled == false )
 			{
 				// 無効
 				return 0 ;
-			}
-
-			if( m_Owner.IgnoreInputSwitching == false && _Owner.InputProcessingType == InputProcessingTypes.Switching )
-			{
-				if( m_Owner.LastInputType == InputTypes.Pointer )
-				{
-					// 無効
-					return 0 ;
-				}
 			}
 
 			//----------------------------------
@@ -1543,6 +1618,31 @@ namespace uGUIHelper.InputAdapter
 		}
 
 		/// <summary>
+		/// 全てのボタンが押されているかどうか判定する
+		/// </summary>
+		/// <param name="playerNumber"></param>
+		/// <returns></returns>
+		public static int GetButtonAll( int playerNumber = -1 )
+		{
+			// modeEnabled を判定条件に入れないのは、マウスとキーボードを同時入力するケースを考慮するため
+			if( m_Owner == null || m_Owner.ControlEnabled == false || Enabled == false )
+			{
+				// 無効
+				return 0 ;
+			}
+
+			//----------------------------------
+
+			if( m_Implementation == null )
+			{
+				throw new Exception( "Not implemented." ) ;
+			}
+			return m_Implementation.GetButtonAll( playerNumber ) ;
+		}
+
+		//-----
+
+		/// <summary>
 		/// ボタンが押されているかどうか判定する
 		/// </summary>
 		/// <param name="buttonIdentity"></param>
@@ -1551,19 +1651,10 @@ namespace uGUIHelper.InputAdapter
 		public static bool GetButton( int buttonIdentity, int playerNumber = -1 )
 		{
 			// modeEnabled を判定条件に入れないのは、マウスとキーボードを同時入力するケースを考慮するため
-			if( m_Owner == null || m_Owner.ControlEnabled == false || m_Owner.InputSwitching == true || Enabled == false )
+			if( m_Owner == null || m_Owner.ControlEnabled == false || Enabled == false )
 			{
 				// 無効
 				return false ;
-			}
-
-			if( m_Owner.IgnoreInputSwitching == false && _Owner.InputProcessingType == InputProcessingTypes.Switching )
-			{
-				if( m_Owner.LastInputType == InputTypes.Pointer )
-				{
-					// 無効
-					return false ;
-				}
 			}
 
 			// ゲームパッドの接続数が 0 でもキーボード入力があるので以下の処理は必要
@@ -1579,13 +1670,23 @@ namespace uGUIHelper.InputAdapter
 		}
 
 		/// <summary>
-		/// ボタンが押されたかどうか判定する
+		/// 任意のアクションに割り当てられたボタンが押されているかどうか判定する
 		/// </summary>
-		/// <param name="buttonIdentity"></param>
+		/// <param name="actionName"></param>
 		/// <param name="playerNumber"></param>
 		/// <returns></returns>
-		public static bool GetButtonDown( int buttonIdentity, int playerNumber = -1 )
+		public static bool GetButton( string actionName, int playerNumber = -1 )
 		{
+			if( m_ButtonActionElements.ContainsKey( actionName ) == false )
+			{
+				Debug.LogWarning( "ボタンアクションへの登録が無い : " + actionName ) ;
+				return false ;
+			}
+
+			var buttonActionElement = m_ButtonActionElements[ actionName ] ;
+
+			//----------------------------------
+
 			// modeEnabled を判定条件に入れないのは、マウスとキーボードを同時入力するケースを考慮するため
 			if( m_Owner == null || m_Owner.ControlEnabled == false || m_Owner.InputSwitching == true || Enabled == false )
 			{
@@ -1595,10 +1696,13 @@ namespace uGUIHelper.InputAdapter
 
 			if( m_Owner.IgnoreInputSwitching == false && _Owner.InputProcessingType == InputProcessingTypes.Switching )
 			{
-				if( m_Owner.LastInputType == InputTypes.Pointer )
+				if( buttonActionElement.InputCategory == InputCategories.Basis )
 				{
-					// 無効
-					return false ;
+					if( m_Owner.ActiveBasisInputType != InputTypes.Keyboard && m_Owner.ActiveBasisInputType != InputTypes.GamePad )
+					{
+						// 無効
+						return false ;
+					}
 				}
 			}
 
@@ -1606,6 +1710,54 @@ namespace uGUIHelper.InputAdapter
 
 			//----------------------------------
 
+			if( m_Implementation == null )
+			{
+				throw new Exception( "Not implemented." ) ;
+			}
+
+			//----------------------------------------------------------
+
+			bool isPressed = false ;
+
+			var buttonIdentities = buttonActionElement.ButtonIdentities ;
+			if( buttonIdentities != null && buttonIdentities.Length >  0 )
+			{
+				foreach( var buttonIdentity in buttonIdentities )
+				{
+					if( m_Implementation.GetButton( buttonIdentity, playerNumber ) == true )
+					{
+						isPressed = true ;
+						break ;
+					}
+				}
+			}
+			if( isPressed == false )
+			{
+				if( playerNumber <= 0 )
+				{
+					var buttonKeyCodes = buttonActionElement.ButtonKeyCodes ;
+					if( buttonKeyCodes != null && buttonKeyCodes.Length >  0 )
+					{
+						foreach( var buttonKeyCode in buttonKeyCodes )
+						{
+							if( Keyboard.GetKey( buttonKeyCode ) == true )
+							{
+								isPressed = true ;
+								break ;
+							}
+						}
+					}
+				}
+			}
+
+			return isPressed ;
+		}
+
+		//-----
+
+		// ボタンが押されたかどうか判定する
+		private static bool CheckButtonDown( int buttonIdentity, int playerNumber = -1 )
+		{
 			int buttonIndex = m_ButtonIdentityToIndex[ buttonIdentity ] ;
 
 			int p, ps, pe ;
@@ -1642,13 +1794,45 @@ namespace uGUIHelper.InputAdapter
 		}
 
 		/// <summary>
-		/// ボタンが離されたかどうか判定する
+		/// ボタンが押されたかどうか判定する
 		/// </summary>
 		/// <param name="buttonIdentity"></param>
 		/// <param name="playerNumber"></param>
 		/// <returns></returns>
-		public static bool GetButtonUp( int buttonIdentity, int playerNumber = -1 )
+		public static bool GetButtonDown( int buttonIdentity, int playerNumber = -1 )
 		{
+			// modeEnabled を判定条件に入れないのは、マウスとキーボードを同時入力するケースを考慮するため
+			if( m_Owner == null || m_Owner.ControlEnabled == false || Enabled == false )
+			{
+				// 無効
+				return false ;
+			}
+
+			// ゲームパッドの接続数が 0 でもキーボード入力があるので以下の処理は必要
+
+			//----------------------------------
+
+			return CheckButtonDown( buttonIdentity, playerNumber ) ;
+		}
+
+		/// <summary>
+		/// 任意のアクションに割り当てられたボタンが押されたかどうか判定する
+		/// </summary>
+		/// <param name="actionName"></param>
+		/// <param name="playerNumber"></param>
+		/// <returns></returns>
+		public static bool GetButtonDown( string actionName, int playerNumber = -1 )
+		{
+			if( m_ButtonActionElements.ContainsKey( actionName ) == false )
+			{
+				Debug.LogWarning( "ボタンアクションへの登録が無い : " + actionName ) ;
+				return false ;
+			}
+
+			var buttonActionElement = m_ButtonActionElements[ actionName ] ;
+
+			//----------------------------------
+
 			// modeEnabled を判定条件に入れないのは、マウスとキーボードを同時入力するケースを考慮するため
 			if( m_Owner == null || m_Owner.ControlEnabled == false || m_Owner.InputSwitching == true || Enabled == false )
 			{
@@ -1658,10 +1842,13 @@ namespace uGUIHelper.InputAdapter
 
 			if( m_Owner.IgnoreInputSwitching == false && _Owner.InputProcessingType == InputProcessingTypes.Switching )
 			{
-				if( m_Owner.LastInputType == InputTypes.Pointer )
+				if( buttonActionElement.InputCategory == InputCategories.Basis )
 				{
-					// 無効
-					return false ;
+					if( m_Owner.ActiveBasisInputType != InputTypes.Keyboard && m_Owner.ActiveBasisInputType != InputTypes.GamePad )
+					{
+						// 無効
+						return false ;
+					}
 				}
 			}
 
@@ -1669,6 +1856,47 @@ namespace uGUIHelper.InputAdapter
 
 			//----------------------------------
 
+			if( m_Implementation == null )
+			{
+				throw new Exception( "Not implemented." ) ;
+			}
+
+			//----------------------------------------------------------
+
+			bool isDown = false ;
+
+			var buttonIdentities = buttonActionElement.ButtonIdentities ;
+			if( buttonIdentities != null && buttonIdentities.Length >  0 )
+			{
+				foreach( var buttonIdentity in buttonIdentities )
+				{
+					if( CheckButtonDown( buttonIdentity, playerNumber ) == true )
+					{
+						isDown = true ;
+						break ;
+					}
+				}
+			}
+			if( isDown == false )
+			{
+				if( playerNumber <= 0 )
+				{
+					var buttonKeyCodes = buttonActionElement.ButtonKeyCodes ;
+					if( buttonKeyCodes != null && buttonKeyCodes.Length >  0 )
+					{
+						isDown = buttonActionElement.IsKeyDown ;
+					}
+				}
+			}
+
+			return isDown ;
+		}
+
+		//-----
+
+		// ボタンが離されたかどうか判定する
+		private static bool CheckButtonUp( int buttonIdentity, int playerNumber = -1 )
+		{
 			int buttonIndex = m_ButtonIdentityToIndex[ buttonIdentity ] ;
 
 			int p, ps, pe ;
@@ -1683,14 +1911,14 @@ namespace uGUIHelper.InputAdapter
 			if( playerNumber < 0 || playerNumber >= max )
 			{
 				// 全プレイヤーで判定
-				ps = 0;
-				pe = max - 1;
+				ps = 0 ;
+				pe = max - 1 ;
 			}
 			else
 			{
 				// 各プレイヤーで判定
-				ps = playerNumber;
-				pe = playerNumber;
+				ps = playerNumber ;
+				pe = playerNumber ;
 			}
 
 			for( p  = ps ; p <= pe ; p ++ )
@@ -1705,25 +1933,61 @@ namespace uGUIHelper.InputAdapter
 		}
 
 		/// <summary>
-		/// ボタンが押されているかどうか判定する(リピート有効)
+		/// ボタンが離されたかどうか判定する
 		/// </summary>
 		/// <param name="buttonIdentity"></param>
 		/// <param name="playerNumber"></param>
 		/// <returns></returns>
-		public static bool GetButtonRepeat( int buttonIdentity, int playerNumber = -1 )
+		public static bool GetButtonUp( int buttonIdentity, int playerNumber = -1 )
 		{
+			// modeEnabled を判定条件に入れないのは、マウスとキーボードを同時入力するケースを考慮するため
+			if( m_Owner == null || m_Owner.ControlEnabled == false || Enabled == false )
+			{
+				// 無効
+				return false ;
+			}
+
+			// ゲームパッドの接続数が 0 でもキーボード入力があるので以下の処理は必要
+
+			//----------------------------------
+
+			return CheckButtonUp( buttonIdentity, playerNumber ) ;
+		}
+
+		/// <summary>
+		/// 任意のアクションに割り当てられたボタンが離されたどうか判定する
+		/// </summary>
+		/// <param name="actionName"></param>
+		/// <param name="playerNumber"></param>
+		/// <returns></returns>
+		public static bool GetButtonUp( string actionName, int playerNumber = -1 )
+		{
+			if( m_ButtonActionElements.ContainsKey( actionName ) == false )
+			{
+				Debug.LogWarning( "ボタンアクションへの登録が無い : " + actionName ) ;
+				return false ;
+			}
+
+			var buttonActionElement = m_ButtonActionElements[ actionName ] ;
+
+			//----------------------------------
+
 			// modeEnabled を判定条件に入れないのは、マウスとキーボードを同時入力するケースを考慮するため
 			if( m_Owner == null || m_Owner.ControlEnabled == false || m_Owner.InputSwitching == true || Enabled == false )
 			{
+				// 無効
 				return false ;
 			}
 
 			if( m_Owner.IgnoreInputSwitching == false && _Owner.InputProcessingType == InputProcessingTypes.Switching )
 			{
-				if( m_Owner.LastInputType == InputTypes.Pointer )
+				if( buttonActionElement.InputCategory == InputCategories.Basis )
 				{
-					// 無効
-					return false ;
+					if( m_Owner.ActiveBasisInputType != InputTypes.Keyboard && m_Owner.ActiveBasisInputType != InputTypes.GamePad )
+					{
+						// 無効
+						return false ;
+					}
 				}
 			}
 
@@ -1731,6 +1995,47 @@ namespace uGUIHelper.InputAdapter
 
 			//----------------------------------
 
+			if( m_Implementation == null )
+			{
+				throw new Exception( "Not implemented." ) ;
+			}
+
+			//----------------------------------------------------------
+
+			bool isUp = false ;
+
+			var buttonIdentities = buttonActionElement.ButtonIdentities ;
+			if( buttonIdentities != null && buttonIdentities.Length >  0 )
+			{
+				foreach( var buttonIdentity in buttonIdentities )
+				{
+					if( CheckButtonUp( buttonIdentity, playerNumber ) == true )
+					{
+						isUp = true ;
+						break ;
+					}
+				}
+			}
+			if( isUp == false )
+			{
+				if( playerNumber <= 0 )
+				{
+					var buttonKeyCodes = buttonActionElement.ButtonKeyCodes ;
+					if( buttonKeyCodes != null && buttonKeyCodes.Length >  0 )
+					{
+						isUp = buttonActionElement.IsKeyUp ;
+					}
+				}
+			}
+
+			return isUp ;
+		}
+
+		//-----
+
+		// ボタンが押されているかどうか判定する(リピート有効)
+		private static bool CheckButtonRepeat( int buttonIdentity, int playerNumber = -1 )
+		{
 			int buttonIndex = m_ButtonIdentityToIndex[ buttonIdentity ] ;
 
 			int p, ps, pe ;
@@ -1766,6 +2071,104 @@ namespace uGUIHelper.InputAdapter
 			return false ;
 		}
 
+		/// <summary>
+		/// ボタンが押されているかどうか判定する(リピート有効)
+		/// </summary>
+		/// <param name="buttonIdentity"></param>
+		/// <param name="playerNumber"></param>
+		/// <returns></returns>
+		public static bool GetButtonRepeat( int buttonIdentity, int playerNumber = -1 )
+		{
+			// modeEnabled を判定条件に入れないのは、マウスとキーボードを同時入力するケースを考慮するため
+			if( m_Owner == null || m_Owner.ControlEnabled == false || Enabled == false )
+			{
+				return false ;
+			}
+
+			// ゲームパッドの接続数が 0 でもキーボード入力があるので以下の処理は必要
+
+			//----------------------------------
+
+			return CheckButtonRepeat( buttonIdentity, playerNumber ) ;
+		}
+
+		/// <summary>
+		/// 任意のアクションに割り当てられたボタンが押されているかどうか判定する(リピート有効)
+		/// </summary>
+		/// <param name="actionName"></param>
+		/// <param name="playerNumber"></param>
+		/// <returns></returns>
+		public static bool GetButtonRepeat( string actionName, int playerNumber = -1 )
+		{
+			if( m_ButtonActionElements.ContainsKey( actionName ) == false )
+			{
+				Debug.LogWarning( "ボタンアクションへの登録が無い : " + actionName ) ;
+				return false ;
+			}
+
+			var buttonActionElement = m_ButtonActionElements[ actionName ] ;
+
+			//----------------------------------
+
+			// modeEnabled を判定条件に入れないのは、マウスとキーボードを同時入力するケースを考慮するため
+			if( m_Owner == null || m_Owner.ControlEnabled == false || m_Owner.InputSwitching == true || Enabled == false )
+			{
+				// 無効
+				return false ;
+			}
+
+			if( m_Owner.IgnoreInputSwitching == false && _Owner.InputProcessingType == InputProcessingTypes.Switching )
+			{
+				if( buttonActionElement.InputCategory == InputCategories.Basis )
+				{
+					if( m_Owner.ActiveBasisInputType != InputTypes.Keyboard && m_Owner.ActiveBasisInputType != InputTypes.GamePad )
+					{
+						// 無効
+						return false ;
+					}
+				}
+			}
+
+			// ゲームパッドの接続数が 0 でもキーボード入力があるので以下の処理は必要
+
+			//----------------------------------
+
+			if( m_Implementation == null )
+			{
+				throw new Exception( "Not implemented." ) ;
+			}
+
+			//----------------------------------------------------------
+
+			bool isRepeat = false ;
+
+			var buttonIdentities = buttonActionElement.ButtonIdentities ;
+			if( buttonIdentities != null && buttonIdentities.Length >  0 )
+			{
+				foreach( var buttonIdentity in buttonIdentities )
+				{
+					if( CheckButtonRepeat( buttonIdentity, playerNumber ) == true )
+					{
+						isRepeat = true ;
+						break ;
+					}
+				}
+			}
+			if( isRepeat == false )
+			{
+				if( playerNumber <= 0 )
+				{
+					var buttonKeyCodes = buttonActionElement.ButtonKeyCodes ;
+					if( buttonKeyCodes != null && buttonKeyCodes.Length >  0 )
+					{
+						isRepeat = buttonActionElement.IsKeyRepeat ;
+					}
+				}
+			}
+
+			return isRepeat ;
+		}
+
 		//---------------
 		// アクシス関連
 
@@ -1778,19 +2181,10 @@ namespace uGUIHelper.InputAdapter
 		public static Vector2 GetAxis( int axisIdentity, int playerNumber = -1 )
 		{
 			// modeEnabled を判定条件に入れないのは、マウスとキーボードを同時入力するケースを考慮するため
-			if( m_Owner == null || m_Owner.ControlEnabled == false || m_Owner.InputSwitching == true || Enabled == false )
+			if( m_Owner == null || m_Owner.ControlEnabled == false || Enabled == false )
 			{
 				// 無効
 				return Vector2.zero ;
-			}
-
-			if( m_Owner.IgnoreInputSwitching == false && _Owner.InputProcessingType == InputProcessingTypes.Switching )
-			{
-				if( m_Owner.LastInputType == InputTypes.Pointer )
-				{
-					// 無効
-					return Vector2.zero ;
-				}
 			}
 
 			// ゲームパッドの接続数が 0 でもキーボード入力があるので以下の処理は必要
@@ -1805,13 +2199,23 @@ namespace uGUIHelper.InputAdapter
 		}
 
 		/// <summary>
-		/// アクシス(デジタル扱い)が押されたかどうか判定する
+		/// 任意のアクションに割り当てられたアクシスが押されているかどうか判定する
 		/// </summary>
 		/// <param name="axisIdentity"></param>
 		/// <param name="playerNumber"></param>
 		/// <returns></returns>
-		public static Vector2 GetAxisDown( int axisIdentity, int playerNumber = -1 )
+		public static Vector2 GetAxis( string actionName, int playerNumber = -1 )
 		{
+			if( m_AxisActionElements.ContainsKey( actionName ) == false )
+			{
+				Debug.LogWarning( "アクシスアクションへの登録が無い : " + actionName ) ;
+				return Vector2.zero ;
+			}
+
+			var axisActionElement = m_AxisActionElements[ actionName ] ;
+
+			//----------------------------------
+
 			// modeEnabled を判定条件に入れないのは、マウスとキーボードを同時入力するケースを考慮するため
 			if( m_Owner == null || m_Owner.ControlEnabled == false || m_Owner.InputSwitching == true || Enabled == false )
 			{
@@ -1821,10 +2225,13 @@ namespace uGUIHelper.InputAdapter
 
 			if( m_Owner.IgnoreInputSwitching == false && _Owner.InputProcessingType == InputProcessingTypes.Switching )
 			{
-				if( m_Owner.LastInputType == InputTypes.Pointer )
+				if( axisActionElement.InputCategory == InputCategories.Basis )
 				{
-					// 無効
-					return Vector2.zero ;
+					if( m_Owner.ActiveBasisInputType != InputTypes.Keyboard && m_Owner.ActiveBasisInputType != InputTypes.GamePad )
+					{
+						// 無効
+						return Vector2.zero ;
+					}
 				}
 			}
 
@@ -1832,7 +2239,80 @@ namespace uGUIHelper.InputAdapter
 
 			//----------------------------------
 
-			int axisIndex = m_AxisIdentityToIndex[ axisIdentity ] ;
+			if( m_Implementation == null )
+			{
+				throw new Exception( "Not implemented." ) ;
+			}
+
+			//----------------------------------------------------------
+
+			Vector2 fixedAxis = Vector2.zero ;
+
+			var axisNumbers = axisActionElement.AxisNumbers ;
+			if( axisNumbers != null && axisNumbers.Length >  0 )
+			{
+				foreach( var axisNumber in axisNumbers )
+				{
+					var axis = m_Implementation.GetAxis( axisNumber, playerNumber ) ;
+					if( axis.x != 0 )
+					{
+						fixedAxis.x = axis.x ;
+					}
+					if( axis.y != 0 )
+					{
+						fixedAxis.y = axis.y ;
+					}
+				}
+			}
+			if( playerNumber <= 0 )
+			{
+				var axisKeyCodes = axisActionElement.AxisKeyCodes ;
+				if( axisKeyCodes != null && axisKeyCodes.Length >  0 )
+				{
+					foreach( var axisKeyCode in axisKeyCodes )
+					{
+						if( axisKeyCode != null && axisKeyCode.Length == 4 )
+						{
+							if( fixedAxis.x == 0 )
+							{
+								// →
+								if( Keyboard.GetKey( axisKeyCode[ 0 ] ) == true )
+								{
+									fixedAxis.x += 1 ;
+								}
+								// ←
+								if( Keyboard.GetKey( axisKeyCode[ 1 ] ) == true )
+								{
+									fixedAxis.x -= 1 ;
+								}
+							}
+							if( fixedAxis.y == 0 )
+							{
+								// ↑
+								if( Keyboard.GetKey( axisKeyCode[ 2 ] ) == true )
+								{
+									fixedAxis.y += 1 ;
+								}
+								// ↓
+								if( Keyboard.GetKey( axisKeyCode[ 3 ] ) == true )
+								{
+									fixedAxis.y -= 1 ;
+								}
+							}
+						}
+					}
+				}
+			}
+
+			return fixedAxis ;
+		}
+
+		//-----
+
+		// アクシス(デジタル扱い)が押されたかどうか判定する
+		private static Vector2 CheckAxisDown( int axisNumber, int playerNumber = -1 )
+		{
+			int axisIndex = m_AxisNumberToIndex[ axisNumber ] ;
 
 			int p, ps, pe ;
 
@@ -1875,13 +2355,44 @@ namespace uGUIHelper.InputAdapter
 		}
 
 		/// <summary>
-		/// アクシス(デジタル扱い)が離されたかどうか判定する
+		/// アクシス(デジタル扱い)が押されたかどうか判定する
 		/// </summary>
 		/// <param name="axisIdentity"></param>
 		/// <param name="playerNumber"></param>
 		/// <returns></returns>
-		public static Vector2 GetAxisUp( int axisIdentity, int playerNumber = -1 )
+		public static Vector2 GetAxisDown( int axisNumber, int playerNumber = -1 )
 		{
+			// modeEnabled を判定条件に入れないのは、マウスとキーボードを同時入力するケースを考慮するため
+			if( m_Owner == null || m_Owner.ControlEnabled == false || Enabled == false )
+			{
+				// 無効
+				return Vector2.zero ;
+			}
+
+			// ゲームパッドの接続数が 0 でもキーボード入力があるので以下の処理は必要
+
+			//----------------------------------
+
+			return CheckAxisDown( axisNumber, playerNumber ) ;
+		}
+
+		/// <summary>
+		/// 任意のアクションに割り当てられたアクシスが押されたかどうか判定する
+		/// </summary>
+		/// <param name="axisIdentity"></param>
+		/// <param name="playerNumber"></param>
+		/// <returns></returns>
+		public static Vector2 GetAxisDown( string actionName, int playerNumber = -1 )
+		{
+			if( m_AxisActionElements.ContainsKey( actionName ) == false )
+			{
+				Debug.LogWarning( "アクシスアクションへの登録が無い : " + actionName ) ;
+				return Vector2.zero ;
+			}
+
+			var axisActionElement = m_AxisActionElements[ actionName ] ;
+
+			//----------------------------------
 			// modeEnabled を判定条件に入れないのは、マウスとキーボードを同時入力するケースを考慮するため
 			if( m_Owner == null || m_Owner.ControlEnabled == false || m_Owner.InputSwitching == true || Enabled == false )
 			{
@@ -1891,10 +2402,13 @@ namespace uGUIHelper.InputAdapter
 
 			if( m_Owner.IgnoreInputSwitching == false && _Owner.InputProcessingType == InputProcessingTypes.Switching )
 			{
-				if( m_Owner.LastInputType == InputTypes.Pointer )
+				if( axisActionElement.InputCategory == InputCategories.Basis )
 				{
-					// 無効
-					return Vector2.zero ;
+					if( m_Owner.ActiveBasisInputType != InputTypes.Keyboard && m_Owner.ActiveBasisInputType != InputTypes.GamePad )
+					{
+						// 無効
+						return Vector2.zero ;
+					}
 				}
 			}
 
@@ -1902,7 +2416,57 @@ namespace uGUIHelper.InputAdapter
 
 			//----------------------------------
 
-			int axisIndex = m_AxisIdentityToIndex[ axisIdentity ] ;
+			if( m_Implementation == null )
+			{
+				throw new Exception( "Not implemented." ) ;
+			}
+
+			//----------------------------------------------------------
+
+			Vector2 fixedAxisDown = Vector2.zero ;
+
+			var axisNumbers = axisActionElement.AxisNumbers ;
+			if( axisNumbers != null && axisNumbers.Length >  0 )
+			{
+				foreach( var axisNumber in axisNumbers )
+				{
+					var axis = CheckAxisDown( axisNumber, playerNumber ) ;
+					if( axis.x != 0 )
+					{
+						fixedAxisDown.x = axis.x ;
+					}
+					if( axis.y != 0 )
+					{
+						fixedAxisDown.y = axis.y ;
+					}
+				}
+			}
+			if( playerNumber <= 0 )
+			{
+				var axisKeyCodes = axisActionElement.AxisKeyCodes ;
+				if( axisKeyCodes != null && axisKeyCodes.Length >  0 )
+				{
+					var axis = axisActionElement.IsKeyDown ;
+					if( axis.x != 0 )
+					{
+						fixedAxisDown.x = axis.x ;
+					}
+					if( axis.y != 0 )
+					{
+						fixedAxisDown.y = axis.y ;
+					}
+				}
+			}
+
+			return fixedAxisDown ;
+		}
+
+		//-----
+
+		// アクシス(デジタル扱い)が離されたかどうか判定する
+		private static Vector2 CheckAxisUp( int axisNumber, int playerNumber = -1 )
+		{
+			int axisIndex = m_AxisNumberToIndex[ axisNumber ] ;
 
 			int p, ps, pe ;
 
@@ -1945,13 +2509,45 @@ namespace uGUIHelper.InputAdapter
 		}
 
 		/// <summary>
-		/// アクシス(デジタル扱い)が押されているかどうか判定する(リピート有効)
+		/// アクシス(デジタル扱い)が離されたかどうか判定する
 		/// </summary>
 		/// <param name="axisIdentity"></param>
 		/// <param name="playerNumber"></param>
 		/// <returns></returns>
-		public static Vector2 GetAxisRepeat( int axisIdentity, int playerNumber = -1 )
+		public static Vector2 GetAxisUp( int axisNumber, int playerNumber = -1 )
 		{
+			// modeEnabled を判定条件に入れないのは、マウスとキーボードを同時入力するケースを考慮するため
+			if( m_Owner == null || m_Owner.ControlEnabled == false || Enabled == false )
+			{
+				// 無効
+				return Vector2.zero ;
+			}
+
+			// ゲームパッドの接続数が 0 でもキーボード入力があるので以下の処理は必要
+
+			//----------------------------------
+
+			return CheckAxisUp( axisNumber, playerNumber ) ;
+		}
+
+		/// <summary>
+		/// 任意のアクションに割り当てられたアクシスが離されたかどうか判定する
+		/// </summary>
+		/// <param name="axisIdentity"></param>
+		/// <param name="playerNumber"></param>
+		/// <returns></returns>
+		public static Vector2 GetAxisUp( string actionName, int playerNumber = -1 )
+		{
+			if( m_AxisActionElements.ContainsKey( actionName ) == false )
+			{
+				Debug.LogWarning( "アクシスアクションへの登録が無い : " + actionName ) ;
+				return Vector2.zero ;
+			}
+
+			var axisActionElement = m_AxisActionElements[ actionName ] ;
+
+			//----------------------------------
+
 			// modeEnabled を判定条件に入れないのは、マウスとキーボードを同時入力するケースを考慮するため
 			if( m_Owner == null || m_Owner.ControlEnabled == false || m_Owner.InputSwitching == true || Enabled == false )
 			{
@@ -1961,10 +2557,13 @@ namespace uGUIHelper.InputAdapter
 
 			if( m_Owner.IgnoreInputSwitching == false && _Owner.InputProcessingType == InputProcessingTypes.Switching )
 			{
-				if( m_Owner.LastInputType == InputTypes.Pointer )
+				if( axisActionElement.InputCategory == InputCategories.Basis )
 				{
-					// 無効
-					return Vector2.zero ;
+					if( m_Owner.ActiveBasisInputType != InputTypes.Keyboard && m_Owner.ActiveBasisInputType != InputTypes.GamePad )
+					{
+						// 無効
+						return Vector2.zero ;
+					}
 				}
 			}
 
@@ -1972,7 +2571,57 @@ namespace uGUIHelper.InputAdapter
 
 			//----------------------------------
 
-			int axisIndex = m_AxisIdentityToIndex[ axisIdentity ] ;
+			if( m_Implementation == null )
+			{
+				throw new Exception( "Not implemented." ) ;
+			}
+
+			//----------------------------------------------------------
+
+			Vector2 fixedAxisUp = Vector2.zero ;
+
+			var axisNumbers = axisActionElement.AxisNumbers ;
+			if( axisNumbers != null && axisNumbers.Length >  0 )
+			{
+				foreach( var axisNumber in axisNumbers )
+				{
+					var axis = CheckAxisUp( axisNumber, playerNumber ) ;
+					if( axis.x != 0 )
+					{
+						fixedAxisUp.x = axis.x ;
+					}
+					if( axis.y != 0 )
+					{
+						fixedAxisUp.y = axis.y ;
+					}
+				}
+			}
+			if( playerNumber <= 0 )
+			{
+				var axisKeyCodes = axisActionElement.AxisKeyCodes ;
+				if( axisKeyCodes != null && axisKeyCodes.Length >  0 )
+				{
+					var axis = axisActionElement.IsKeyUp ;
+					if( axis.x != 0 )
+					{
+						fixedAxisUp.x = axis.x ;
+					}
+					if( axis.y != 0 )
+					{
+						fixedAxisUp.y = axis.y ;
+					}
+				}
+			}
+
+			return fixedAxisUp ;
+		}
+
+		//-----
+
+		// アクシス(デジタル扱い)が押されているかどうか判定する(リピート有効)
+		private static Vector2 CheckAxisRepeat( int axisNumber, int playerNumber = -1 )
+		{
+			int axisIndex = m_AxisNumberToIndex[ axisNumber ] ;
 
 			int p, ps, pe ;
 
@@ -2014,7 +2663,227 @@ namespace uGUIHelper.InputAdapter
 			return oAxis ;
 		}
 
-		//---------------
+		/// <summary>
+		/// アクシス(デジタル扱い)が押されているかどうか判定する(リピート有効)
+		/// </summary>
+		/// <param name="axisIdentity"></param>
+		/// <param name="playerNumber"></param>
+		/// <returns></returns>
+		public static Vector2 GetAxisRepeat( int axisNumber, int playerNumber = -1 )
+		{
+			// modeEnabled を判定条件に入れないのは、マウスとキーボードを同時入力するケースを考慮するため
+			if( m_Owner == null || m_Owner.ControlEnabled == false || Enabled == false )
+			{
+				// 無効
+				return Vector2.zero ;
+			}
+
+			// ゲームパッドの接続数が 0 でもキーボード入力があるので以下の処理は必要
+
+			//----------------------------------
+
+			return CheckAxisRepeat( axisNumber, playerNumber ) ;
+		}
+
+		/// <summary>
+		/// 任意のアクションに割り当てられたアクシスが押されているかどうか判定する(リピート有効)
+		/// </summary>
+		/// <param name="axisIdentity"></param>
+		/// <param name="playerNumber"></param>
+		/// <returns></returns>
+		public static Vector2 GetAxisRepeat( string actionName, int playerNumber = -1 )
+		{
+			if( m_AxisActionElements.ContainsKey( actionName ) == false )
+			{
+				Debug.LogWarning( "アクシスアクションへの登録が無い : " + actionName ) ;
+				return Vector2.zero ;
+			}
+
+			var axisActionElement = m_AxisActionElements[ actionName ] ;
+
+			//----------------------------------
+
+			// modeEnabled を判定条件に入れないのは、マウスとキーボードを同時入力するケースを考慮するため
+			if( m_Owner == null || m_Owner.ControlEnabled == false || m_Owner.InputSwitching == true || Enabled == false )
+			{
+				// 無効
+				return Vector2.zero ;
+			}
+
+			if( m_Owner.IgnoreInputSwitching == false && _Owner.InputProcessingType == InputProcessingTypes.Switching )
+			{
+				if( axisActionElement.InputCategory == InputCategories.Basis )
+				{
+					if( m_Owner.ActiveBasisInputType != InputTypes.Keyboard && m_Owner.ActiveBasisInputType != InputTypes.GamePad )
+					{
+						// 無効
+						return Vector2.zero ;
+					}
+				}
+			}
+
+			// ゲームパッドの接続数が 0 でもキーボード入力があるので以下の処理は必要
+
+			//----------------------------------
+
+			if( m_Implementation == null )
+			{
+				throw new Exception( "Not implemented." ) ;
+			}
+
+			//----------------------------------------------------------
+
+			Vector2 fixedAxisRepeat = Vector2.zero ;
+
+			var axisNumbers = axisActionElement.AxisNumbers ;
+			if( axisNumbers != null && axisNumbers.Length >  0 )
+			{
+				foreach( var axisNumber in axisNumbers )
+				{
+					var axis = CheckAxisRepeat( axisNumber, playerNumber ) ;
+					if( axis.x != 0 )
+					{
+						fixedAxisRepeat.x = axis.x ;
+					}
+					if( axis.y != 0 )
+					{
+						fixedAxisRepeat.y = axis.y ;
+					}
+				}
+			}
+			if( playerNumber <= 0 )
+			{
+				var axisKeyCodes = axisActionElement.AxisKeyCodes ;
+				if( axisKeyCodes != null && axisKeyCodes.Length >  0 )
+				{
+					var axis = axisActionElement.IsKeyRepeat ;
+					if( axis.x != 0 )
+					{
+						fixedAxisRepeat.x = axis.x ;
+					}
+					if( axis.y != 0 )
+					{
+						fixedAxisRepeat.y = axis.y ;
+					}
+				}
+			}
+
+			return fixedAxisRepeat ;
+		}
+
+		//-----------------------------------------------------------
+		// 内部的なメソッド
+
+		/// <summary>
+		/// キーボードの入力が行われているかどうか判定する
+		/// </summary>
+		/// <returns></returns>
+		public static bool IsKeyboardInput( InputCategories inputCategory )
+		{
+			// ボタンのキーボード判定
+			foreach( var buttonActionElement in m_ButtonActionElements.Values )
+			{
+				if( buttonActionElement.InputCategory == inputCategory )
+				{
+					if( buttonActionElement.ButtonKeyCodes != null && buttonActionElement.ButtonKeyCodes.Length >  0 )
+					{
+						foreach( var buttonKeyCode in buttonActionElement.ButtonKeyCodes )
+						{
+							if( Keyboard.GetKey( buttonKeyCode ) == true )
+							{
+								return true ;
+							}
+						}
+					}					
+				}
+			}
+
+			// アクシスのキーボード判定
+			foreach( var axisActionElement in m_AxisActionElements.Values )
+			{
+				if( axisActionElement.InputCategory == inputCategory )
+				{
+					if( axisActionElement.AxisKeyCodes != null && axisActionElement.AxisKeyCodes.Length >  0 )
+					{
+						foreach( var axisKeyCode in axisActionElement.AxisKeyCodes )
+						{
+							if( axisKeyCode != null && axisKeyCode.Length == 4 )
+							{
+								if( Keyboard.GetKey( axisKeyCode[ 0 ] ) == true )
+								{
+									return true ;
+								}
+								if( Keyboard.GetKey( axisKeyCode[ 1 ] ) == true )
+								{
+									return true ;
+								}
+								if( Keyboard.GetKey( axisKeyCode[ 2 ] ) == true )
+								{
+									return true ;
+								}
+								if( Keyboard.GetKey( axisKeyCode[ 3 ] ) == true )
+								{
+									return true ;
+								}
+							}
+						}
+					}
+				}
+			}
+
+			return false ;
+		}
+
+		/// <summary>
+		/// ゲームパッドの入力が行われているかどうか判定する
+		/// </summary>
+		/// <returns></returns>
+		public static bool IsGamePadInput( InputCategories inputCategory )
+		{
+			// ボタンのゲームパッド判定
+			foreach( var buttonActionElement in m_ButtonActionElements.Values )
+			{
+				if( buttonActionElement.InputCategory == inputCategory )
+				{
+					if( buttonActionElement.ButtonIdentities != null && buttonActionElement.ButtonIdentities.Length >  0 )
+					{
+						foreach( var buttonItentity in buttonActionElement.ButtonIdentities )
+						{
+							if( GamePad.GetButton( buttonItentity ) == true )
+							{
+								return true ;
+							}
+						}
+					}
+				}
+			}
+
+			// アクシスのゲームパッド判定
+			foreach( var axisActionElement in m_AxisActionElements.Values )
+			{
+				if( axisActionElement.InputCategory == inputCategory )
+				{
+					if( axisActionElement.AxisNumbers != null && axisActionElement.AxisNumbers.Length >  0 )
+					{
+						foreach( var axisNumber in axisActionElement.AxisNumbers )
+						{
+							var axis = GamePad.GetAxis( axisNumber ) ;
+							axis.x = axis.x <  0 ? - axis.x : axis.x ;
+							axis.y = axis.y <  0 ? - axis.y : axis.y ;
+
+							if( axis.x >  0.1f || axis.y >  0.1f )
+							{
+								return true ;
+							}
+						}
+					}
+				}
+			}
+
+			return false ;
+		}
+
+		//-----------------------------------------------------------
 		// 振動関連
 
 		/// <summary>

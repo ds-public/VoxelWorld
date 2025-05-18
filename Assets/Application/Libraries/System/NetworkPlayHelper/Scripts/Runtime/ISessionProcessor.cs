@@ -45,12 +45,6 @@ namespace NetworkPlayHelper
 		//-----------------------------------
 
 		/// <summary>
-		/// 受信コールバックタイプを設定する(受動的か能動的か)
-		/// </summary>
-		/// <param name="receivingCallbackType"></param>
-		public void SetReceivingCallbackType( ReceivingCallbackTypes receivingCallbackType ) ;
-
-		/// <summary>
 		/// 受信コールバックが能動的コールバックに設定されている場合にデータを受信済みならコールバックを発生させる
 		/// </summary>
 		/// <returns></returns>
@@ -72,7 +66,7 @@ namespace NetworkPlayHelper
 		/// <param name="destinationType"></param>
 		/// <param name="destinationUserIds"></param>
 		/// <param name="data"></param>
-		public bool Send( PacketTypes packetType, byte[] data, DestinationTypes destinationType = DestinationTypes.Broadcast, params string[] destinationUserIds ) ;
+		public bool Send( byte[] data, PacketTypes packetType, DestinationTypes destinationType = DestinationTypes.Broadcast, params string[] destinationUserIds ) ;
 
 		/// <summary>
 		/// 指定したユーザー識別子のプレイヤーをセッションからキックする

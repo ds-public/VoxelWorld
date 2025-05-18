@@ -27,7 +27,7 @@ namespace uGUIHelper
 	/// </summary>
 	public class UIView : UIBehaviour
 	{
-		public const string Version = "Version 2025/04/05 0" ;
+		public const string Version = "Version 2025/04/24 0" ;
 
 		// ソースコード
 		// https://bitbucket.org/Unity-Technologies/ui/src/2019.1/
@@ -11371,7 +11371,6 @@ namespace uGUIHelper
 			// つまり、矩形の中心座標のみで、
 			// レイキャストのヒット判定を行うという事である。
 
-
 			// 検査対象のスクリーン座標を計算する
 			( var targetAreaPoints, var targetCenterPoint ) = GetScreenArea( gameObject ) ;
 
@@ -11490,19 +11489,19 @@ namespace uGUIHelper
 		}
 
 		// レイキャストターゲットがブロッカーの内側に完全に隠されているか確認する
-		private bool IsCompleteBlocking( Vector2[] backKeyPoints, Vector2[] blockerPoints )
+		private bool IsCompleteBlocking( Vector2[] innerPoints, Vector2[] outerPoints )
 		{
-			int oi, ol = blockerPoints.Length ;
-			int ii, il = backKeyPoints.Length ;
+			int oi, ol = outerPoints.Length ;
+			int ii, il = innerPoints.Length ;
 
 			for( oi = 0 ; oi <  ol ; oi ++ )
 			{
-				var op0 = blockerPoints[ oi ] ;
-				var op1 = blockerPoints[ ( oi + 1 ) % ol ] ;
+				var op0 = outerPoints[ oi ] ;
+				var op1 = outerPoints[ ( oi + 1 ) % ol ] ;
 
 				for( ii = 0 ; ii <  il ; ii ++ )
 				{
-					var ip = backKeyPoints[ ii ] ;
+					var ip = innerPoints[ ii ] ;
 
 					// 外積を用いて表裏判定を行う(Cross)
 					var v0 = op1 - op0 ;

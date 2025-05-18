@@ -1323,7 +1323,13 @@ namespace uGUIHelper
 
 			if( Application.isPlaying == true )
 			{
-				var contentPosition = new Vector2( - m_Content.Rx,   m_Content.Ry ) ;
+				var content = Content ;
+				if( content == null )
+				{
+					Debug.LogWarning( "m_Content が null になっている" ) ;
+				}
+
+				var contentPosition = new Vector2( - content.Rx,   content.Ry ) ;
 				if( m_ContentPosition.Equals( contentPosition ) == false || m_ContentDirty == true )
 				{
 					m_ContentPosition = contentPosition ;

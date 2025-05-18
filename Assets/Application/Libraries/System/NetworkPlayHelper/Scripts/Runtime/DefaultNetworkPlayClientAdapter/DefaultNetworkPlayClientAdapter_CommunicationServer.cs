@@ -125,25 +125,27 @@ namespace NetworkPlayHelper
 				return new
 				(
 					ResponseCodes.InvalidApplicationIdentifier, "無効なアプリケーション識別子です",
-					null,
+					0,
 					0, SessionManagementTypes.HostManagement,
 					false, false, false,
-					null, 0
+					null, 0, 0,
+					null
 				) ;
 			}
 
 			//----------------------------------------------------------
 
-			if( string.IsNullOrEmpty( m_SessionId ) == false )
+			if( m_IsSessionJoined == true )
 			{
 				// 既にセッションに参加している(NetworkPlayClientインスタンス１つにつき参加できるセッションは１つまで)
 				return new
 				(
 					ResponseCodes.AlreadyJoinedSession, "既にセッションに参加しています",
-					null,
+					0,
 					0, SessionManagementTypes.HostManagement,
 					false, false, false,
-					null, 0
+					null, 0, 0,
+					null
 				) ;
 			}
 
@@ -171,16 +173,18 @@ namespace NetworkPlayHelper
 				requestContent.Encode(),
 				cancellationToken
 			) ;
+
 			if( responseCode != ResponseCodes.Succeeded )
 			{
 				// 失敗
 				return new
 				(
 					responseCode, errorMessage,
-					null,
+					0,
 					0, SessionManagementTypes.HostManagement,
 					false, false, false,
-					null, 0
+					null, 0, 0,
+					null
 				) ;
 			}
 
@@ -194,14 +198,16 @@ namespace NetworkPlayHelper
 				return new
 				(
 					ResponseCodes.BadResponse, "受信データに問題があります",
-					null,
+					0,
 					0, SessionManagementTypes.HostManagement,
 					false, false, false,
-					null, 0
+					null, 0, 0,
+					null
 				) ;
 			}
 
 			// レスポンスの値を取り出す
+			m_IsSessionJoined       = true ;
 			m_SessionId				= responseContent.SessionId ;
 
 			m_MaxPlayers			= responseContent.MaxPlayers ;
@@ -213,8 +219,12 @@ namespace NetworkPlayHelper
 			// サーバーのセッションプロセッサーが使用可能かどうか
 			bool processorEnabled	= responseContent.ProcessorEnabled ;		// SessionProcessor を Server で生成する場合
 
-			m_SessionServerAddress	= responseContent.SessionServerAddress ;
-			m_SessionServerPort		= responseContent.SessionServerPort ;
+			m_ExchangeServerAddress	= responseContent.ExchangeServerAddress ;
+			m_ExchangeServerTcpPort	= responseContent.ExchangeServerTcpPort ;
+			m_ExchangeServerUdpPort	= responseContent.ExchangeServerUdpPort ;
+
+			// セッションに参加中のプレイヤー群
+			var sessionPlayers = responseContent.GetSessionPlayers() ;
 
 			//----------------------------------------------------------
 			// ※共通化したいが呼び出し元とコードがほとんど変わらないので共通化は断念
@@ -227,8 +237,8 @@ namespace NetworkPlayHelper
 
 			try
 			{
-				// セッションサーバーへＴＣＰ接続を行う
-				isConnected = await ConnectToSessionServer( m_SessionServerAddress, m_SessionServerPort, cancellationToken ) ;
+				// エクスチェンジサーバーへＴＣＰ接続を行う
+				isConnected = await ConnectToExchangeServer( m_ExchangeServerAddress, m_ExchangeServerTcpPort, cancellationToken ) ;
 			}
 			catch( Exception e )
 			{
@@ -253,10 +263,11 @@ namespace NetworkPlayHelper
 				return new
 				(
 					ResponseCodes.CouldNotConnectToSessionServer, "セッションサーバーに接続できません",
-					null,
+					0,
 					0, SessionManagementTypes.HostManagement,
 					false, false, false,
-					null, 0
+					null, 0, 0,
+					null
 				) ;
 			}
 
@@ -283,7 +294,7 @@ namespace NetworkPlayHelper
 
 				if( processorEnabled == true )
 				{
-					CallOnActiveInSessionProcessor( new SessionPlayer[]{ new ( UserId, PlayerName, false, true ) } ) ;
+					CallOnActive_ForSessionProcessor( new SessionPlayer[]{ new ( UserId, PlayerName, false, true ) } ) ;
 				}
 			}
 
@@ -296,7 +307,8 @@ namespace NetworkPlayHelper
 				m_SessionId,
 				m_MaxPlayers, m_ManagementType,
 				m_UdpEnabled, m_UdpCorrectionEnabled, processorEnabled,
-				m_SessionServerAddress, m_SessionServerPort
+				m_ExchangeServerAddress, m_ExchangeServerTcpPort, m_ExchangeServerUdpPort,
+				sessionPlayers
 			) ;
 		}
 
@@ -309,26 +321,13 @@ namespace NetworkPlayHelper
 		/// <returns></returns>
 		public async Task<JoinToSession_Response> JoinToSessionAsync
 		(
-			string sessionId,
-			string password,
-			string playerName,
+			ulong   sessionId,
+			string  password,
+			string  playerName,
 			CancellationToken cancellationToken	
 		)
 		{
-			if( string.IsNullOrEmpty( sessionId ) == true  )
-			{
-				// 無効なセッション識別子
-				return new
-				(
-					ResponseCodes.InvalidSessionIdentifier, "無効なセッション識別子です",
-					0, SessionManagementTypes.HostManagement,
-					false, false, false,
-					null, 0,
-					null
-				) ;
-			}
-
-			if( string.IsNullOrEmpty( m_SessionId ) == false )
+			if( m_IsSessionJoined == true )
 			{
 				// 既にセッションに参加している(NetworkPlayClientインスタンス１つにつき参加できるセッションは１つまで)
 				return new
@@ -336,7 +335,7 @@ namespace NetworkPlayHelper
 					ResponseCodes.AlreadyJoinedSession, "既にセッションに参加しています",
 					0, SessionManagementTypes.HostManagement,
 					false, false, false,
-					null, 0,
+					null, 0, 0,
 					null
 				) ;
 			}
@@ -346,7 +345,7 @@ namespace NetworkPlayHelper
 			// リクエストコンテント部
 			var requestContent = new JoinToSession_RequestPacket
 			(
-				sessionId,
+				( uint )sessionId,
 				password,
 				playerName
 			) ;
@@ -369,7 +368,7 @@ namespace NetworkPlayHelper
 					responseCode, errorMessage,
 					0, SessionManagementTypes.HostManagement,
 					false, false, false,
-					null, 0,
+					null, 0, 0,
 					null
 				) ;
 			}
@@ -386,13 +385,14 @@ namespace NetworkPlayHelper
 					ResponseCodes.BadResponse, "受信データに問題があります",
 					0, SessionManagementTypes.HostManagement, 
 					false, false, false,
-					null, 0,
+					null, 0, 0,
 					null
 				) ;
 			}
 
 			// 一旦保持しておく
-			m_SessionId						= sessionId ;
+			m_IsSessionJoined               = true ;
+			m_SessionId						= ( uint )sessionId ;
 
 			m_MaxPlayers					= responseContent.MaxPlayers ;
 			m_ManagementType				= responseContent.ManagementType ;
@@ -404,8 +404,9 @@ namespace NetworkPlayHelper
 			// ホストまたはサーバーのセッションプロセッサーが使用可能な状態かどうか
 			bool processorEnabled			= responseContent.ProcessorEnabled ;
 
-			m_SessionServerAddress			= responseContent.SessionServerAddress ;
-			m_SessionServerPort				= responseContent.SessionServerPort ;
+			m_ExchangeServerAddress			= responseContent.ExchangeServerAddress ;
+			m_ExchangeServerTcpPort			= responseContent.ExchangeServerTcpPort ;
+			m_ExchangeServerUdpPort			= responseContent.ExchangeServerUdpPort ;
 
 			// セッションに参加中のプレイヤー群
 			var sessionPlayers = responseContent.GetSessionPlayers() ;
@@ -421,8 +422,8 @@ namespace NetworkPlayHelper
 
 			try
 			{
-				// セッションサーバーへＴＣＰ接続を行う
-				isConnected = await ConnectToSessionServer( m_SessionServerAddress, m_SessionServerPort, cancellationToken ) ;
+				// エクスチェンジサーバーへＴＣＰ接続を行う
+				isConnected = await ConnectToExchangeServer( m_ExchangeServerAddress, m_ExchangeServerTcpPort, cancellationToken ) ;
 			}
 			catch( Exception e )
 			{
@@ -444,14 +445,16 @@ namespace NetworkPlayHelper
 				// セッションサーバーへの接続に失敗した
 
 				// 以降の処理が失敗してもローカルのセッション識別子はクリアする
-				m_SessionId = null ;
+				m_SessionId         = 0 ;
+				m_IsSessionJoined   = false ;
 
 				return new
 				(
 					ResponseCodes.CouldNotConnectToSessionServer, "セッションサーバーに接続できません",
 					m_MaxPlayers, SessionManagementTypes.HostManagement, 
 					m_UdpEnabled, m_UdpCorrectionEnabled, processorEnabled,
-					m_SessionServerAddress, m_SessionServerPort, sessionPlayers
+					m_ExchangeServerAddress, m_ExchangeServerTcpPort, m_ExchangeServerUdpPort,
+					sessionPlayers
 				) ;
 			}
 
@@ -484,7 +487,7 @@ namespace NetworkPlayHelper
 				responseCode, string.Empty,
 				m_MaxPlayers, m_ManagementType, 
 				m_UdpEnabled, m_UdpCorrectionEnabled, processorEnabled,
-				m_SessionServerAddress, m_SessionServerPort,
+				m_ExchangeServerAddress, m_ExchangeServerTcpPort, m_ExchangeServerUdpPort,
 				sessionPlayers
 			) ;
 		}
@@ -624,6 +627,72 @@ namespace NetworkPlayHelper
 
 			// 成功
 			return new ( responseCode, string.Empty, friends ) ;
+		}
+
+		/// <summary>
+		/// セッションのスコープタイプを設定する(セッションに参加済み且つホストである場合のみ使用可能)
+		/// </summary>
+		/// <param name="sessionId"></param>
+		/// <param name="scopeType"></param>
+		/// <param name="cancellationToken"></param>
+		/// <returns></returns>
+		public async Task<SetSessionScopeType_Response> SetSessionScopeTypeAsync
+		(
+			SessionScopeTypes		scopeType,
+			CancellationToken		cancellationToken	
+		)
+		{
+			if( string.IsNullOrEmpty( m_ApplicationId ) == true )
+			{
+				return new ( ResponseCodes.InvalidApplicationIdentifier, "アプリケーション識別子が設定されていません" ) ;
+			}
+
+			if( m_IsSessionJoined == false )
+			{
+				return new ( ResponseCodes.InvalidSessionIdentifier, "セッションに参加していません" ) ;
+			}
+
+			//----------------------------------
+
+			// リクエストコンテント部
+			var requestContent = new SetSessionScopeType_RequestPacket
+			(
+				m_SessionId,
+				scopeType
+			) ;
+
+			//----------------------------------------------------------
+
+			// 共通処理部(ＷｅｂＡｐｉ)
+			( var responseCode, var errorMessage, var responseContentData ) = await CallWebApi_C_Async
+			(
+				m_CommunicationServerAddress,
+				m_CommunicationServerPort,
+				requestContent.Encode(),
+				cancellationToken
+			) ;
+			if( responseCode != ResponseCodes.Succeeded )
+			{
+				Debug.Log( "-----------------エラー発生 : Code = " + responseCode + " ErrorMessage = " + errorMessage ) ;
+
+				// 失敗
+				return new ( responseCode, errorMessage ) ;
+			}
+
+			//----------------------------------------------------------
+
+			// レスポンスコンテント部
+			var responseContent = new SetSessionScopeType_ResponsePacket( responseContentData, 0 ) ;
+			if( responseContent.Decode() == false )
+			{
+				// 失敗(データ異常)
+				return new ( ResponseCodes.BadResponse, "受信データに問題があります" ) ;
+			}
+
+			//----------------------------------------------------------
+
+			// 成功
+			return new ( responseCode, string.Empty ) ;
 		}
 
 		//-------------------------------------------------------------------------------------------
@@ -857,7 +926,7 @@ namespace NetworkPlayHelper
 			/// <summary>
 			/// セッション識別子
 			/// </summary>
-			public string					SessionId { get ; private set ; }
+			public uint		    			SessionId { get ; private set ; }
 
 			//----------------------------------
 
@@ -894,15 +963,27 @@ namespace NetworkPlayHelper
 			//----------------------------------
 
 			/// <summary>
-			/// セッションサーバーのアドレス
+			/// エクスチェンジサーバーのアドレス
 			/// </summary>
-			public string					SessionServerAddress { get ; private set ; }
+			public string					ExchangeServerAddress { get ; private set ; }
 
 			/// <summary>
-			/// セッションサーバーのポート番号
+			/// エクスチェンジサーバーのＴＣＰポート番号
 			/// </summary>
-			public int						SessionServerPort { get ; private set ; }
-			
+			public int						ExchangeServerTcpPort { get ; private set ; }
+
+			/// <summary>
+			/// エクスチェンジサーバーのＵＤＰポート番号
+			/// </summary>
+			public int						ExchangeServerUdpPort { get ; private set ; }
+
+			//----------------------------------
+
+			/// <summary>
+			/// セッションに参加中のメンバー情報
+			/// </summary>
+			public List<ResponseSessionPlayerData>	SessionPlayers { get ; private set ; }
+
 			//----------------------------------------------------------
 
 			/// <summary>
@@ -919,7 +1000,7 @@ namespace NetworkPlayHelper
 			{
 				try
 				{
-					SessionId				= GetString() ;
+					SessionId				= GetUInt() ;
 
 					MaxPlayers				= GetUShort() ;
 					ManagementType			= ( SessionManagementTypes )GetByte() ;
@@ -928,8 +1009,24 @@ namespace NetworkPlayHelper
 					UdpCorrectionEnabled	= GetBool() ;
 					ProcessorEnabled		= GetBool() ;
 
-					SessionServerAddress	= GetString() ;
-					SessionServerPort		= GetUShort() ;
+					ExchangeServerAddress	= GetString() ;
+					ExchangeServerTcpPort	= GetUShort() ;
+					ExchangeServerUdpPort	= GetUShort() ;
+
+					int i, l = GetUShort() ;
+					if( l >  0 )
+					{
+						SessionPlayers = new List<ResponseSessionPlayerData>() ;
+
+						ResponseSessionPlayerData sessionPlayer ;
+
+						for( i  = 0 ; i <  l ; i ++ )
+						{
+							sessionPlayer = new ResponseSessionPlayerData() ;
+							sessionPlayer.Decode( m_Data, ref m_Pointer ) ;
+							SessionPlayers.Add( sessionPlayer ) ;
+						}
+					}
 				}
 				catch( Exception )
 				{
@@ -939,11 +1036,10 @@ namespace NetworkPlayHelper
 
 				if
 				(
-					string.IsNullOrEmpty( SessionId ) == true ||
 					MaxPlayers == 0 ||
 					( ManagementType != SessionManagementTypes.HostManagement && ManagementType != SessionManagementTypes.ServerManagement ) ||
-					string.IsNullOrEmpty( SessionServerAddress ) == true ||
-					SessionServerPort == 0
+					string.IsNullOrEmpty( ExchangeServerAddress ) == true ||
+					ExchangeServerTcpPort == 0 || ExchangeServerUdpPort == 0
 				)
 				{
 					// 失敗
@@ -952,6 +1048,28 @@ namespace NetworkPlayHelper
 
 				// 成功
 				return true ;
+			}
+
+			/// <summary>
+			/// 外部向けのプレイヤー情報群を取得する
+			/// </summary>
+			/// <returns></returns>
+			public SessionPlayer[] GetSessionPlayers()
+			{
+				var sessionPlayers = new List<SessionPlayer>() ;
+
+				if( SessionPlayers != null && SessionPlayers.Count >  0 )
+				{
+					foreach( var sessionPlayer in SessionPlayers )
+					{
+						sessionPlayers.Add( new SessionPlayer
+						(
+							sessionPlayer.UserId, sessionPlayer.UserName, sessionPlayer.IsGuest, sessionPlayer.IsHost )
+						) ;
+					}
+				}
+
+				return sessionPlayers.ToArray()	 ;
 			}
 		}
 
@@ -965,7 +1083,7 @@ namespace NetworkPlayHelper
 			/// <summary>
 			/// セッション識別子
 			/// </summary>
-			public string			SessionId { get ; private set ; }
+			public uint			    SessionId { get ; private set ; }
 
 			/// <summary>
 			/// セッションパスワード
@@ -985,9 +1103,9 @@ namespace NetworkPlayHelper
 			/// <param name="data"></param>
 			public JoinToSession_RequestPacket
 			(
-				string sessionId,
-				string password,
-				string playerName
+				uint    sessionId,
+				string  password,
+				string  playerName
 			)
 			{
 				RequestType		= RequestTypes.JoinToSession ;
@@ -1009,7 +1127,7 @@ namespace NetworkPlayHelper
 
 				//------------
 
-				PutString( SessionId ) ;
+				PutUInt( SessionId ) ;
 				PutString( Password ) ;
 				PutString( PlayerName ) ;
 
@@ -1056,14 +1174,19 @@ namespace NetworkPlayHelper
 			//----------------------------------
 
 			/// <summary>
-			/// セッションサーバーのアドレス
+			/// エクスチェンジサーバーのアドレス
 			/// </summary>
-			public string							SessionServerAddress { get ; private set ; }
+			public string							ExchangeServerAddress { get ; private set ; }
 
 			/// <summary>
-			/// セッションサーバーのポート番号
+			/// エクスチェンジサーバーのＴＣＰポート番号
 			/// </summary>
-			public int								SessionServerPort { get ; private set ; }
+			public int								ExchangeServerTcpPort { get ; private set ; }
+
+			/// <summary>
+			/// エクスチェンジサーバーのＵＤＰポート番号
+			/// </summary>
+			public int								ExchangeServerUdpPort { get ; private set ; }
 
 			//----------------------------------
 
@@ -1096,8 +1219,9 @@ namespace NetworkPlayHelper
 
 					ProcessorEnabled		= GetBool() ;
 
-					SessionServerAddress	= GetString() ;
-					SessionServerPort		= GetUShort() ;
+					ExchangeServerAddress	= GetString() ;
+					ExchangeServerTcpPort	= GetUShort() ;
+					ExchangeServerUdpPort	= GetUShort() ;
 
 					int i, l = GetUShort() ;
 
@@ -1124,8 +1248,8 @@ namespace NetworkPlayHelper
 
 				if
 				(
-					string.IsNullOrEmpty( SessionServerAddress ) == true ||
-					SessionServerPort == 0
+					string.IsNullOrEmpty( ExchangeServerAddress ) == true ||
+					ExchangeServerTcpPort == 0 || ExchangeServerUdpPort == 0
 				)
 				{
 					// 失敗
@@ -1214,8 +1338,8 @@ namespace NetworkPlayHelper
 				//------------
 
 				PutString( ApplicationId ) ;
-				PutUShort( ( ushort )Offset ) ;
-				PutUShort( ( ushort )Length ) ;
+				PutInt( Offset ) ;
+				PutInt( Length ) ;
 
 				//---------------------------------
 
@@ -1231,7 +1355,12 @@ namespace NetworkPlayHelper
 			/// <summary>
 			/// セッション情報
 			/// </summary>
-			public Session[]	Sessions { get ; private set ; }
+			public Session[]	Sessions	{ get ; private set ; }
+
+			/// <summary>
+			/// 最大セッション数
+			/// </summary>
+			public int			Count		{ get ; private set ; }
 
 			//----------------------------------------------------------
 
@@ -1247,40 +1376,60 @@ namespace NetworkPlayHelper
 			/// <returns></returns>
 			public bool Decode()
 			{
+				//---------------------------------
+				// デコード
+
 				try
 				{
-					var sessions = new List<Session>() ;
+					List<Session> sessions = null ;
 
-					int i, l = GetUShort() ;
+					int i, l = GetInt() ;
 					if( l >  0 )
 					{
-						ResponseSessionData session ;
+						sessions = new () ;
 
 						for( i  = 0 ; i <  l ; i ++ )
 						{
-							session = new ResponseSessionData() ;
-							session.Decode( m_Data, ref m_Pointer ) ;
-							sessions.Add
+							var sessionId			= GetUInt() ;
+							var passwordRequired	= GetBool() ;
+							var nowPlayers			= GetUShort() ;
+							var maxPlayers			= GetUShort() ;
+							var description			= GetString() ;
+
+							sessions.Add( new
 							(
-								new Session
-								(
-									session.SessionId,
-									session.Description,
-									session.MaxPlayers,
-									session.PasswordRequired,
-									session.NowPlayers
-								)
-							) ;
+								sessionId:sessionId,
+								description:description,
+								maxPlayers:maxPlayers,
+								passwordRequired:passwordRequired,
+								nowPlayers:nowPlayers
+							) ) ;
 						}
+
+						Sessions = sessions.ToArray() ;
+					}
+					else
+					{
+						Sessions = Array.Empty<Session>() ;
 					}
 
-					Sessions = sessions.ToArray() ;
+					Count = GetInt() ;
 				}
 				catch( Exception )
 				{
 					// 失敗
 					return false ;
 				}
+
+				//---------------------------------
+				// バリデーションチェック
+
+				if( Count <  0 )
+				{
+					return false ;
+				}
+
+				//---------------------------------
 
 				// 成功
 				return true ;
@@ -1397,6 +1546,95 @@ namespace NetworkPlayHelper
 			}
 		}
 
+		//-----------------------------------
+
+		/// <summary>
+		/// セッションのスコープタイプの変更の要求パケット
+		/// </summary>
+		public class SetSessionScopeType_RequestPacket : RequestPacketBase
+		{
+			/// <summary>
+			/// セッション識別子
+			/// </summary>
+			public uint	    			SessionId { get ; private set ; }
+
+			/// <summary>
+			/// スコープ種別
+			/// </summary>
+			public SessionScopeTypes	ScopeType { get ; private set ; }
+
+			//----------------------------------------------------------
+
+			/// <summary>
+			/// コンストラクタ
+			/// </summary>
+			/// <param name="data"></param>
+			public SetSessionScopeType_RequestPacket
+			(
+				uint				sessionId,
+				SessionScopeTypes	scopeType
+			)
+			{
+				RequestType		= RequestTypes.SetSessionScopeType ;
+
+				//-------------
+
+				SessionId		= sessionId ;
+				ScopeType		= scopeType ;
+			}
+
+			/// <summary>
+			/// エンコード
+			/// </summary>
+			/// <returns></returns>
+			public byte[] Encode()
+			{
+				PutByte( ( byte )RequestType ) ;
+
+				//------------
+
+				PutUInt( SessionId ) ;
+				PutByte( ( byte )ScopeType ) ;
+
+				//---------------------------------
+
+				return m_Data.ToArray() ;
+			}
+		}
+
+		/// <summary>
+		/// セッションのスコープタイプの変更の応答パケット
+		/// </summary>
+		public class SetSessionScopeType_ResponsePacket : ResponsePacketBase
+		{
+			//----------------------------------------------------------
+
+			/// <summary>
+			/// コンストラクタ
+			/// </summary>
+			/// <param name="data"></param>
+			public SetSessionScopeType_ResponsePacket( byte[] data, int pointer ) : base( data, pointer ){}
+
+			/// <summary>
+			/// デコード
+			/// </summary>
+			/// <returns></returns>
+			public bool Decode()
+			{
+				try
+				{
+				}
+				catch( Exception )
+				{
+					// 失敗
+					return false ;
+				}
+
+				// 成功
+				return true ;
+			}
+		}
+
 		//-------------------------------------------------------------------------------------------
 
 		// 汎用ＡＰＩコール
@@ -1461,8 +1699,7 @@ namespace NetworkPlayHelper
 				null,
 				null,
 				m_MaxTcpPacketSize,
-				m_ClientCancellationTokenSource.Token,
-				mainContext
+				m_ClientCancellationTokenSource.Token
 			) ;
 
 			//----------------------------------------------------------
@@ -1495,10 +1732,10 @@ namespace NetworkPlayHelper
 			// 受信を待つ
 
 			bool isReceived = false ;
-			byte[] receivedData = null ;
+			ReadOnlyMemory<byte> receivedData = default ;
 
 			// 受信コールバック
-			void OnTcpReceievedHandler( byte[] data )
+			void OnTcpReceievedHandler( ReadOnlyMemory<byte> data )
 			{
 				isReceived = true ;
 				receivedData = data ;
@@ -1572,7 +1809,7 @@ namespace NetworkPlayHelper
 
 			//--------------
 
-			if( receivedData == null || receivedData.Length <  2 )
+			if( receivedData.IsEmpty == true || receivedData.Length <  2 )
 			{
 				// 失敗(データ異常)
 
@@ -1593,7 +1830,7 @@ namespace NetworkPlayHelper
 
 			try
 			{
-				responseCode = ( ResponseCodes )DataFormat.GetUShort( receivedData, ref offset ) ;
+				responseCode = ( ResponseCodes )DataFormat.GetUShort( receivedData.Span, ref offset ) ;
 			}
 			catch( Exception )
 			{
@@ -1618,7 +1855,7 @@ namespace NetworkPlayHelper
 
 				try
 				{
-					errorMessage = DataFormat.GetString( receivedData, ref offset ) ;
+					errorMessage = DataFormat.GetString( receivedData.Span, ref offset ) ;
 
 					Debug.Log( "受信したエラーメッセージ : " + errorMessage ) ;
 				}
@@ -1664,7 +1901,7 @@ namespace NetworkPlayHelper
 				try
 				{
 //					responseContentData = Security.DecryptByCommonKey( receivedData, offset, length, m_CommonKey ) ;
-					responseContentData = m_Crypter.DecryptAes( receivedData, offset, length ) ;
+					responseContentData = m_Crypter.DecryptAes( receivedData.Span, offset, length ) ;
 				}
 				catch( Exception )
 				{

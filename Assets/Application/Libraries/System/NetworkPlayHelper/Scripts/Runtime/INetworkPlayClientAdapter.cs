@@ -64,6 +64,63 @@ namespace NetworkPlayHelper
 		/// </summary>
 		public bool		IsLogin { get ; }
 
+		//-----------------------------------
+		// パフォーマンス計測用の機能
+
+		/// <summary>
+		/// 往復時間の計測を行うかどうか
+		/// </summary>
+		public bool			UsePing { get ; set ; }
+
+		/// <summary>
+		/// 往復時間計測のパケットタイプ
+		/// </summary>
+		public PacketTypes	PingPacketType { get ; set ; }
+
+		//-----
+
+		/// <summary>
+		/// サーバー宛の Ping の往復時間[最小]
+		/// </summary>
+		public long		PingToServer_Min { get ; }
+
+		/// <summary>
+		/// サーバー宛の Ping の往復時間[平均]
+		/// </summary>
+		public long		PingToServer_Avarage { get ; }
+
+		/// <summary>
+		/// サーバー宛の Ping の往復時間[最新]
+		/// </summary>
+		public long		PingToServer { get ; }
+
+		/// <summary>
+		/// サーバー宛の Ping の往復時間[最大]
+		/// </summary>
+		public long		PingToServer_Max { get ; }
+
+		//-----
+
+		/// <summary>
+		/// ホスト宛の Ping の往復時間[最小]
+		/// </summary>
+		public long		PingToHost_Min { get ; }
+
+		/// <summary>
+		/// ホスト宛の Ping の往復時間[平均]
+		/// </summary>
+		public long		PingToHost_Avarage { get ; }
+
+		/// <summary>
+		/// ホスト宛の Ping の往復時間[最新]
+		/// </summary>
+		public long		PingToHost { get ; }
+
+		/// <summary>
+		/// ホスト宛の Ping の往復時間[最大]
+		/// </summary>
+		public long		PingToHost_Max { get ; }
+
 		//-------------------------------------------------------------------------------------------
 		// アカウント関連
 
@@ -164,6 +221,18 @@ namespace NetworkPlayHelper
 		public int		CommunicationServerPort { get ; }
 
 		/// <summary>
+		/// 任意機能を実行する
+		/// </summary>
+		/// <param name="data"></param>
+		/// <param name="cancellationToken"></param>
+		/// <returns></returns>
+		public Task<CallFunction_Response> CallFunctionAsync
+		(
+			byte[] data,
+			CancellationToken cancellationToken
+		) ;
+
+		/// <summary>
 		/// セッションを生成する
 		/// </summary>
 		/// <param name="sessionProcessionType"></param>
@@ -180,8 +249,8 @@ namespace NetworkPlayHelper
 			string					description,
 			int						maxPlayers,
 			string					password,
-			SessionScopeTypes		sessionScopeType,
-			SessionManagementTypes	sessionManagementType,
+			SessionScopeTypes		scopeType,
+			SessionManagementTypes	managementType,
 			bool					udpEnabled,
 			bool					udpCorrectionEnabled,
 			string					playerName,
@@ -197,7 +266,7 @@ namespace NetworkPlayHelper
 		/// <returns></returns>
 		public Task<JoinToSession_Response> JoinToSessionAsync
 		(
-			string					sessionId,
+			ulong					sessionId,
 			string					password,
 			string					playerName,
 			CancellationToken		cancellationToken	
@@ -232,35 +301,45 @@ namespace NetworkPlayHelper
 		) ;
 
 		/// <summary>
-		/// 任意機能を実行する
+		/// セッションのスコープタイプを設定する(セッションに参加済み且つホストである場合のみ使用可能)
 		/// </summary>
-		/// <param name="data"></param>
+		/// <param name="sessionId"></param>
+		/// <param name="scopeType"></param>
 		/// <param name="cancellationToken"></param>
 		/// <returns></returns>
-		public Task<CallFunction_Response> CallFunctionAsync
+		public Task<SetSessionScopeType_Response> SetSessionScopeTypeAsync
 		(
-			byte[] data,
-			CancellationToken cancellationToken
+			SessionScopeTypes		scopeType,
+			CancellationToken		cancellationToken	
 		) ;
 
 		//-------------------------------------------------------------------------------------------
-		// セッション関連
+		// エクスチェンジ関連
 
 		/// <summary>
-		/// セッションサーバーのアドレス
+		/// エクスチェンジサーバーのアドレス
 		/// </summary>
-		public string					SessionServerAddress { get ; }
+		public string					ExchangeServerAddress { get ; }
 
 		/// <summary>
-		/// セッションサーバーのポート
+		/// エクスチェンジサーバーのＴＣＰポート
 		/// </summary>
-		public int						SessionServerPort { get ; }
+		public int						ExchangeServerTcpPort { get ; }
 
+		/// <summary>
+		/// エクスチェンジサーバーのＵＤＰポート
+		/// </summary>
+		public int						ExchangeServerUdpPort { get ; }
+
+		/// <summary>
+		/// セッションに参加中かどうか
+		/// </summary>
+		public bool                     IsSessionJoined { get ; }
 
 		/// <summary>
 		/// セッション識別子
 		/// </summary>
-		public string					SessionId { get ; }
+		public ulong					SessionId { get ; }
 
 		/// <summary>
 		/// セッションの最大人数
@@ -329,13 +408,25 @@ namespace NetworkPlayHelper
 		/// 受信コールバックタイプを設定する(受動的か能動的か)
 		/// </summary>
 		/// <param name="receivingCallbackType"></param>
-		public void SetReceivingCallbackType( ReceivingCallbackTypes receivingCallbackType ) ;
+		public void SetReceivingCallbackType( ReceivingCallbackTypes receivingCallbackType, SynchronizationContext mainThreadContext ) ;
 
 		/// <summary>
 		/// 受信コールバックが能動的コールバックに設定されている場合にデータを受信済みならコールバックを発生させる
 		/// </summary>
 		/// <returns></returns>
 		public int Dequeue() ;
+
+		/// <summary>
+		/// 受信コールバックタイプを設定する(受動的か能動的か)
+		/// </summary>
+		/// <param name="receivingCallbackType"></param>
+		public void SetReceivingCallbackType_ForSessionProcessor( ReceivingCallbackTypes receivingCallbackType, SynchronizationContext mainThreadContext ) ;
+
+		/// <summary>
+		/// 受信コールバックが能動的コールバックに設定されている場合にデータを受信済みならコールバックを発生させる
+		/// </summary>
+		/// <returns></returns>
+		public int Dequeue_ForSessionProcessor() ;
 
 		//-----------------------------------------------------------
 
@@ -362,8 +453,8 @@ namespace NetworkPlayHelper
 		/// <returns></returns>
 		public bool Send
 		(
-			PacketTypes packetTypes,
 			byte[] data,
+			PacketTypes packetTypes,
 			DestinationTypes destinationType = DestinationTypes.Broadcast,
 			params string[] destinationUserIds	// 設定が必要なのは Multicast と Unicast のケース
 		) ;
@@ -640,52 +731,65 @@ namespace NetworkPlayHelper
 		/// <summary>
 		/// セッション識別子
 		/// </summary>
-		public string					SessionId { get ; private set ; }
+		public ulong					SessionId				{ get ; private set ; }
 
 		//-----------------------------------
 
 		/// <summary>
 		/// セッションの最大参加可能人数
 		/// </summary>
-		public int						MaxPlayers { get ; private set ; }
+		public int						MaxPlayers				{ get ; private set ; }
 
 		//-----------------------------------
 
 		/// <summary>
 		/// セッションの管理タイプ
 		/// </summary>
-		public SessionManagementTypes	ManagementType { get ; private set ; }
+		public SessionManagementTypes	ManagementType			{ get ; private set ; }
 
 		//---------------
 
 		/// <summary>
 		/// ＵＤＰを使用できるかどうか
 		/// </summary>
-		public bool						UdpEnabled { get ; private set ; }
+		public bool						UdpEnabled				{ get ; private set ; }
 
 		/// <summary>
 		/// ＵＤＰの誤り補正を行うかどうか
 		/// </summary>
-		public bool						UdpCorrectionEnabled { get ; private set ; }
+		public bool						UdpCorrectionEnabled	{ get ; private set ; }
 
 		//---------------
 
 		/// <summary>
 		/// セッションプロセッサーが使用可能かどうか
 		/// </summary>
-		public bool						ProcessorEnabled { get ; private set ; }
+		public bool						ProcessorEnabled		{ get ; private set ; }
 
 		//-----------------------------------
 
 		/// <summary>
-		/// セッションサーバーのアドレス
+		/// エクスチェンジサーバーのアドレス
 		/// </summary>
-		public string					SessionServerAddress { get ; private set ; }
+		public string					ExchangeServerAddress	{ get ; private set ; }
 
 		/// <summary>
-		/// セッションサーバーのポート番号
+		/// エクスチェンジサーバーのＴＣＰポート番号
 		/// </summary>
-		public int						SessionServerPort { get ; private set ; }
+		public int						ExchangeServerTcpPort	{ get ; private set ; }
+
+		/// <summary>
+		/// エクスチェンジサーバーのＵＤＰポート番号
+		/// </summary>
+		public int						ExchangeServerUdpPort	{ get ; private set ; }
+
+		//---------------
+
+		/// <summary>
+		/// セッションに参加中のメンバー情報
+		/// </summary>
+		public SessionPlayer[]			SessionPlayers			{ get ; private set ; }
+
 
 		//----------------------------------------------------------
 
@@ -700,14 +804,16 @@ namespace NetworkPlayHelper
 		(
 			ResponseCodes			responseCode,
 			string					errorMessage,
-			string					sessionId,
+			ulong					sessionId,
 			int						maxPlayers,
 			SessionManagementTypes	managementType,
 			bool					udpEnabled,
 			bool					udpCorrectionEnabled,
 			bool					processorEnabled,
-			string					sessionServerAddress,
-			int						sessionServerPort
+			string					exchangeServerAddress,
+			int						exchangeServerTcpPort,
+			int						exchangeServerUdpPort,
+			SessionPlayer[]			sessionPlayers
 		) : base( responseCode, errorMessage )
 		{
 			SessionId				= sessionId ;
@@ -721,8 +827,11 @@ namespace NetworkPlayHelper
 
 			ProcessorEnabled		= processorEnabled ;
 
-			SessionServerAddress	= sessionServerAddress ;
-			SessionServerPort		= sessionServerPort ;
+			ExchangeServerAddress	= exchangeServerAddress ;
+			ExchangeServerTcpPort	= exchangeServerTcpPort ;
+			ExchangeServerUdpPort	= exchangeServerUdpPort ;
+
+			SessionPlayers			= sessionPlayers ;
 		}
 	}
 
@@ -761,14 +870,19 @@ namespace NetworkPlayHelper
 		//---------------
 
 		/// <summary>
-		/// セッションサーバーのアドレス
+		/// エクスチェンジサーバーのアドレス
 		/// </summary>
-		public string					SessionServerAddress { get ; private set ; }
+		public string					ExchangeServerAddress { get ; private set ; }
 
 		/// <summary>
-		/// セッションサーバーのポート番号
+		/// エクスチェンジサーバーのＴＣＰポート番号
 		/// </summary>
-		public int						SessionServerPort { get ; private set ; }
+		public int						ExchangeServerTcpPort { get ; private set ; }
+
+		/// <summary>
+		/// エクスチェンジサーバーのＵＤＰポート番号
+		/// </summary>
+		public int						ExchangeServerUdpPort { get ; private set ; }
 
 		//---------------
 
@@ -795,8 +909,9 @@ namespace NetworkPlayHelper
 			bool					udpEnabled,
 			bool					udpCorrectionEnabled,
 			bool					processorEnabled,
-			string					sessionServerAddress,
-			int						sessionServerPort,
+			string					exchangeServerAddress,
+			int						exchangeServerTcpPort,
+			int						exchangeServerUdpPort,
 			SessionPlayer[]			sessionPlayers
 		) : base( responseCode, errorMessage )
 		{
@@ -805,8 +920,9 @@ namespace NetworkPlayHelper
 			UdpEnabled				= udpEnabled ;
 			UdpCorrectionEnabled	= udpCorrectionEnabled ;
 			ProcessorEnabled		= processorEnabled ;
-			SessionServerAddress	= sessionServerAddress ;
-			SessionServerPort		= sessionServerPort ;
+			ExchangeServerAddress	= exchangeServerAddress ;
+			ExchangeServerTcpPort	= exchangeServerTcpPort ;
+			ExchangeServerUdpPort	= exchangeServerUdpPort ;
 			SessionPlayers			= sessionPlayers ;
 		}
 	}
@@ -868,6 +984,29 @@ namespace NetworkPlayHelper
 			) : base( responseCode, errorMessage )
 		{
 			Friends			= friends ;
+		}
+	}
+
+	/// <summary>
+	/// セッションのスコープタイプの設定のレスポンス
+	/// </summary>
+	public class SetSessionScopeType_Response : WebApiResponseBase
+	{
+		//----------------------------------------------------------
+
+		/// <summary>
+		/// コンストラクタ
+		/// </summary>
+		/// <param name="responseCode"></param>
+		/// <param name="errorMessage"></param>
+		/// <param name="UserId"></param>
+		/// <param name="Password"></param>
+		public SetSessionScopeType_Response
+		(
+			ResponseCodes				responseCode,
+			string						errorMessage
+			) : base( responseCode, errorMessage )
+		{
 		}
 	}
 

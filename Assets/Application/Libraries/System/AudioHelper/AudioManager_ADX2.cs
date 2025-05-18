@@ -33,7 +33,7 @@ using UnityEditor ;
 namespace AudioHelper
 {
 	/// <summary>
-	/// オーディオ全般の管理クラス Version 2025/04/04 0
+	/// オーディオ全般の管理クラス Version 2025/05/13 0
 	/// </summary>
 	public class AudioManager_ADX2 : MonoBehaviour
 	{
@@ -285,7 +285,6 @@ namespace AudioHelper
 		// バックグラウンド中の発音(無音再生)を有効にするかどうか
 		private bool		m_MuteInBackground = false ;
 
-
 		/// <summary>
 		/// バックグラウンド再生を有効にするかどうか
 		/// </summary>
@@ -309,6 +308,8 @@ namespace AudioHelper
 			}
 		}
 
+		// サスペンド中かどうか
+		private bool        m_IsSuspending = false ;
 
 		/// <summary>
 		/// リスナーを有効にするかどうか
@@ -846,8 +847,11 @@ namespace AudioHelper
 			//-------------------------
 
 #if UNITY_EDITOR
-			// GameView の ミュート設定を反映させる
-			CriAtomExAsr.SetBusVolume( "MasterOut", EditorUtility.audioMasterMute ? 0f : AudioListener.volume ) ;
+			if( m_IsSuspending == false )
+			{
+				// GameView の ミュート設定を反映させる
+				CriAtomExAsr.SetBusVolume( "MasterOut", EditorUtility.audioMasterMute ? 0f : AudioListener.volume * MasterVolume ) ;
+			}
 #endif
 			//-------------------------
 
@@ -2976,6 +2980,14 @@ namespace AudioHelper
 		// 全サスペンド
 		private bool SuspendAll_Private()
 		{
+			m_IsSuspending = true ;
+
+			if( m_MuteInBackground == true )
+			{
+				// バックグラウンド時に完全に消音が有効
+				CriAtomExAsr.SetBusVolume( "MasterOut", 0f ) ;
+			}
+
 			// マネージャを生成するのは一ヶ所だけなのでひとまず Application.runInBackground とは独立管理出来るようにしておく
 			if( m_RunInBackground == true )
 			{
@@ -3005,6 +3017,18 @@ namespace AudioHelper
 		// 全レジューム
 		private bool ResumeAll_Private()
 		{
+			m_IsSuspending = false ;
+
+			if( m_MuteInBackground == true )
+			{
+				// バックグラウンド時に完全に消音が有効
+#if UNITY_EDITOR
+				CriAtomExAsr.SetBusVolume( "MasterOut", EditorUtility.audioMasterMute ? 0f : AudioListener.volume * MasterVolume ) ;
+#else
+				CriAtomExAsr.SetBusVolume( "MasterOut", AudioListener.volume * MasterVolume ) ;
+#endif
+			}
+
 			// マネージャを生成するのは一ヶ所だけなのでひとまず Application.runInBackground とは独立管理出来るようにしておく
 			if( m_RunInBackground == true )
 			{
@@ -3395,7 +3419,7 @@ namespace AudioHelper
 
 			if( m_Instance.m_Mute == false )
 			{
-				AudioListener.volume = m_Instance.MasterVolume ;
+				CriAtomExAsr.SetBusVolume( "MasterOut", AudioListener.volume * m_Instance.MasterVolume ) ;
 			}
 			else
 			{
@@ -3407,28 +3431,28 @@ namespace AudioHelper
 		/// マスターボリュームを設定する
 		/// </summary>
 		/// <param name="volume">マスターボリューム(0～1)</param>
-		public static void SetMasterVolume( float volume )
+		public static void SetMasterVolume( float masterVolume )
 		{
 			if( m_Instance == null )
 			{
 				return ;
 			}
 
-			if( volume >  1 )
+			if( masterVolume >  1 )
 			{
-				volume  = 1 ;
+				masterVolume  = 1 ;
 			}
 			else
-			if( volume <  0 )
+			if( masterVolume <  0 )
 			{
-				volume  = 0 ;
+				masterVolume  = 0 ;
 			}
 
-			m_Instance.MasterVolume = volume ;
+			m_Instance.MasterVolume = masterVolume ;
 
 			if( m_Instance.m_Mute == false )
 			{
-				AudioListener.volume = m_Instance.MasterVolume ;
+				CriAtomExAsr.SetBusVolume( "MasterOut", AudioListener.volume * m_Instance.MasterVolume ) ;
 			}
 		}
 

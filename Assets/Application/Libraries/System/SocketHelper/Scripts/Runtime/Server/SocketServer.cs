@@ -37,26 +37,28 @@ using UnityEngine ;
 namespace SocketHelper
 {
 	/// <summary>
-	/// SocketServer Version 2025/04/07
+	/// SocketServer Version 2025/05/18
 	/// </summary>
 	public partial class SocketServer
 	{
 		private Socket												m_ServerSocketTcp ;
 		
-		private UdpClient											m_ServerSocketUdp ;
+		private Socket												m_ServerSocketUdp ;
 
 		private readonly Action<ClientHandler>						m_OnTcpAccepted ;
 
-		private readonly Action<ClientHandler,byte[]>				m_OnTcpReceived ;
+		private readonly Action<ClientHandler,ReadOnlyMemory<byte>>	m_OnTcpReceived ;
 
 		private readonly Action<ClientHandler>						m_OnTcpDisconnected ;
 
-		private readonly Action<byte[],string,int>					m_OnUdpReceived ;
+		private readonly Action<ReadOnlyMemory<byte>,string,int>	m_OnUdpReceived ;
 
 
 		private readonly CancellationToken							m_OwnerCancellationToken ;
 
 		private readonly SynchronizationContext						m_MainThreadContext ;
+
+		//-----------------------------------
 
 		private	long												m_ClientIdentity ;
 
@@ -66,6 +68,34 @@ namespace SocketHelper
 		private readonly object										m_ClientHandlersLockObject ;
 
 		private CancellationTokenSource								m_MainCancellationTokenSource ;
+
+		//-----------------------------------
+
+		/// <summary>
+		/// アドレスファミリー
+		/// </summary>
+		public  AddressFamily Family
+		{
+			get
+			{
+				return m_Family ;
+			}
+			set
+			{
+				m_Family = value ;
+			}
+		}
+
+		// アドレスファミリー
+		private AddressFamily	m_Family						= AddressFamily.InterNetwork ;	// IPv4
+
+		public class IPEndPointStatics
+		{
+			private const int AnyPort = IPEndPoint.MinPort ;
+
+			public static readonly IPEndPoint Any     = new ( IPAddress.Any, AnyPort ) ;
+			public static readonly IPEndPoint IPv6Any = new ( IPAddress.IPv6Any, AnyPort ) ;
+		}
 
 		//-----------------------------------
 
@@ -88,6 +118,26 @@ namespace SocketHelper
 			}
 		}
 		private int		m_MaxTcpPacketSize = 65536 ;
+
+		/// <summary>
+		/// ＵＤＰの最大パケットサイズ
+		/// </summary>
+		public  int MaxUdpPacketSize
+		{
+			get
+			{
+				return m_MaxUdpPacketSize ;
+			}
+			set
+			{
+				m_MaxUdpPacketSize = value ;
+				if( m_MaxUdpPacketSize <  256 )
+				{
+					m_MaxUdpPacketSize  = 256 ;
+				}
+			}
+		}
+		private int		m_MaxUdpPacketSize = 65536 ;
 
 		//-----------------------------------
 
@@ -132,8 +182,11 @@ namespace SocketHelper
 			}
 		}
 
-		// 送信用パケット群
-		private List<UdpPacket>				m_SendUdpPackets ;
+		// ＵＤＰ送信用パケット群
+		private List<UdpPacket>				m_UdpSendPackets ;
+
+		// ＵＤＰ受信用バッファ
+		private byte[]						m_UdpReceiveBuffer ;
 
 		//-------------------------------------------------------------------------------------------
 
@@ -150,12 +203,12 @@ namespace SocketHelper
 		/// <param name="ownerCancallationToken"></param>
 		public SocketServer
 		(
-			Action<ClientHandler> onTcpAccepted,
-			Action<ClientHandler,byte[]> onTcpReceived,
-			Action<ClientHandler> onTcpDisconnected,
-			Action<byte[],string,int> onUdpReceived,
-			CancellationToken ownerCancellationToken,
-			SynchronizationContext mainThreadContext = null
+			Action<ClientHandler>						onTcpAccepted,
+			Action<ClientHandler,ReadOnlyMemory<byte>>	onTcpReceived,
+			Action<ClientHandler>						onTcpDisconnected,
+			Action<ReadOnlyMemory<byte>,string,int>		onUdpReceived,
+			CancellationToken							ownerCancellationToken,
+			SynchronizationContext						mainThreadContext = null
 		)
 		{
 			m_OnTcpAccepted				= onTcpAccepted ;
@@ -189,16 +242,17 @@ namespace SocketHelper
 			// ＴＣＰ接続待ち受け用のソケット
 			m_ServerSocketTcp = new ( SocketType.Stream, ProtocolType.Tcp ) ;
 
-//			Debug.Log( "------------ポート番号 : " + port ) ;
-
-
 			if( udpPort >  0 )
 			{
 				// ＵＤＰ通信用ソケット
-				m_ServerSocketUdp = new ( udpPort ) ;
+				m_ServerSocketUdp = new ( m_Family, SocketType.Dgram, ProtocolType.Udp ) ;
+				m_ServerSocketUdp.Bind( new IPEndPoint( IPAddress.Any, udpPort ) ) ;
 
 				// ＵＤＰ送信パケットバッファ
-				m_SendUdpPackets = new() ;
+				m_UdpSendPackets = new() ;
+
+				// ＵＤＰの受信バッファ(最大値)
+				m_UdpReceiveBuffer	= new byte[ m_MaxUdpPacketSize ] ;
 			}
 
 			//----------------------------------------------------------
@@ -305,24 +359,33 @@ namespace SocketHelper
 		private void StartReceiveUdp()
 		{
 			// 最初の受信受付開始
-			m_ServerSocketUdp.BeginReceive( StartReceiveUdp_Callback, m_ServerSocketUdp ) ;
+
+			EndPoint remoteEndPoint = m_Family == AddressFamily.InterNetwork ?
+				IPEndPointStatics.Any :
+				IPEndPointStatics.IPv6Any ;
+
+			m_ServerSocketUdp.BeginReceiveFrom( m_UdpReceiveBuffer, 0, m_UdpReceiveBuffer.Length, SocketFlags.None, ref remoteEndPoint, StartReceiveUdp_Callback, m_ServerSocketUdp ) ;
 		}
 
 		// 受信した際に呼び出されるコールバック(サブスレッドである事に注意する)
 		private void StartReceiveUdp_Callback( IAsyncResult ar )
 		{
-			var serverSocketUdp = ( UdpClient )ar.AsyncState ;
+			var serverSocketUdp = ( Socket )ar.AsyncState ;
 
 			// データを取得する
 			try
 			{
-				IPEndPoint ipEndPoint = null ;
-				var udpPacket = serverSocketUdp.EndReceive( ar, ref ipEndPoint ) ;
-				if( udpPacket != null && udpPacket.Length >  0 )
+				EndPoint remoteEndPoint = m_Family == AddressFamily.InterNetwork ?
+					IPEndPointStatics.Any :
+					IPEndPointStatics.IPv6Any ;
+
+				int size = serverSocketUdp.EndReceiveFrom( ar, ref remoteEndPoint ) ;
+				if( size >  0 )
 				{
+					IPEndPoint ipEndPoint = ( IPEndPoint )remoteEndPoint ;
 #if !UNITY
 					// コールバックを呼ぶ
-					m_OnUdpReceived?.Invoke( udpPacket, ipEndPoint.Address.ToString(), ipEndPoint.Port ) ;
+					m_OnUdpReceived?.Invoke( new ReadOnlyMemory<byte>( m_UdpReceiveBuffer, 0, size ), ipEndPoint.Address.ToString(), ipEndPoint.Port ) ;
 #else
 					// コールバックを呼ぶ
 					if( m_OnUdpReceived != null )
@@ -332,28 +395,31 @@ namespace SocketHelper
 							// メインスレッド限定あり呼び出し
 							if( SynchronizationContext.Current == m_MainThreadContext )
 							{
-								// パケットが完成した
-								m_OnUdpReceived( udpPacket, ipEndPoint.Address.ToString(), ipEndPoint.Port ) ;
+								m_OnUdpReceived?.Invoke( new ReadOnlyMemory<byte>( m_UdpReceiveBuffer, 0, size ), ipEndPoint.Address.ToString(), ipEndPoint.Port ) ;
 							}
 							else
 							{
+								// Post 内部が実行されるタイミングは現在のスレッドとコ異なるため受信データの複製(独立化)が必要
+								byte[] data = new byte[ size ] ;
+								Buffer.BlockCopy( m_UdpReceiveBuffer, 0, data, 0, size ) ;
+
 								m_MainThreadContext.Post( ( _ ) =>
 								{
-									// パケットが完成した
-									m_OnUdpReceived( udpPacket, ipEndPoint.Address.ToString(), ipEndPoint.Port  ) ;
+									m_OnUdpReceived?.Invoke( new ReadOnlyMemory<byte>( data ), ipEndPoint.Address.ToString(), ipEndPoint.Port ) ;
 								}, null ) ;
 							}
 						}
 						else
 						{
 							// メインスレッド限定なし呼び出し
-							m_OnUdpReceived( udpPacket, ipEndPoint.Address.ToString(), ipEndPoint.Port ) ;
+							m_OnUdpReceived?.Invoke( new ReadOnlyMemory<byte>( m_UdpReceiveBuffer, 0, size ), ipEndPoint.Address.ToString(), ipEndPoint.Port ) ;
 						}
 					}
 #endif
 					//-----------------------------
 					// 再び受信監視処理を呼ぶ
-					serverSocketUdp.BeginReceive( StartReceiveUdp_Callback, serverSocketUdp ) ;
+
+					serverSocketUdp.BeginReceiveFrom( m_UdpReceiveBuffer, 0, m_UdpReceiveBuffer.Length, SocketFlags.None, ref remoteEndPoint, StartReceiveUdp_Callback, serverSocketUdp ) ;
 				}
 				else
 				{
@@ -371,7 +437,7 @@ namespace SocketHelper
 
 		// 送信時のスレッド間の排他制御(複数のスレッドから同時参照があるので排他制御が必要)
 
-		private readonly object m_SendUdpLockObject = new () ;
+		private readonly object m_UdpSendLockObject = new () ;
 
 		// 送信中かどうかのフラグ
 		private bool m_IsUdpSendRunning = false ;
@@ -395,7 +461,7 @@ namespace SocketHelper
 			//----------------------------------
 
 			// サブスレッドの排他制御
-			lock( m_SendUdpLockObject )
+			lock( m_UdpSendLockObject )
 			{
 				if( m_IsUdpSendRunning == false )
 				{
@@ -403,14 +469,14 @@ namespace SocketHelper
 
 					m_IsUdpSendRunning = true ;	// 通信中に移行する
 
-					m_ServerSocketUdp.BeginSend( data, data.Length, address, port, SendUdp_Callback, m_ServerSocketUdp ) ;
+					m_ServerSocketUdp.BeginSendTo( data, 0, data.Length, SocketFlags.None, new IPEndPoint( IPAddress.Parse( address ), port ), SendUdp_Callback, m_ServerSocketUdp ) ;
 				}
 				else
 				{
 					// 送信中である
 
 					// 送信バッファ群に積む
-					m_SendUdpPackets.Add( new UdpPacket( data, address, port ) ) ;
+					m_UdpSendPackets.Add( new UdpPacket( data, address, port ) ) ;
 				}
 			}
 
@@ -420,28 +486,26 @@ namespace SocketHelper
 		// 送信終了時に呼び出される(別スレッドである事に注意する)
 		private void SendUdp_Callback( IAsyncResult ar )
 		{
-			var serverSocketUdp = ( UdpClient )ar.AsyncState ;
+			var serverSocketUdp = ( Socket )ar.AsyncState ;
 
 			try
 			{
-				int sendSize = serverSocketUdp.EndSend( ar ) ;
+				int sendSize = serverSocketUdp.EndSendTo( ar ) ;
 				if( sendSize >  0 )
 				{
 					// サブスレッドの排他制御
-					lock( m_SendUdpLockObject )
+					lock( m_UdpSendLockObject )
 					{
 						// 送信バッファに次以降のＵＤＰパケットが溜まっている場合は引き続きそれらを送信する
-						if( m_SendUdpPackets.Count >  0 )
+						if( m_UdpSendPackets.Count >  0 )
 						{
 							// パケットを取り出す
-							var udpPacket = m_SendUdpPackets[ 0 ] ;
-							m_SendUdpPackets.RemoveAt( 0 ) ;
+							var udpPacket = m_UdpSendPackets[ 0 ] ;
+							m_UdpSendPackets.RemoveAt( 0 ) ;
 
 							//------------------------------
 
-							var udpData = udpPacket.Data ;
-
-							serverSocketUdp.BeginSend( udpData, udpData.Length, udpPacket.Address, udpPacket.Port, SendUdp_Callback, serverSocketUdp ) ;
+							serverSocketUdp.BeginSendTo( udpPacket.Data, 0, udpPacket.Data.Length, SocketFlags.None, new IPEndPoint( IPAddress.Parse( udpPacket.Address ), udpPacket.Port ), SendUdp_Callback, serverSocketUdp ) ;
 						}
 						else
 						{
@@ -507,14 +571,12 @@ namespace SocketHelper
 					// メインスレッド限定あり呼び出し
 					if( SynchronizationContext.Current == m_MainThreadContext )
 					{
-						// パケットが完成した
 						m_OnTcpAccepted( clientHandler ) ;
 					}
 					else
 					{
 						m_MainThreadContext.Post( ( _ ) =>
 						{
-							// パケットが完成した
 							m_OnTcpAccepted( clientHandler ) ;
 						}, null ) ;
 					}
@@ -555,14 +617,12 @@ namespace SocketHelper
 					// メインスレッド限定あり呼び出し
 					if( SynchronizationContext.Current == m_MainThreadContext )
 					{
-						// パケットが完成した
 						m_OnTcpDisconnected( clientHandler ) ;
 					}
 					else
 					{
 						m_MainThreadContext.Post( ( _ ) =>
 						{
-							// パケットが完成した
 							m_OnTcpDisconnected( clientHandler ) ;
 						}, null ) ;
 					}

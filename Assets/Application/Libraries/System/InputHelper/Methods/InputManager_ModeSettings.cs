@@ -17,7 +17,13 @@ namespace InputHelper
 			public static InputProcessingTypes  InputProcessingType = InputProcessingTypes.Parallel ;
 
 			// 現在の入力タイプ(UIEventSystem がシーン単位で破棄されてしまうため、この値のみ static で保持する)
-			public static InputTypes	        InputType	        = InputTypes.Pointer ;	// デフォルトはポインターモード
+			public static InputTypes	        BasisInputType	        = InputTypes.Pointer ;	// デフォルトはポインターモード
+
+			// 変化前の入力タイプ
+			public static InputTypes			PreviousBasisInputType	= InputTypes.Pointer ;
+
+			// 現在の入力タイプ(UIEventSystem がシーン単位で破棄されてしまうため、この値のみ static で保持する)
+			public static InputTypes	        ExtraInputType	        = InputTypes.Pointer ;	// デフォルトはポインターモード
 
 			//-------------------------------------------------
 
@@ -61,14 +67,24 @@ namespace InputHelper
 			{
 				if( inputType == InputTypes.Pointer )
 				{
-					Settings.InputType = InputTypes.Pointer ;
+					Settings.BasisInputType = InputTypes.Pointer ;
+					Settings.ExtraInputType = InputTypes.Pointer ;
 
 					UnityEngine.Cursor.visible = true ;
 				}
 				else
+				if( inputType == InputTypes.Keyboard )
+				{
+					Settings.BasisInputType = InputTypes.Keyboard ;
+					Settings.ExtraInputType = InputTypes.Keyboard ;
+
+					UnityEngine.Cursor.visible = false ;
+				}
+				else
 				if( inputType == InputTypes.GamePad )
 				{
-					Settings.InputType = InputTypes.GamePad ;
+					Settings.BasisInputType = InputTypes.GamePad ;
+					Settings.ExtraInputType = InputTypes.GamePad ;
 
 					UnityEngine.Cursor.visible = false ;
 				}
@@ -79,6 +95,9 @@ namespace InputHelper
 				// デュアルにする場合は念のためポインターを表示する(シングルのゲームパッド状態からの移行)
 
 				UnityEngine.Cursor.visible = true ;
+
+				Settings.BasisInputType = inputType ;
+				Settings.ExtraInputType = inputType ;
 			}
 		}
 
@@ -90,12 +109,23 @@ namespace InputHelper
 		/// <summary>
 		/// 現在の入力タイプ
 		/// </summary>
-		public static InputTypes InputType  => Settings.InputType ;
+		public static InputTypes InputType  => Settings.BasisInputType ;
 
 		/// <summary>
-		/// 最後の入力タイプ
+		/// 現在の基本入力タイプ
 		/// </summary>
-		public InputTypes LastInputType => Settings.InputType ;
+		public static InputTypes BasisInputType  => Settings.BasisInputType ;
+
+		/// <summary>
+		/// 現在の拡張入力タイプ
+		/// </summary>
+		public static InputTypes ExtraInputType  => Settings.ExtraInputType ;
+
+
+		/// <summary>
+		/// 最後の入力タイプ(ダイナミック)
+		/// </summary>
+		public InputTypes ActiveBasisInputType => Settings.BasisInputType ;
 
 		//-------------------------------------------------------------------------------------------
 		// コンポーネントなので Dynamic なフィールドを使ってはいけない(インスタンスが生成された際にデフォルト値で初期化されてしまい事前に設定した値は無効化される)

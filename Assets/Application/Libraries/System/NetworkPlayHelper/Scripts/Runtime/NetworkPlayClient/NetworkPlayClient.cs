@@ -11,23 +11,20 @@ using UnityEngine ;
 namespace NetworkPlayHelper
 {
 	/// <summary>
-	/// NetworkPlay 機能のクライアント側の管理用クラス Version 2025/01/27
+	/// NetworkPlay 機能のクライアント側の管理用クラス Version 2025/05/01
 	/// </summary>
 	public partial class NetworkPlayClient
 	{
 		//-------------------------------------------------------------------------------------------
 
-		// メインスレッドのコンテキスト
-		private SynchronizationContext			m_MainContext ;
-
 		// オーナーのキャンセレーショントークン(このキャンセルで全てのタスクがキャンセルされる)
-		private CancellationToken               m_OwnerCancellationToken ;
+		private CancellationToken					    m_OwnerCancellationToken ;
 
 		// アダプターのインスタンス
-		private INetworkPlayClientAdapter       m_NetworkPlayClientAdapter ;
+		private INetworkPlayClientAdapter			   m_NetworkPlayClientAdapter ;
 
 		// デフォルトアダプタかどうか
-		private bool                            m_IsDefaultAdapter ;
+		private bool								  m_IsDefaultAdapter ;
 
 		/// <summary>
 		/// デフォルトアダプタであるかどうか
@@ -46,18 +43,15 @@ namespace NetworkPlayHelper
 		/// コンストラクタ
 		/// </summary>
 		/// <param name="ownerCancellationToken"></param>
-		public NetworkPlayClient( SynchronizationContext mainContext, CancellationToken ownerCancellationToken )
+		public NetworkPlayClient( CancellationToken ownerCancellationToken )
 		{
-			// メインスレッドのコンテキストを記録
-			m_MainContext				= mainContext ;
-
 			// オーナーキャンセレーショントークンを記録
 			m_OwnerCancellationToken	= ownerCancellationToken ;
 
 			//----------------------------------
 
 			// デフォルトのネットワーククライアントアダプターをカレントのアダプターとして設定する
-			m_NetworkPlayClientAdapter = new DefaultNetworkPlayClientAdapter( mainContext, m_OwnerCancellationToken ) ;
+			m_NetworkPlayClientAdapter = new DefaultNetworkPlayClientAdapter( m_OwnerCancellationToken ) ;
 			m_IsDefaultAdapter = true ;
 		}
 
@@ -79,7 +73,7 @@ namespace NetworkPlayHelper
 					m_NetworkPlayClientAdapter?.Dispose() ;
 
 					// デフォルトのネットワーククライアントアダプターをカレントのアダプターとして設定する
-					m_NetworkPlayClientAdapter = new DefaultNetworkPlayClientAdapter( m_MainContext, m_OwnerCancellationToken ) ;
+					m_NetworkPlayClientAdapter = new DefaultNetworkPlayClientAdapter( m_OwnerCancellationToken ) ;
 					m_IsDefaultAdapter = true ;
 				}
 
@@ -214,7 +208,7 @@ namespace NetworkPlayHelper
 		/// <summary>
 		/// セッション識別子
 		/// </summary>
-		public string	SessionId { get ; private set ; }
+		public ulong	SessionId { get ; private set ; }
 
 		/// <summary>
 		/// セッションの説明文
@@ -250,11 +244,11 @@ namespace NetworkPlayHelper
 		/// </summary>
 		public Session
 		(
-			string sessionId,
-			string description,
-			int    maxPlayers,
-			bool   passwordRequired,
-			int    nowPlayers
+			ulong   sessionId,
+			string  description,
+			int     maxPlayers,
+			bool    passwordRequired,
+			int     nowPlayers
 		)
 		{
 			SessionId			= sessionId ;

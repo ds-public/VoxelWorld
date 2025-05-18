@@ -37,6 +37,14 @@ namespace uGUIHelper
 
 		public void OnPointerDown( PointerEventData pointer )
 		{
+#if UNITY_EDITOR || !UNITY_ANDROID && !UNITY_IOS
+            if( UnityEngine.Cursor.visible == false )
+            {
+                return ;
+            }
+#endif
+            //-------------------------
+
 			onPointerDown?.Invoke( pointer, false ) ;
 		}
 
@@ -53,11 +61,27 @@ namespace uGUIHelper
 #endif
 		public void OnBeginDrag( PointerEventData pointer )
 		{
+#if UNITY_EDITOR || !UNITY_ANDROID && !UNITY_IOS
+            if( UnityEngine.Cursor.visible == false )
+            {
+                return ;
+            }
+#endif
+            //-------------------------
+
 			onBeginDrag?.Invoke( pointer, false ) ;
 		}
 
 		public void OnDrag( PointerEventData pointer )
 		{
+#if UNITY_EDITOR || !UNITY_ANDROID && !UNITY_IOS
+            if( UnityEngine.Cursor.visible == false )
+            {
+                return ;
+            }
+#endif
+            //-------------------------
+
 			onDrag?.Invoke( pointer, false ) ;
 		}
 

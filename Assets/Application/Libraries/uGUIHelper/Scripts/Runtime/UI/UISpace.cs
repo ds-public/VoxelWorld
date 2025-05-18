@@ -334,6 +334,12 @@ namespace uGUIHelper
 
 			m_IsForceWorldLayer = true ;
 //			m_TargetLayer = 24 ;
+
+			//----------------------------------
+
+			// レンダーテクスチャはデフォルトで生成する
+
+			RenderTextureEnabled = true ;
 		}
 
 
@@ -424,12 +430,9 @@ namespace uGUIHelper
 
 			//----------------------------------------------------------
 
-			if( Application.isPlaying == true )
+			if( m_IsForceWorldLayer == true )
 			{
-				if( m_IsForceWorldLayer == true )
-				{
-					SetWorldLayer( m_WorldLayer ) ;
-				}
+				SetWorldLayer( m_WorldLayer ) ;
 			}
 
 			SetupCamera() ;
@@ -470,6 +473,8 @@ namespace uGUIHelper
 			}
 		}
 
+		//-----------------------------------------------------
+
 		// 子を全て含めてレイヤーマスクを設定する(Transform 版)
 		private void SetLayerRecursively( Transform root, int layer )
 		{
@@ -492,7 +497,9 @@ namespace uGUIHelper
 			}
 		}
 
-		// ガメラの画角やビューポートの設定を行う
+		//-----------------------------------------------------
+
+		// カメラの画角やビューポートの設定を行う
 		private void SetupCamera()
 		{
 			if( m_TargetCamera == null )

@@ -26,7 +26,7 @@ using System.Security.Cryptography ;
 namespace NetworkPlayHelper
 {
 	/// <summary>
-	/// セキュリティ関連クラス Version 2024/12/13
+	/// セキュリティ関連クラス Version 2025/05/15
 	/// </summary>
 	public class Security
 	{
@@ -522,12 +522,12 @@ namespace NetworkPlayHelper
 			{
 				if( data == null )
 				{
-					throw new Exception( "Error" ) ;
+					return null ;
 				}
 
 				if( offset >= data.Length )
 				{
-					throw new Exception( "Error" ) ;
+					return null ;
 				}
 
 				if( length <= 0 )
@@ -599,16 +599,16 @@ namespace NetworkPlayHelper
 			/// <param name="offset"></param>
 			/// <param name="length"></param>
 			/// <returns></returns>
-			public byte[] DecryptXor( byte[] data, int offset = 0, int length = 0 )
+			public byte[] DecryptXor( ReadOnlySpan<byte> data, int offset = 0, int length = 0 )
 			{
-				if( data == null )
+				if( data.IsEmpty == true )
 				{
-					throw new Exception( "Error" ) ;
+					return null ;
 				}
 
 				if( offset >= data.Length )
 				{
-					throw new Exception( "Error" ) ;
+					return null ;
 				}
 
 				if( length <= 0 )
@@ -624,7 +624,7 @@ namespace NetworkPlayHelper
 				if( length <  5 )
 				{
 					// ＣＲＣ部分を含めてサイズが異常
-					throw new Exception( "Error" ) ;
+					return null ;
 				}
 
 				length -= 4 ;
@@ -680,7 +680,7 @@ namespace NetworkPlayHelper
 				if( crc32 != GetCRC32( decryptedData, 0, length ) )
 				{
 					// ＣＲＣが合わない
-					throw new Exception( "Error" ) ;
+					return null ;
 				}
 
 				return decryptedData ;
@@ -695,12 +695,12 @@ namespace NetworkPlayHelper
 			{
 				if( data == null )
 				{
-					throw new Exception( "Error" ) ;
+					return null ;
 				}
 
 				if( offset >= data.Length )
 				{
-					throw new Exception( "Error" ) ;
+					return null ;
 				}
 
 				if( length <= 0 )
@@ -712,7 +712,6 @@ namespace NetworkPlayHelper
 				{
 					length  = ( data.Length - offset ) ;
 				}
-
 
 				var encryptor = m_AES.CreateEncryptor( m_AES.Key, m_AES.IV ) ;
 
@@ -730,16 +729,16 @@ namespace NetworkPlayHelper
 			/// <param name="offset"></param>
 			/// <param name="length"></param>
 			/// <returns></returns>
-			public byte[] DecryptAes( byte[] data, int offset = 0, int length = 0 )
+			public byte[] DecryptAes( ReadOnlySpan<byte> data, int offset = 0, int length = 0 )
 			{
 				if( data == null )
 				{
-					throw new Exception( "Error" ) ;
+					return null ;
 				}
 
 				if( offset >= data.Length )
 				{
-					throw new Exception( "Error" ) ;
+					return null ;
 				}
 
 				if( length <= 0 )
@@ -758,7 +757,7 @@ namespace NetworkPlayHelper
 
 				try
 				{
-					decryptedData = decryptor.TransformFinalBlock( data, offset, length ) ;
+					decryptedData = decryptor.TransformFinalBlock( data.ToArray(), offset, length ) ;
 				}
 				catch( CryptographicException )
 				{

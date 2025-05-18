@@ -710,7 +710,7 @@ namespace uGUIHelper
 		//-------------------------------------------------------------------------------------------
 
 		// Down(ButtonGroup用)
-		override protected void OnPointerDownBasic( PointerEventData pointer, bool fromScrollView )
+		protected override void OnPointerDownBasic( PointerEventData pointer, bool fromScrollView )
 		{
 			base.OnPointerDownBasic( pointer, fromScrollView ) ;
 
@@ -720,7 +720,7 @@ namespace uGUIHelper
 			}
 		}
 
-		override protected void OnDestroy()
+		protected override void OnDestroy()
 		{
 			base.OnDestroy() ;
 
@@ -870,6 +870,14 @@ namespace uGUIHelper
 		// 内部リスナー
 		private void OnButtonClickInner()
 		{
+#if UNITY_EDITOR || !UNITY_ANDROID && !UNITY_IOS
+            if( UnityEngine.Cursor.visible == false )
+            {
+                return ;
+            }
+#endif
+            //-------------------------
+
             // 注意：
             // UIInteraction または UIInteractionForScrollView が付いている場合
             // OnClickInner は UIButton と合わせて２回コールされてしまう

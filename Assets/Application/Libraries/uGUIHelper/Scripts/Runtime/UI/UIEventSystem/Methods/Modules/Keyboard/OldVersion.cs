@@ -315,6 +315,15 @@ namespace uGUIHelper.InputAdapter
 				return m_KeyHashStates[ keyCode ].IsRepeat ;
 			}
 
+			// リピート監視対象キーの解放
+			private void UnregisterRepeatProcessingTarget( KeyCodes keyCode )
+			{
+				if( m_KeyHashStates.ContainsKey( keyCode ) == true )
+				{
+					m_KeyHashStates.Remove(	keyCode ) ;
+				}
+			}
+
 			//----------------------------------------------------------
 
 			/// <summary>
@@ -340,7 +349,13 @@ namespace uGUIHelper.InputAdapter
 			/// <returns></returns>
 			public bool GetKey( KeyCodes keyCode )
 			{
-				return Input.GetKey( m_KeyCodeMapper[ keyCode ] ) ;
+				bool isPressed = Input.GetKey( m_KeyCodeMapper[ keyCode ] ) ;
+				if( isPressed == true )
+				{
+					RegisterRepeatProcessingTarget( keyCode ) ;
+				}
+
+				return isPressed ;
 			}
 
 			/// <summary>
@@ -350,7 +365,13 @@ namespace uGUIHelper.InputAdapter
 			/// <returns></returns>
 			public bool GetKeyDown( KeyCodes keyCode )
 			{
-				return Input.GetKeyDown( m_KeyCodeMapper[ keyCode ] ) ;
+				bool isPressed = Input.GetKeyDown( m_KeyCodeMapper[ keyCode ] ) ;
+				if( isPressed == true )
+				{
+					RegisterRepeatProcessingTarget( keyCode ) ;
+				}
+
+				return isPressed ;
 			}
 
 			/// <summary>
@@ -360,7 +381,13 @@ namespace uGUIHelper.InputAdapter
 			/// <returns></returns>
 			public bool GetKeyUp( KeyCodes keyCode )
 			{
-				return Input.GetKeyUp( m_KeyCodeMapper[ keyCode ] ) ;
+				bool isReleased = Input.GetKeyUp( m_KeyCodeMapper[ keyCode ] ) ;
+				if( isReleased == true )
+				{
+					UnregisterRepeatProcessingTarget( keyCode ) ;
+				}
+
+				return isReleased ;
 			}
 
 			/// <summary>

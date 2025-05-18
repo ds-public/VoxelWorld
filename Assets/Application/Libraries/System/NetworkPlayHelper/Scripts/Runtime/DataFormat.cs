@@ -261,7 +261,7 @@ namespace NetworkPlayHelper
 		/// <param name="offset"></param>
 		/// <returns></returns>
 		/// <exception cref="Exception"></exception>
-		public static ushort GetUShort( byte[] data, ref int offset )
+		public static ushort GetUShort( ReadOnlySpan<byte> data, ref int offset )
 		{
 			if( ( offset + 2 ) >  data.Length )
 			{
@@ -424,7 +424,7 @@ namespace NetworkPlayHelper
 		/// <param name="data"></param>
 		/// <param name="offset"></param>
 		/// <returns></returns>
-		public static string GetString( byte[] data, ref int offset )
+		public static string GetString( ReadOnlySpan<byte> data, ref int offset )
 		{
 			if( offset >= data.Length )
 			{
@@ -498,7 +498,7 @@ namespace NetworkPlayHelper
 				throw new Exception( "データサイズ異常" ) ;
 			}
 
-			string text = Encoding.UTF8.GetString( data, offset, size ) ;
+			string text = Encoding.UTF8.GetString( data.ToArray(), offset, size ) ;
 
 			offset += size ;
 
@@ -516,7 +516,7 @@ namespace NetworkPlayHelper
 		{
 			if( offset >= data.Length )
 			{
-				throw new Exception( "データサイズ異常" ) ;
+				throw new Exception( "データサイズ異常[0] offest = " + offset + " length = " + data.Length ) ;
 			}
 
 			byte size0 = data[ offset ] ;
@@ -544,7 +544,7 @@ namespace NetworkPlayHelper
 
 				if( offset >= data.Length )
 				{
-					throw new Exception( "データサイズ異常" ) ;
+					throw new Exception( "データサイズ異常[1] offset = " + offset + " length = " + data.Length ) ;
 				}
 
 				byte size1 = data[ offset ] ;
@@ -552,15 +552,17 @@ namespace NetworkPlayHelper
 
 				if( size1 <  128 )
 				{
+					// ～ 16383 byte (16KB)
+
 					size = ( size0 & 0x7F ) | ( size1 <<  7 ) ;
 				}
 				else
 				{
-					// 32768(32KB) ～
+					// 16384 (16KB) ～
 
 					if( offset >= data.Length )
 					{
-						throw new Exception( "データサイズ異常" ) ;
+						throw new Exception( "データサイズ異常[2] offset = " + offset + " length = " + data.Length ) ;
 					}
 
 					byte size2 = data[ offset ] ;
@@ -568,11 +570,12 @@ namespace NetworkPlayHelper
 
 					if( size2 <  128 )
 					{
+						// ～ 2097151 byte (2MB)
 						size = ( size0 & 0x7F ) | ( ( size1 & 0x7F ) <<  7 ) | ( size2 << 14 ) ;
 					}
 					else
 					{
-						// 4194304(4MB) ～ 536870912(512MB)
+						// 2097152 byte (2MB) ～ 536870911 byte (512MB)
 
 						byte size3 = data[ offset ] ;
 						offset ++ ;
@@ -584,7 +587,7 @@ namespace NetworkPlayHelper
 
 			if( ( offset + size ) >  data.Length )
 			{
-				throw new Exception( "データサイズ異常" ) ;
+				throw new Exception( "データサイズ異常[3] size = " + size + " offset = " + offset + " length = " + data.Length ) ;
 			}
 
 			byte[] byteArray = new byte[ size ] ;
@@ -832,33 +835,43 @@ namespace NetworkPlayHelper
 		/// <param name="data"></param>
 		public static void PutByteArray( List<byte> data, byte[] byteArray )
 		{
+			if( byteArray == null || byteArray.Length == 0 )
+			{
+				data.Add( 0 ) ;
+				return ;
+			}
+
+			//----------------------------------
+
 			int size = byteArray.Length ;
 
 			if( size <  128 )
 			{
-				// 最大 128 - 1 バイトまで
+				// 1 byte ～ 127 byte
 				data.Add( ( byte )size ) ;
 			}
 			else
 			{
-				if( size <  32768 )
+				// 128 byte ～
+				if( size <  16384 )
 				{
-					// 最大 32767(32KB) - 1 バイトまで
+					// ～ 16383 byte (16KB)
 					data.Add( ( byte )( (   size         & 0x7F ) | 0x80 ) ) ;
 					data.Add( ( byte )(     size >>  7                   ) ) ;
 				}
 				else
 				{
-					if( size <  4194304 )
+					// 16384 byte (16KB) ～
+					if( size <  2097152 )
 					{
-						// 最大 4194303(4MB) - 1 バイトまで
+						// ～ 2097151 byte (2MB)
 						data.Add( ( byte )( (   size         & 0x7F ) | 0x80 ) ) ;
 						data.Add( ( byte )( ( ( size >>  7 ) & 0x7F ) | 0x80 ) ) ;
 						data.Add( ( byte )(     size >> 14                   ) ) ;
 					}
 					else
 					{
-						// 最大 536870911(512MB) - 1 バイトまで
+						// 2097152 byte (2MB) ～ 536870911 byte (512MB)
 						data.Add( ( byte )( (   size         & 0x7F ) | 0x80 ) ) ;
 						data.Add( ( byte )( ( ( size >>  7 ) & 0x7F ) | 0x80 ) ) ;
 						data.Add( ( byte )( ( ( size >> 14 ) & 0x7F ) | 0x80 ) ) ;
@@ -878,31 +891,42 @@ namespace NetworkPlayHelper
 		/// <param name="data"></param>
 		public static void PutByteArray( List<byte> data, byte[] byteArray, int offset, int length )
 		{
+			if( byteArray == null || byteArray.Length == 0 || length == 0 )
+			{
+				// 空配列
+				data.Add( 0 ) ;
+				return ;
+			}
+
+			//-------------------------
+
 			if( length <  128 )
 			{
-				// 最大 128 - 1 バイトまで
+				// 1 byte ～ 127 byte
 				data.Add( ( byte )length ) ;
 			}
 			else
 			{
-				if( length <  32768 )
+				// 128 byte ～
+				if( length <  16384 )
 				{
-					// 最大 32767(32KB) - 1 バイトまで
+					// ～ 16383 byte (16KB)
 					data.Add( ( byte )( (   length         & 0x7F ) | 0x80 ) ) ;
 					data.Add( ( byte )(     length >>  7                   ) ) ;
 				}
 				else
 				{
-					if( length <  4194304 )
+					// 16384 byte (16KB) ～
+					if( length <  2097152 )
 					{
-						// 最大 4194303(4MB) - 1 バイトまで
+						// ～ 2097151 byte (2MB)
 						data.Add( ( byte )( (   length         & 0x7F ) | 0x80 ) ) ;
 						data.Add( ( byte )( ( ( length >>  7 ) & 0x7F ) | 0x80 ) ) ;
 						data.Add( ( byte )(     length >> 14                   ) ) ;
 					}
 					else
 					{
-						// 最大 536870911(512MB) - 1 バイトまで
+						// 2097152 byte (2MB) ～ 536870911 byte (512MB)
 						data.Add( ( byte )( (   length         & 0x7F ) | 0x80 ) ) ;
 						data.Add( ( byte )( ( ( length >>  7 ) & 0x7F ) | 0x80 ) ) ;
 						data.Add( ( byte )( ( ( length >> 14 ) & 0x7F ) | 0x80 ) ) ;
@@ -1009,6 +1033,27 @@ namespace NetworkPlayHelper
 		/// フレンド情報取得
 		/// </summary>
 		GetFriends			= 25,
+
+		/// <summary>
+		/// セッションのスコープタイプの変更
+		/// </summary>
+		SetSessionScopeType	= 26,
+	}
+
+	/// <summary>
+	/// ネットワーク対象の種別
+	/// </summary>
+	public enum NetworkTargetTypes
+	{
+		/// <summary>
+		/// クライアント対象
+		/// </summary>
+		Client = 0,
+
+		/// <summary>
+		/// サーバー対象
+		/// </summary>
+		Server = 1,
 	}
 
 	/// <summary>
@@ -1060,6 +1105,11 @@ namespace NetworkPlayHelper
 		/// </summary>
 		Retransmission						=  51,
 
+		/// <summary>
+		/// 再送フレーム
+		/// </summary>
+		RetransmissionFrame					=  52,
+
 		//-----------------------------------
 
 		/// <summary>
@@ -1073,6 +1123,11 @@ namespace NetworkPlayHelper
 		/// 接続維持のパケット(Client→Server)
 		/// </summary>
 		KeepAlive							=  90,
+
+		/// <summary>
+		/// 往復時間計測
+		/// </summary>
+		Ping								=  92,
 	}
 
 	/// <summary>
@@ -1097,12 +1152,12 @@ namespace NetworkPlayHelper
 	public enum SessionScopeTypes : byte
 	{
 		/// <summary>
-		/// 誰でも
+		/// 公開
 		/// </summary>
 		Public	= 1,
 
 		/// <summary>
-		/// フレンド限定
+		/// 非公開
 		/// </summary>
 		Private = 2,
 	}
@@ -1392,7 +1447,7 @@ namespace NetworkPlayHelper
 		{
 			if( m_Pointer >= m_Data.Length )
 			{
-				throw new Exception( "データサイズ異常" ) ;
+				throw new Exception( "データサイズ異常[0] offset = " + m_Pointer + " length = " + m_Data.Length ) ;
 			}
 
 			byte lSize = m_Data[ m_Pointer ] ;
@@ -1415,11 +1470,11 @@ namespace NetworkPlayHelper
 			}
 			else
 			{
-				// 128 byte ～
+				// 128 byte ～ 32767 byte (32KB)
 
 				if( m_Pointer >= m_Data.Length )
 				{
-					throw new Exception( "データサイズ異常" ) ;
+					throw new Exception( "データサイズ異常[1] offset = " + m_Pointer + " length = " + m_Data.Length ) ;
 				}
 
 				byte hSize = m_Data[ m_Pointer ] ;
@@ -1430,7 +1485,7 @@ namespace NetworkPlayHelper
 
 			if( ( m_Pointer + size ) >  m_Data.Length )
 			{
-				throw new Exception( "データサイズ異常" ) ;
+				throw new Exception( "データサイズ異常[2] size = " + size + " offset = " + m_Pointer + " length = " + m_Data.Length ) ;
 			}
 
 			byte[] data = new byte[ size ] ;
@@ -1621,15 +1676,26 @@ namespace NetworkPlayHelper
 		/// <param name="data"></param>
 		protected void PutByteArray( byte[] data )
 		{
+			if( data == null || data.Length == 0 )
+			{
+				// 空配列
+				m_Data.Add( 0 ) ;
+				return ;
+			}
+
+			//-------------------------
+
 			int size = data.Length ;
 
 			if( size <  128 )
 			{
+				// 1 byte ～ 127 byte
+
 				m_Data.Add( ( byte )size ) ;
 			}
 			else
 			{
-				// 最大 32767 文字まで
+				// 128 byte ～ 32767 byte (32KB)
 				m_Data.Add( ( byte )( ( size & 0x7F ) | 0x80 ) ) ;
 				m_Data.Add( ( byte )( ( size >>   7 ) & 0xFF ) ) ;
 			}
@@ -2357,60 +2423,41 @@ namespace NetworkPlayHelper
 
 			PacketType			= packetType ;
 		}
-/*
-		/// <summary>
-		/// 送信用にエンコード(現状使う事は無い)
-		/// </summary>
-		/// <param name="data"></param>
-		public void Encode( List<byte> data )
-		{
-			// シーケンス番号
-			DataFormat.PutUShort( data, Sequence ) ;
-
-			// 送信動作種別
-			DataFormat.PutBool( data, IsTransfer ) ;
-
-			// 送信先の種別
-			DataFormat.PutByte( data, ( byte )DestinationType ) ;
-
-			if( IsTransfer == false )
-			{
-				// 通常ダウン
-			}
-			else
-			{
-				// 転送ダウン
-
-				// 送信先のユーザー識別子群
-				if( DestinationType == DestinationTypes.Multicast )
-				{
-					DataFormat.PutVUShort( data, ( ushort )DestinationUserIds.Length ) ;
-
-					int i, l  = DestinationUserIds.Length ;
-					for( i  = 0 ; i <  l ; i ++ )
-					{
-						DataFormat.PutString( data, DestinationUserIds[ i ] ) ;
-					}
-				}
-				else
-				if( DestinationType == DestinationTypes.Unicast )
-				{
-					DataFormat.PutString( data, DestinationUserIds[ 0 ] ) ;
-				}
-			}
-
-			// 送信元の種別
-			DataFormat.PutByte( data, ( byte )SourceType ) ;
-
-			// 送信元のユーザー識別子
-			if( SourceType == SourceTypes.FromClient )
-			{
-				DataFormat.PutString( data, SourceUserId ) ;
-			}
-
-			// データ
-			DataFormat.PutByteArray( data, Data ) ;
-		}
-*/
 	}
+
+	/// <summary>
+	/// セッションプロセッサーの受信中のフレームデータ
+	/// </summary>
+	public class SessionProcessorReceivingFrameData
+	{
+		/// <summary>
+		/// データ
+		/// </summary>
+		public byte[]			Data { get ; private set ; }
+
+		/// <summary>
+		/// 送信元のユーザー識別子(SourceType が FromServer の場合は null)
+		/// </summary>
+		public string			SourceUserId { get ; private set ; }
+
+		//-----------------------------------------------------------
+
+		/// <summary>
+		/// コンストラクタ
+		/// </summary>
+		/// <param name="sequence"></param>
+		/// <param name="destinationType"></param>
+		/// <param name="userIds"></param>
+		/// <param name="data"></param>
+		public SessionProcessorReceivingFrameData
+		(
+			byte[]				data,
+			string				sourceUserId
+		)
+		{
+			Data					= data ;
+			SourceUserId			= sourceUserId ;
+		}
+	}
+
 }

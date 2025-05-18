@@ -337,6 +337,15 @@ namespace InputHelper
 				return m_KeyHashStates[ keyCode ].IsRepeat ;
 			}
 
+			// リピート監視対象キーの解放
+			private void UnregisterRepeatProcessingTarget( KeyCodes keyCode )
+			{
+				if( m_KeyHashStates.ContainsKey( keyCode ) == true )
+				{
+					m_KeyHashStates.Remove(	keyCode ) ;
+				}
+			}
+
 			//----------------------------------------------------------
 
 			/// <summary>
@@ -381,7 +390,13 @@ namespace InputHelper
 					return false ;
 				}
 
-				return keyboard[ m_KeyCodeMapper[ keyCode ] ].isPressed ;
+				bool isPressed = keyboard[ m_KeyCodeMapper[ keyCode ] ].isPressed ;
+				if( isPressed == true )
+				{
+					RegisterRepeatProcessingTarget( keyCode ) ;
+				}
+
+				return isPressed ;
 			}
 
 			/// <summary>
@@ -397,7 +412,13 @@ namespace InputHelper
 					return false ;
 				}
 
-				return keyboard[ m_KeyCodeMapper[ keyCode ] ].wasPressedThisFrame ;
+				bool isPressed = keyboard[ m_KeyCodeMapper[ keyCode ] ].wasPressedThisFrame ;
+				if( isPressed == true )
+				{
+					RegisterRepeatProcessingTarget( keyCode ) ;
+				}
+
+				return isPressed ;
 			}
 
 			/// <summary>
@@ -413,7 +434,13 @@ namespace InputHelper
 					return false ;
 				}
 
-				return keyboard[ m_KeyCodeMapper[ keyCode ] ].wasReleasedThisFrame ;
+				bool isReleased = keyboard[ m_KeyCodeMapper[ keyCode ] ].wasReleasedThisFrame ;
+				if( isReleased == true )
+				{
+					UnregisterRepeatProcessingTarget( keyCode ) ;
+				}
+
+				return isReleased ;
 			}
 
 			/// <summary>

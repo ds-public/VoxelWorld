@@ -620,11 +620,17 @@ namespace NetworkPlayHelper
 				try
 				{
 					UserName					= GetString() ;
+//					Debug.Log( "UserName : " + UserName ) ;
 					AccessToken					= GetString() ;
+//					Debug.Log( "AccessToken : " + AccessToken ) ;
 					AccessLimit					= GetLong() ;
+//					Debug.Log( "AccessLimit : " + AccessLimit ) ;
 					CommonKey					= GetByteArray() ;
+//					Debug.Log( "CommonKey : " + CommonKey ) ;
 					CommunicationServerAddress	= GetString() ;
+//					Debug.Log( "CommunicationServerAddress : " + CommunicationServerAddress ) ;
 					CommunicationServerPort		= GetUShort() ;
+//					Debug.Log( "CommunicationServerPort : " + CommunicationServerPort ) ;
 				}
 				catch( Exception )
 				{
@@ -995,7 +1001,7 @@ namespace NetworkPlayHelper
 			request.Add( ( byte )( ( m_VersionCode >> 24 ) & 0xFF ) ) ; 
 
 			// コンテント
-			if( requestContentData != null &&  requestContentData.Length >  0 )
+			if( requestContentData != null && requestContentData.Length >  0 )
 			{
 				try
 				{
@@ -1029,8 +1035,7 @@ namespace NetworkPlayHelper
 				null,
 				null,
 				m_MaxTcpPacketSize,
-				m_ClientCancellationTokenSource.Token,
-				mainContext
+				m_ClientCancellationTokenSource.Token
 			) ;
 
 			//----------------------------------------------------------
@@ -1063,10 +1068,10 @@ namespace NetworkPlayHelper
 			// 受信を待つ
 
 			bool isReceived = false ;
-			byte[] receivedData = null ;
+			ReadOnlyMemory<byte> receivedData = default ;
 
 			// 受信コールバック
-			void OnTcpReceievedHandler( byte[] data )
+			void OnTcpReceievedHandler( ReadOnlyMemory<byte> data )
 			{
 				isReceived = true ;
 				receivedData = data ;
@@ -1140,7 +1145,7 @@ namespace NetworkPlayHelper
 
 			//--------------
 
-			if( receivedData == null || receivedData.Length <  2 )
+			if( receivedData.IsEmpty == true || receivedData.Length <  2 )
 			{
 				// 失敗(データ異常)
 
@@ -1161,7 +1166,7 @@ namespace NetworkPlayHelper
 
 			try
 			{
-				responseCode = ( ResponseCodes )DataFormat.GetUShort( receivedData, ref offset ) ;
+				responseCode = ( ResponseCodes )DataFormat.GetUShort( receivedData.Span, ref offset ) ;
 			}
 			catch( Exception )
 			{
@@ -1186,7 +1191,7 @@ namespace NetworkPlayHelper
 
 				try
 				{
-					errorMessage = DataFormat.GetString( receivedData, ref offset ) ;
+					errorMessage = DataFormat.GetString( receivedData.Span, ref offset ) ;
 
 					Debug.Log( "受信したエラーメッセージ : " + errorMessage ) ;
 				}
@@ -1231,7 +1236,7 @@ namespace NetworkPlayHelper
 				// レスポンスコンテントの復号化
 				try
 				{
-					responseContentData = Security.DecryptBySecretKey( receivedData, offset, length, m_ClientSecretKey ) ;
+					responseContentData = Security.DecryptBySecretKey( receivedData.Span, offset, length, m_ClientSecretKey ) ;
 				}
 				catch( Exception )
 				{

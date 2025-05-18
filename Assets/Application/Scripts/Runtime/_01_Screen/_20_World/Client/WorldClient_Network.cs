@@ -127,7 +127,7 @@ namespace DSW.World
 		}
 
 		// 受信
-		private void OnTcpReceived( byte[] data )
+		private void OnTcpReceived( ReadOnlyMemory<byte> data )
 		{
 			WS_ProcessReceive( data ) ;
 		}
@@ -151,13 +151,13 @@ namespace DSW.World
 		//-------------------------------------------------------------------------------------------
 
 		// 受信処理
-		private void WS_ProcessReceive( byte[] data )
+		private void WS_ProcessReceive( ReadOnlyMemory<byte> memory )
 		{
-			var response = DataPacker.Deserialize<ServerResponse>( data, false, Settings.DataTypes.MessagePack ) ;
+			var response = DataPacker.Deserialize<ServerResponse>( memory, false, Settings.DataTypes.MessagePack ) ;
 			if( response == null || response.Signature != "VWPD" )
 			{
 				// 異常発生
-				Debug.LogWarning( "[SERVER] 通信パケット異常:シグネチャが認識できません:" + data.Length ) ;
+				Debug.LogWarning( "[SERVER] 通信パケット異常:シグネチャが認識できません:" + memory.Length ) ;
 				return ;
 			}
 

@@ -32,11 +32,11 @@ namespace uGUIHelper.InputAdapter
 		//-------------------------------------------------------------------------------------------
 		// 互換メソッド
 
-        /// <summary>
-        /// 押されているキーを確認する
-        /// </summary>
-        public static void CheckAllKeys()
-            => Keyboard.CheckAllKeys() ;
+		/// <summary>
+		/// 押されているキーを確認する
+		/// </summary>
+		public static void CheckAllKeys()
+			=> Keyboard.CheckAllKeys() ;
 
 		/// <summary>
 		/// キーが押されているかどうかの判定

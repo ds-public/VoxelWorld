@@ -2,6 +2,7 @@ using System ;
 using System.Collections ;
 using System.Collections.Generic ;
 using System.Text ;
+using System.Runtime.InteropServices;
 
 using Cysharp.Threading.Tasks ;
 
@@ -111,9 +112,76 @@ namespace DSW
 		/// <param name="isDecompression"></param>
 		/// <param name="type"></param>
 		/// <returns></returns>
-		public static T Deserialize<T>( byte[] dataBuffer, bool isCompression = false, Settings.DataTypes dataType = Settings.DataTypes.MessagePack )
+		public static T Deserialize<T>( byte[] dataBuffer, int offset, int length, bool isCompression = false, Settings.DataTypes dataType = Settings.DataTypes.MessagePack )
 		{
 			if( dataBuffer.IsNullOrEmpty() == true )
+			{
+				return default ;
+			}
+
+//			var dataType = GetDataType() ;
+
+			T dataObject = default ;
+
+			if( dataType == Settings.DataTypes.MessagePack )
+			{
+				// MessagePack 版(属性が必要)
+
+				//---------------------------------------------------------
+				// オプション設定
+
+				MessagePackSerializerOptions options = MessagePackSerializer.DefaultOptions ;
+
+				// 圧縮に対応
+				options.WithCompression( isCompression ? MessagePackCompression.Lz4BlockArray : MessagePackCompression.None ) ;
+
+				//---------------------------------------------------------
+
+				try
+				{
+					dataObject = MessagePackSerializer.Deserialize<T>( new ReadOnlyMemory<byte>( dataBuffer, offset, length ), options ) ;
+				}
+				catch( Exception e )
+				{
+					Debug.LogWarning( "[MessagePack - Deserialize] 例外発生 : " + e.Message ) ;
+					Debug.LogWarning( "Data Size : " + dataBuffer.Length ) ;
+				}
+			}
+			else
+			if( dataType == Settings.DataTypes.Json )
+			{
+				// Json 版(属性が必要)
+				if( isCompression == true )
+				{
+					dataBuffer = GZip.Decompress( dataBuffer ) ;
+				}
+
+				string text = Encoding.UTF8.GetString( dataBuffer ) ;
+
+//				Debug.Log( "<color=#00FF00>レスポンス:" + text + "</color>" ) ;
+
+				dataObject = JsonUtility.FromJson<T>( text ) ;
+			}
+			else
+			{
+				// 失敗
+				return default ;
+			}
+
+			return dataObject ;
+		}
+
+		/// <summary>
+		/// オブジェクトをデシリアライズする(引数のクラスタイプ指定だとIL2CPPで動かないのでジェネリックによるクラス指定メソッドを使用すること)
+		/// </summary>
+		/// <typeparam name="T"></typeparam>
+		/// <param name="dadaBuffer"></param>
+		/// <param name="isDecompression"></param>
+		/// <param name="type"></param>
+		/// <returns></returns>
+		public static T Deserialize<T>( ReadOnlyMemory<byte> dataBuffer, bool isCompression = false, Settings.DataTypes dataType = Settings.DataTypes.MessagePack )
+		{
+			if( dataBuffer.IsEmpty == true )
 			{
 				return default ;
 			}
@@ -143,19 +211,27 @@ namespace DSW
 				catch( Exception e )
 				{
 					Debug.LogWarning( "[MessagePack - Deserialize] 例外発生 : " + e.Message ) ;
-					Debug.LogWarning( "Data Size : " + dataBuffer.Length ) ;
 				}
 			}
 			else
 			if( dataType == Settings.DataTypes.Json )
 			{
+				if( MemoryMarshal.TryGetArray( dataBuffer, out ArraySegment<byte> segment ) == false )
+				{
+					return default ;
+				}
+
+				byte[] data   = segment.Array ;
+				int    offset = segment.Offset ;
+				int    length = segment.Count ;
+
 				// Json 版(属性が必要)
 				if( isCompression == true )
 				{
-					dataBuffer = GZip.Decompress( dataBuffer ) ;
+					data = GZip.Decompress( data, offset, length ) ;
 				}
 
-				string text = Encoding.UTF8.GetString( dataBuffer ) ;
+				string text = Encoding.UTF8.GetString( data ) ;
 
 //				Debug.Log( "<color=#00FF00>レスポンス:" + text + "</color>" ) ;
 

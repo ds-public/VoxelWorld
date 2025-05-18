@@ -96,9 +96,9 @@ namespace NetworkPlayHelper
 		/// <returns></returns>
 		public Task<JoinToSession_Response> JoinToSessionAsync
 		(
-			string sessionId,
-			string password = null,
-			string playerName = null,
+			ulong   sessionId,
+			string  password = null,
+			string  playerName = null,
 			CancellationToken cancellationToken = default
 		)
 		{
@@ -149,6 +149,26 @@ namespace NetworkPlayHelper
 			(
 				offset,
 				length,
+				cancellationToken
+			) ;
+		}
+
+		/// <summary>
+		/// セッションのスコープタイプを設定する(セッションに参加済み且つホストである場合のみ使用可能)
+		/// </summary>
+		/// <param name="sessionId"></param>
+		/// <param name="scopeType"></param>
+		/// <param name="cancellationToken"></param>
+		/// <returns></returns>
+		public Task<SetSessionScopeType_Response> SetSessionScopeTypeAsync
+		(
+			SessionScopeTypes		scopeType,
+			CancellationToken		cancellationToken	
+		)
+		{
+			return m_NetworkPlayClientAdapter.SetSessionScopeTypeAsync
+			(
+				scopeType,
 				cancellationToken
 			) ;
 		}

@@ -20,7 +20,7 @@ namespace uGUIHelper
 
 		//-----------------------------------------------------------
 
-		protected readonly List<UIButton> m_Buttons = new List<UIButton>() ;
+		protected readonly List<UIButton> m_Buttons = new () ;
 
 		// このボタングループに属するボタンを登録する
 		private void AddGroupButtons()
@@ -114,10 +114,7 @@ namespace uGUIHelper
 				}
 
 				// コールバックを呼ぶ
-				if( OnValueChanged != null )
-				{
-					OnValueChanged( identity, targetButton, isClick ) ;
-				}
+				OnValueChanged?.Invoke( identity, targetButton, isClick ) ;
 			}
 			else
 			{

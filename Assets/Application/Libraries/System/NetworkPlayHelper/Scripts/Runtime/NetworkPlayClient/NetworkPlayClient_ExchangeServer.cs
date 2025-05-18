@@ -5,6 +5,8 @@
 using System ;
 using System.Collections.Generic ;
 
+using System.Threading ;
+
 using UnityEngine ;
 
 
@@ -16,33 +18,55 @@ namespace NetworkPlayHelper
 	public partial class NetworkPlayClient
 	{
 		/// <summary>
-		/// セッションサーバーのアドレス
+		/// エクスチェンジサーバーのアドレス
 		/// </summary>
-		public string	SessionServerAddress
+		public string	ExchangeServerAddress
 		{
 			get
 			{
-				return m_NetworkPlayClientAdapter.SessionServerAddress ;
+				return m_NetworkPlayClientAdapter.ExchangeServerAddress ;
 			}
 		}
 
 		/// <summary>
-		/// セッションサーバーのポート
+		/// エクスチェンジサーバーのＴＣＰポート
 		/// </summary>
-		public int		SessionServerPort
+		public int		ExchangeServerTcpPort
 		{
 			get
 			{
-				return m_NetworkPlayClientAdapter.SessionServerPort ;
+				return m_NetworkPlayClientAdapter.ExchangeServerTcpPort ;
+			}
+		}
+
+		/// <summary>
+		/// エクスチェンジサーバーのＵＤＰポート
+		/// </summary>
+		public int		ExchangeServerUdpPort
+		{
+			get
+			{
+				return m_NetworkPlayClientAdapter.ExchangeServerUdpPort ;
 			}
 		}
 
 		//-----------------------------------
 
 		/// <summary>
+		/// セッションに参加しているかどうか
+		/// </summary>
+		public bool		IsSessionJoined
+		{
+			get
+			{
+				return m_NetworkPlayClientAdapter.IsSessionJoined ;
+			}
+		}
+
+		/// <summary>
 		/// セッション識別子
 		/// </summary>
-		public string		SessionId
+		public ulong		SessionId
 		{
 			get
 			{
@@ -184,9 +208,9 @@ namespace NetworkPlayHelper
 		/// 受信コールバックタイプを設定する(受動的か能動的か)
 		/// </summary>
 		/// <param name="receivingCallbackType"></param>
-		public void SetReceivingCallbackType( ReceivingCallbackTypes receivingCallbackType )
+		public void SetReceivingCallbackType( ReceivingCallbackTypes receivingCallbackType, SynchronizationContext mainThreadContext )
 		{
-			m_NetworkPlayClientAdapter.SetReceivingCallbackType( receivingCallbackType ) ;
+			m_NetworkPlayClientAdapter.SetReceivingCallbackType( receivingCallbackType, mainThreadContext ) ;
 		}
 
 		/// <summary>
@@ -196,6 +220,24 @@ namespace NetworkPlayHelper
 		public int Dequeue()
 		{
 			return m_NetworkPlayClientAdapter.Dequeue() ;
+		}
+
+		/// <summary>
+		/// 受信コールバックタイプを設定する(受動的か能動的か)
+		/// </summary>
+		/// <param name="receivingCallbackType"></param>
+		public void SetReceivingCallbackType_ForSessionProcessor( ReceivingCallbackTypes receivingCallbackType, SynchronizationContext mainThreadContext )
+		{
+			m_NetworkPlayClientAdapter.SetReceivingCallbackType_ForSessionProcessor( receivingCallbackType, mainThreadContext ) ;
+		}
+
+		/// <summary>
+		/// 受信コールバックが能動的コールバックに設定されている場合にデータを受信済みならコールバックを発生させる
+		/// </summary>
+		/// <returns></returns>
+		public int Dequeue_ForSessionProcessor()
+		{
+			return m_NetworkPlayClientAdapter.Dequeue_ForSessionProcessor() ;
 		}
 
 		//-------------------------------------------------------------------------------------------
@@ -226,13 +268,13 @@ namespace NetworkPlayHelper
 		/// <returns></returns>
 		public bool Send
 		(
-			PacketTypes packetType,
 			byte[] data,
+			PacketTypes packetType,
 			DestinationTypes destinationType = DestinationTypes.Broadcast,
 			params string[] destinationUserIds	// 設定が必要なのは Multicast と Unicast のケース
 		)
 		{
-			return m_NetworkPlayClientAdapter.Send( packetType, data, destinationType, destinationUserIds ) ;
+			return m_NetworkPlayClientAdapter.Send( data, packetType, destinationType, destinationUserIds ) ;
 		}
 
 		/// <summary>
@@ -244,6 +286,91 @@ namespace NetworkPlayHelper
 		{
 			return m_NetworkPlayClientAdapter.Kick( userId ) ;
 		}
+
+		//-------------------------------------------------------------------------------------------
+		// パフォーマンス計測機能
+
+		/// <summary>
+		/// 往復時間の計測を行うかどうか
+		/// </summary>
+		public bool UsePing
+		{
+			get
+			{
+				return m_NetworkPlayClientAdapter.UsePing ;
+			}
+			set
+			{
+				m_NetworkPlayClientAdapter.UsePing = value ;
+			}
+		}
+
+		/// <summary>
+		/// 往復時間計測のパケットタイプ
+		/// </summary>
+		public PacketTypes PingPacketType
+		{
+			get
+			{
+				return m_NetworkPlayClientAdapter.PingPacketType ;
+			}
+			set
+			{
+				m_NetworkPlayClientAdapter.PingPacketType = value ;
+			}
+		}
+
+		//---------------
+
+		/// <summary>
+		/// サーバー宛の往復時間[最小]
+		/// </summary>
+		public long PingToServer_Min
+			=> m_NetworkPlayClientAdapter.PingToServer_Min ;
+
+		/// <summary>
+		/// サーバー宛の往復時間[平均]
+		/// </summary>
+		public long PingToServer_Avarage
+			=> m_NetworkPlayClientAdapter.PingToServer_Avarage ;
+
+		/// <summary>
+		/// サーバー宛の往復時間[最新]
+		/// </summary>
+		public long PingToServer
+			=> m_NetworkPlayClientAdapter.PingToServer ;
+
+		/// <summary>
+		/// サーバー宛の往復時間[最大]
+		/// </summary>
+		public long PingToServer_Max
+			=> m_NetworkPlayClientAdapter.PingToServer_Max ;
+
+		//-----
+
+		/// <summary>
+		/// ホスト宛の往復時間[最小]
+		/// </summary>
+		public long PingToHost_Min
+			=> m_NetworkPlayClientAdapter.PingToHost_Min ;
+
+		/// <summary>
+		/// ホスト宛の往復時間[平均]
+		/// </summary>
+		public long PingToHost_Avarage
+			=> m_NetworkPlayClientAdapter.PingToHost_Avarage ;
+
+		/// <summary>
+		/// ホスト宛の往復時間[最新]
+		/// </summary>
+		public long PingToHost
+			=> m_NetworkPlayClientAdapter.PingToHost ;
+
+		/// <summary>
+		/// ホスト宛の往復時間[最大]
+		/// </summary>
+		public long PingToHost_Max
+			=> m_NetworkPlayClientAdapter.PingToHost_Max ;
 
 		//-------------------------------------------------------------------------------------------
 

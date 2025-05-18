@@ -96,13 +96,13 @@ namespace InputHelper
 
 		//-----------------------------------------------------------
 
-		private Action<InputTypes>	m_OnInputTypeChanged = null ;
+		private Action<InputTypes,InputTypes>	m_OnInputTypeChanged = null ;
 
 		/// <summary>
 		/// 入力タイプが切り替わった際に通知するデリケート
 		/// </summary>
 		/// <param name="inputType"></param>
-		public delegate void OnInputTypeChangedDelegate( InputTypes inputType ) ;
+		public delegate void OnInputTypeChangedDelegate( InputTypes basisInputType, InputTypes extraInputType ) ;
 
 		private OnInputTypeChangedDelegate	m_OnInputTypeChangedDelegate ;
 
@@ -111,7 +111,7 @@ namespace InputHelper
 		/// </summary>
 		/// <param name="onInputTypeChanged"></param>
 		/// <param name="call"></param>
-		public static void SetOnInputTypeChanged( Action<InputTypes> onInputTypeChanged, bool call = false )
+		public static void SetOnInputTypeChanged( Action<InputTypes,InputTypes> onInputTypeChanged, bool call = false )
 		{
 			if( m_Instance == null )
 			{
@@ -122,14 +122,14 @@ namespace InputHelper
 		}
 
 		// モード切替を通知するコールバックを設定する
-		private void SetOnInputTypeChanged_Private( Action<InputTypes> onInputTypeChanged, bool call )
+		private void SetOnInputTypeChanged_Private( Action<InputTypes,InputTypes> onInputTypeChanged, bool call )
 		{
 			m_OnInputTypeChanged = onInputTypeChanged ;
 			
 			// セットした直後に現在のモードでコールバックを呼ぶ
 			if( call == true && m_OnInputTypeChanged != null )
 			{
-				m_OnInputTypeChanged( Settings.InputType ) ;
+				m_OnInputTypeChanged( Settings.BasisInputType, Settings.ExtraInputType ) ;
 			}
 		}
 
@@ -159,7 +159,7 @@ namespace InputHelper
 			// セットした直後に現在のモードでコールバックを呼ぶ
 			if( call == true )
 			{
-				m_OnInputTypeChangedDelegate( Settings.InputType ) ;
+				m_OnInputTypeChangedDelegate( Settings.BasisInputType, Settings.ExtraInputType ) ;
 			}
 		}
 

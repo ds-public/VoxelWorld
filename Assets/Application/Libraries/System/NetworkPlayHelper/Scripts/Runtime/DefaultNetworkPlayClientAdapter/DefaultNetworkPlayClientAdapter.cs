@@ -125,7 +125,12 @@ namespace NetworkPlayHelper
 		//-----------------------------------------------------------
 
 		// メインスレッドのコンテキスト
-		private SynchronizationContext			m_MainContext ;
+		private SynchronizationContext			m_MainThreadContext ;
+
+		// メインスレッドのコンテキスト(セッションプロセッサー用)
+		private SynchronizationContext			m_MainThreadContext_ForSessionProcessor ;
+
+		//-----------------------------------
 
 		// オーナーのキャンセレーショントークン
 		private CancellationToken				m_OwnerCancellationToken ;
@@ -149,11 +154,8 @@ namespace NetworkPlayHelper
 		/// コンストラクタ
 		/// </summary>
 		/// <param name="ownerCancellationToken"></param>
-		public DefaultNetworkPlayClientAdapter( SynchronizationContext mainContext, CancellationToken ownerCancellationToken )
+		public DefaultNetworkPlayClientAdapter( CancellationToken ownerCancellationToken )
 		{
-			// メインスレッドのコンテキストを記録
-			m_MainContext				= mainContext ;
-
 			// オーナーのキャンセレーショントークンを記録
 			m_OwnerCancellationToken	= ownerCancellationToken ;
 
