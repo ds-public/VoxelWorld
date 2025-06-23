@@ -33,7 +33,7 @@ using UnityEditor ;
 namespace AudioHelper
 {
 	/// <summary>
-	/// オーディオ全般の管理クラス Version 2025/05/13 0
+	/// オーディオ全般の管理クラス Version 2025/06/12 0
 	/// </summary>
 	public class AudioManager_ADX2 : MonoBehaviour
 	{
@@ -322,6 +322,11 @@ namespace AudioHelper
 		private bool		m_EnableLowLatency = false ;
 
 		/// <summary>
+		/// プレビューモードを有効化するかどうか
+		/// </summary>
+		private bool        m_PreviewModeEnabled = false ;
+
+		/// <summary>
 		/// 使用中のバインダーの数
 		/// </summary>
 		[SerializeField]
@@ -505,7 +510,8 @@ namespace AudioHelper
 			bool enableListener = true,
 			bool runInBackground = false,
 			bool muteInBackground = true,
-			bool enableLowLatency = false
+			bool enableLowLatency = false,
+			bool previewModeEnabled = false
 		)
 		{
 			if( m_Instance != null )
@@ -561,6 +567,8 @@ namespace AudioHelper
 			m_Instance.m_EnableListaner		= enableListener ;
 			m_Instance.m_EnableLowLatency	= enableLowLatency ;
 
+			m_Instance.m_PreviewModeEnabled = previewModeEnabled ;
+
 			return m_Instance ;
 		}
 
@@ -597,7 +605,7 @@ namespace AudioHelper
 				return ;
 			}
 
-			AudioManager_ADX2 instanceOther = GameObject.FindAnyObjectByType( typeof( AudioManager_ADX2 ) ) as AudioManager_ADX2 ;
+			var instanceOther = GameObject.FindAnyObjectByType( typeof( AudioManager_ADX2 ) ) as AudioManager_ADX2 ;
 			if( instanceOther != null )
 			{
 				if( instanceOther != this )
@@ -673,8 +681,20 @@ namespace AudioHelper
 			m_CriWareInitializer	= initializer.AddComponent<CriWareInitializer>() ;
 			m_CriWareInitializer.dontDestroyOnLoad = ( initializer.transform.parent == null ) ;
 
+			// プレビューモードの有効化
+			m_CriWareInitializer.atomConfig.inGamePreviewMode =
+				m_PreviewModeEnabled == true ?
+					CriAtomConfig.InGamePreviewSwitchMode.Enable :
+					CriAtomConfig.InGamePreviewSwitchMode.Default ;
+
 			m_CriWareInitializer.fileSystemConfig.numberOfLoaders		= m_MaxNumberOfBinders ;
 			m_CriWareInitializer.fileSystemConfig.numberOfBinders		= m_MaxNumberOfBinders ;	// バインド可能数をデフォルトの８から１６に増強
+
+			// 同時発音数関係
+			m_CriWareInitializer.atomConfig.maxVirtualVoices                        = 40 ;  // Default : 32
+			m_CriWareInitializer.atomConfig.standardVoicePoolConfig.memoryVoices    = 24 ;  // Default : 16
+			m_CriWareInitializer.atomConfig.standardVoicePoolConfig.streamingVoices =  8 ;  // Default :  8
+
 #if UseEncrypt
 			m_CriWareInitializer.DecrypterConfig.key					= m_EncryptKey ;			// 暗号化キー
 			if( string.IsNullOrEmpty( m_EncryptKey ) == false )
@@ -2220,6 +2240,40 @@ namespace AudioHelper
 
 			// 成功したらソースのインスタンスを返す
 			return playId ;
+		}
+
+		//-------------------------------------------------------------------------------------------
+		// ＡＤＸ固有の機能
+
+		/// <summary>
+		/// バスセンドレベルを設定する
+		/// </summary>
+		/// <param name="busName"></param>
+		/// <param name="sendLevel"></param>
+		/// <returns></returns>
+		public static bool SetBusSendLevel( int playId, string busName, float sendLevel = 0 )
+		{
+			if( m_Instance == null )
+			{
+				return false ;
+			}
+
+			return m_Instance.SetBusSendLevel_Private( playId, busName, sendLevel ) ;
+		}
+
+		// バスセンドレベルを設定する
+		private bool SetBusSendLevel_Private( int playId, string busName, float sendLevel )
+		{
+			var audioChannel = GetChannelByPlayId( playId ) ;
+			if( audioChannel == null )
+			{
+				// 失敗(元々存在しないか既に停止している)
+				return false ;
+			}
+
+			//----------------------------------
+
+			return audioChannel.SetBusSendLevel( busName, sendLevel ) ;
 		}
 
 		//-------------------------------------------------------------------------------------------
@@ -4767,6 +4821,27 @@ namespace AudioHelper
 			{
 				return m_IsSuspending ;
 			}
+		}
+
+		//-------------------------------------------------------------------------------------------
+		// ＡＤＸ固有の機能
+
+		/// <summary>
+		/// バスセンドレベルを設定する
+		/// </summary>
+		/// <param name="busName"></param>
+		/// <param name="sendLevel"></param>
+		/// <returns></returns>
+		internal protected bool SetBusSendLevel( string busName, float sendLevel = 0 )
+		{
+			if( m_AudioSource == null )
+			{
+				return false ;
+			}
+
+			m_AudioSource.SetBusSendLevel( busName, sendLevel ) ;
+
+			return true ;
 		}
 	}
 }

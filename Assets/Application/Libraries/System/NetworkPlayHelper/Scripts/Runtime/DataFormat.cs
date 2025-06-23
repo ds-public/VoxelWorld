@@ -1783,6 +1783,11 @@ namespace NetworkPlayHelper
 		//-----------------------------------
 
 		/// <summary>
+		/// データベースアクセスで問題が生じた
+		/// </summary>
+		DatabaseFailed			= 50040,
+
+		/// <summary>
 		/// ゲストアカウントの作成に失敗した
 		/// </summary>
 		CreateGuestCountFailed = 50110,

@@ -38,11 +38,11 @@ namespace NetworkPlayHelper
 		/// <summary>
 		/// アカウントサーバーのポート
 		/// </summary>
-		public int		AccountServerPort
+		public int		AccountServerTcpPort
 		{
 			get
 			{
-				return m_NetworkPlayClientAdapter.AccountServerPort ;
+				return m_NetworkPlayClientAdapter.AccountServerTcpPort ;
 			}
 		}
 

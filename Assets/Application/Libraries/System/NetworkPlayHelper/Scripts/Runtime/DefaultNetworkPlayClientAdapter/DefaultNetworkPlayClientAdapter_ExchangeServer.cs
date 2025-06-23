@@ -5,6 +5,9 @@ using System.Linq ;
 using System.Threading ;
 using System.Threading.Tasks ;
 
+using System.Net ;
+using System.Net.Sockets ;
+
 using UnityEngine ;
 
 using SocketHelper ;
@@ -17,29 +20,32 @@ namespace NetworkPlayHelper
 	/// </summary>
 	public partial class DefaultNetworkPlayClientAdapter : INetworkPlayClientAdapter
 	{
-		// エクスチェンジサーバーのアドレス
-		private string		m_ExchangeServerAddress ;
-
 		/// <summary>
 		/// エクスチェンジサーバーのアドレス
 		/// </summary>
 		public	string		ExchangeServerAddress	=> m_ExchangeServerAddress ;
 
-		// エクスチェンジサーバーのＴＣＰポート
-		private int			m_ExchangeServerTcpPort ;
+		// エクスチェンジサーバーのアドレス
+		private string		m_ExchangeServerAddress ;
 
 		/// <summary>
 		/// エクスチェンジサーバーのＴＣＰポート
 		/// </summary>
 		public	int			ExchangeServerTcpPort	=> m_ExchangeServerTcpPort ;
 
-		// エクスチェンジサーバーのＵＤＰポート
-		private int			m_ExchangeServerUdpPort ;
+		// エクスチェンジサーバーのＴＣＰポート
+		private int			m_ExchangeServerTcpPort ;
 
 		/// <summary>
 		/// エクスチェンジサーバーのＵＤＰポート
 		/// </summary>
 		public	int			ExchangeServerUdpPort	=> m_ExchangeServerUdpPort ;
+
+		// エクスチェンジサーバーのＵＤＰポート
+		private int			m_ExchangeServerUdpPort ;
+
+		// エクスチェンジサーバーのＵＤＰエンドポイント
+		private IPEndPoint  m_ExchangeServerUdpEndPoint ;
 
 		//-----------------------------------
 
@@ -1242,9 +1248,9 @@ namespace NetworkPlayHelper
 			// リアルタイム通信用のクライアントソケット生成
 			m_RealTimeSocketClient = new SocketClient
 			(
-				OnTcpReceived_FromSessonServer,
-				OnTcpDeiconnected_FromSessionServer,
-				OnUdpReceived_FromSessionServer,
+				OnTcpReceived_FromExchangeServer,
+				OnTcpDeiconnected_FromExchangeServer,
+				OnUdpReceived_FromExchangeServer,
 				m_MaxTcpPacketSize,
 				m_CancellationTokenSource_ForExchangeServer.Token
 			) ;
@@ -1274,7 +1280,7 @@ namespace NetworkPlayHelper
 		}
 
 		// エンスチェンジサーバーにＴＣＰで接続する
-		private async Task<bool> ConnectToExchangeServer
+		private async Task<( ResponseCodes,string )> ConnectToExchangeServer
 		(
 			string exchangeServerAddress,
 			int exchangeServerPort,
@@ -1284,7 +1290,7 @@ namespace NetworkPlayHelper
 			if( m_RealTimeSocketClient == null )
 			{
 				// リアルタイム通信用のソケットクライアントが生成されていない
-				return false ;
+				return ( ResponseCodes.CouldNotConnectToSessionServer, "リアルタイム通信環境が準備されていない" ) ;
 			}
 
 			//----------------------------------------------------------
@@ -1318,12 +1324,13 @@ namespace NetworkPlayHelper
 				cancellationTokenSource = CancellationTokenSource.CreateLinkedTokenSource( m_CancellationTokenSource_ForExchangeServer.Token, cancellationToken ) ;
 			}
 
+			bool isConnected = false ;
 			isCanceled = false ;
 
 			try
 			{
 				// エクスチェンジサーバーへＴＣＰ接続を行う(接続実行と受信開始)
-				await m_RealTimeSocketClient.ConnectAsync( exchangeServerAddress, exchangeServerPort, null, cancellationTokenSource.Token ) ;
+				isConnected = await m_RealTimeSocketClient.ConnectAsync( exchangeServerAddress, exchangeServerPort, null, cancellationTokenSource.Token ) ;
 			}
 			catch( Exception e )
 			{
@@ -1347,6 +1354,12 @@ namespace NetworkPlayHelper
 			{
 				// キャンセルされていたらキャンセル例外を発行する
 				throw new OperationCanceledException() ;
+			}
+
+			if( isConnected == false )
+			{
+				// 失敗
+				return ( ResponseCodes.CouldNotConnectToSessionServer, "エクスチェンジサーバーとの接続に失敗しました\n" + exchangeServerAddress + " : " + exchangeServerPort ) ;
 			}
 
 			Debug.Log( "<color=#FFFF00>無事に ExchangeServer に接続 : クライアント側のポート番号 = " + m_RealTimeSocketClient.GetTcpPort() + "</color>" ) ;
@@ -1468,13 +1481,15 @@ namespace NetworkPlayHelper
 			if( m_ClientPhase == ClientPhases.Disconnecting )
 			{
 				// 失敗
-				return false ;
+				return ( ResponseCodes.CouldNotConnectToSessionServer, "エクスチェンジサーバーとのバインドに失敗しました" ) ;
 			}
 
 			Debug.Log( "<color=#FFFF00>ExchangeServer にバインド完了 : m_ClientPhase = " + m_ClientPhase + " m_UdpEnabled = " + m_UdpEnabled + "</color>" ) ;
 
 			//------------------------------------------------------------------------------------------
 			// ＵＤＰが有効であるなら KeepAlive を一定時間毎に送りつつ Ready を受信するのを待つ
+
+			string errorMessage = string.Empty ;
 
 			// 既に Ready になっていたらスキップする(ＵＤＰを使用しないケースではありえる)
 			if( m_ClientPhase == ClientPhases.Connecting )
@@ -1492,6 +1507,8 @@ namespace NetworkPlayHelper
 
 				isCanceled = false ;
 
+				long waitTicks = Timer.NowTicks ;
+
 				while( m_RealTimeSocketClient != null && m_CancellationTokenSource_ForExchangeServer != null )
 				{
 					if( m_CancellationTokenSource_ForExchangeServer.IsCancellationRequested == true )
@@ -1506,9 +1523,13 @@ namespace NetworkPlayHelper
 
 						if( ( Timer.NowTicks - baseTicks ) >  250 )
 						{
-//							Debug.Log( "<color=#00FFFF>UDP で KeepAlive を送信</color>" ) ;
 							// ＵＤＰが有効である場合はルートを確立するため一定期間おきにＵＤＰのＫｅｅｐＡｌｉｖｅを送信する
-							SendKeepAlive( PacketTypes.UDP ) ;
+							if( SendKeepAlive( PacketTypes.UDP ) == false )
+							{
+								// 送信に失敗した
+								errorMessage = "エクスチェンジサーバーへの情報送信(ＵＤＰ)の送信に失敗しました\n" + m_ExchangeServerAddress + ":" + m_ExchangeServerUdpPort ;
+								break ;
+							}
 
 							baseTicks = Timer.NowTicks ;
 						}
@@ -1521,6 +1542,17 @@ namespace NetworkPlayHelper
 						// 待機終了
 						break ;
 					}
+
+					//-----------------------------------------
+
+					if( ( Timer.NowTicks - waitTicks ) >  ( 10 * 1000 ) )
+					{
+						// タイムアウト
+						errorMessage = "エスクチェンジサーバーからのＵＤＰ経路確立のための応答待ちがタイムアウトしました\n" + m_ExchangeServerAddress + ":" + m_ExchangeServerUdpPort ;
+						break ;
+					}
+
+					//-----------------------------------------
 
 					await Task.Yield() ;
 				}
@@ -1553,12 +1585,15 @@ namespace NetworkPlayHelper
 				if( m_ClientPhase != ClientPhases.Ready )
 				{
 					// 失敗
-					return false ;
+					Debug.LogWarning( "<color=#FFFF00>エクスチェンジサーバーとの接続が確立できない</color>" ) ;
+					return ( ResponseCodes.CouldNotConnectToSessionServer, errorMessage ) ;
 				}
 			}
 
 			//----------------------------------
 			// 最後にサーバーに準備完了を通知する
+
+			Debug.Log( "<color=#00FFFF>サーバーに対してクライアントが準備完了した事を通知する</color>" ) ;
 
 			SendClientReady() ;
 
@@ -1575,7 +1610,7 @@ namespace NetworkPlayHelper
 			_ = ProcessSession() ;
 
 			// 接続成功
-			return true ;
+			return ( ResponseCodes.Succeeded, string.Empty ) ;
 		}
 
 		// セッションの接続状況監視用の非同期タスク
@@ -1794,7 +1829,7 @@ namespace NetworkPlayHelper
 		// SocketHelper 関連のコールバック
 
 		// ＴＣＰパケットを受信した際に呼び出されるコールバック
-		private void OnTcpReceived_FromSessonServer( ReadOnlyMemory<byte> data )
+		private void OnTcpReceived_FromExchangeServer( ReadOnlyMemory<byte> data )
 		{
 			if( m_ClientPhase != ClientPhases.RequestBinding && m_ClientPhase != ClientPhases.Connecting && m_ClientPhase != ClientPhases.Ready )
 			{
@@ -2161,7 +2196,7 @@ namespace NetworkPlayHelper
 		}
 
 		// ＴＣＰが切断された際に呼び出されるコールバック
-		private void OnTcpDeiconnected_FromSessionServer()
+		private void OnTcpDeiconnected_FromExchangeServer()
 		{
 			// 切断状態
 			Debug.LogWarning( "ＴＣＰ接続がサーバーから切断された : " + m_ClientPhase ) ;
@@ -2169,7 +2204,7 @@ namespace NetworkPlayHelper
 		}
 
 		// ＵＤＰパケットを受信した際に呼び出されるコールバック
-		private void OnUdpReceived_FromSessionServer( ReadOnlyMemory<byte> data, string serverAddress, int serverPort )
+		private void OnUdpReceived_FromExchangeServer( ReadOnlyMemory<byte> data, string serverAddress, int serverPort )
 		{
 			if( m_ClientPhase != ClientPhases.Ready )
 			{
@@ -2545,7 +2580,7 @@ namespace NetworkPlayHelper
 		//-------------------------------------------------------------------------------------------
 
 		// コマンドを送信する
-		private void SendCommand( CommandTypes commandType, Action<List<byte>> onDataAdditional, PacketTypes packetType )
+		private bool SendCommand( CommandTypes commandType, Action<List<byte>> onDataAdditional, PacketTypes packetType )
 		{
 			var command = new List<byte>() ;
 
@@ -2592,19 +2627,23 @@ namespace NetworkPlayHelper
 
 			//----------------------------------------------------------
 
+			bool result ;
+
 			if( packetType == PacketTypes.TCP )
 			{
 				// ＴＣＰでパケットを送信する
-				m_RealTimeSocketClient.SendTcp( commandData ) ;
+				result = m_RealTimeSocketClient.SendTcp( commandData ) ;
 			}
 			else
 			{
 				// ＵＤＰでパケットを送信する(宛先を後できちんと設定する[IPv6]にも対応が必要)
-				m_RealTimeSocketClient.SendUdp( commandData, m_ExchangeServerAddress, m_ExchangeServerUdpPort ) ;
+				result = m_RealTimeSocketClient.SendUdp( commandData, m_ExchangeServerUdpEndPoint ) ;
 			}
 
 			// 最後に送信した時間を更新する
 			m_LastSendTime = Timer.NowTicks ;
+
+			return result ;
 		}
 
 		// セッションへのバインド要求を送信する
@@ -3791,11 +3830,11 @@ namespace NetworkPlayHelper
 
 		// KeepAlive パケットを送る
 		// 送るタイミングは、 LastUpdateTime から５秒経過していたら
-		private void SendKeepAlive( PacketTypes packetType )
+		private bool SendKeepAlive( PacketTypes packetType )
 		{
 //			Debug.Log( "<color=#FF7FFF>KeepAlive の送信起点 : Ticks = " + ticks + " PacketType = " + packetType + "</color>" ) ;
 
-			SendCommand
+			return SendCommand
 			(
 				CommandTypes.KeepAlive,
 				null,

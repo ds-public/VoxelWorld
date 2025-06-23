@@ -54,8 +54,14 @@ namespace SocketHelper
 		// ＴＣＰ受信時のコールバック
 		private readonly Action<ClientHandler,ReadOnlyMemory<byte>>	m_OnTcpReceived ;
 
+		// ＴＣＰ受信時のコールバック(拡張)
+		private Action<ReadOnlyMemory<byte>>						m_OnTcpReceived_Extension ;
+
 		// ＴＣＰ切断時のコールバック
 		private readonly Action<ClientHandler>						m_OnTcpDisconnected ;
+
+		// ＴＣＰ切断時のコールバック(拡張)
+		private Action												m_OnTcpDisconnected_Extension ;
 
 		// オーナーのキャンセレーショントークン
 		private readonly CancellationToken							m_OwnerCancellationToken ;
@@ -207,6 +213,26 @@ namespace SocketHelper
 		}
 
 		/// <summary>
+		/// 追加の受信コールバックを設定する
+		/// </summary>
+		/// <param name="onTcpReceived"></param>
+		public void SetOnTcpReceived( Action<ReadOnlyMemory<byte>> onTcpReceived )
+		{
+			m_OnTcpReceived_Extension = onTcpReceived ;
+		}
+
+		/// <summary>
+		/// 追加の切断コールバックを設定する
+		/// </summary>
+		/// <param name="onTcpReceived"></param>
+		public void SetOnTcpDisconnected( Action onTcpDisconnected )
+		{
+			m_OnTcpDisconnected_Extension = onTcpDisconnected ;
+		}
+
+		//-----------------------------------------------------------
+
+		/// <summary>
 		/// 処理を開始する
 		/// </summary>
 		public void Start()
@@ -251,6 +277,8 @@ namespace SocketHelper
 			}
 		}
 
+		private const byte	m_XOR = 0xAA ;
+
 		private bool ProcessReceiveTcp( IAsyncResult ar )
 		{
 			var socketTcp = ( Socket )ar.AsyncState ;
@@ -269,17 +297,13 @@ namespace SocketHelper
 					if( receiveSize == 0 )
 					{
 						Debug.Log( "[TCP]受信待ち中に０バイト受信が発生した : EndPoint = " + m_EndPoint.ToString() ) ;
-
 						return false ;
 					}
 
 					//----------------------------------
 
 					int		requiredSize ;
-
 					uint	crc ;
-					byte	xor = 0xAA ;
-					int		xor_index ;
 
 					// 現在のフレームで受信したデータを全て処理しきるまで繰り返し処理する
 					while( receiveStep <  receiveSize )
@@ -304,10 +328,15 @@ namespace SocketHelper
 								{
 									// サイズ分が溜まった
 
-									for( xor_index  = 0 ;  xor_index <  m_TcpReceiveHeaderSize ; xor_index ++ )
-									{
-										m_TcpReceiveHeaderData[ xor_index ] ^= xor ;
-									}
+									m_TcpReceiveHeaderData[ 0 ] ^= m_XOR ;
+									m_TcpReceiveHeaderData[ 1 ] ^= m_XOR ;
+
+									m_TcpReceiveHeaderData[ 2 ] ^= m_XOR ;
+									m_TcpReceiveHeaderData[ 3 ] ^= m_XOR ;
+									m_TcpReceiveHeaderData[ 4 ] ^= m_XOR ;
+									m_TcpReceiveHeaderData[ 5 ] ^= m_XOR ;
+									m_TcpReceiveHeaderData[ 6 ] ^= m_XOR ;
+									m_TcpReceiveHeaderData[ 7 ] ^= m_XOR ;
 
 									crc = ( uint )(
 										  m_TcpReceiveHeaderData[ 4 ]         |
@@ -339,12 +368,12 @@ namespace SocketHelper
 
 									if( m_TcpReceivePacketSize >  0 )
 									{
-										m_TcpReceivePacketStep = 0 ;
+										m_TcpReceivePacketStep  = 0 ;
 									}
 									else
 									{
 										// もう一度取り直し(ワーニングは出した方が良い)
-										m_TcpReceiveHeaderStep = 0 ;
+										m_TcpReceiveHeaderStep  = 0 ;
 									}
 								}
 							}
@@ -379,7 +408,9 @@ namespace SocketHelper
 										// メインスレッド限定あり呼び出し
 										if( SynchronizationContext.Current == m_MainThreadContext )
 										{
-											m_OnTcpReceived( this, new ReadOnlyMemory<byte>( m_TcpReceivePacketData, 0, m_TcpReceivePacketSize ) ) ;
+											var memory = new ReadOnlyMemory<byte>( m_TcpReceivePacketData, 0, m_TcpReceivePacketSize ) ;
+											m_OnTcpReceived( this, memory ) ;
+											m_OnTcpReceived_Extension?.Invoke( memory ) ;
 										}
 										else
 										{
@@ -389,14 +420,18 @@ namespace SocketHelper
 
 											m_MainThreadContext.Post( ( _ ) =>
 											{
-												m_OnTcpReceived( this, new ReadOnlyMemory<byte>( data ) ) ;
+												var memory = new ReadOnlyMemory<byte>( data ) ;
+												m_OnTcpReceived( this, memory ) ;
+												m_OnTcpReceived_Extension?.Invoke( memory ) ;
 											}, null ) ;
 										}
 									}
 									else
 									{
 										// メインスレッド限定なし呼び出し
-										m_OnTcpReceived( this, new ReadOnlyMemory<byte>( m_TcpReceivePacketData, 0, m_TcpReceivePacketSize ) ) ;
+										var memory = new ReadOnlyMemory<byte>( m_TcpReceivePacketData, 0, m_TcpReceivePacketSize ) ;
+										m_OnTcpReceived( this, memory ) ;
+										m_OnTcpReceived_Extension?.Invoke( memory ) ;
 									}
 								}
 #endif
@@ -452,16 +487,16 @@ namespace SocketHelper
 				return false ;
 			}
 
-			if( m_SocketTcp == null || m_SocketTcp.Connected == false )
-			{
-				return false ;
-			}
-
 			//----------------------------------
 
 			// サブスレッドの排他制御
 			lock( m_TcpSendLockObject )
 			{
+				if( m_SocketTcp == null || m_SocketTcp.Connected == false )
+				{
+					return false ;
+				}
+
 				if( m_IsTcpSendRunning == false )
 				{
 					// 送信中ではない
@@ -612,6 +647,7 @@ namespace SocketHelper
 
 					// 切断コールバック(※ServerSocket 側でメインスレッド限定化処理が施されるためメインスレッド限定化処理をここで行う必要は無い)
 					m_OnTcpDisconnected?.Invoke( this ) ;
+					m_OnTcpDisconnected_Extension?.Invoke() ;
 				}
 			}
 		}
@@ -654,6 +690,7 @@ namespace SocketHelper
 
 						// 切断コールバック(※ServerSocket 側でメインスレッド限定化処理が施されるためメインスレッド限定化処理をここで行う必要は無い)
 						m_OnTcpDisconnected?.Invoke( this ) ;
+						m_OnTcpDisconnected_Extension?.Invoke() ;
 					}
 				}
 			}

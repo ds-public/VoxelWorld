@@ -11,7 +11,7 @@ using UnityEngine ;
 namespace NetworkPlayHelper
 {
 	/// <summary>
-	/// NetworkPlay 機能のクライアント側の管理用クラス Version 2025/05/01
+	/// NetworkPlay 機能のクライアント側の管理用クラス Version 2025/06/18
 	/// </summary>
 	public partial class NetworkPlayClient
 	{

@@ -129,7 +129,7 @@ namespace NetworkPlayHelper
 		/// </summary>
 		/// <param name="loginServerAddress"></param>
 		/// <param name="loginServerPort"></param>
-		public void SetAccountServer( string accountServerAddress, int accountServerPort ) ;
+		public bool SetAccountServer( string accountServerAddress, int accountServerTcpPort ) ;
 
 		/// <summary>
 		/// アカウントサーバーのアドレス
@@ -139,7 +139,7 @@ namespace NetworkPlayHelper
 		/// <summary>
 		/// アカウントサーバーのポート
 		/// </summary>
-		public int		AccountServerPort { get ; }
+		public int		AccountServerTcpPort { get ; }
 
 
 		/// <summary>
@@ -218,7 +218,7 @@ namespace NetworkPlayHelper
 		/// <summary>
 		/// コミュニケーションサーバーのポート
 		/// </summary>
-		public int		CommunicationServerPort { get ; }
+		public int		CommunicationServerTcpPort { get ; }
 
 		/// <summary>
 		/// 任意機能を実行する

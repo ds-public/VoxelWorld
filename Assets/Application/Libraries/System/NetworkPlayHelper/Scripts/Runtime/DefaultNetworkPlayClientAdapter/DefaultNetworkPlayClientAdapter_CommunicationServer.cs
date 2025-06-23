@@ -4,6 +4,9 @@ using System.Collections.Generic ;
 using System.Threading ;
 using System.Threading.Tasks ;
 
+using System.Net ;
+using System.Net.Sockets ;
+
 using UnityEngine ;
 
 using SocketHelper ;
@@ -16,21 +19,24 @@ namespace NetworkPlayHelper
 	/// </summary>
 	public partial class DefaultNetworkPlayClientAdapter : INetworkPlayClientAdapter
 	{
-		// コミュニケーションサーバーのアドレス
-		private string	m_CommunicationServerAddress ;
-
 		/// <summary>
 		/// コミュニケーションサーバーのアドレス
 		/// </summary>
 		public string	CommunicationServerAddress	=> m_CommunicationServerAddress ;
 
-		// コミュニケーションサーバーのポート
-		private int		m_CommunicationServerPort ;
+		// コミュニケーションサーバーのアドレス
+		private string	m_CommunicationServerAddress ;
 
 		/// <summary>
-		/// コミュニケーションサーバーのポート
+		/// コミュニケーションサーバーのＴＣＰポート
 		/// </summary>
-		public int		CommunicationServerPort		=> m_CommunicationServerPort ;
+		public int		CommunicationServerTcpPort		=> m_CommunicationServerTcpPort ;
+
+		// コミュニケーションサーバーのＴＣＰポート
+		private int		m_CommunicationServerTcpPort ;
+
+		// コミュニケーションサーバーのＴＣＰエンドポイント
+		private IPEndPoint	m_CommunicationServerTcpEndPoint ;
 
 		//-------------------------------------------------------------------------------------------
 
@@ -63,8 +69,7 @@ namespace NetworkPlayHelper
 			// 共通処理部(ＷｅｂＡｐｉ)
 			( var responseCode, var errorMessage, var responseContentData ) = await CallWebApi_C_Async
 			(
-				m_CommunicationServerAddress,
-				m_CommunicationServerPort,
+				m_CommunicationServerTcpEndPoint,
 				requestContent.Encode(),
 				cancellationToken
 			) ;
@@ -168,8 +173,7 @@ namespace NetworkPlayHelper
 			// 共通処理部(ＷｅｂＡｐｉ)
 			( var responseCode, var errorMessage, var responseContentData ) = await CallWebApi_C_Async
 			(
-				m_CommunicationServerAddress,
-				m_CommunicationServerPort,
+				m_CommunicationServerTcpEndPoint,
 				requestContent.Encode(),
 				cancellationToken
 			) ;
@@ -216,12 +220,35 @@ namespace NetworkPlayHelper
 			m_UdpEnabled			= responseContent.UdpEnabled ;
 			m_UdpCorrectionEnabled	= responseContent.UdpCorrectionEnabled ;
 
+			Debug.Log( "<color=#FFFF00>------------ＵＤＰが使えるかどうか : " + m_UdpEnabled + "</color>" ) ;
+
 			// サーバーのセッションプロセッサーが使用可能かどうか
 			bool processorEnabled	= responseContent.ProcessorEnabled ;		// SessionProcessor を Server で生成する場合
 
 			m_ExchangeServerAddress	= responseContent.ExchangeServerAddress ;
 			m_ExchangeServerTcpPort	= responseContent.ExchangeServerTcpPort ;
 			m_ExchangeServerUdpPort	= responseContent.ExchangeServerUdpPort ;
+
+			if( m_UdpEnabled == true )
+			{
+				// ＵＤＰ用のエンドポイントを作成する
+				if( CreateUdpEndPoint( m_ExchangeServerAddress, m_ExchangeServerUdpPort ) == false )
+				{
+					// 失敗(データ異常)
+					return new
+					(
+						ResponseCodes.BadResponse, "ＵＤＰのエンドポイントが生成できません\n" + m_ExchangeServerAddress + ":" + m_ExchangeServerUdpPort,
+						0,
+						0, SessionManagementTypes.HostManagement, 
+						false, false, false,
+						null, 0, 0,
+						null
+					) ;
+				}
+				Debug.Log( "<color=#7FFFFF>エクスチェンジサーバーの実ＵＤＰエンドポイント : " + m_ExchangeServerUdpEndPoint.ToString() + "</color>" ) ;
+			}
+
+			Debug.Log( "<color=#7FFFFF>エクスチェンジサーバーのエンドポイント = " + m_ExchangeServerAddress + ":" + m_ExchangeServerTcpPort + "," + m_ExchangeServerUdpPort + "</color>" ) ;
 
 			// セッションに参加中のプレイヤー群
 			var sessionPlayers = responseContent.GetSessionPlayers() ;
@@ -232,16 +259,18 @@ namespace NetworkPlayHelper
 			// SessionServer と通信するリアルタイム通信用ソケットクライアントを生成する
 			CreateRealTimeSocketClient( m_OwnerCancellationToken ) ; 
 
-			bool isConnected = false ;
 			bool isCanceled = false ;
 
 			try
 			{
 				// エクスチェンジサーバーへＴＣＰ接続を行う
-				isConnected = await ConnectToExchangeServer( m_ExchangeServerAddress, m_ExchangeServerTcpPort, cancellationToken ) ;
+				( responseCode, errorMessage ) = await ConnectToExchangeServer( m_ExchangeServerAddress, m_ExchangeServerTcpPort, cancellationToken ) ;
 			}
 			catch( Exception e )
 			{
+				responseCode = ResponseCodes.ConnectionFailed ;
+				errorMessage = "エクスチェンジサーバーに接続できない\n" + e.Message ;
+
 				if( e is OperationCanceledException )
 				{
 					// キャンセルされた
@@ -255,14 +284,14 @@ namespace NetworkPlayHelper
 				throw new OperationCanceledException() ;
 			}
 
-			if( isConnected == false )
+			if( responseCode != ResponseCodes.Succeeded )
 			{
 				// セッションサーバーへの接続に失敗した
 				await LeaveFromSessionAsync() ;	// こちらが失敗しても結果は無視する
 
 				return new
 				(
-					ResponseCodes.CouldNotConnectToSessionServer, "セッションサーバーに接続できません",
+					responseCode, errorMessage,
 					0,
 					0, SessionManagementTypes.HostManagement,
 					false, false, false,
@@ -355,8 +384,7 @@ namespace NetworkPlayHelper
 			// 共通処理部(ＷｅｂＡｐｉ)
 			( var responseCode, var errorMessage, var responseContentData ) = await CallWebApi_C_Async
 			(
-				m_CommunicationServerAddress,
-				m_CommunicationServerPort,
+				m_CommunicationServerTcpEndPoint,
 				requestContent.Encode(),
 				cancellationToken
 			) ;
@@ -401,12 +429,34 @@ namespace NetworkPlayHelper
 			m_UdpEnabled					= responseContent.UdpEnabled ;
 			m_UdpCorrectionEnabled			= responseContent.UdpCorrectionEnabled ;
 
+			Debug.Log( "<color=#FFFF00>------------ＵＤＰが使えるかどうか : " + m_UdpEnabled + "</color>" ) ;
+
 			// ホストまたはサーバーのセッションプロセッサーが使用可能な状態かどうか
 			bool processorEnabled			= responseContent.ProcessorEnabled ;
 
 			m_ExchangeServerAddress			= responseContent.ExchangeServerAddress ;
 			m_ExchangeServerTcpPort			= responseContent.ExchangeServerTcpPort ;
 			m_ExchangeServerUdpPort			= responseContent.ExchangeServerUdpPort ;
+
+			if( m_UdpEnabled == true )
+			{
+				// ＵＤＰ用のエンドポイントを作成する
+				if( CreateUdpEndPoint( m_ExchangeServerAddress, m_ExchangeServerUdpPort ) == false )
+				{
+					// 失敗(データ異常)
+					return new
+					(
+						ResponseCodes.BadResponse, "ＵＤＰのエンドポイントが生成できません\n" + m_ExchangeServerAddress + ":" + m_ExchangeServerUdpPort,
+						0, SessionManagementTypes.HostManagement, 
+						false, false, false,
+						null, 0, 0,
+						null
+					) ;
+				}
+				Debug.Log( "<color=#7FFFFF>エクスチェンジサーバーの実ＵＤＰエンドポイント : " + m_ExchangeServerUdpEndPoint.ToString() + "</color>" ) ;
+			}
+
+			Debug.Log( "<color=#7FFFFF>エクスチェンジサーバーのエンドポイント = " + m_ExchangeServerAddress + ":" + m_ExchangeServerTcpPort + "," + m_ExchangeServerUdpPort + "</color>" ) ;
 
 			// セッションに参加中のプレイヤー群
 			var sessionPlayers = responseContent.GetSessionPlayers() ;
@@ -417,13 +467,12 @@ namespace NetworkPlayHelper
 			// SessionServer と通信するリアルタイム通信用ソケットクライアントを生成する
 			CreateRealTimeSocketClient( m_OwnerCancellationToken ) ; 
 
-			bool isConnected = false ;
 			bool isCanceled = false ;
 
 			try
 			{
 				// エクスチェンジサーバーへＴＣＰ接続を行う
-				isConnected = await ConnectToExchangeServer( m_ExchangeServerAddress, m_ExchangeServerTcpPort, cancellationToken ) ;
+				( responseCode, errorMessage ) = await ConnectToExchangeServer( m_ExchangeServerAddress, m_ExchangeServerTcpPort, cancellationToken ) ;
 			}
 			catch( Exception e )
 			{
@@ -440,9 +489,9 @@ namespace NetworkPlayHelper
 				throw new OperationCanceledException() ;
 			}
 
-			if( isConnected == false )
+			if( responseCode != ResponseCodes.Succeeded )
 			{
-				// セッションサーバーへの接続に失敗した
+				// エクスチェンジサーバーへの接続に失敗した
 
 				// 以降の処理が失敗してもローカルのセッション識別子はクリアする
 				m_SessionId         = 0 ;
@@ -450,7 +499,7 @@ namespace NetworkPlayHelper
 
 				return new
 				(
-					ResponseCodes.CouldNotConnectToSessionServer, "セッションサーバーに接続できません",
+					responseCode, errorMessage,
 					m_MaxPlayers, SessionManagementTypes.HostManagement, 
 					m_UdpEnabled, m_UdpCorrectionEnabled, processorEnabled,
 					m_ExchangeServerAddress, m_ExchangeServerTcpPort, m_ExchangeServerUdpPort,
@@ -491,6 +540,38 @@ namespace NetworkPlayHelper
 				sessionPlayers
 			) ;
 		}
+
+		private bool CreateUdpEndPoint( string address, int port )
+		{
+			// ＵＤＰ用のエンドポイントを作成する
+			if( IPAddress.TryParse( address, out IPAddress ipAddress ) == false )
+			{
+				// 単純に変換できない
+				var ipAddresses = Dns.GetHostAddresses( address ) ;
+				if( ipAddresses != null && ipAddresses.Length >  0 )
+				{
+					foreach( var _ in ipAddresses )
+					{
+						if( _.AddressFamily == System.Net.Sockets.AddressFamily.InterNetwork )
+						{
+							ipAddress = _ ;
+							break ;
+						}
+					}
+				}
+			}
+				
+			if( ipAddress != null && ipAddress.GetAddressBytes() != null )
+			{
+				m_ExchangeServerUdpEndPoint = new IPEndPoint( ipAddress, port ) ;
+				return true ;
+			}
+			else
+			{
+				return false ;
+			}
+		}
+
 
 		// ホスト用のセッションプロセッサーを起動する
 		private bool WakeupSessionProcessor()
@@ -546,8 +627,7 @@ namespace NetworkPlayHelper
 			// 共通処理部(ＷｅｂＡｐｉ)
 			( var responseCode, var errorMessage, var responseContentData ) = await CallWebApi_C_Async
 			(
-				m_CommunicationServerAddress,
-				m_CommunicationServerPort,
+				m_CommunicationServerTcpEndPoint,
 				requestContent.Encode(),
 				cancellationToken
 			) ;
@@ -598,8 +678,7 @@ namespace NetworkPlayHelper
 			// 共通処理部(ＷｅｂＡｐｉ)
 			( var responseCode, var errorMessage, var responseContentData ) = await CallWebApi_C_Async
 			(
-				m_CommunicationServerAddress,
-				m_CommunicationServerPort,
+				m_CommunicationServerTcpEndPoint,
 				requestContent.Encode(),
 				cancellationToken
 			) ;
@@ -666,8 +745,7 @@ namespace NetworkPlayHelper
 			// 共通処理部(ＷｅｂＡｐｉ)
 			( var responseCode, var errorMessage, var responseContentData ) = await CallWebApi_C_Async
 			(
-				m_CommunicationServerAddress,
-				m_CommunicationServerPort,
+				m_CommunicationServerTcpEndPoint,
 				requestContent.Encode(),
 				cancellationToken
 			) ;
@@ -1039,7 +1117,7 @@ namespace NetworkPlayHelper
 					MaxPlayers == 0 ||
 					( ManagementType != SessionManagementTypes.HostManagement && ManagementType != SessionManagementTypes.ServerManagement ) ||
 					string.IsNullOrEmpty( ExchangeServerAddress ) == true ||
-					ExchangeServerTcpPort == 0 || ExchangeServerUdpPort == 0
+					ExchangeServerTcpPort == 0
 				)
 				{
 					// 失敗
@@ -1249,7 +1327,7 @@ namespace NetworkPlayHelper
 				if
 				(
 					string.IsNullOrEmpty( ExchangeServerAddress ) == true ||
-					ExchangeServerTcpPort == 0 || ExchangeServerUdpPort == 0
+					ExchangeServerTcpPort == 0
 				)
 				{
 					// 失敗
@@ -1640,8 +1718,7 @@ namespace NetworkPlayHelper
 		// 汎用ＡＰＩコール
 		private async Task<( ResponseCodes, string, byte[] )> CallWebApi_C_Async
 		(
-			string address,
-			int port,
+			IPEndPoint endPoint,
 			byte[] requestContentData,
 			CancellationToken cancellationToken = default
 		)
@@ -1676,13 +1753,13 @@ namespace NetworkPlayHelper
 				catch( Exception )
 				{
 					// 失敗
-					return ( ResponseCodes.BadRequest, "リクエスト情報に誤りがあります", null ) ;
+					return ( ResponseCodes.BadRequest, "[CommunicationServer] リクエスト情報に誤りがあります(1)", null ) ;
 				}
 			}
 			else
 			{
 				// 失敗
-				return ( ResponseCodes.BadRequest, "リクエスト情報に誤りがあります", null ) ;
+				return ( ResponseCodes.BadRequest, "[CommunicationServer] リクエスト情報に誤りがあります(2)", null ) ;
 			}
 
 			//----------------------------------------------------------
@@ -1705,12 +1782,12 @@ namespace NetworkPlayHelper
 			//----------------------------------------------------------
 
 			// サーバーに接続を試みる
-			var result = await socketClient.ConnectAsync( address, port, null, cancellationToken ) ;
+			var result = await socketClient.ConnectAsync( endPoint, null, cancellationToken ) ;
 			if( result == false )
 			{
 				socketClient.Dispose() ;
 
-				return ( ResponseCodes.ConnectionFailed, "サーバーに接続できません", null ) ;
+				return ( ResponseCodes.ConnectionFailed, "[CommunicationServer] サーバーに接続できません\n" + endPoint.ToString(), null ) ;
 			}
 
 			//----------------------------------------------------------
@@ -1725,7 +1802,7 @@ namespace NetworkPlayHelper
 				socketClient.Dispose() ;
 
 				// 失敗
-				return ( ResponseCodes.RequestFailed, "サーバーと通信出来ません", null ) ;
+				return ( ResponseCodes.RequestFailed, "[CommunicationServer] サーバーと通信出来ません(1)\n" + endPoint.ToString(), null ) ;
 			}
 
 			//----------------------------------------------------------
@@ -1804,7 +1881,7 @@ namespace NetworkPlayHelper
 				socketClient.Dispose() ;
 
 				// 切断された可能性がある
-				return ( ResponseCodes.RequestFailed, "サーバーと通信出来ません", null ) ;
+				return ( ResponseCodes.RequestFailed, "[CommunicationServer] サーバーと通信出来ません(2)\n" + endPoint.ToString(), null ) ;
 			}
 
 			//--------------
@@ -1818,7 +1895,7 @@ namespace NetworkPlayHelper
 				socketClient.Disconnect( false ) ;
 				socketClient.Dispose() ;
 
-				return ( ResponseCodes.BadResponse, "受信データに問題があります", null ) ;
+				return ( ResponseCodes.BadResponse, "[CommunicationServer] 受信データに問題があります(0)", null ) ;
 			}
 
 			//----------------------------------------------------------
@@ -1841,7 +1918,7 @@ namespace NetworkPlayHelper
 				socketClient.Disconnect( false ) ;
 				socketClient.Dispose() ;
 
-				return ( ResponseCodes.BadResponse, "受信データに問題があります", null ) ;
+				return ( ResponseCodes.BadResponse, "[CommunicationServer] 受信データに問題があります(1)", null ) ;
 			}
 
 			//----------------------------------------------------------
@@ -1868,7 +1945,7 @@ namespace NetworkPlayHelper
 					socketClient.Disconnect( false ) ;
 					socketClient.Dispose() ;
 
-					return ( ResponseCodes.BadResponse, "受信データに問題があります", null ) ;
+					return ( ResponseCodes.BadResponse, "[CommunicationServer] 受信データに問題があります(2)", null ) ;
 				}
 
 				// 切断
@@ -1906,13 +1983,13 @@ namespace NetworkPlayHelper
 				catch( Exception )
 				{
 					// 失敗(データ異常)
-					return ( ResponseCodes.BadResponse, "受信データに問題があります", null ) ;
+					return ( ResponseCodes.BadResponse, "[CommunicationServer] 受信データに問題があります(3)", null ) ;
 				}
 
 				if( responseContentData == null || responseContentData.Length == 0 )
 				{
 					// 失敗(データ異常)
-					return ( ResponseCodes.BadResponse, "受信データに問題があります", null ) ;
+					return ( ResponseCodes.BadResponse, "[CommunicationServer] 受信データに問題があります(4)", null ) ;
 				}
 			}
 

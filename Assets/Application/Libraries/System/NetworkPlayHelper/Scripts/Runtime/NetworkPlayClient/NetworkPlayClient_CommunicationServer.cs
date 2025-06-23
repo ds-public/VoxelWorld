@@ -28,11 +28,11 @@ namespace NetworkPlayHelper
 		/// <summary>
 		/// コミュニケーションサーバーのポート(確認専用)
 		/// </summary>
-		public int CommunicationServerPort
+		public int CommunicationServerTcpPort
 		{
 			get
 			{
-				return m_NetworkPlayClientAdapter.CommunicationServerPort ;
+				return m_NetworkPlayClientAdapter.CommunicationServerTcpPort ;
 			}
 		}
 

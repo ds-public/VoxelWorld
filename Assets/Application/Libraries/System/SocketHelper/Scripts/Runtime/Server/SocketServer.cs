@@ -37,7 +37,7 @@ using UnityEngine ;
 namespace SocketHelper
 {
 	/// <summary>
-	/// SocketServer Version 2025/05/18
+	/// SocketServer Version 2025/06/03
 	/// </summary>
 	public partial class SocketServer
 	{
@@ -232,7 +232,7 @@ namespace SocketHelper
 		/// 実行する
 		/// </summary>
 		/// <returns></returns>
-		public bool Start( string address, int tcpPort, int udpPort )
+		public bool Start( string address, int tcpPort, int udpPort, int maxListen )
 		{
 			if( m_ServerSocketTcp != null )
 			{
@@ -279,7 +279,7 @@ namespace SocketHelper
 //			Debug.Log( "接続待ちに移行する : " + address + " : " + port, Color.green ) ;
 
 			// ＴＣＰの接続待受を開始する
-			StartAcceptTcp( address, tcpPort ) ;
+			StartAcceptTcp( address, tcpPort, maxListen ) ;
 
 			if( udpPort >  0 )
 			{
@@ -291,7 +291,7 @@ namespace SocketHelper
 		}
 
 		// 接続の待ち受けを行う
-		private void StartAcceptTcp( string address, int port )
+		private void StartAcceptTcp( string address, int port, int maxListen )
 		{
 			IPEndPoint ipEndPoint ;
 
@@ -313,7 +313,7 @@ namespace SocketHelper
 			//----------------------------------------------------------
 
 			m_ServerSocketTcp.Bind( ipEndPoint ) ;
-			m_ServerSocketTcp.Listen( 16 ) ;
+			m_ServerSocketTcp.Listen( maxListen ) ;
 
 			string path = ipEndPoint.ToString() ;
 //			Debug.Log( "[SocketServer] TCP 接続待ち : " + path, Color.red ) ;
@@ -324,20 +324,22 @@ namespace SocketHelper
 			m_ServerSocketTcp.BeginAccept( StartAcceptTcp_Callback, m_ServerSocketTcp ) ;
 		}
 
+		// ＴＣＰの接続があった際に呼び出される
 		private void StartAcceptTcp_Callback( IAsyncResult ar )
 		{
 			var serverSocketTcp = ( Socket )ar.AsyncState ;
 
 			try
 			{
+				// ＴＣＰソケットを取得する
 				var socketTcp = serverSocketTcp.EndAccept( ar ) ;
-
+#if UNITY_EDITOR
 				var ipEndPoint = ( IPEndPoint )socketTcp.RemoteEndPoint ;
 				var endPoint = new IPEndPoint( ipEndPoint.Address, ipEndPoint.Port ) ;
 
 				Debug.Log( "==============================================" ) ;
 				Debug.Log( "[TCP] クライアントから接続要求あり EndPoint = " + endPoint.ToString() ) ;
-
+#endif
 				// 接続コールバックを呼ぶ
 				OnTcpAccepted( socketTcp ) ;
 
@@ -532,6 +534,7 @@ namespace SocketHelper
 		// 新しい接続があった場合に呼び出される
 		private void OnTcpAccepted( Socket socket )
 		{
+			// 新しいクライアントハンドラーを生成する
 			var clientHandler = new ClientHandler
 			(
 				m_ClientIdentity,

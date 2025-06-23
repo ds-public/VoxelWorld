@@ -5,6 +5,9 @@ using System.Linq ;
 using System.Threading ;
 using System.Threading.Tasks ;
 
+using System.Net ;
+using System.Net.Sockets ;
+
 using UnityEngine ;
 
 using SocketHelper ;
@@ -22,27 +25,57 @@ namespace NetworkPlayHelper
 		/// </summary>
 		/// <param name="SetLoginServer"></param>
 		/// <param name="loginServerPort"></param>
-		public void SetAccountServer( string accountServerAddress, int accountServerPort )
+		public bool SetAccountServer( string accountServerAddress, int accountServerTcpPort )
 		{
 			m_AccountServerAddress	= accountServerAddress ;
-			m_AccountServerPort		= accountServerPort ;
-		}
+			m_AccountServerTcpPort	= accountServerTcpPort ;
 
-		// アカウントサーバーのアドレス
-		private string						m_AccountServerAddress ;
+			if( IPAddress.TryParse( accountServerAddress, out IPAddress ipAddress ) == false )
+			{
+				var ipAddresses = Dns.GetHostAddresses( accountServerAddress ) ;
+				if( ipAddresses != null && ipAddresses.Length >  0 )
+				{
+					foreach( var _ in ipAddresses )
+					{
+						if( _.AddressFamily == AddressFamily.InterNetwork )
+						{
+							ipAddress = _ ;
+							break ;
+						}
+					}
+				}
+			}
+
+			if( ipAddress != null && ipAddress.GetAddressBytes() != null )
+			{
+				m_AccountServerTcpEndPoint = new IPEndPoint( ipAddress, accountServerTcpPort ) ;
+
+				return true ;
+			}
+			else
+			{
+				return false ;
+			}
+		}
 
 		/// <summary>
 		/// アカウントサーバーのアドレス
 		/// </summary>
 		public string	AccountServerAddress => m_AccountServerAddress ;
 
-		// アカウントサーバーのポート
-		private int							m_AccountServerPort ;
+		// アカウントサーバーのアドレス
+		private string							m_AccountServerAddress ;
 
 		/// <summary>
-		/// アカウントサーバーのポート
+		/// アカウントサーバーのＴＣＰポート
 		/// </summary>
-		public int		AccountServerPort	=> m_AccountServerPort ;
+		public int		AccountServerTcpPort	=> m_AccountServerTcpPort ;
+
+		// アカウントサーバーのＴＣＰポート
+		private int								m_AccountServerTcpPort ;
+
+		// アカウントサーバーのＴＣＰエンドポイント
+		private IPEndPoint						m_AccountServerTcpEndPoint ;
 
 		//-------------------------------------------------------------------------------------------
 
@@ -122,8 +155,7 @@ namespace NetworkPlayHelper
 			// 共通処理部(ＷｅｂＡｐｉ)
 			( var responseCode, var errorMessage, var responseContentData ) = await CallWebApi_A_Async
 			(
-				m_AccountServerAddress,
-				m_AccountServerPort,
+				m_AccountServerTcpEndPoint,
 				requestContent.Encode(),
 				cancellationToken
 			) ;
@@ -178,8 +210,7 @@ namespace NetworkPlayHelper
 			// 共通処理部(ＷｅｂＡｐｉ)
 			( var responseCode, var errorMessage, var responseContentData ) = await CallWebApi_A_Async
 			(
-				m_AccountServerAddress,
-				m_AccountServerPort,
+				m_AccountServerTcpEndPoint,
 				requestContent.Encode(),
 				cancellationToken
 			) ;
@@ -196,7 +227,12 @@ namespace NetworkPlayHelper
 			if( responseContent.Decode() == false )
 			{
 				// 失敗(データ異常)
-				return new ( ResponseCodes.BadResponse, "受信データに問題があります", null, null, 0, null, null, 0 ) ;
+				return new
+				(
+					ResponseCodes.BadResponse,
+					"受信データに問題があります",
+					null, null, 0, null, null, 0
+				) ;
 			}
 
 			// ユーザー識別子とパスワードも記録しておく
@@ -209,15 +245,53 @@ namespace NetworkPlayHelper
 			m_AccessLimit					= responseContent.AccessLimit ;
 			m_CommonKey						= responseContent.CommonKey ;
 			m_CommunicationServerAddress	= responseContent.CommunicationServerAddress ;
-			m_CommunicationServerPort		= responseContent.CommunicationServerPort ;
+			m_CommunicationServerTcpPort	= responseContent.CommunicationServerPort ;
+
+			if( IPAddress.TryParse( m_CommunicationServerAddress, out IPAddress ipAddress ) == false )
+			{
+				var ipAddresses = Dns.GetHostAddresses( m_CommunicationServerAddress ) ;
+				if( ipAddresses != null && ipAddresses.Length >  0 )
+				{
+					foreach( var _ in ipAddresses )
+					{
+						// IPv4
+						if( _.AddressFamily == AddressFamily.InterNetwork )
+						{
+							ipAddress = _ ;
+							break ;
+						}
+					}
+				}
+			}
+
+			if( ipAddress != null && ipAddress.GetAddressBytes() != null )
+			{
+				m_CommunicationServerTcpEndPoint = new IPEndPoint( ipAddress, m_CommunicationServerTcpPort ) ;
+			}
+			else
+			{
+				return new
+				(
+					ResponseCodes.BadResponse,
+					"コミュニケーションサーバーのエンドポイントが異常です\n" + m_CommunicationServerAddress + ":" + m_CommunicationServerTcpPort,
+					null, null, 0, null, null, 0
+				) ;
+			}
 
 			// 共通鍵の暗号器を生成する
 			m_Crypter = Security.CreateCrypter( m_CommonKey ) ;
 
+			Debug.Log( "<color=#FFFF7F>コミュニケーションサーバーのエンドポイント = " + m_CommunicationServerTcpEndPoint.ToString() + "</color>" ) ;
+
 			//----------------------------------------------------------
 
 			// 成功
-			return new ( responseCode, string.Empty, m_UserName, m_AccessToken, m_AccessLimit, m_CommonKey, m_CommunicationServerAddress, m_CommunicationServerPort ) ;
+			return new
+			(
+				responseCode,
+				string.Empty,
+				m_UserName, m_AccessToken, m_AccessLimit, m_CommonKey, m_CommunicationServerAddress, m_CommunicationServerTcpPort
+			) ;
 		}
 
 		//-----------------------------------
@@ -251,8 +325,7 @@ namespace NetworkPlayHelper
 			// 共通処理部(ＷｅｂＡｐｉ)
 			( var responseCode, var errorMessage, var _ ) = await CallWebApi_A_Async
 			(
-				m_AccountServerAddress,
-				m_AccountServerPort,
+				m_AccountServerTcpEndPoint,
 				requestContent.Encode(), cancellationToken
 			) ;
 			if( responseCode != ResponseCodes.Succeeded )
@@ -264,14 +337,15 @@ namespace NetworkPlayHelper
 			//----------------------------------------------------------
 			// 情報をクリアする
 
-			m_AccessToken					= null ;
-			m_AccessLimit					= 0 ;
-			m_CommonKey						= null ;
-			m_CommunicationServerAddress	= null ;
-			m_CommunicationServerPort		= 0 ;
+			m_AccessToken						= null ;
+			m_AccessLimit						= 0 ;
+			m_CommonKey							= null ;
+			m_CommunicationServerAddress		= null ;
+			m_CommunicationServerTcpPort		= 0 ;
+			m_CommunicationServerTcpEndPoint	= null ;
 
-			m_UserId						= null ;
-//			m_Password						= null ;
+			m_UserId							= null ;
+//			m_Password							= null ;
 
 			// 暗号器を破棄する
 			if( m_Crypter != null )
@@ -310,8 +384,7 @@ namespace NetworkPlayHelper
 			// 共通処理部(ＷｅｂＡｐｉ)
 			( var responseCode, var errorMessage, var responseContentData ) = await CallWebApi_A_Async
 			(
-				m_AccountServerAddress,
-				m_AccountServerPort,
+				m_AccountServerTcpEndPoint,
 				requestContent.Encode(),
 				cancellationToken
 			) ;
@@ -326,7 +399,12 @@ namespace NetworkPlayHelper
 			if( responseContent.Decode() == false )
 			{
 				// 失敗(データ異常)
-				return new ( ResponseCodes.BadResponse, "受信データに問題があります", null, null, 0, null, null, 0 ) ;
+				return new
+				(
+					ResponseCodes.BadResponse,
+					"受信データに問題があります",
+					null, null, 0, null, null, 0
+				) ;
 			}
 
 			// レスポンスの値を取り出す
@@ -335,12 +413,48 @@ namespace NetworkPlayHelper
 			m_AccessLimit					= responseContent.AccessLimit ;
 			m_CommonKey						= responseContent.CommonKey ;
 			m_CommunicationServerAddress	= responseContent.CommunicationServerAddress ;
-			m_CommunicationServerPort		= responseContent.CommunicationServerPort ;
+			m_CommunicationServerTcpPort	= responseContent.CommunicationServerPort ;
+
+			if( IPAddress.TryParse( m_CommunicationServerAddress, out IPAddress ipAddress ) == false )
+			{
+				var ipAddresses = Dns.GetHostAddresses( m_CommunicationServerAddress ) ;
+				if( ipAddresses != null && ipAddresses.Length >  0 )
+				{
+					foreach( var _ in ipAddresses )
+					{
+						// IPv4
+						if( _.AddressFamily == AddressFamily.InterNetwork )
+						{
+							ipAddress = _ ;
+							break ;
+						}
+					}
+				}
+			}
+
+			if( ipAddress != null && ipAddress.GetAddressBytes() != null )
+			{
+				m_CommunicationServerTcpEndPoint = new IPEndPoint( ipAddress, m_CommunicationServerTcpPort ) ;
+			}
+			else
+			{
+				return new
+				(
+					ResponseCodes.BadResponse,
+					"コミュニケーションサーバーのエンドポイントが異常です\n" + m_CommunicationServerAddress + ":" + m_CommunicationServerTcpPort,
+					null, null, 0, null, null, 0
+				) ;
+			}
 
 			//----------------------------------------------------------
 
 			// 成功
-			return new ( responseCode, string.Empty, m_UserName, m_AccessToken, m_AccessLimit, m_CommonKey, m_CommunicationServerAddress, m_CommunicationServerPort ) ;
+			return new
+			(
+				responseCode,
+				string.Empty,
+				m_UserName, m_AccessToken, m_AccessLimit, m_CommonKey, m_CommunicationServerAddress, m_CommunicationServerTcpPort
+			) ;
 		}
 
 		//-----------------------------------
@@ -367,8 +481,7 @@ namespace NetworkPlayHelper
 			// 共通処理部(ＷｅｂＡｐｉ)
 			( var responseCode, var errorMessage, var responseContentData ) = await CallWebApi_A_Async
 			(
-				m_AccountServerAddress,
-				m_AccountServerPort,
+				m_AccountServerTcpEndPoint,
 				requestContent.Encode(),
 				cancellationToken
 			) ;
@@ -980,8 +1093,7 @@ namespace NetworkPlayHelper
 		// 汎用ＡＰＩコール
 		private async Task<( ResponseCodes, string, byte[] )> CallWebApi_A_Async
 		(
-			string address,
-			int port,
+			IPEndPoint endPoint,
 			byte[] requestContentData,
 			CancellationToken cancellationToken = default
 		)
@@ -1012,13 +1124,13 @@ namespace NetworkPlayHelper
 				catch( Exception )
 				{
 					// 失敗
-					return ( ResponseCodes.BadRequest, "リクエスト情報に誤りがあります", null ) ;
+					return ( ResponseCodes.BadRequest, "[AccountServer] リクエスト情報に誤りがあります", null ) ;
 				}
 			}
 			else
 			{
 				// 失敗
-				return ( ResponseCodes.BadRequest, "リクエスト情報に誤りがあります", null ) ;
+				return ( ResponseCodes.BadRequest, "[AccountServer] リクエスト情報に誤りがあります", null ) ;
 			}
 
 			//----------------------------------------------------------
@@ -1041,12 +1153,12 @@ namespace NetworkPlayHelper
 			//----------------------------------------------------------
 
 			// サーバーに接続を試みる
-			var result = await socketClient.ConnectAsync( address, port, null, cancellationToken ) ;
+			var result = await socketClient.ConnectAsync( endPoint, null, cancellationToken ) ;
 			if( result == false )
 			{
 				socketClient.Dispose() ;
 
-				return ( ResponseCodes.ConnectionFailed, "サーバーに接続できません", null ) ;
+				return ( ResponseCodes.ConnectionFailed, "[AccountServer] サーバーに接続できません\n" + endPoint.ToString(), null ) ;
 			}
 
 			//----------------------------------------------------------
@@ -1061,7 +1173,7 @@ namespace NetworkPlayHelper
 				socketClient.Dispose() ;
 
 				// 失敗
-				return ( ResponseCodes.RequestFailed, "サーバーと通信出来ません", null ) ;
+				return ( ResponseCodes.RequestFailed, "[AccountServer] サーバーと通信出来ません\n" + endPoint.ToString(), null ) ;
 			}
 
 			//----------------------------------------------------------
@@ -1140,7 +1252,7 @@ namespace NetworkPlayHelper
 				socketClient.Dispose() ;
 
 				// 切断された可能性がある
-				return ( ResponseCodes.RequestFailed, "ログインサーバーと通信出来ません", null ) ;
+				return ( ResponseCodes.RequestFailed, "[AccountServer] サーバーと通信出来ません\n" + endPoint.ToString(), null ) ;
 			}
 
 			//--------------
@@ -1154,7 +1266,7 @@ namespace NetworkPlayHelper
 				socketClient.Disconnect( false ) ;
 				socketClient.Dispose() ;
 
-				return ( ResponseCodes.BadResponse, "受信データに問題があります", null ) ;
+				return ( ResponseCodes.BadResponse, "[AccountServer] 受信データに問題があります(0)", null ) ;
 			}
 
 			//----------------------------------------------------------
@@ -1177,7 +1289,7 @@ namespace NetworkPlayHelper
 				socketClient.Disconnect( false ) ;
 				socketClient.Dispose() ;
 
-				return ( ResponseCodes.BadResponse, "受信データに問題があります", null ) ;
+				return ( ResponseCodes.BadResponse, "[AccountServer] 受信データに問題があります(1)", null ) ;
 			}
 
 			//----------------------------------------------------------
@@ -1204,7 +1316,7 @@ namespace NetworkPlayHelper
 					socketClient.Disconnect( false ) ;
 					socketClient.Dispose() ;
 
-					return ( ResponseCodes.BadResponse, "受信データに問題があります", null ) ;
+					return ( ResponseCodes.BadResponse, "[AccountServer] 受信データに問題があります(2)", null ) ;
 				}
 
 				// 切断
@@ -1241,13 +1353,13 @@ namespace NetworkPlayHelper
 				catch( Exception )
 				{
 					// 失敗(データ異常)
-					return ( ResponseCodes.BadResponse, "受信データに問題があります", null ) ;
+					return ( ResponseCodes.BadResponse, "[AccountServer] 受信データに問題があります(3)", null ) ;
 				}
 
 				if( responseContentData == null || responseContentData.Length == 0 )
 				{
 					// 失敗(データ異常)
-					return ( ResponseCodes.BadResponse, "受信データに問題があります", null ) ;
+					return ( ResponseCodes.BadResponse, "[AccountServer] 受信データに問題があります(4)", null ) ;
 				}
 			}
 

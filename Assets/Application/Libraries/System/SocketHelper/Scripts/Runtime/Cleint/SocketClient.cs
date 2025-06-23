@@ -39,15 +39,20 @@ using UnityEngine ;
 namespace SocketHelper
 {
 	/// <summary>
-	/// Socket のクライアント側の管理用クラス Version 2025/05/18
+	/// Socket のクライアント側の管理用クラス Version 2025/05/26
 	/// </summary>
 	public class SocketClient
 	{
 		// サーバーアドレス
-		private string													m_ServerAddress ;
+		private string													m_ServerAddress = string.Empty ;
 
-		// サーバーポート
-		private int														m_ServerPort ;
+		// サーバーＴＣＰポート
+		private int														m_ServerTcpPort = 0 ;
+
+		// サーバーエンドポイント
+		private IPEndPoint												m_ServerEndPoint = null ;
+
+		//---------------
 
 		// ＴＣＰソケットのインスタンス
 		private Socket													m_SocketTcp ;
@@ -139,7 +144,44 @@ namespace SocketHelper
 		private int		m_MaxUdpPacketSize = 65536 ;
 
 		//-----------------------------------
+		// エンドポイント
 
+		/// <summary>
+		/// サーバーアドレス
+		/// </summary>
+		public string ServerAddress
+		{
+			get
+			{
+				return m_ServerAddress ;
+			}
+		}
+
+		/// <summary>
+		/// サーバーＴＣＰポート
+		/// </summary>
+		public int ServerTcpPort
+		{
+			get
+			{
+				return m_ServerTcpPort ;
+			}
+		}
+
+		/// <summary>
+		/// サーバーエンドポイント
+		/// </summary>
+		public string ServerEndPoint
+		{
+			get
+			{
+				if( m_ServerEndPoint == null )
+				{
+					return m_ServerAddress + ":" + m_ServerTcpPort ;
+				}
+				return m_ServerEndPoint.ToString() ;
+			}
+		}
 
 		//-----------------------------------------------------------
 
@@ -159,9 +201,8 @@ namespace SocketHelper
 		/// </summary>
 		public class UdpPacket
 		{
-			public byte[]	Data ;
-			public string	Address ;
-			public int		Port ;
+			public byte[]	    Data ;
+			public IPEndPoint	EndPoint ;
 
 			/// <summary>
 			/// コンストラクタ
@@ -169,11 +210,10 @@ namespace SocketHelper
 			/// <param name="data"></param>
 			/// <param name="ipAddress"></param>
 			/// <param name="portNumber"></param>
-			public UdpPacket( byte[] data, string address, int port )
+			public UdpPacket( byte[] data, IPEndPoint endPoint )
 			{
-				Data	= data ;
-				Address	= address;
-				Port	= port ;
+				Data	    = data ;
+				EndPoint	= endPoint ;
 			}
 		}
 
@@ -281,9 +321,78 @@ namespace SocketHelper
 		/// <summary>
 		/// サーバーへ接続を行う
 		/// </summary>
+		/// <param name="endPoint"></param>
+		/// <param name="onCnnected"></param>
+		public void Connect( IPEndPoint endPoint, Action<bool> onCnnected = null )
+		{
+			_ = ConnectAsync( endPoint, onCnnected ) ;
+		}
+
+		/// <summary>
+		/// サーバーへ接続を行う
+		/// </summary>
 		/// <param name="serverAddress"></param>
 		/// <param name="serverPortNumber"></param>
-		public async Task<bool> ConnectAsync( string serverAddress, int serverPort, Action<bool> onTcpConnected = null, CancellationToken cancellationToken = default )
+		public async Task<bool> ConnectAsync( string serverAddress, int serverTcpPort, Action<bool> onTcpConnected = null, CancellationToken cancellationToken = default )
+		{
+			if( string.IsNullOrEmpty( serverAddress ) == true || serverTcpPort == 0 )
+			{
+				// サーバーアドレスかサーバーポートが不正
+				return false ;
+			}
+
+			//----------------------------------------------------------
+
+			string url = serverAddress + ":" + serverTcpPort.ToString() ;
+			Debug.Log( "<color=#00FF00>[CLIENT] Connect -> 接続先 " + url + "</color>" ) ;
+
+			// 同期接続
+
+			// デバッグ用に記録しておく
+			m_ServerAddress = serverAddress ;
+			m_ServerTcpPort	= serverTcpPort ;
+
+			if( serverAddress == "localhost" )
+			{
+				// Socket は localhost を理解出来ないため変換が必要
+				serverAddress  = "127.0.0.1" ;
+			}
+			//----------------------------------
+
+			if( IPAddress.TryParse( serverAddress, out IPAddress ipAddress ) == false )
+			{
+				var ipAddresses = Dns.GetHostAddresses( serverAddress ) ;
+				if( ipAddresses != null && ipAddresses.Length >  0 )
+				{
+					foreach( var _ in ipAddresses )
+					{
+						if( _.AddressFamily == AddressFamily.InterNetwork )
+						{
+							ipAddress = _ ;
+							break ;
+						}
+					}
+				}
+			}
+
+			if( ipAddress != null && ipAddress.GetAddressBytes() != null )
+			{
+				var endPoint = new IPEndPoint( ipAddress, serverTcpPort ) ;
+
+				return await ConnectAsync( endPoint, onTcpConnected, cancellationToken ) ;
+			}
+			else
+			{
+				return false ;
+			}
+		}
+
+		/// <summary>
+		/// サーバーへ接続を行う
+		/// </summary>
+		/// <param name="serverAddress"></param>
+		/// <param name="serverPortNumber"></param>
+		public async Task<bool> ConnectAsync( IPEndPoint endPoint, Action<bool> onTcpConnected = null, CancellationToken cancellationToken = default )
 		{
 			if( m_SocketTcp != null )
 			{
@@ -292,39 +401,28 @@ namespace SocketHelper
 				return false ;
 			}
 
-			if( string.IsNullOrEmpty( serverAddress ) == true || serverPort == 0 )
+			m_ServerEndPoint = endPoint ;
+			if( string.IsNullOrEmpty( m_ServerAddress ) == true )
 			{
-				// サーバーアドレスかサーバーポートが不正
-				return false ;
+				m_ServerAddress = endPoint.Address.ToString() ;
+			}
+			if( m_ServerTcpPort <= 0 )
+			{
+				m_ServerTcpPort = endPoint.Port ;
 			}
 
 			//----------------------------------------------------------
-			// タスクキャンセル用のトークンを生成する
 
 			// ソケットを生成する
 			m_SocketTcp = new Socket( m_Family, SocketType.Stream, ProtocolType.Tcp ) ;
 
 			//----------------------------------------------------------
 
-			string url = serverAddress + ":" + serverPort.ToString() ;
-
-			Debug.Log( "<color=#00FF00>[CLIENT] Connect -> 接続先 " + url + "</color>" ) ;
-
 			// 同期接続
-
-			// デバッグ用に記録しておく
-			m_ServerAddress = serverAddress ;
-			m_ServerPort	= serverPort ;
-
-			if( serverAddress == "localhost" )
-			{
-				// Socket は localhost を理解出来ないため変換が必要
-				serverAddress  = "127.0.0.1" ;
-			}
 
 			// 接続実行
 			bool isConnectRunning = true ;
-			m_SocketTcp.BeginConnect( serverAddress, serverPort, ( IAsyncResult ar ) =>
+			m_SocketTcp.BeginConnect( endPoint, ( IAsyncResult ar ) =>
 			{
 				isConnectRunning = false ;
 				if( m_SocketTcp == null )
@@ -409,7 +507,7 @@ namespace SocketHelper
 			}
 
 
-			Debug.Log( "<color=#FFFF00>接続自体は成功 : " + serverAddress + " : " + serverPort + "</color>" ) ;
+			Debug.Log( "<color=#FFFF00>接続自体は成功 : " + endPoint.ToString() + "</color>" ) ;
 
 			// 接続時のコールバックを呼ぶ
 			onTcpConnected?.Invoke( true ) ;
@@ -734,7 +832,16 @@ namespace SocketHelper
 					// トータルの送信データサイズ
 					int requiredSize = EncodeSendData( tcpPacket, m_TcpSendBuffer ) ;
 
-					m_SocketTcp.BeginSend( m_TcpSendBuffer, 0, requiredSize, SocketFlags.None, SendTcp_Callback, m_SocketTcp ) ;
+					try
+					{
+						m_SocketTcp.BeginSend( m_TcpSendBuffer, 0, requiredSize, SocketFlags.None, SendTcp_Callback, m_SocketTcp ) ;
+					}
+					catch( Exception e )
+					{
+						// 問題発生
+						Debug.LogWarning( "<color=#FF7F00>TCP 送信で例外発生 : " + e.Message + "</color>" ) ;
+						return false ;
+					}
 				}
 				else
 				{
@@ -807,7 +914,7 @@ namespace SocketHelper
 			}
 			catch( Exception e )
 			{
-				Debug.Log( "ＴＣＰの送信で例外発生 " + e.Message ) ;
+				Debug.LogWarning( "<color=#FF7F00>ＴＣＰの送信で例外発生 " + e.Message + "</color>" ) ;
 				return false ;
 			}
 
@@ -1020,6 +1127,39 @@ namespace SocketHelper
 		/// <param name="data"></param>
 		public bool SendUdp( byte[] data, string address, int port )
 		{
+			if( IPAddress.TryParse( address, out IPAddress ipAddress ) == false )
+			{
+				var ipAddresses = Dns.GetHostAddresses( address ) ;
+				if( ipAddresses != null && ipAddresses.Length >  0 )
+				{
+					foreach( var _ in ipAddresses )
+					{
+						if( _.AddressFamily == AddressFamily.InterNetwork )
+						{
+							ipAddress = _ ;
+							break ;
+						}
+					}
+				}
+			}
+
+			if( ipAddress != null && ipAddress.GetAddressBytes() != null )
+			{
+				var endPoint = new IPEndPoint( ipAddress, port ) ;
+				return SendUdp( data, endPoint ) ;
+			}
+			else
+			{
+				return false ;
+			}
+		}
+
+		/// <summary>
+		/// ＵＤＰパケットを送信する
+		/// </summary>
+		/// <param name="data"></param>
+		public bool SendUdp( byte[] data, IPEndPoint endPoint )
+		{
 			if( data == null || data.Length <= 0 )
 			{
 				return false ;
@@ -1049,14 +1189,23 @@ namespace SocketHelper
 
 					m_IsUdpSendRunning = true ;	// 通信中に移行する
 
-					m_SocketUdp.BeginSendTo( data, 0, data.Length, SocketFlags.None, new IPEndPoint( IPAddress.Parse( address ), port ), SendUdp_Callback, m_SocketUdp ) ;
+					try
+					{
+						m_SocketUdp.BeginSendTo( data, 0, data.Length, SocketFlags.None, endPoint, SendUdp_Callback, m_SocketUdp ) ;
+					}
+					catch( Exception e )
+					{
+						// 問題発生
+						Debug.LogWarning( "<color=#FF7F00>UDP 送信で例外発生 : " + e.Message + "\n" + endPoint.ToString() + "</color>" ) ;
+						return false ;
+					}
 				}
 				else
 				{
 					// 送信中である
 
 					// 送信バッファ群に積む
-					m_UdpSendPackets.Add( new UdpPacket( data, address, port ) ) ;
+					m_UdpSendPackets.Add( new UdpPacket( data, endPoint ) ) ;
 				}
 			}
 
@@ -1071,7 +1220,7 @@ namespace SocketHelper
 			try
 			{
 				int sendSize = socketUdp.EndSendTo( ar ) ;
-				if( sendSize > 0 )
+				if( sendSize >  0 )
 				{
 					// サブスレッドの排他制御
 					lock( m_UdpSendLockObject )
@@ -1085,7 +1234,7 @@ namespace SocketHelper
 
 							//------------------------------
 
-							socketUdp.BeginSendTo( udpPacket.Data, 0, udpPacket.Data.Length, SocketFlags.None, new IPEndPoint( IPAddress.Parse( udpPacket.Address ), udpPacket.Port ), SendUdp_Callback, socketUdp ) ;
+							socketUdp.BeginSendTo( udpPacket.Data, 0, udpPacket.Data.Length, SocketFlags.None, udpPacket.EndPoint, SendUdp_Callback, socketUdp ) ;
 						}
 						else
 						{
@@ -1097,12 +1246,13 @@ namespace SocketHelper
 				else
 				{
 					// 問題発生
+					Debug.LogWarning( "<color=#FF7F00>UDP 送信で問題発生 : SendSize = " + sendSize + "</color>" ) ;
 				}
 			}
 			catch( Exception e )
 			{
 				// 問題発生
-				Debug.Log( "<color=#FF0000>UDP 送信で例外発生 : " + e.Message + "</color>" ) ;
+				Debug.LogWarning( "<color=#FF7F00>UDP 送信で例外発生 : " + e.Message + "</color>" ) ;
 			}
 		}
 
@@ -1160,7 +1310,7 @@ namespace SocketHelper
 
 				if( m_SocketTcp != null )
 				{
-					Debug.Log( "<color=#FF7FFF>能動的にサーバーと接続しているソケットを切断する " + m_ServerAddress + " : " + m_ServerPort + "</color>" ) ;
+					Debug.Log( "<color=#FF7FFF>能動的にサーバーと接続しているソケットを切断する " + m_ServerAddress + " : " + m_ServerTcpPort + "</color>" ) ;
 
 					if( m_SocketTcp.Connected == true )
 					{

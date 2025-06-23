@@ -79,7 +79,7 @@ namespace DSW.World
 			) ;
 
 			// サーバー開始
-			m_SocketServer.Start( null, serverPort, 0 ) ;
+			m_SocketServer.Start( null, serverPort, 0, 16 ) ;
 
 			Debug.Log( "<color=#00FFFF>[SERVER] SocketServer 開始</color>" ) ;
 
