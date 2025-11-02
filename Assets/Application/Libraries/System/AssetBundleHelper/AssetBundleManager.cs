@@ -17,7 +17,7 @@ using UnityEditor ;
 namespace AssetBundleHelper
 {
 	/// <summary>
-	/// アセットバンドルマネージャクラス(シングルトン) Version 2025/04/04 0
+	/// アセットバンドルマネージャクラス(シングルトン) Version 2025/11/02 0
 	/// </summary>
 	public partial class AssetBundleManager : MonoBehaviour
 	{

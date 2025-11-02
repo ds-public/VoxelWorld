@@ -11,20 +11,20 @@ using UnityEngine ;
 namespace NetworkPlayHelper
 {
 	/// <summary>
-	/// NetworkPlay 機能のクライアント側の管理用クラス Version 2025/06/18
+	/// NetworkPlay 機能のクライアント側の管理用クラス Version 2025/10/01
 	/// </summary>
 	public partial class NetworkPlayClient
 	{
 		//-------------------------------------------------------------------------------------------
 
 		// オーナーのキャンセレーショントークン(このキャンセルで全てのタスクがキャンセルされる)
-		private CancellationToken					    m_OwnerCancellationToken ;
+		private CancellationToken					m_OwnerCancellationToken ;
 
 		// アダプターのインスタンス
-		private INetworkPlayClientAdapter			   m_NetworkPlayClientAdapter ;
+		private INetworkPlayClientAdapter			m_NetworkPlayClientAdapter ;
 
 		// デフォルトアダプタかどうか
-		private bool								  m_IsDefaultAdapter ;
+		private bool								m_IsDefaultAdapter ;
 
 		/// <summary>
 		/// デフォルトアダプタであるかどうか
@@ -129,6 +129,18 @@ namespace NetworkPlayHelper
 			get
 			{
 				return m_NetworkPlayClientAdapter.UserId ;
+			}
+		}
+
+
+		/// <summary>
+		/// パスワード(確認専用)
+		/// </summary>
+		public string	Password
+		{
+			get
+			{
+				return m_NetworkPlayClientAdapter.Password ;
 			}
 		}
 
@@ -267,22 +279,28 @@ namespace NetworkPlayHelper
 		/// <summary>
 		/// ユーザー識別子
 		/// </summary>
-		public string	UserId { get ; private set ; }
+		public string						UserId		{ get ; private set ; }
 
 		/// <summary>
 		/// ユーザー名またはセッションプレイヤー名
 		/// </summary>
-		public string	Name { get ; private set ; }
+		public string						Name		{ get ; private set ; }
 
 		/// <summary>
 		/// ゲストであるかどうか
 		/// </summary>
-		public bool		IsGuest { get ; private set ; }
+		public bool							IsGuest		{ get ; private set ; }
 
 		/// <summary>
 		/// セッションのホストであるかどうか
 		/// </summary>
-		public bool		IsHost { get ; private set ; }
+		public bool							IsHost		{ get ; private set ; }
+
+		/// <summary>
+		/// 任意パラメータ
+		/// </summary>
+		public Dictionary<string,string>	Parameters	{ get ; private set ; }
+
 
 		//-----------------------------------
 
@@ -292,12 +310,17 @@ namespace NetworkPlayHelper
 		/// <param name="userId"></param>
 		/// <param name="userName"></param>
 		/// <param name="isHost"></param>
-		public SessionPlayer( string userId, string name, bool isGuest, bool isHost )
+		public SessionPlayer( string userId, string name, bool isGuest, bool isHost, Dictionary<string,string> parameters )
 		{
 			UserId		= userId ;
 			Name		= name ;
 			IsGuest		= isGuest ;
 			IsHost		= isHost ;
+
+			Parameters	= parameters ;
 		}
 	}
+
+
+
 }

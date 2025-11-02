@@ -22,21 +22,21 @@ namespace NetworkPlayHelper
 		/// <summary>
 		/// コミュニケーションサーバーのアドレス
 		/// </summary>
-		public string	CommunicationServerAddress	=> m_CommunicationServerAddress ;
+		public string		CommunicationServer_Address	=> m_CommunicationServer_Address ;
 
 		// コミュニケーションサーバーのアドレス
-		private string	m_CommunicationServerAddress ;
+		private string		m_CommunicationServer_Address ;
 
 		/// <summary>
 		/// コミュニケーションサーバーのＴＣＰポート
 		/// </summary>
-		public int		CommunicationServerTcpPort		=> m_CommunicationServerTcpPort ;
+		public ushort		CommunicationServer_TcpPort		=> m_CommunicationServer_TcpPort ;
 
 		// コミュニケーションサーバーのＴＣＰポート
-		private int		m_CommunicationServerTcpPort ;
+		private ushort		m_CommunicationServer_TcpPort ;
 
 		// コミュニケーションサーバーのＴＣＰエンドポイント
-		private IPEndPoint	m_CommunicationServerTcpEndPoint ;
+		private IPEndPoint	m_CommunicationServer_TcpEndPoint ;
 
 		//-------------------------------------------------------------------------------------------
 
@@ -69,14 +69,12 @@ namespace NetworkPlayHelper
 			// 共通処理部(ＷｅｂＡｐｉ)
 			( var responseCode, var errorMessage, var responseContentData ) = await CallWebApi_C_Async
 			(
-				m_CommunicationServerTcpEndPoint,
+				m_CommunicationServer_TcpEndPoint,
 				requestContent.Encode(),
 				cancellationToken
 			) ;
 			if( responseCode != ResponseCodes.Succeeded )
 			{
-				Debug.Log( "-----------------エラー発生 : Code = " + responseCode + " ErrorMessahe = " + errorMessage ) ;
-
 				// 失敗
 				return new ( responseCode, errorMessage, null ) ;
 			}
@@ -99,8 +97,10 @@ namespace NetworkPlayHelper
 			return new ( responseCode, string.Empty, data ) ;
 		}
 
+		//-------------------------------------------------------------------------------------------
+
 		/// <summary>
-		/// セッションを生成する
+		/// グルーピングサービスを開始する
 		/// </summary>
 		/// <param name="sessionProcessionType"></param>
 		/// <param name="password"></param>
@@ -111,69 +111,36 @@ namespace NetworkPlayHelper
 		/// <param name="udpCorrectionEnabled"></param>
 		/// <param name="cancellationToken"></param>
 		/// <returns></returns>
-		public async Task<CreateSession_Response> CreateSessionAsync
+		public async Task<StartGroupingService_Response> StartGroupingServiceAsync
 		(
-			string					description,
-			int						maxPlayers,
-			string					password,
-			SessionScopeTypes		scopeType,
-			SessionManagementTypes	managementType,
-			bool					udpEnabled,
-			bool					udpCorrectionEnabled,
-			string					playerName,
-			CancellationToken		cancellationToken	
+			Dictionary<string, string>	parameters,
+			Action<byte[]>				onMessageReceived,
+			CancellationToken			cancellationToken	
 		)
 		{
-			if( string.IsNullOrEmpty( m_ApplicationId ) == true  )
-			{
-				// 無効なアプリケーション識別子
-				return new
-				(
-					ResponseCodes.InvalidApplicationIdentifier, "無効なアプリケーション識別子です",
-					0,
-					0, SessionManagementTypes.HostManagement,
-					false, false, false,
-					null, 0, 0,
-					null
-				) ;
-			}
-
 			//----------------------------------------------------------
 
-			if( m_IsSessionJoined == true )
+			if( m_GroupingServerProcessor.IsConnected == true )
 			{
-				// 既にセッションに参加している(NetworkPlayClientインスタンス１つにつき参加できるセッションは１つまで)
+				// 既に接続済みになっている
 				return new
 				(
-					ResponseCodes.AlreadyJoinedSession, "既にセッションに参加しています",
-					0,
-					0, SessionManagementTypes.HostManagement,
-					false, false, false,
-					null, 0, 0,
-					null
+					ResponseCodes.Succeeded, string.Empty,
+					GroupingServer_Address, GroupingServer_TcpPort
 				) ;
 			}
 
 			//----------------------------------------------------------
 
 			// リクエストコンテント部
-			var requestContent = new CreateSession_RequestPacket
+			var requestContent = new StartGroupingService_RequestPacket
 			(
-				m_ApplicationId,
-				description,
-				maxPlayers,
-				password,
-				scopeType,
-				managementType,
-				udpEnabled,
-				udpCorrectionEnabled,
-				playerName
 			) ;
 
 			// 共通処理部(ＷｅｂＡｐｉ)
 			( var responseCode, var errorMessage, var responseContentData ) = await CallWebApi_C_Async
 			(
-				m_CommunicationServerTcpEndPoint,
+				m_CommunicationServer_TcpEndPoint,
 				requestContent.Encode(),
 				cancellationToken
 			) ;
@@ -184,92 +151,56 @@ namespace NetworkPlayHelper
 				return new
 				(
 					responseCode, errorMessage,
-					0,
-					0, SessionManagementTypes.HostManagement,
-					false, false, false,
-					null, 0, 0,
-					null
+					null, 0
 				) ;
 			}
 
 			//----------------------------------------------------------
 
 			// レスポンスコンテント部
-			var responseContent = new CreateSession_ResponsePacket( responseContentData, 0 ) ;
+			var responseContent = new StartGroupingService_ResponsePacket( responseContentData, 0 ) ;
 			if( responseContent.Decode() == false )
 			{
 				// 失敗(データ異常)
 				return new
 				(
-					ResponseCodes.BadResponse, "受信データに問題があります",
-					0,
-					0, SessionManagementTypes.HostManagement,
-					false, false, false,
-					null, 0, 0,
-					null
+					ResponseCodes.BadResponse, "[Client] 受信データに問題があります",
+					null, 0
 				) ;
 			}
 
 			// レスポンスの値を取り出す
-			m_IsSessionJoined       = true ;
-			m_SessionId				= responseContent.SessionId ;
+			m_GroupingServerProcessor.Address			= responseContent.GroupingServer_Address ;
+			m_GroupingServerProcessor.TcpPort			= responseContent.GroupingServer_TcpPort ;
 
-			m_MaxPlayers			= responseContent.MaxPlayers ;
+			Debug.Log( "<color=#7FFFFF>グルーピングサーバーのエンドポイント = " + GroupingServer_Address + ":" + GroupingServer_TcpPort + "</color>" ) ;
 
-			m_ManagementType		= responseContent.ManagementType ;
-			m_UdpEnabled			= responseContent.UdpEnabled ;
-			m_UdpCorrectionEnabled	= responseContent.UdpCorrectionEnabled ;
+			//---------------------------------------------------------
 
-			Debug.Log( "<color=#FFFF00>------------ＵＤＰが使えるかどうか : " + m_UdpEnabled + "</color>" ) ;
-
-			// サーバーのセッションプロセッサーが使用可能かどうか
-			bool processorEnabled	= responseContent.ProcessorEnabled ;		// SessionProcessor を Server で生成する場合
-
-			m_ExchangeServerAddress	= responseContent.ExchangeServerAddress ;
-			m_ExchangeServerTcpPort	= responseContent.ExchangeServerTcpPort ;
-			m_ExchangeServerUdpPort	= responseContent.ExchangeServerUdpPort ;
-
-			if( m_UdpEnabled == true )
-			{
-				// ＵＤＰ用のエンドポイントを作成する
-				if( CreateUdpEndPoint( m_ExchangeServerAddress, m_ExchangeServerUdpPort ) == false )
-				{
-					// 失敗(データ異常)
-					return new
-					(
-						ResponseCodes.BadResponse, "ＵＤＰのエンドポイントが生成できません\n" + m_ExchangeServerAddress + ":" + m_ExchangeServerUdpPort,
-						0,
-						0, SessionManagementTypes.HostManagement, 
-						false, false, false,
-						null, 0, 0,
-						null
-					) ;
-				}
-				Debug.Log( "<color=#7FFFFF>エクスチェンジサーバーの実ＵＤＰエンドポイント : " + m_ExchangeServerUdpEndPoint.ToString() + "</color>" ) ;
-			}
-
-			Debug.Log( "<color=#7FFFFF>エクスチェンジサーバーのエンドポイント = " + m_ExchangeServerAddress + ":" + m_ExchangeServerTcpPort + "," + m_ExchangeServerUdpPort + "</color>" ) ;
-
-			// セッションに参加中のプレイヤー群
-			var sessionPlayers = responseContent.GetSessionPlayers() ;
+			// グルーピングサーバー接続前に汎用通知メッセージの受信コールバックを設定しておく
+			m_GroupingServerProcessor.SetOnReceived( onMessageReceived ) ;
 
 			//----------------------------------------------------------
 			// ※共通化したいが呼び出し元とコードがほとんど変わらないので共通化は断念
-
-			// SessionServer と通信するリアルタイム通信用ソケットクライアントを生成する
-			CreateRealTimeSocketClient( m_OwnerCancellationToken ) ; 
 
 			bool isCanceled = false ;
 
 			try
 			{
-				// エクスチェンジサーバーへＴＣＰ接続を行う
-				( responseCode, errorMessage ) = await ConnectToExchangeServer( m_ExchangeServerAddress, m_ExchangeServerTcpPort, cancellationToken ) ;
+				// グルーピングサーバーへＴＣＰ接続を行う
+				( responseCode, errorMessage ) = await m_GroupingServerProcessor.Connect
+				(
+					GroupingServer_Address,
+					GroupingServer_TcpPort,
+					parameters,
+					cancellationToken,
+					m_OwnerCancellationToken
+				) ;
 			}
 			catch( Exception e )
 			{
 				responseCode = ResponseCodes.ConnectionFailed ;
-				errorMessage = "エクスチェンジサーバーに接続できない\n" + e.Message ;
+				errorMessage = "グルーピングサーバーに接続できない\n" + e.Message ;
 
 				if( e is OperationCanceledException )
 				{
@@ -286,17 +217,13 @@ namespace NetworkPlayHelper
 
 			if( responseCode != ResponseCodes.Succeeded )
 			{
-				// セッションサーバーへの接続に失敗した
-				await LeaveFromSessionAsync() ;	// こちらが失敗しても結果は無視する
+				// グルーピングサーバーへの接続に失敗した
+				await m_GroupingServerProcessor.StopServiceAsync( m_OwnerCancellationToken ) ;	// こちらが失敗しても結果は無視する
 
 				return new
 				(
 					responseCode, errorMessage,
-					0,
-					0, SessionManagementTypes.HostManagement,
-					false, false, false,
-					null, 0, 0,
-					null
+					null, 0
 				) ;
 			}
 
@@ -305,7 +232,7 @@ namespace NetworkPlayHelper
 			try
 			{
 				// 接続完了のコールバックを呼ぶ
-				m_OnConnected?.Invoke() ;
+				m_GroupingServerProcessor.CallOnConnected() ;
 			}
 			catch( Exception )
 			{
@@ -313,18 +240,151 @@ namespace NetworkPlayHelper
 			}
 
 			//----------------------------------------------------------
-			// セッションプロセッサーを Host で生成する場合はここで設定する(Host の場合は生成済みのものが設定されるため)
-			// ※ホストでなくても一律実行する
 
-			if( m_ManagementType == SessionManagementTypes.HostManagement )
+			// 成功
+			return new
+			(
+				ResponseCodes.Succeeded, string.Empty,
+				GroupingServer_Address, GroupingServer_TcpPort
+			) ;
+		}
+
+		/// <summary>
+		/// グルーピングサービスを終了する
+		/// </summary>
+		/// <returns></returns>
+		public bool StopGroupingService()
+		{
+			m_GroupingServerProcessor.StopService() ;
+			return true ;
+		}
+
+		//-------------------------------------------------------------------------------------------
+
+		/// <summary>
+		/// セッションを生成する
+		/// </summary>
+		/// <param name="sessionProcessionType"></param>
+		/// <param name="password"></param>
+		/// <param name="sessionScopeType"></param>
+		/// <param name="maxPlayers"></param>
+		/// <param name="sessionDescription"></param>
+		/// <param name="udpEnabled"></param>
+		/// <param name="udpCorrectionEnabled"></param>
+		/// <param name="cancellationToken"></param>
+		/// <returns></returns>
+		public async Task<CreateSession_Response> CreateSessionAsync
+		(
+			string					    description,
+			string					    password,
+			int						    maxPlayers,
+			SessionScopeTypes		    scopeType,
+			SessionManagementTypes	    managementType,
+			bool					    udpEnabled,
+			bool					    udpCorrectionEnabled,
+			Dictionary<string,string>   parameters,
+			string					    playerName,
+			CancellationToken		    cancellationToken	
+		)
+		{
+			if( string.IsNullOrEmpty( m_ApplicationId ) == true  )
 			{
-				// ホストであるため
-				processorEnabled = WakeupSessionProcessor() ;
+				// 無効なアプリケーション識別子
+				return new
+				(
+					ResponseCodes.InvalidApplicationIdentifier, "[Client] 無効なアプリケーション識別子です"
+				) ;
+			}
 
-				if( processorEnabled == true )
-				{
-					CallOnActive_ForSessionProcessor( new SessionPlayer[]{ new ( UserId, PlayerName, false, true ) } ) ;
-				}
+			//----------------------------------------------------------
+
+			if( IsSessionJoined == true )
+			{
+				// 既にセッションに参加している(NetworkPlayClientインスタンス１つにつき参加できるセッションは１つまで)
+				return new
+				(
+					ResponseCodes.AlreadyJoinedSession, "[Client] 既にセッションに参加しています"
+				) ;
+			}
+
+			//----------------------------------------------------------
+
+			// リクエストコンテント部
+			var requestContent = new CreateSession_RequestPacket
+			(
+				m_ApplicationId,
+				description,
+				password,
+				maxPlayers,
+				scopeType,
+				managementType,
+				udpEnabled,
+				udpCorrectionEnabled,
+				parameters,
+				playerName
+			) ;
+
+			// 共通処理部(ＷｅｂＡｐｉ)
+			( var responseCode, var errorMessage, var responseContentData ) = await CallWebApi_C_Async
+			(
+				m_CommunicationServer_TcpEndPoint,
+				requestContent.Encode(),
+				cancellationToken
+			) ;
+
+			if( responseCode != ResponseCodes.Succeeded )
+			{
+				// 失敗
+				return new
+				(
+					responseCode, errorMessage
+				) ;
+			}
+
+			//----------------------------------------------------------
+
+			// レスポンスコンテント部
+			var responseContent = new CreateSession_ResponsePacket( responseContentData, 0 ) ;
+			if( responseContent.Decode() == false )
+			{
+				// 失敗(データ異常)
+				return new
+				(
+					ResponseCodes.BadResponse, "[Client] 受信データに問題があります"
+				) ;
+			}
+
+			//----------------------------------------------------------
+
+			// ExchangeServer へ接続を試みる
+			( responseCode, errorMessage ) = await ConnectToExchangeServerAsync
+			(
+				responseContent.SessionId,
+
+				responseContent.MaxPlayers,
+				responseContent.ScopeType,
+				responseContent.ManagementType,
+				responseContent.UdpEnabled,
+				responseContent.UdpCorrectionEnabled,
+				responseContent.Parameters,
+				responseContent.ProcessorEnabled,
+
+				responseContent.GetSessionPlayers(),
+
+				responseContent.ExchangeServer_Address,
+				responseContent.ExchangeServer_TcpPort,
+				responseContent.ExchangeServer_UdpPort,
+
+				cancellationToken
+			) ;
+
+			if( responseCode != ResponseCodes.Succeeded )
+			{
+				// 失敗
+				return new
+				(
+					responseCode, errorMessage
+				) ;
 			}
 
 			//----------------------------------------------------------
@@ -333,11 +393,13 @@ namespace NetworkPlayHelper
 			return new
 			(
 				responseCode, string.Empty,
-				m_SessionId,
-				m_MaxPlayers, m_ManagementType,
-				m_UdpEnabled, m_UdpCorrectionEnabled, processorEnabled,
-				m_ExchangeServerAddress, m_ExchangeServerTcpPort, m_ExchangeServerUdpPort,
-				sessionPlayers
+				SessionId,
+				MaxPlayers, ManagementType,
+				UdpEnabled, UdpCorrectionEnabled,
+				responseContent.Parameters,
+				responseContent.ProcessorEnabled,
+				responseContent.GetSessionPlayers(),
+				ExchangeServer_Address, ExchangeServer_TcpPort, ExchangeServer_UdpPort
 			) ;
 		}
 
@@ -356,16 +418,12 @@ namespace NetworkPlayHelper
 			CancellationToken cancellationToken	
 		)
 		{
-			if( m_IsSessionJoined == true )
+			if( IsSessionJoined == true )
 			{
 				// 既にセッションに参加している(NetworkPlayClientインスタンス１つにつき参加できるセッションは１つまで)
 				return new
 				(
-					ResponseCodes.AlreadyJoinedSession, "既にセッションに参加しています",
-					0, SessionManagementTypes.HostManagement,
-					false, false, false,
-					null, 0, 0,
-					null
+					ResponseCodes.AlreadyJoinedSession, "[Client] 既にセッションに参加しています"
 				) ;
 			}
 
@@ -384,7 +442,7 @@ namespace NetworkPlayHelper
 			// 共通処理部(ＷｅｂＡｐｉ)
 			( var responseCode, var errorMessage, var responseContentData ) = await CallWebApi_C_Async
 			(
-				m_CommunicationServerTcpEndPoint,
+				m_CommunicationServer_TcpEndPoint,
 				requestContent.Encode(),
 				cancellationToken
 			) ;
@@ -393,11 +451,7 @@ namespace NetworkPlayHelper
 				// 失敗
 				return new
 				(
-					responseCode, errorMessage,
-					0, SessionManagementTypes.HostManagement,
-					false, false, false,
-					null, 0, 0,
-					null
+					responseCode, errorMessage
 				) ;
 			}
 
@@ -410,72 +464,146 @@ namespace NetworkPlayHelper
 				// 失敗(データ異常)
 				return new
 				(
-					ResponseCodes.BadResponse, "受信データに問題があります",
-					0, SessionManagementTypes.HostManagement, 
-					false, false, false,
-					null, 0, 0,
-					null
+					ResponseCodes.BadResponse, "[Client] 受信データに問題があります"
 				) ;
 			}
 
-			// 一旦保持しておく
-			m_IsSessionJoined               = true ;
-			m_SessionId						= ( uint )sessionId ;
+			//----------------------------------------------------------
 
-			m_MaxPlayers					= responseContent.MaxPlayers ;
-			m_ManagementType				= responseContent.ManagementType ;
+			// ExchangeServer へ接続を試みる
+			( responseCode, errorMessage ) = await ConnectToExchangeServerAsync
+			(
+				( uint )sessionId,
 
+				responseContent.MaxPlayers,
+				responseContent.ScopeType,
+				responseContent.ManagementType,
+				responseContent.UdpEnabled,
+				responseContent.UdpCorrectionEnabled,
+				responseContent.Parameters,
+				responseContent.ProcessorEnabled,
+
+				responseContent.GetSessionPlayers(),
+
+				responseContent.ExchangeServer_Address,
+				responseContent.ExchangeServer_TcpPort,
+				responseContent.ExchangeServer_UdpPort,
+
+				cancellationToken
+			) ;
+
+			if( responseCode != ResponseCodes.Succeeded )
+			{
+				// 失敗
+				return new
+				(
+					responseCode, errorMessage
+				) ;
+			}
+
+			//----------------------------------------------------------
+
+			// 成功
+			return new
+			(
+				responseCode, string.Empty,
+				SessionId,
+				MaxPlayers, ManagementType, 
+				UdpEnabled, UdpCorrectionEnabled,
+				responseContent.Parameters,
+				responseContent.ProcessorEnabled,
+				responseContent.GetSessionPlayers(),
+				ExchangeServer_Address, ExchangeServer_TcpPort, ExchangeServer_UdpPort
+			) ;
+		}
+
+		/// <summary>
+		/// ExchangeServer へ接続する
+		/// </summary>
+		/// <param name="sessionId"></param>
+		/// <param name=""></param>
+		/// <returns></returns>
+		/// <exception cref="OperationCanceledException"></exception>
+		public async Task<( ResponseCodes, string )> ConnectToExchangeServerAsync
+		(
+			uint					    sessionId,
+
+			ushort					    maxPlayers,
+			SessionScopeTypes		    scopeType,
+			SessionManagementTypes	    managementType,
+			bool					    udpEnabled,
+			bool					    udpCorrectionEnabled,
+			Dictionary<string,string>   parameters,
+			bool					    processorEnabled,
+
+			List<SessionPlayer>		    sessionPlayers,
+
+			string					    exchangeServer_Address,
+			ushort					    exchangeServer_TcpPort,
+			ushort					    exchangeServer_UdpPort,
+
+			CancellationToken		    cancellationToken
+		)
+		{
 			// レスポンスの値を取り出す
-			m_UdpEnabled					= responseContent.UdpEnabled ;
-			m_UdpCorrectionEnabled			= responseContent.UdpCorrectionEnabled ;
+			m_ExchangeServerProcessor.SessionId				= sessionId ;
 
-			Debug.Log( "<color=#FFFF00>------------ＵＤＰが使えるかどうか : " + m_UdpEnabled + "</color>" ) ;
+			m_ExchangeServerProcessor.MaxPlayers			= maxPlayers ;
 
-			// ホストまたはサーバーのセッションプロセッサーが使用可能な状態かどうか
-			bool processorEnabled			= responseContent.ProcessorEnabled ;
+			m_ExchangeServerProcessor.SessionScopeType		= scopeType ;
+			m_ExchangeServerProcessor.ManagementType		= managementType ;
 
-			m_ExchangeServerAddress			= responseContent.ExchangeServerAddress ;
-			m_ExchangeServerTcpPort			= responseContent.ExchangeServerTcpPort ;
-			m_ExchangeServerUdpPort			= responseContent.ExchangeServerUdpPort ;
+			m_ExchangeServerProcessor.UdpEnabled			= udpEnabled ;
+			m_ExchangeServerProcessor.UdpCorrectionEnabled	= udpCorrectionEnabled ;
 
-			if( m_UdpEnabled == true )
+			m_ExchangeServerProcessor.Parameters            = parameters ;
+
+			Debug.Log( "<color=#FFFF00>------------ＵＤＰが使えるかどうか : " + UdpEnabled + "</color>" ) ;
+
+			m_ExchangeServerProcessor.Address				= exchangeServer_Address ;
+			m_ExchangeServerProcessor.TcpPort				= exchangeServer_TcpPort ;
+			m_ExchangeServerProcessor.UdpPort				= exchangeServer_UdpPort ;
+
+			if( UdpEnabled == true )
 			{
 				// ＵＤＰ用のエンドポイントを作成する
-				if( CreateUdpEndPoint( m_ExchangeServerAddress, m_ExchangeServerUdpPort ) == false )
+				if( CreateUdpEndPoint( m_ExchangeServerProcessor.Address, m_ExchangeServerProcessor.UdpPort ) == false )
 				{
 					// 失敗(データ異常)
 					return new
 					(
-						ResponseCodes.BadResponse, "ＵＤＰのエンドポイントが生成できません\n" + m_ExchangeServerAddress + ":" + m_ExchangeServerUdpPort,
-						0, SessionManagementTypes.HostManagement, 
-						false, false, false,
-						null, 0, 0,
-						null
+						ResponseCodes.BadResponse, "[Client] ＵＤＰのエンドポイントが生成できません\n" + ExchangeServer_Address + ":" + ExchangeServer_UdpPort
 					) ;
 				}
-				Debug.Log( "<color=#7FFFFF>エクスチェンジサーバーの実ＵＤＰエンドポイント : " + m_ExchangeServerUdpEndPoint.ToString() + "</color>" ) ;
 			}
 
-			Debug.Log( "<color=#7FFFFF>エクスチェンジサーバーのエンドポイント = " + m_ExchangeServerAddress + ":" + m_ExchangeServerTcpPort + "," + m_ExchangeServerUdpPort + "</color>" ) ;
-
-			// セッションに参加中のプレイヤー群
-			var sessionPlayers = responseContent.GetSessionPlayers() ;
+			Debug.Log( "<color=#7FFFFF>エクスチェンジサーバーのエンドポイント = " + ExchangeServer_Address + ":" + ExchangeServer_TcpPort + "," + ExchangeServer_UdpPort + "</color>" ) ;
 
 			//----------------------------------------------------------
 			// ※共通化したいが呼び出し元とコードがほとんど変わらないので共通化は断念
 
-			// SessionServer と通信するリアルタイム通信用ソケットクライアントを生成する
-			CreateRealTimeSocketClient( m_OwnerCancellationToken ) ; 
+			ResponseCodes	responseCode ;
+			string			errorMessage ;
+
 
 			bool isCanceled = false ;
 
 			try
 			{
 				// エクスチェンジサーバーへＴＣＰ接続を行う
-				( responseCode, errorMessage ) = await ConnectToExchangeServer( m_ExchangeServerAddress, m_ExchangeServerTcpPort, cancellationToken ) ;
+				( responseCode, errorMessage ) = await m_ExchangeServerProcessor.Connect
+				(
+					ExchangeServer_Address,
+					ExchangeServer_TcpPort,
+					cancellationToken,
+					m_OwnerCancellationToken
+				) ;
 			}
 			catch( Exception e )
 			{
+				responseCode = ResponseCodes.ConnectionFailed ;
+				errorMessage = "[Client] エクスチェンジサーバーに接続できない\n" + e.Message ;
+
 				if( e is OperationCanceledException )
 				{
 					// キャンセルされた
@@ -491,19 +619,16 @@ namespace NetworkPlayHelper
 
 			if( responseCode != ResponseCodes.Succeeded )
 			{
-				// エクスチェンジサーバーへの接続に失敗した
-
-				// 以降の処理が失敗してもローカルのセッション識別子はクリアする
-				m_SessionId         = 0 ;
-				m_IsSessionJoined   = false ;
+				// セッションサーバーへの接続に失敗した
+				if( m_ExchangeServerProcessor != null )
+				{
+					// ExchangeServerProcessor が破棄されている可能性がある
+					await m_ExchangeServerProcessor.LeaveFromSessionAsync() ;	// こちらが失敗しても結果は無視する
+				}
 
 				return new
 				(
-					responseCode, errorMessage,
-					m_MaxPlayers, SessionManagementTypes.HostManagement, 
-					m_UdpEnabled, m_UdpCorrectionEnabled, processorEnabled,
-					m_ExchangeServerAddress, m_ExchangeServerTcpPort, m_ExchangeServerUdpPort,
-					sessionPlayers
+					responseCode, errorMessage
 				) ;
 			}
 
@@ -512,7 +637,7 @@ namespace NetworkPlayHelper
 			try
 			{
 				// 接続完了のコールバックを呼ぶ
-				m_OnConnected?.Invoke() ;
+				m_ExchangeServerProcessor.CallOnConnected() ;
 			}
 			catch( Exception )
 			{
@@ -523,24 +648,32 @@ namespace NetworkPlayHelper
 			// セッションプロセッサーを Host で生成する場合はここで設定する(Host の場合は生成済みのものが設定されるため)
 			// ※ホストでなくても一律実行する
 
-			if( m_ManagementType == SessionManagementTypes.HostManagement )
+			if( ManagementType == SessionManagementTypes.HostManagement )
 			{
-				WakeupSessionProcessor() ;
+				if( IsHost == true )
+				{
+					// ホストであるため
+					processorEnabled = WakeupSessionProcessor() ;
+	
+					if( processorEnabled == true )
+					{
+						m_ExchangeServerProcessor.CallOnActive_ForSessionProcessor
+						(
+							sessionPlayers
+						) ;
+					}
+				}
+				else
+				{
+					// メンバー
+					WakeupSessionProcessor() ;
+				}
 			}
 
-			//----------------------------------------------------------
-
-			// 成功
-			return new
-			(
-				responseCode, string.Empty,
-				m_MaxPlayers, m_ManagementType, 
-				m_UdpEnabled, m_UdpCorrectionEnabled, processorEnabled,
-				m_ExchangeServerAddress, m_ExchangeServerTcpPort, m_ExchangeServerUdpPort,
-				sessionPlayers
-			) ;
+			return ( ResponseCodes.Succeeded, string.Empty ) ;
 		}
 
+		// ＵＤＰ用のエンドポイントを生成する
 		private bool CreateUdpEndPoint( string address, int port )
 		{
 			// ＵＤＰ用のエンドポイントを作成する
@@ -563,7 +696,7 @@ namespace NetworkPlayHelper
 				
 			if( ipAddress != null && ipAddress.GetAddressBytes() != null )
 			{
-				m_ExchangeServerUdpEndPoint = new IPEndPoint( ipAddress, port ) ;
+				m_ExchangeServerProcessor.UdpEndPoint = new IPEndPoint( ipAddress, port ) ;
 				return true ;
 			}
 			else
@@ -601,15 +734,15 @@ namespace NetworkPlayHelper
 		/// <returns></returns>
 		public async Task<GetSessions_Response> GetSessionsAsync
 		(
-			int offset,
-			int length,
+			uint	offset,
+			uint	length,
 			CancellationToken cancellationToken
 		)
 		{
 			if( string.IsNullOrEmpty( m_ApplicationId ) == true  )
 			{
 				// 無効なアプリケーション識別子
-				return new ( ResponseCodes.InvalidApplicationIdentifier, "無効なアプリケーション識別子です", null ) ;
+				return new ( ResponseCodes.InvalidApplicationIdentifier, "[Client] 無効なアプリケーション識別子です", null, 0 ) ;
 			}
 
 			//----------------------------------------------------------
@@ -627,14 +760,14 @@ namespace NetworkPlayHelper
 			// 共通処理部(ＷｅｂＡｐｉ)
 			( var responseCode, var errorMessage, var responseContentData ) = await CallWebApi_C_Async
 			(
-				m_CommunicationServerTcpEndPoint,
+				m_CommunicationServer_TcpEndPoint,
 				requestContent.Encode(),
 				cancellationToken
 			) ;
 			if( responseCode != ResponseCodes.Succeeded )
 			{
 				// 失敗
-				return new ( responseCode, errorMessage, null ) ;
+				return new ( responseCode, errorMessage, null, 0 ) ;
 			}
 
 			//----------------------------------------------------------
@@ -644,15 +777,16 @@ namespace NetworkPlayHelper
 			if( responseContent.Decode() == false )
 			{
 				// 失敗(データ異常)
-				return new ( ResponseCodes.BadResponse, "受信データに問題があります", null ) ;
+				return new ( ResponseCodes.BadResponse, "[Client] 受信データに問題があります", null, 0 ) ;
 			}
 
-			var sessions = responseContent.Sessions ;
+			var sessions	= responseContent.Sessions ;
+			var count		= responseContent.Count ;
 
 			//----------------------------------------------------------
 
 			// 成功
-			return new ( responseCode, string.Empty, sessions ) ;
+			return new ( responseCode, string.Empty, sessions, count ) ;
 		}
 
 		/// <summary>
@@ -661,8 +795,8 @@ namespace NetworkPlayHelper
 		/// <returns></returns>
 		public async Task<GetFriends_Response> GetFriendsAsync
 		(
-			int offset = 0,
-			int length = 0,
+			ushort		offset = 0,
+			ushort		length = 0,
 			CancellationToken cancellationToken = default
 		)
 		{
@@ -678,16 +812,14 @@ namespace NetworkPlayHelper
 			// 共通処理部(ＷｅｂＡｐｉ)
 			( var responseCode, var errorMessage, var responseContentData ) = await CallWebApi_C_Async
 			(
-				m_CommunicationServerTcpEndPoint,
+				m_CommunicationServer_TcpEndPoint,
 				requestContent.Encode(),
 				cancellationToken
 			) ;
 			if( responseCode != ResponseCodes.Succeeded )
 			{
-				Debug.Log( "-----------------エラー発生 : Code = " + responseCode + " ErrorMessahe = " + errorMessage ) ;
-
 				// 失敗
-				return new ( responseCode, errorMessage, null ) ;
+				return new ( responseCode, errorMessage, null, 0 ) ;
 			}
 
 			//----------------------------------------------------------
@@ -697,16 +829,21 @@ namespace NetworkPlayHelper
 			if( responseContent.Decode() == false )
 			{
 				// 失敗(データ異常)
-				return new ( ResponseCodes.BadResponse, "受信データに問題があります", null ) ;
+				return new ( ResponseCodes.BadResponse, "[Client] 受信データに問題があります", null, 0 ) ;
 			}
 
-			var friends = responseContent.Friends ;
+			var friends		= responseContent.Friends ;
+			var count		= responseContent.Count ;
 
 			//----------------------------------------------------------
 
 			// 成功
-			return new ( responseCode, string.Empty, friends ) ;
+			return new ( responseCode, string.Empty, friends, count ) ;
 		}
+
+
+		//-----------------------------------------------------------
+
 
 		/// <summary>
 		/// セッションのスコープタイプを設定する(セッションに参加済み且つホストである場合のみ使用可能)
@@ -726,7 +863,7 @@ namespace NetworkPlayHelper
 				return new ( ResponseCodes.InvalidApplicationIdentifier, "アプリケーション識別子が設定されていません" ) ;
 			}
 
-			if( m_IsSessionJoined == false )
+			if( IsSessionJoined == false )
 			{
 				return new ( ResponseCodes.InvalidSessionIdentifier, "セッションに参加していません" ) ;
 			}
@@ -736,7 +873,7 @@ namespace NetworkPlayHelper
 			// リクエストコンテント部
 			var requestContent = new SetSessionScopeType_RequestPacket
 			(
-				m_SessionId,
+				( uint )SessionId,
 				scopeType
 			) ;
 
@@ -745,14 +882,12 @@ namespace NetworkPlayHelper
 			// 共通処理部(ＷｅｂＡｐｉ)
 			( var responseCode, var errorMessage, var responseContentData ) = await CallWebApi_C_Async
 			(
-				m_CommunicationServerTcpEndPoint,
+				m_CommunicationServer_TcpEndPoint,
 				requestContent.Encode(),
 				cancellationToken
 			) ;
 			if( responseCode != ResponseCodes.Succeeded )
 			{
-				Debug.Log( "-----------------エラー発生 : Code = " + responseCode + " ErrorMessage = " + errorMessage ) ;
-
 				// 失敗
 				return new ( responseCode, errorMessage ) ;
 			}
@@ -764,7 +899,7 @@ namespace NetworkPlayHelper
 			if( responseContent.Decode() == false )
 			{
 				// 失敗(データ異常)
-				return new ( ResponseCodes.BadResponse, "受信データに問題があります" ) ;
+				return new ( ResponseCodes.BadResponse, "[Client] 受信データに問題があります" ) ;
 			}
 
 			//----------------------------------------------------------
@@ -772,6 +907,168 @@ namespace NetworkPlayHelper
 			// 成功
 			return new ( responseCode, string.Empty ) ;
 		}
+
+		//-------------------------------------------------------------------------------------------
+		// ユーザー情報の更新
+
+		public async Task<UpdateUserName_Response> UpdateUserNameAsync
+		(
+			string userName,
+			CancellationToken cancellationToken
+		)
+		{
+			// リクエストコンテント部
+			var requestContent = new UpdateUserName_RequestPacket
+			(
+				userName
+			) ;
+
+			//----------------------------------------------------------
+
+			// 共通処理部(ＷｅｂＡｐｉ)
+			( var responseCode, var errorMessage, var responseContentData ) = await CallWebApi_C_Async
+			(
+				m_CommunicationServer_TcpEndPoint,
+				requestContent.Encode(),
+				cancellationToken
+			) ;
+			if( responseCode != ResponseCodes.Succeeded )
+			{
+				// 失敗
+				return new ( responseCode, errorMessage, null ) ;
+			}
+
+			//----------------------------------------------------------
+
+			// レスポンスコンテント部
+			var responseContent = new UpdateUserName_ResponsePacket( responseContentData, 0 ) ;
+			if( responseContent.Decode() == false )
+			{
+				// 失敗(データ異常)
+				return new ( ResponseCodes.BadResponse, "[Client] 受信データに問題があります", null ) ;
+			}
+
+			// 実際に設定されたユーザー名をローカルにも反映させる
+			m_UserName	= responseContent.UserName ;	// 実際に設定されたユーザー名(小文字が大文字に変わるケースなども想定)
+
+			//----------------------------------------------------------
+
+			// 成功
+			return new ( responseCode, string.Empty, m_UserName ) ;
+		}
+
+		//-------------------------------------------------------------------------------------------
+		// デバッグ機能
+
+		/// <summary>
+		/// ユーザー情報群を取得する
+		/// </summary>
+		/// <param name="offset"></param>
+		/// <param name="length"></param>
+		/// <param name="cancellationToken"></param>
+		/// <returns></returns>
+		public async Task<GetUsers_Response> GetUsersAsync
+		(
+			ulong offset,
+			ulong length,
+			CancellationToken cancellationToken
+		)
+		{
+			// リクエストコンテント部
+			var requestContent = new GetUsers_RequestPacket
+			(
+				offset,
+				length
+			) ;
+
+			//----------------------------------------------------------
+
+			// 共通処理部(ＷｅｂＡｐｉ)
+			( var responseCode, var errorMessage, var responseContentData ) = await CallWebApi_C_Async
+			(
+				m_CommunicationServer_TcpEndPoint,
+				requestContent.Encode(),
+				cancellationToken
+			) ;
+			if( responseCode != ResponseCodes.Succeeded )
+			{
+				// 失敗
+				return new ( responseCode, errorMessage, null, 0 ) ;
+			}
+
+			//----------------------------------------------------------
+
+			// レスポンスコンテント部
+			var responseContent = new GetUsers_ResponsePacket( responseContentData, 0 ) ;
+			if( responseContent.Decode() == false )
+			{
+				// 失敗(データ異常)
+				return new ( ResponseCodes.BadResponse, "[Client] 受信データに問題があります", null, 0 ) ;
+			}
+
+			var users	= responseContent.Users ;
+			var count	= responseContent.Count ;
+
+			//----------------------------------------------------------
+
+			// 成功
+			return new ( responseCode, string.Empty, users, count ) ;
+		}
+
+		/// <summary>
+		/// フレンド設定を実行する
+		/// </summary>
+		/// <param name="offset"></param>
+		/// <param name="length"></param>
+		/// <param name="cancellationToken"></param>
+		/// <returns></returns>
+		public async Task<SetFriend_Response> SetFriendAsync
+		(
+			string	userId,
+			bool	isFriend,
+			CancellationToken cancellationToken
+		)
+		{
+			// リクエストコンテント部
+			var requestContent = new SetFriend_RequestPacket
+			(
+				userId,
+				isFriend
+			) ;
+
+			//----------------------------------------------------------
+
+			// 共通処理部(ＷｅｂＡｐｉ)
+			( var responseCode, var errorMessage, var responseContentData ) = await CallWebApi_C_Async
+			(
+				m_CommunicationServer_TcpEndPoint,
+				requestContent.Encode(),
+				cancellationToken
+			) ;
+			if( responseCode != ResponseCodes.Succeeded )
+			{
+				// 失敗
+				return new ( responseCode, errorMessage ) ;
+			}
+
+			//----------------------------------------------------------
+
+			// レスポンスコンテント部
+			var responseContent = new SetFriend_ResponsePacket( responseContentData, 0 ) ;
+			if( responseContent.Decode() == false )
+			{
+				// 失敗(データ異常)
+				return new ( ResponseCodes.BadResponse, "[Client] 受信データに問題があります" ) ;
+			}
+
+			//----------------------------------------------------------
+
+			// 成功
+			return new ( responseCode, string.Empty ) ;
+		}
+
+
+
 
 		//-------------------------------------------------------------------------------------------
 
@@ -868,65 +1165,55 @@ namespace NetworkPlayHelper
 			}
 		}
 
+
 		//-----------------------------------
 
 		/// <summary>
-		/// セッション生成の要求パケット
+		/// グルーピングサービス開始の要求パケット
 		/// </summary>
-		public class CreateSession_RequestPacket : RequestPacketBase
+		public class StartGroupingService_RequestPacket : RequestPacketBase
+		{
+			//----------------------------------------------------------
+
+			/// <summary>
+			/// コンストラクタ
+			/// </summary>
+			/// <param name="data"></param>
+			public StartGroupingService_RequestPacket
+			(
+			)
+			{
+				RequestType		= RequestTypes.StartGroupingService ;
+			}
+
+			/// <summary>
+			/// エンコード
+			/// </summary>
+			/// <returns></returns>
+			public byte[] Encode()
+			{
+				PutByte( ( byte )RequestType ) ;
+
+				//---------------------------------
+
+				return m_Data.ToArray() ;
+			}
+		}
+
+		/// <summary>
+		/// グルーピングサービス開始の応答パケット
+		/// </summary>
+		public class StartGroupingService_ResponsePacket : ResponsePacketBase
 		{
 			/// <summary>
-			/// アプリケーション識別子
+			/// グルーピングサーバーのアドレス
 			/// </summary>
-			public string					ApplicationId { get ; private set ; }
-
-			//--------------
+			public string					GroupingServer_Address { get ; private set ; }
 
 			/// <summary>
-			/// セッションの説明文
+			/// グルーピングサーバーのＴＣＰポート
 			/// </summary>
-			public string					Description { get ; private set ; }
-
-			/// <summary>
-			/// セッションの最大参加可能人数
-			/// </summary>
-			public int						MaxPlayers { get ; private set ; }
-
-			/// <summary>
-			/// セッションのパスワード
-			/// </summary>
-			public string					Password { get ; private set ; }
-
-			//--------------
-
-			/// <summary>
-			/// セッションの情報公開範囲
-			/// </summary>
-			public SessionScopeTypes		ScopeType { get ; private set ; }
-
-			//--------------
-
-			/// <summary>
-			/// セッションの処理種別
-			/// </summary>
-			public SessionManagementTypes	ManagementType { get ; private set ; }
-
-			/// <summary>
-			/// セッションでＵＤＰ通信を使用可能にするかどうか
-			/// </summary>
-			public bool						UdpEnabled { get ; private set ; }
-
-			/// <summary>
-			/// セッションでＵＤＰ通信時の誤り補正を有効にするかどうか
-			/// </summary>
-			public bool						UdpCorrectionEnabled { get ; private set ; }
-
-			//--------------
-
-			/// <summary>
-			/// セッション中のユーザー名に上書きする名前(null は無効)
-			/// </summary>
-			public string					PlayerName { get ; private set ; }
+			public ushort					GroupingServer_TcpPort { get ; private set ; }
 
 			//----------------------------------------------------------
 
@@ -934,34 +1221,150 @@ namespace NetworkPlayHelper
 			/// コンストラクタ
 			/// </summary>
 			/// <param name="data"></param>
-			public CreateSession_RequestPacket
+			public StartGroupingService_ResponsePacket( byte[] data, int pointer ) : base( data, pointer ){}
+
+			/// <summary>
+			/// デコード
+			/// </summary>
+			/// <returns></returns>
+			public bool Decode()
+			{
+				//---------------------------------
+				// デコード
+
+				try
+				{
+					GroupingServer_Address	= GetString() ;
+					GroupingServer_TcpPort	= GetUShort() ;
+				}
+				catch( Exception )
+				{
+					// 失敗
+					return false ;
+				}
+
+				//---------------------------------
+				// バリデーションチェック
+
+				if
+				(
+					string.IsNullOrEmpty( GroupingServer_Address ) == true ||
+					GroupingServer_TcpPort == 0
+				)
+				{
+					// 失敗
+					return false ;
+				}
+
+				// 成功
+				return true ;
+			}
+		}
+
+		//-----------------------------------
+#if MATCHING_SYSTEM_OLD_VERSION
+		/// <summary>
+		/// セッションへのマッチング開始の要求パケット(旧版)
+		/// </summary>
+		public class StartMatchingToSession_RequestPacket : RequestPacketBase
+		{
+			/// <summary>
+			/// アプリケーション識別子
+			/// </summary>
+			public string					    ApplicationId           { get ; private set ; }
+
+			//--------------
+
+			/// <summary>
+			/// セッションの説明文
+			/// </summary>
+			public string					    Description             { get ; private set ; }
+
+			/// <summary>
+			/// セッションのパスワード
+			/// </summary>
+			public string					    Password                { get ; private set ; }
+
+			/// <summary>
+			/// セッションの最大参加可能人数
+			/// </summary>
+			public ushort					    MaxPlayers              { get ; private set ; }
+
+			//--------------
+
+			/// <summary>
+			/// セッションの情報公開範囲
+			/// </summary>
+			public SessionScopeTypes		    ScopeType               { get ; private set ; }
+
+			/// <summary>
+			/// セッションの処理種別
+			/// </summary>
+			public SessionManagementTypes	    ManagementType          { get ; private set ; }
+
+			//--------------
+
+			/// <summary>
+			/// セッションでＵＤＰ通信を使用可能にするかどうか
+			/// </summary>
+			public bool						    UdpEnabled              { get ; private set ; }
+
+			/// <summary>
+			/// セッションでＵＤＰ通信時の誤り補正を有効にするかどうか
+			/// </summary>
+			public bool						    UdpCorrectionEnabled    { get ; private set ; }
+
+			//-----
+
+			/// <summary>
+			/// セッション固有パラメータ
+			/// </summary>
+			public Dictionary<string,string>    Parameters              { get ; private set ; }
+
+
+			//--------------
+
+			/// <summary>
+			/// セッション中のユーザー名に上書きする名前(null は無効)
+			/// </summary>
+			public string					    PlayerName              { get ; private set ; }
+
+			//----------------------------------------------------------
+
+			/// <summary>
+			/// コンストラクタ
+			/// </summary>
+			/// <param name="data"></param>
+			public StartMatchingToSession_RequestPacket
 			(
-				string					applicationId,
-				string					description,
-				int						maxPlayers,
-				string					password,
-				SessionScopeTypes		scopeType,
-				SessionManagementTypes	managementType,
-				bool					udpEnabled,
-				bool					udpCorrectionEnabled,
-				string					playerName
+				string					    applicationId,
+				string					    description,
+				string					    password,
+				ushort					    maxPlayers,
+				SessionScopeTypes		    scopeType,
+				SessionManagementTypes	    managementType,
+				bool					    udpEnabled,
+				bool					    udpCorrectionEnabled,
+				Dictionary<string,string>   parameters,
+				string					    playerName
 			)
 			{
-				RequestType		= RequestTypes.CreateSession ;
+				RequestType		= RequestTypes.StartMatchingToSession ;
 
 				//-------------
 
 				ApplicationId			= applicationId ;
 
 				Description				= description ;
-				MaxPlayers				= maxPlayers ;
 				Password				= password ;
+				MaxPlayers				= maxPlayers ;
 
 				ScopeType				= scopeType ;
-
 				ManagementType			= managementType ;
 				UdpEnabled				= udpEnabled ;
 				UdpCorrectionEnabled	= udpCorrectionEnabled ;
+
+				Parameters              = parameters ;
 
 				PlayerName				= playerName ;
 			}
@@ -979,14 +1382,416 @@ namespace NetworkPlayHelper
 				PutString( ApplicationId ) ;
 
 				PutString( Description ) ;
-				PutUShort( ( ushort )MaxPlayers ) ;
 				PutString( Password ) ;
+				PutUShort( MaxPlayers ) ;
 
 				PutByte( ( byte )ScopeType ) ;
-
 				PutByte( ( byte )ManagementType ) ;
 				PutBool( UdpEnabled ) ;
 				PutBool( UdpCorrectionEnabled ) ;
+
+				if( Parameters == null || Parameters.Count == 0 )
+				{
+					PutByte( 0 ) ;
+				}
+				else
+				{
+					PutByte( ( byte )Parameters.Count ) ;
+					foreach( ( var key, var value ) in Parameters )
+					{
+						PutString( key ) ;
+						PutString( value ) ;
+					}
+				}
+
+				PutString( PlayerName ) ;
+
+				//---------------------------------
+
+				return m_Data.ToArray() ;
+			}
+		}
+
+		/// <summary>
+		/// セッションへのマッチング開始の応答パケット
+		/// </summary>
+		public class StartMatchingToSession_ResponsePacket : ResponsePacketBase
+		{
+			/// <summary>
+			/// マッチング識別子
+			/// </summary>
+			public ulong					MatchingId { get ; private set ; }
+
+			//----------------------------------------------------------
+
+			/// <summary>
+			/// コンストラクタ
+			/// </summary>
+			/// <param name="data"></param>
+			public StartMatchingToSession_ResponsePacket( byte[] data, int pointer ) : base( data, pointer ){}
+
+			/// <summary>
+			/// デコード
+			/// </summary>
+			/// <returns></returns>
+			public bool Decode()
+			{
+				//---------------------------------
+				// デシリアライズ
+
+				try
+				{
+					MatchingId				= GetULong() ;
+				}
+				catch( Exception )
+				{
+					// 失敗
+					return false ;
+				}
+
+				//---------------------------------
+				// バリデーションチェック
+
+				if
+				(
+					MatchingId == 0
+				)
+				{
+					// 失敗
+					return false ;
+				}
+
+				// 成功
+				return true ;
+			}
+		}
+
+		//-----------------------------------
+
+		/// <summary>
+		/// セッションへのマッチング実行の要求パケット
+		/// </summary>
+		public class ExecuteMatchingToSession_RequestPacket : RequestPacketBase
+		{
+			/// <summary>
+			/// マッチング識別子
+			/// </summary>
+			public ulong					MatchingId { get ; private set ; }
+
+			//----------------------------------------------------------
+
+			/// <summary>
+			/// コンストラクタ
+			/// </summary>
+			/// <param name="data"></param>
+			public ExecuteMatchingToSession_RequestPacket
+			(
+				ulong					matchingId
+			)
+			{
+				RequestType		= RequestTypes.ExecuteMatchingToSession ;
+
+				//-------------
+
+				MatchingId				= matchingId ;
+			}
+
+			/// <summary>
+			/// エンコード
+			/// </summary>
+			/// <returns></returns>
+			public byte[] Encode()
+			{
+				PutByte( ( byte )RequestType ) ;
+
+				//------------
+
+				PutULong( MatchingId ) ;
+
+				//---------------------------------
+
+				return m_Data.ToArray() ;
+			}
+		}
+
+		/// <summary>
+		/// セッションへのマッチング実行の応答パケット
+		/// </summary>
+		public class ExecuteMatchingToSession_ResponsePacket : ResponsePacketBase
+		{
+			/// <summary>
+			/// マッチング識別子
+			/// </summary>
+			public ulong					MatchingId { get ; private set ; }
+
+			//----------------------------------------------------------
+
+			/// <summary>
+			/// コンストラクタ
+			/// </summary>
+			/// <param name="data"></param>
+			public ExecuteMatchingToSession_ResponsePacket( byte[] data, int pointer ) : base( data, pointer ){}
+
+			/// <summary>
+			/// デコード
+			/// </summary>
+			/// <returns></returns>
+			public bool Decode()
+			{
+				//---------------------------------
+				// デシリアライズ
+
+				try
+				{
+					MatchingId				= GetULong() ;
+				}
+				catch( Exception )
+				{
+					// 失敗
+					return false ;
+				}
+
+				//---------------------------------
+				// バリデーションチェック
+
+				if
+				(
+					MatchingId == 0
+				)
+				{
+					// 失敗
+					return false ;
+				}
+
+				// 成功
+				return true ;
+			}
+		}
+
+		//-----------------------------------
+
+		/// <summary>
+		/// セッションへのマッチング中断の要求パケット
+		/// </summary>
+		public class StopMatchingToSession_RequestPacket : RequestPacketBase
+		{
+			/// <summary>
+			/// マッチング識別子
+			/// </summary>
+			public ulong					MatchingId { get ; private set ; }
+
+			//----------------------------------------------------------
+
+			/// <summary>
+			/// コンストラクタ
+			/// </summary>
+			/// <param name="data"></param>
+			public StopMatchingToSession_RequestPacket
+			(
+				ulong			matchingId
+			)
+			{
+				RequestType		= RequestTypes.StopMatchingToSession ;
+
+				//-------------
+
+				MatchingId		= matchingId ;
+			}
+
+			/// <summary>
+			/// エンコード
+			/// </summary>
+			/// <returns></returns>
+			public byte[] Encode()
+			{
+				PutByte( ( byte )RequestType ) ;
+
+				//------------
+
+				PutULong( MatchingId ) ;
+
+				//---------------------------------
+
+				return m_Data.ToArray() ;
+			}
+		}
+
+		/// <summary>
+		/// セッションへのマッチング中断の応答パケット
+		/// </summary>
+		public class StopMatchingToSession_ResponsePacket : ResponsePacketBase
+		{
+			//----------------------------------------------------------
+
+			/// <summary>
+			/// コンストラクタ
+			/// </summary>
+			/// <param name="data"></param>
+			public StopMatchingToSession_ResponsePacket( byte[] data, int pointer ) : base( data, pointer ){}
+
+			/// <summary>
+			/// デコード
+			/// </summary>
+			/// <returns></returns>
+			public bool Decode()
+			{
+				try
+				{
+				}
+				catch( Exception )
+				{
+					// 失敗
+					return false ;
+				}
+
+				// 成功
+				return true ;
+			}
+		}
+#endif
+		//-----------------------------------
+
+		/// <summary>
+		/// セッション生成の要求パケット
+		/// </summary>
+		public class CreateSession_RequestPacket : RequestPacketBase
+		{
+			/// <summary>
+			/// アプリケーション識別子
+			/// </summary>
+			public string					    ApplicationId           { get ; private set ; }
+
+			//--------------
+
+			/// <summary>
+			/// セッションの説明文
+			/// </summary>
+			public string					    Description             { get ; private set ; }
+
+			/// <summary>
+			/// セッションのパスワード
+			/// </summary>
+			public string					    Password                { get ; private set ; }
+
+			/// <summary>
+			/// セッションの最大参加可能人数
+			/// </summary>
+			public int						    MaxPlayers              { get ; private set ; }
+
+			//--------------
+
+			/// <summary>
+			/// セッションの情報公開範囲
+			/// </summary>
+			public SessionScopeTypes		    ScopeType               { get ; private set ; }
+
+			/// <summary>
+			/// セッションの処理種別
+			/// </summary>
+			public SessionManagementTypes	    ManagementType          { get ; private set ; }
+
+			//--------------
+
+			/// <summary>
+			/// セッションでＵＤＰ通信を使用可能にするかどうか
+			/// </summary>
+			public bool						    UdpEnabled              { get ; private set ; }
+
+			/// <summary>
+			/// セッションでＵＤＰ通信時の誤り補正を有効にするかどうか
+			/// </summary>
+			public bool						    UdpCorrectionEnabled    { get ; private set ; }
+
+			//--------------
+
+			/// <summary>
+			/// セッション固有パラメータ
+			/// </summary>
+			public Dictionary<string,string>    Parameters              { get ; private set ; }
+
+			//--------------
+
+			/// <summary>
+			/// セッション中のユーザー名に上書きする名前(null は無効)
+			/// </summary>
+			public string					    PlayerName              { get ; private set ; }
+
+			//----------------------------------------------------------
+
+			/// <summary>
+			/// コンストラクタ
+			/// </summary>
+			/// <param name="data"></param>
+			public CreateSession_RequestPacket
+			(
+				string					    applicationId,
+				string					    description,
+				string					    password,
+				int						    maxPlayers,
+				SessionScopeTypes		    scopeType,
+				SessionManagementTypes	    managementType,
+				bool					    udpEnabled,
+				bool					    udpCorrectionEnabled,
+				Dictionary<string,string>   parameters,
+				string					    playerName
+			)
+			{
+				RequestType		= RequestTypes.CreateSession ;
+
+				//-------------
+
+				ApplicationId			= applicationId ;
+
+				Description				= description ;
+				Password				= password ;
+				MaxPlayers				= maxPlayers ;
+
+				ScopeType				= scopeType ;
+				ManagementType			= managementType ;
+				UdpEnabled				= udpEnabled ;
+				UdpCorrectionEnabled	= udpCorrectionEnabled ;
+
+				Parameters              = parameters ;
+
+				PlayerName				= playerName ;
+			}
+
+			/// <summary>
+			/// エンコード
+			/// </summary>
+			/// <returns></returns>
+			public byte[] Encode()
+			{
+				PutByte( ( byte )RequestType ) ;
+
+				//------------
+
+				PutString( ApplicationId ) ;
+
+				PutString( Description ) ;
+				PutString( Password ) ;
+				PutUShort( ( ushort )MaxPlayers ) ;
+
+				PutByte( ( byte )ScopeType ) ;
+				PutByte( ( byte )ManagementType ) ;
+
+				PutBool( UdpEnabled ) ;
+				PutBool( UdpCorrectionEnabled ) ;
+
+				if( Parameters == null || Parameters.Count == 0 )
+				{
+					PutByte( 0 ) ;
+				}
+				else
+				{
+					PutByte( ( byte )Parameters.Count ) ;
+
+					foreach( ( var key, var value ) in Parameters )
+					{
+						PutString( key ) ;
+						PutString( value ) ;
+					}
+				}
 
 				PutString( PlayerName ) ;
 
@@ -1004,19 +1809,26 @@ namespace NetworkPlayHelper
 			/// <summary>
 			/// セッション識別子
 			/// </summary>
-			public uint		    			SessionId { get ; private set ; }
+			public uint		    			        SessionId		        { get ; private set ; }
 
 			//----------------------------------
 
 			/// <summary>
 			/// 最大プレイヤー数
 			/// </summary>
-			public int						MaxPlayers { get ; private set ; }
+			public ushort					        MaxPlayers		        { get ; private set ; }
+
+			//--------------
+
+			/// <summary>
+			/// スコープタイプ
+			/// </summary>
+			public SessionScopeTypes		        ScopeType		        { get ; private set ; }
 
 			/// <summary>
 			/// セッションの管理タイプ
 			/// </summary>
-			public SessionManagementTypes	ManagementType { get ; private set ; }
+			public SessionManagementTypes	        ManagementType	        { get ; private set ; }
 
 
 			//--------------
@@ -1024,43 +1836,51 @@ namespace NetworkPlayHelper
 			/// <summary>
 			/// ＵＤＰを使用できるかどうか
 			/// </summary>
-			public bool						UdpEnabled { get ; private set ; }
+			public bool						        UdpEnabled		        { get ; private set ; }
 
 			/// <summary>
 			/// ＵＤＰの誤り補正を行うかどうか
 			/// </summary>
-			public bool						UdpCorrectionEnabled { get ; private set ; }
+			public bool						        UdpCorrectionEnabled    { get ; private set ; }
+
+			//--------------
+
+			/// <summary>
+			/// セッション固有パラメータ
+			/// </summary>
+			public Dictionary<string,string>        Parameters              { get ; private set ; }
 
 			//--------------
 
 			/// <summary>
 			/// サーバーのセッションプロセッサーが使用可能かどうか
 			/// </summary>
-			public bool						ProcessorEnabled { get ; private set ; }
+			public bool						        ProcessorEnabled        { get ; private set ; }
 
-			//----------------------------------
-
-			/// <summary>
-			/// エクスチェンジサーバーのアドレス
-			/// </summary>
-			public string					ExchangeServerAddress { get ; private set ; }
-
-			/// <summary>
-			/// エクスチェンジサーバーのＴＣＰポート番号
-			/// </summary>
-			public int						ExchangeServerTcpPort { get ; private set ; }
-
-			/// <summary>
-			/// エクスチェンジサーバーのＵＤＰポート番号
-			/// </summary>
-			public int						ExchangeServerUdpPort { get ; private set ; }
 
 			//----------------------------------
 
 			/// <summary>
 			/// セッションに参加中のメンバー情報
 			/// </summary>
-			public List<ResponseSessionPlayerData>	SessionPlayers { get ; private set ; }
+			public List<ResponseSessionPlayerData>	SessionPlayers          { get ; private set ; }
+
+			//----------------------------------
+
+			/// <summary>
+			/// エクスチェンジサーバーのアドレス
+			/// </summary>
+			public string					        ExchangeServer_Address  { get ; private set ; }
+
+			/// <summary>
+			/// エクスチェンジサーバーのＴＣＰポート番号
+			/// </summary>
+			public ushort					        ExchangeServer_TcpPort  { get ; private set ; }
+
+			/// <summary>
+			/// エクスチェンジサーバーのＵＤＰポート番号
+			/// </summary>
+			public ushort					        ExchangeServer_UdpPort  { get ; private set ; }
 
 			//----------------------------------------------------------
 
@@ -1076,26 +1896,50 @@ namespace NetworkPlayHelper
 			/// <returns></returns>
 			public bool Decode()
 			{
+				int i, l ;
+
+				//---------------------------------
+				// デシリアライズ
+
 				try
 				{
+					//------------
+					// Session
+
 					SessionId				= GetUInt() ;
 
 					MaxPlayers				= GetUShort() ;
+
+					ScopeType				= ( SessionScopeTypes )GetByte() ;
 					ManagementType			= ( SessionManagementTypes )GetByte() ;
 
 					UdpEnabled				= GetBool() ;
 					UdpCorrectionEnabled	= GetBool() ;
-					ProcessorEnabled		= GetBool() ;
 
-					ExchangeServerAddress	= GetString() ;
-					ExchangeServerTcpPort	= GetUShort() ;
-					ExchangeServerUdpPort	= GetUShort() ;
+					Parameters = new () ;
 
-					int i, l = GetUShort() ;
+					l = GetByte() ;
 					if( l >  0 )
 					{
-						SessionPlayers = new List<ResponseSessionPlayerData>() ;
+						for( i  = 0 ; i <  l ; i ++ )
+						{
+							string key      = GetString() ;
+							string value    = GetString() ;
 
+							Parameters.Add( key, value ) ;
+						}
+					}
+
+					ProcessorEnabled		= GetBool() ;
+
+					//------------
+					// SessionPlayers
+
+					SessionPlayers = new () ;
+
+					l = GetVUShort() ;
+					if( l >  0 )
+					{
 						ResponseSessionPlayerData sessionPlayer ;
 
 						for( i  = 0 ; i <  l ; i ++ )
@@ -1105,6 +1949,13 @@ namespace NetworkPlayHelper
 							SessionPlayers.Add( sessionPlayer ) ;
 						}
 					}
+
+					//------------
+					// ExchangeServer EndPoint
+
+					ExchangeServer_Address	= GetString() ;
+					ExchangeServer_TcpPort	= GetUShort() ;
+					ExchangeServer_UdpPort	= GetUShort() ;
 				}
 				catch( Exception )
 				{
@@ -1112,12 +1963,16 @@ namespace NetworkPlayHelper
 					return false ;
 				}
 
+				//---------------------------------
+				// バリデーションチェック
+
 				if
 				(
 					MaxPlayers == 0 ||
+					( ScopeType != SessionScopeTypes.Public && ScopeType != SessionScopeTypes.Private ) ||
 					( ManagementType != SessionManagementTypes.HostManagement && ManagementType != SessionManagementTypes.ServerManagement ) ||
-					string.IsNullOrEmpty( ExchangeServerAddress ) == true ||
-					ExchangeServerTcpPort == 0
+					string.IsNullOrEmpty( ExchangeServer_Address ) == true ||
+					ExchangeServer_TcpPort == 0
 				)
 				{
 					// 失敗
@@ -1132,7 +1987,7 @@ namespace NetworkPlayHelper
 			/// 外部向けのプレイヤー情報群を取得する
 			/// </summary>
 			/// <returns></returns>
-			public SessionPlayer[] GetSessionPlayers()
+			public List<SessionPlayer> GetSessionPlayers()
 			{
 				var sessionPlayers = new List<SessionPlayer>() ;
 
@@ -1142,12 +1997,16 @@ namespace NetworkPlayHelper
 					{
 						sessionPlayers.Add( new SessionPlayer
 						(
-							sessionPlayer.UserId, sessionPlayer.UserName, sessionPlayer.IsGuest, sessionPlayer.IsHost )
-						) ;
+							sessionPlayer.UserId,
+							sessionPlayer.UserName,
+							sessionPlayer.IsGuest,
+							sessionPlayer.IsHost,
+							sessionPlayer.Parameters
+						) ) ;
 					}
 				}
 
-				return sessionPlayers.ToArray()	 ;
+				return sessionPlayers ;
 			}
 		}
 
@@ -1220,58 +2079,75 @@ namespace NetworkPlayHelper
 		/// </summary>
 		public class JoinToSession_ResponsePacket : ResponsePacketBase
 		{
+
+			//----------------------------------
+
 			/// <summary>
 			/// 最大プレイヤー数
 			/// </summary>
-			public int								MaxPlayers { get ; private set ; }
+			public ushort							MaxPlayers		        { get ; private set ; }
 
 			//--------------
 
 			/// <summary>
+			/// スコープタイプ
+			/// </summary>
+			public SessionScopeTypes				ScopeType		        { get ; private set ; }
+
+			/// <summary>
 			/// セッションの処理方法
 			/// </summary
-			public SessionManagementTypes			ManagementType { get ; private set ; }
+			public SessionManagementTypes			ManagementType	        { get ; private set ; }
+
+			//--------------
 
 			/// <summary>
 			/// ＵＤＰを使用できるかどうか
 			/// </summary>
-			public bool								UdpEnabled { get ; private set ; }
+			public bool								UdpEnabled		        { get ; private set ; }
 
 			/// <summary>
 			/// ＵＤＰの誤り補正を行うかどうか
 			/// </summary>
-			public bool								UdpCorrectionEnabled { get ; private set ; }
+			public bool								UdpCorrectionEnabled    { get ; private set ; }
+
+			//--------------
+
+			/// <summary>
+			/// セッション固有パラメータ
+			/// </summary>
+			public Dictionary<string,string>        Parameters              { get ; private set ; }        
 
 			//--------------
 
 			/// <summary>
 			/// セッションプロセッサーが有効かどうか
 			/// </summary>
-			public bool								ProcessorEnabled { get ; private set ; }
-
-			//----------------------------------
-
-			/// <summary>
-			/// エクスチェンジサーバーのアドレス
-			/// </summary>
-			public string							ExchangeServerAddress { get ; private set ; }
-
-			/// <summary>
-			/// エクスチェンジサーバーのＴＣＰポート番号
-			/// </summary>
-			public int								ExchangeServerTcpPort { get ; private set ; }
-
-			/// <summary>
-			/// エクスチェンジサーバーのＵＤＰポート番号
-			/// </summary>
-			public int								ExchangeServerUdpPort { get ; private set ; }
+			public bool								ProcessorEnabled        { get ; private set ; }
 
 			//----------------------------------
 
 			/// <summary>
 			/// セッションに参加中のメンバー情報
 			/// </summary>
-			public List<ResponseSessionPlayerData>	SessionPlayers { get ; private set ; }
+			public List<ResponseSessionPlayerData>	SessionPlayers          { get ; private set ; }
+
+			//----------------------------------
+
+			/// <summary>
+			/// エクスチェンジサーバーのアドレス
+			/// </summary>
+			public string							ExchangeServer_Address  { get ; private set ; }
+
+			/// <summary>
+			/// エクスチェンジサーバーのＴＣＰポート番号
+			/// </summary>
+			public ushort							ExchangeServer_TcpPort  { get ; private set ; }
+
+			/// <summary>
+			/// エクスチェンジサーバーのＵＤＰポート番号
+			/// </summary>
+			public ushort							ExchangeServer_UdpPort  { get ; private set ; }
 
 			//----------------------------------------------------------
 
@@ -1287,26 +2163,43 @@ namespace NetworkPlayHelper
 			/// <returns></returns>
 			public bool Decode()
 			{
+				int i, l ;
+
 				try
 				{
+					//------------
+					// Session
+
 					MaxPlayers				= GetUShort() ;
 
+					ScopeType				= ( SessionScopeTypes )GetByte() ;
 					ManagementType			= ( SessionManagementTypes )GetByte() ;
 					UdpEnabled				= GetBool() ;
 					UdpCorrectionEnabled	= GetBool() ;
 
-					ProcessorEnabled		= GetBool() ;
+					Parameters              = new () ;
 
-					ExchangeServerAddress	= GetString() ;
-					ExchangeServerTcpPort	= GetUShort() ;
-					ExchangeServerUdpPort	= GetUShort() ;
-
-					int i, l = GetUShort() ;
-
+					l = GetByte() ;
 					if( l >  0 )
 					{
-						SessionPlayers = new List<ResponseSessionPlayerData>() ;
+						for( i  = 0 ; i <  l ; i ++ )
+						{
+							string key      = GetString() ;
+							string value    = GetString() ;
+							Parameters.Add( key, value ) ;
+						}
+					}
 
+					ProcessorEnabled		= GetBool() ;
+
+					//------------
+					// SessionPlayers
+
+					SessionPlayers = new () ;
+
+					l = GetVUShort() ;
+					if( l >  0 )
+					{
 						ResponseSessionPlayerData sessionPlayer ;
 
 						for( i  = 0 ; i <  l ; i ++ )
@@ -1317,6 +2210,12 @@ namespace NetworkPlayHelper
 						}
 					}
 
+					//------------
+					// ExchangeServer EndPoint
+
+					ExchangeServer_Address	= GetString() ;
+					ExchangeServer_TcpPort	= GetUShort() ;
+					ExchangeServer_UdpPort	= GetUShort() ;
 				}
 				catch( Exception )
 				{
@@ -1324,15 +2223,20 @@ namespace NetworkPlayHelper
 					return false ;
 				}
 
+				//---------------------------------
+
+				// バリデーションチェック
 				if
 				(
-					string.IsNullOrEmpty( ExchangeServerAddress ) == true ||
-					ExchangeServerTcpPort == 0
+					string.IsNullOrEmpty( ExchangeServer_Address ) == true ||
+					ExchangeServer_TcpPort == 0
 				)
 				{
 					// 失敗
 					return false ;
 				}
+
+				//---------------------------------
 
 				// 成功
 				return true ;
@@ -1342,7 +2246,7 @@ namespace NetworkPlayHelper
 			/// 外部向けのプレイヤー情報群を取得する
 			/// </summary>
 			/// <returns></returns>
-			public SessionPlayer[] GetSessionPlayers()
+			public List<SessionPlayer> GetSessionPlayers()
 			{
 				var sessionPlayers = new List<SessionPlayer>() ;
 
@@ -1352,19 +2256,23 @@ namespace NetworkPlayHelper
 					{
 						sessionPlayers.Add( new SessionPlayer
 						(
-							sessionPlayer.UserId, sessionPlayer.UserName, sessionPlayer.IsGuest, sessionPlayer.IsHost )
-						) ;
+							sessionPlayer.UserId,
+							sessionPlayer.UserName,
+							sessionPlayer.IsGuest,
+							sessionPlayer.IsHost,
+							sessionPlayer.Parameters
+						) ) ;
 					}
 				}
 
-				return sessionPlayers.ToArray()	 ;
+				return sessionPlayers ;
 			}
 		}
 
 		//-----------------------------------
 
 		/// <summary>
-		/// セッション情報取得要求
+		/// セッション情報群取得要求
 		/// </summary>
 		public class GetSessions_RequestPacket : RequestPacketBase
 		{
@@ -1376,12 +2284,12 @@ namespace NetworkPlayHelper
 			/// <summary>
 			/// 取得開始位置
 			/// </summary>
-			public int				Offset { get ; private set ; }
+			public uint				Offset { get ; private set ; }
 
 			/// <summary>
 			/// 取得数
 			/// </summary>
-			public int				Length { get ; private set ; }
+			public uint				Length { get ; private set ; }
 
 			//----------------------------------------------------------
 
@@ -1391,9 +2299,9 @@ namespace NetworkPlayHelper
 			/// <param name="data"></param>
 			public GetSessions_RequestPacket
 			(
-				string applicationId,
-				int    offset,
-				int    length
+				string	applicationId,
+				uint	offset,
+				uint	length
 			)
 			{
 				RequestType		= RequestTypes.GetSessions ;
@@ -1416,8 +2324,8 @@ namespace NetworkPlayHelper
 				//------------
 
 				PutString( ApplicationId ) ;
-				PutInt( Offset ) ;
-				PutInt( Length ) ;
+				PutUInt( Offset ) ;
+				PutUInt( Length ) ;
 
 				//---------------------------------
 
@@ -1426,19 +2334,19 @@ namespace NetworkPlayHelper
 		}
 
 		/// <summary>
-		/// セッション情報取得の応答パケット
+		/// セッション情報群取得の応答パケット
 		/// </summary>
 		public class GetSessions_ResponsePacket : ResponsePacketBase
 		{
 			/// <summary>
 			/// セッション情報
 			/// </summary>
-			public Session[]	Sessions	{ get ; private set ; }
+			public List<Session>	Sessions	{ get ; private set ; }
 
 			/// <summary>
 			/// 最大セッション数
 			/// </summary>
-			public int			Count		{ get ; private set ; }
+			public uint				Count		{ get ; private set ; }
 
 			//----------------------------------------------------------
 
@@ -1459,39 +2367,30 @@ namespace NetworkPlayHelper
 
 				try
 				{
-					List<Session> sessions = null ;
+					var sessions = new List<Session>() ;
 
-					int i, l = GetInt() ;
-					if( l >  0 )
+					uint i, l = GetVUInt() ;
+					for( i  = 0 ; i <  l ; i ++ )
 					{
-						sessions = new () ;
+						var sessionId			= GetUInt() ;
+						var passwordRequired	= GetBool() ;
+						var nowPlayers			= GetUShort() ;
+						var maxPlayers			= GetUShort() ;
+						var description			= GetString() ;
 
-						for( i  = 0 ; i <  l ; i ++ )
-						{
-							var sessionId			= GetUInt() ;
-							var passwordRequired	= GetBool() ;
-							var nowPlayers			= GetUShort() ;
-							var maxPlayers			= GetUShort() ;
-							var description			= GetString() ;
-
-							sessions.Add( new
-							(
-								sessionId:sessionId,
-								description:description,
-								maxPlayers:maxPlayers,
-								passwordRequired:passwordRequired,
-								nowPlayers:nowPlayers
-							) ) ;
-						}
-
-						Sessions = sessions.ToArray() ;
-					}
-					else
-					{
-						Sessions = Array.Empty<Session>() ;
+						sessions.Add( new
+						(
+							sessionId:sessionId,
+							description:description,
+							maxPlayers:maxPlayers,
+							passwordRequired:passwordRequired,
+							nowPlayers:nowPlayers
+						) ) ;
 					}
 
-					Count = GetInt() ;
+					Sessions	= sessions ;
+
+					Count		= GetUInt() ;
 				}
 				catch( Exception )
 				{
@@ -1517,19 +2416,19 @@ namespace NetworkPlayHelper
 		//-----------------------------------
 
 		/// <summary>
-		/// フレンド情報取得要求
+		/// フレンド情報群取得要求
 		/// </summary>
 		public class GetFriends_RequestPacket : RequestPacketBase
 		{
 			/// <summary>
 			/// 取得開始位置
 			/// </summary>
-			public int				Offset { get ; private set ; }
+			public ushort		Offset { get ; private set ; }
 
 			/// <summary>
 			/// 取得数
 			/// </summary>
-			public int				Length { get ; private set ; }
+			public ushort		Length { get ; private set ; }
 
 			//----------------------------------------------------------
 
@@ -1539,8 +2438,8 @@ namespace NetworkPlayHelper
 			/// <param name="data"></param>
 			public GetFriends_RequestPacket
 			(
-				int    offset,
-				int    length
+				ushort			offset,
+				ushort			length
 			)
 			{
 				RequestType		= RequestTypes.GetFriends ;
@@ -1561,8 +2460,8 @@ namespace NetworkPlayHelper
 
 				//------------
 
-				PutUShort( ( ushort )Offset ) ;
-				PutUShort( ( ushort )Length ) ;
+				PutUShort( Offset ) ;
+				PutUShort( Length ) ;
 
 				//---------------------------------
 
@@ -1571,14 +2470,19 @@ namespace NetworkPlayHelper
 		}
 
 		/// <summary>
-		/// フレンド情報取得の応答パケット
+		/// フレンド情報群取得の応答パケット
 		/// </summary>
 		public class GetFriends_ResponsePacket : ResponsePacketBase
 		{
 			/// <summary>
-			/// フレンド情報
+			/// フレンド情報群
 			/// </summary>
-			public ResponseFriendData[]	Friends { get ; private set ; }
+			public List<ResponseFriendData>	Friends { get ; private set ; }
+
+			/// <summary>
+			/// フレンド総数
+			/// </summary>
+			public ushort					Count	{ get ; private set ; }
 
 			//----------------------------------------------------------
 
@@ -1598,20 +2502,19 @@ namespace NetworkPlayHelper
 				{
 					var friends = new List<ResponseFriendData>() ;
 
-					int i, l = GetUShort() ;
-					if( l >  0 )
-					{
-						ResponseFriendData friend ;
+					ResponseFriendData friend ;
 
-						for( i  = 0 ; i <  l ; i ++ )
-						{
-							friend = new ResponseFriendData() ;
-							friend.Decode( m_Data, ref m_Pointer ) ;
-							friends.Add( friend ) ;
-						}
+					ushort i, l = GetVUShort() ;
+					for( i  = 0 ; i <  l ; i ++ )
+					{
+						friend = new ResponseFriendData() ;
+						friend.Decode( m_Data, ref m_Pointer ) ;
+						friends.Add( friend ) ;
 					}
 
-					Friends = friends.ToArray() ;
+					Friends = friends ;
+
+					Count = GetUShort() ;
 				}
 				catch( Exception )
 				{
@@ -1712,6 +2615,292 @@ namespace NetworkPlayHelper
 				return true ;
 			}
 		}
+
+		//-----------------------------------
+		// ユーザー情報の更新
+
+		/// <summary>
+		/// ユーザー名更新の要求パケット
+		/// </summary>
+		public class UpdateUserName_RequestPacket : RequestPacketBase
+		{
+			/// <summary>
+			/// 新しいユーザー名
+			/// </summary>
+			public string			UserName { get ; private set ; }
+
+			//----------------------------------------------------------
+
+			/// <summary>
+			/// コンストラクタ
+			/// </summary>
+			/// <param name="data"></param>
+			public UpdateUserName_RequestPacket
+			(
+				string	userName
+			)
+			{
+				RequestType		= RequestTypes.UpdateUserName ;
+
+				//-------------
+
+				UserName		= userName ;
+			}
+
+			/// <summary>
+			/// エンコード
+			/// </summary>
+			/// <returns></returns>
+			public byte[] Encode()
+			{
+				PutByte( ( byte )RequestType ) ;
+
+				//------------
+
+				PutString( UserName ) ;
+
+				//---------------------------------
+
+				return m_Data.ToArray() ;
+			}
+		}
+
+		/// <summary>
+		/// ユーザー名更新の応答パケット
+		/// </summary>
+		public class UpdateUserName_ResponsePacket : ResponsePacketBase
+		{
+			/// <summary>
+			/// 実際に設定されたユーザー名
+			/// </summary>
+			public string					UserName	{ get ; private set ; }
+
+			//----------------------------------------------------------
+
+			/// <summary>
+			/// コンストラクタ
+			/// </summary>
+			/// <param name="data"></param>
+			public UpdateUserName_ResponsePacket( byte[] data, int pointer ) : base( data, pointer ){}
+
+			/// <summary>
+			/// デコード
+			/// </summary>
+			/// <returns></returns>
+			public bool Decode()
+			{
+				try
+				{
+					UserName = GetString() ;
+				}
+				catch( Exception )
+				{
+					// 失敗
+					return false ;
+				}
+
+				// 成功
+				return true ;
+			}
+		}
+
+		//-----------------------------------
+		// デバッグ用
+
+		/// <summary>
+		/// ユーザー情報群取得要求
+		/// </summary>
+		public class GetUsers_RequestPacket : RequestPacketBase
+		{
+			/// <summary>
+			/// 取得開始位置
+			/// </summary>
+			public ulong			Offset { get ; private set ; }
+
+			/// <summary>
+			/// 取得数
+			/// </summary>
+			public ulong			Length { get ; private set ; }
+
+			//----------------------------------------------------------
+
+			/// <summary>
+			/// コンストラクタ
+			/// </summary>
+			/// <param name="data"></param>
+			public GetUsers_RequestPacket
+			(
+				ulong	offset,
+				ulong	length
+			)
+			{
+				RequestType		= RequestTypes.GetUsers ;
+
+				//-------------
+
+				Offset			= offset ;
+				Length			= length ;
+			}
+
+			/// <summary>
+			/// エンコード
+			/// </summary>
+			/// <returns></returns>
+			public byte[] Encode()
+			{
+				PutByte( ( byte )RequestType ) ;
+
+				//------------
+
+				PutULong( Offset ) ;
+				PutULong( Length ) ;
+
+				//---------------------------------
+
+				return m_Data.ToArray() ;
+			}
+		}
+
+		/// <summary>
+		/// ユーザー情報群取得の応答パケット
+		/// </summary>
+		public class GetUsers_ResponsePacket : ResponsePacketBase
+		{
+			/// <summary>
+			/// フレンド情報群
+			/// </summary>
+			public List<ResponseUserData>	Users { get ; private set ; }
+
+			/// <summary>
+			/// フレンド総数
+			/// </summary>
+			public ulong					Count	{ get ; private set ; }
+
+			//----------------------------------------------------------
+
+			/// <summary>
+			/// コンストラクタ
+			/// </summary>
+			/// <param name="data"></param>
+			public GetUsers_ResponsePacket( byte[] data, int pointer ) : base( data, pointer ){}
+
+			/// <summary>
+			/// デコード
+			/// </summary>
+			/// <returns></returns>
+			public bool Decode()
+			{
+				try
+				{
+					var users = new List<ResponseUserData>() ;
+
+					ResponseUserData user ;
+
+					ulong i, l = GetVULong() ;
+
+					for( i  = 0 ; i <  l ; i ++ )
+					{
+						user = new ResponseUserData() ;
+						user.Decode( m_Data, ref m_Pointer ) ;
+						users.Add( user ) ;
+					}
+
+					Users = users ;
+
+					Count = GetULong() ;
+				}
+				catch( Exception )
+				{
+					// 失敗
+					return false ;
+				}
+
+				// 成功
+				return true ;
+			}
+		}
+
+
+		/// <summary>
+		/// フレンド設定の要求パケット
+		/// </summary>
+		public class SetFriend_RequestPacket : RequestPacketBase
+		{
+			/// <summary>
+			/// ユーザー識別子
+			/// </summary>
+			public string			UserId		{ get ; private set ; }
+
+			/// <summary>
+			/// 状態
+			/// </summary>
+			public bool				IsFriend	{ get ; private set ; }
+
+			//----------------------------------------------------------
+
+			/// <summary>
+			/// コンストラクタ
+			/// </summary>
+			/// <param name="data"></param>
+			public SetFriend_RequestPacket
+			(
+				string	userId,
+				bool	isFriend
+			)
+			{
+				RequestType		= RequestTypes.SetFriend ;
+
+				//-------------
+
+				UserId			= userId ;
+				IsFriend		= isFriend ;
+			}
+
+			/// <summary>
+			/// エンコード
+			/// </summary>
+			/// <returns></returns>
+			public byte[] Encode()
+			{
+				PutByte( ( byte )RequestType ) ;
+
+				//------------
+
+				PutString ( UserId ) ;
+				PutBool( IsFriend ) ;
+
+				//---------------------------------
+
+				return m_Data.ToArray() ;
+			}
+		}
+
+		/// <summary>
+		/// フレンド設定の応答パケット
+		/// </summary>
+		public class SetFriend_ResponsePacket : ResponsePacketBase
+		{
+			//----------------------------------------------------------
+
+			/// <summary>
+			/// コンストラクタ
+			/// </summary>
+			/// <param name="data"></param>
+			public SetFriend_ResponsePacket( byte[] data, int pointer ) : base( data, pointer ){}
+
+			/// <summary>
+			/// デコード
+			/// </summary>
+			/// <returns></returns>
+			public bool Decode()
+			{
+				// 成功
+				return true ;
+			}
+		}
+
+
+
 
 		//-------------------------------------------------------------------------------------------
 

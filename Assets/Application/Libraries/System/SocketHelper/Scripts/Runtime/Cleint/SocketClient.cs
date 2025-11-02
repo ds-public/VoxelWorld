@@ -39,7 +39,7 @@ using UnityEngine ;
 namespace SocketHelper
 {
 	/// <summary>
-	/// Socket のクライアント側の管理用クラス Version 2025/05/26
+	/// Socket のクライアント側の管理用クラス Version 2025/09/12
 	/// </summary>
 	public class SocketClient
 	{
@@ -1502,6 +1502,9 @@ namespace SocketHelper
 			}
 		}
 
+		// ＵＤＰソケットの排他制御用のオブジェクト
+		private readonly object		m_DisconnectUdpLockObject = new () ;
+
 		/// <summary>
 		/// 破棄する(再利用出来ない)
 		/// </summary>
@@ -1512,13 +1515,16 @@ namespace SocketHelper
 
 			//----------------------------------
 
-			if( m_SocketUdp != null )
+			lock( m_DisconnectUdpLockObject )
 			{
-				Debug.Log( "<color=#00FF00>[UDP] ソケットをクローズする</color>" ) ;
+				if( m_SocketUdp != null )
+				{
+					Debug.Log( "<color=#00FF00>[UDP] ソケットをクローズする</color>" ) ;
 
-				m_SocketUdp.Close() ;
-				m_SocketUdp.Dispose() ;
-				m_SocketUdp = null ;
+					m_SocketUdp.Close() ;
+					m_SocketUdp.Dispose() ;
+					m_SocketUdp = null ;
+				}
 			}
 		}
 

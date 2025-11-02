@@ -1,3 +1,5 @@
+#pragma warning disable IDE0350
+
 using System ;
 using System.IO ;
 using System.Collections ;
@@ -572,10 +574,10 @@ namespace AssetBundleHelper
 			{ typeof( TextAsset ),					new (){ ".txt", ".json", ".bytes", ".csv", ".html", ".xml",  ".yml", ".htm", ".fnt"					} },
 			{ typeof( Texture2D ),					new (){ ".png", ".jpg", ".tga", ".psd", ".gif", ".bmp", ".tif", ".tiff", ".iff", ".pict"			} },
 			{ typeof( Texture ),					new (){ ".png", ".jpg", ".tga", ".psd", ".gif", ".bmp", ".tif", ".tiff", ".iff", ".pict", ".exr"	} },
-			{ typeof( AnimationClip ),				new (){ ".anim",																					} },
+			{ typeof( AnimationClip ),				new (){ ".anim", ".fbx",																			} },
 			{ typeof( Font ),						new (){ ".ttf", ".otf", ".dfont", 																	} },
 			{ typeof( Material ),					new (){ ".mat", ".material", 																		} },
-			{ typeof( PhysicsMaterial ),				new (){ ".physicMaterial",	".physicmaterial",														} },
+			{ typeof( PhysicsMaterial ),			new (){ ".physicMaterial",	".physicmaterial",														} },
 			{ typeof( PhysicsMaterial2D ),			new (){ ".physicsMaterial2D", ".physicsmaterial2d",													} },
 			{ typeof( Cubemap ),					new (){ ".hdr", ".cubemap",																			} },
 			{ typeof( RuntimeAnimatorController ),	new (){ ".controller",																				} },

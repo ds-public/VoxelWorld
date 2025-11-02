@@ -37,7 +37,7 @@ using UnityEngine ;
 namespace SocketHelper
 {
 	/// <summary>
-	/// SocketServer Version 2025/06/03
+	/// SocketServer Version 2025/10/01
 	/// </summary>
 	public partial class SocketServer
 	{
@@ -138,6 +138,24 @@ namespace SocketHelper
 			}
 		}
 		private int		m_MaxUdpPacketSize = 65536 ;
+
+		//-----------------------------------
+
+		/// <summary>
+		/// １秒あたり受信可能なサイズ
+		/// </summary>
+		public  int ReceivingLimitSize
+		{
+			get
+			{
+				return m_ReceivingLimitSize ;
+			}
+			set
+			{
+				m_ReceivingLimitSize = value ;
+			}
+		}
+		private int m_ReceivingLimitSize = 0 ;
 
 		//-----------------------------------
 
@@ -279,7 +297,10 @@ namespace SocketHelper
 //			Debug.Log( "接続待ちに移行する : " + address + " : " + port, Color.green ) ;
 
 			// ＴＣＰの接続待受を開始する
-			StartAcceptTcp( address, tcpPort, maxListen ) ;
+			if( StartAcceptTcp( address, tcpPort, maxListen ) == false )
+			{
+				return false ;
+			}
 
 			if( udpPort >  0 )
 			{
@@ -291,17 +312,22 @@ namespace SocketHelper
 		}
 
 		// 接続の待ち受けを行う
-		private void StartAcceptTcp( string address, int port, int maxListen )
+		private bool StartAcceptTcp( string address, int port, int maxListen )
 		{
 			IPEndPoint ipEndPoint ;
 
 			if( string.IsNullOrEmpty( address ) == false )
 			{
-				ipEndPoint = new IPEndPoint( IPAddress.Parse( address ), port ) ;
+				ipEndPoint = CreateEndPoint( address, port ) ;
 			}
 			else
 			{
 				ipEndPoint = new IPEndPoint( IPAddress.Any, port ) ;
+			}
+
+			if( ipEndPoint == null )
+			{
+				return false ;
 			}
 
 			//----------------------------------
@@ -322,6 +348,43 @@ namespace SocketHelper
 
 			// 最初の接続受付開始
 			m_ServerSocketTcp.BeginAccept( StartAcceptTcp_Callback, m_ServerSocketTcp ) ;
+
+			return true ;
+		}
+
+		/// <summary>
+		/// アドレスとポートからエンドポイントを生成する
+		/// </summary>
+		/// <param name="address"></param>
+		/// <param name="port"></param>
+		/// <returns></returns>
+		private IPEndPoint CreateEndPoint( string address, int port )
+		{
+			if( IPAddress.TryParse( address, out IPAddress ipAddress ) == false )
+			{
+				var ipAddresses = Dns.GetHostAddresses( address ) ;
+				if( ipAddresses != null && ipAddresses.Length >  0 )
+				{
+					foreach( var _ in ipAddresses )
+					{
+						// IPv4
+						if( _.AddressFamily == AddressFamily.InterNetwork )
+						{
+							ipAddress = _ ;
+							break ;
+						}
+					}
+				}
+			}
+
+			if( ipAddress != null && ipAddress.GetAddressBytes() != null )
+			{
+				return  new IPEndPoint( ipAddress, port ) ;
+			}
+			else
+			{
+				return null ;
+			}
 		}
 
 		// ＴＣＰの接続があった際に呼び出される
@@ -542,6 +605,7 @@ namespace SocketHelper
 				m_OnTcpReceived,
 				OnTcpDisconnected,
 				m_MaxTcpPacketSize,
+				m_ReceivingLimitSize,	// １秒間あたり受信可能なサイズ
 				m_MainCancellationTokenSource.Token,
 				m_MainThreadContext
 			) ;

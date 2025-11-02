@@ -27,7 +27,7 @@ namespace uGUIHelper
 	/// </summary>
 	public class UIView : UIBehaviour
 	{
-		public const string Version = "Version 2025/04/24 0" ;
+		public const string Version = "Version 2025/09/17 0" ;
 
 		// ソースコード
 		// https://bitbucket.org/Unity-Technologies/ui/src/2019.1/
@@ -9684,6 +9684,40 @@ namespace uGUIHelper
 
 					OnLongPressInner() ;
 				}
+			}
+		}
+
+		/// <summary>
+		/// 長押しを行っている時間
+		/// </summary>
+		public float LongPressingTime
+		{
+			get
+			{
+				if( m_LongPressTimer <= 0 )
+				{
+					return 0 ;
+				}
+
+				float deltaTime = Time.realtimeSinceStartup - m_LongPressTimer ;
+
+				if( deltaTime >  m_LongPressDecisionTime )
+				{
+					deltaTime  = m_LongPressDecisionTime ;
+				}
+
+				return deltaTime ;
+			}
+		}
+
+		/// <summary>
+		/// 長押しと判定されるまでの時間比率
+		/// </summary>
+		public float LongPressingProgress
+		{
+			get
+			{
+				return LongPressingTime / m_LongPressDecisionTime ;
 			}
 		}
 

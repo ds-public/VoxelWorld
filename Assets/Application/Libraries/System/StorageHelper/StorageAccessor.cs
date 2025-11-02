@@ -10,13 +10,14 @@ using System.Threading.Tasks ;
 using UnityEngine ;
 using UnityEngine.Networking ;
 
+
 /// <summary>
 /// ストレージヘルパーパッケージ
 /// </summary>
 namespace StorageHelper
 {
 	/// <summary>
-	/// ストレージアクセサクラス Version 2023/11/09 0
+	/// ストレージアクセサクラス Version 2025/10/30 0
 	/// </summary>
 	public class StorageAccessor
 	{
@@ -35,7 +36,7 @@ namespace StorageHelper
 		/// <summary>
 		/// 全ての環境で強制的にネイティブのデータフォルダを使用するかどうか
 		/// </summary>
-		public static bool ForceUseNativedataFolder =false ;
+		public static bool ForceUseNativedataFolder = false ;
 
 #if UNITY_EDITOR
 		// デバッグ用のテンポラリデータフォルダ
@@ -47,20 +48,45 @@ namespace StorageHelper
 
 #if UNITY_EDITOR || ( UNITY_STANDALONE && !UNITY_EDITOR )
 		// データフォルダの生成
-		private static bool m_IsCreatedDataFolder = false ;
+		private static bool m_IsDataFolderCreated = false ;
 		private static string CreateDataFolder()
 		{
-			string path = Directory.GetCurrentDirectory().Replace( "\\", "/" ) + DataFoler ;
+			string path = Directory.GetCurrentDirectory().Replace( '\\', '/' ) + DataFoler ;
 		
-			if( m_IsCreatedDataFolder == false && Directory.Exists( path ) == false )
+			if( m_IsDataFolderCreated == false && Directory.Exists( path ) == false )
 			{
 				// フォルダが無いので生成する
 				Directory.CreateDirectory( path ) ;
-				m_IsCreatedDataFolder = true ;
+				m_IsDataFolderCreated = true ;
 			}
 			return path ;
 		}
 #endif
+
+		/// <summary>
+		/// サブフォルダの指定
+		/// </summary>
+		public static string SubFolder
+		{
+			get
+			{
+				return m_SubFolder ;
+			}
+			set
+			{
+				m_SubFolder = value ;
+				m_SubFolder ??= string.Empty ;
+
+				if( string.IsNullOrEmpty( m_SubFolder ) == false )
+				{
+					m_SubFolder = m_SubFolder.Replace( '\\', '/' ) ;
+					m_SubFolder = m_SubFolder.TrimStart( '/' ).TrimEnd( '/' ) ;
+				}
+			}
+		}
+
+		// サブフォルダの指定
+		private static string m_SubFolder = string.Empty ;
 
 		/// <summary>
 		/// データフォルダのパス
@@ -71,20 +97,40 @@ namespace StorageHelper
 			{
 				string path = string.Empty ;
 #if UNITY_EDITOR
+
 				path = CreateDataFolder() ;
+
+//				if( ForceUseNativedataFolder == false )
+//				{
+//					path = CreateDataFolder() ;
+//				}
+//				else
+//				{
+//					path = Application.persistentDataPath.Replace( '\\', '/' ) ;
+//				}
+
 #elif  ( UNITY_STANDALONE && !UNITY_EDITOR )
+
 				if( ForceUseNativedataFolder == false )
 				{
 					path = CreateDataFolder() ;
 				}
 				else
 				{
-					path = Application.persistentDataPath.Replace( "\\", "/" ) ;
+					path = Application.persistentDataPath.Replace( '\\', '/' ) ;
 				}
+
 #else
-				path = Application.persistentDataPath.Replace( "\\", "/" ) ;
-#endif	
-				return path + "/" ;
+				path = Application.persistentDataPath.Replace( '\\', '/' ) ;
+#endif
+				if( string.IsNullOrEmpty( m_SubFolder ) == true )
+				{
+					return $"{path}/" ;
+				}
+				else
+				{
+					return $"{path}/{m_SubFolder}/" ;
+				}
 			}
 		}
 		
@@ -1354,7 +1400,7 @@ namespace StorageHelper
 			if( string.IsNullOrEmpty( path ) == true )
 			{
 #if UNITY_EDITOR
-				Debug.LogError( "Storage Exist Error : Path = " + path ) ;
+				Debug.LogWarning( "Target path is empty" ) ;
 #endif
 				return TargetTypes.None ;
 			}

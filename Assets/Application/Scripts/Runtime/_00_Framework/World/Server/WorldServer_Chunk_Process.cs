@@ -43,8 +43,11 @@ namespace DSW.World
 			// 未生成のチャンクセットであるため新規に生成する
 			var chunkSetData = LoadOrMakeChunkSet( csId ) ;
 
-			// アクティブなチャンクセットに追加する
-			m_ActiveChunkSets.Add( csId, chunkSetData ) ;
+			lock( m_ActiveChunkSets_LockObject )
+			{
+				// アクティブなチャンクセットに追加する
+				m_ActiveChunkSets.Add( csId, chunkSetData ) ;
+			}
 
 			// クライアントの参照を追加する
 			m_ActiveChunkSets[ csId ].AddCliendId( clientId ) ;
@@ -128,7 +131,10 @@ namespace DSW.World
 						Debug.Log( "<color=#FFFF00>[SERVER]チャンクセットが破棄される際にストレージに保存する:" + csId.ToString( "X4" ) + " Size = " + m_ActiveChunkSets[ csId ].GetCompressedDataSize() + "</color>" ) ;
 					}
 
-					m_ActiveChunkSets.Remove( csId ) ;
+					lock( m_ActiveChunkSets_LockObject )
+					{
+						m_ActiveChunkSets.Remove( csId ) ;
+					}
 				}
 			}
 		}
@@ -162,8 +168,11 @@ namespace DSW.World
 
 				if( removeTargets.Count >  0 )
 				{
-					// 削除対象になったチャンクセットを除外する
-					m_ActiveChunkSets.RemoveRange( removeTargets ) ;
+					lock( m_ActiveChunkSets_LockObject )
+					{
+						// 削除対象になったチャンクセットを除外する
+						m_ActiveChunkSets.RemoveRange( removeTargets ) ;
+					}
 				}
 			}
 		}
@@ -173,18 +182,21 @@ namespace DSW.World
 		// 全てチャンクセットを破棄する
 		private void FreeAllChunkSets()
 		{
-			if( m_ActiveChunkSets != null && m_ActiveChunkSets.Count >  0 )
+			lock( m_ActiveChunkSets_LockObject )
 			{
-				foreach( var activeChunkSet in m_ActiveChunkSets.Values )
+				if( m_ActiveChunkSets != null && m_ActiveChunkSets.Count >  0 )
 				{
-					if( m_ChunkSetExistAllocations.ContainsKey( activeChunkSet.CsId ) == false || activeChunkSet.IsDirty == true )
+					foreach( var activeChunkSet in m_ActiveChunkSets.Values )
 					{
-						Debug.Log( "<color=#FFFF00>[SERVER]チャンクが破棄される際にストレージに保存する:" + activeChunkSet.CsId.ToString( "X4" ) + " Size = " + activeChunkSet.GetCompressedDataSize() + "</color>" ) ;
-						SaveDataBlocks( activeChunkSet.CsId, activeChunkSet.Inflate() ) ;
+						if( m_ChunkSetExistAllocations.ContainsKey( activeChunkSet.CsId ) == false || activeChunkSet.IsDirty == true )
+						{
+							Debug.Log( "<color=#FFFF00>[SERVER]チャンクが破棄される際にストレージに保存する:" + activeChunkSet.CsId.ToString( "X4" ) + " Size = " + activeChunkSet.GetCompressedDataSize() + "</color>" ) ;
+							SaveDataBlocks( activeChunkSet.CsId, activeChunkSet.Inflate() ) ;
+						}
 					}
-				}
 
-				m_ActiveChunkSets.Clear() ;
+					m_ActiveChunkSets.Clear() ;
+				}
 			}
 
 			Debug.Log( "<color=#00FFFF>[SERVER] 残存チャンクセット数 = " + m_ActiveChunkSets.Count + "</color>" ) ;

@@ -65,7 +65,7 @@ namespace uGUIHelper
 			/// <summary>
 			/// 決定を押した際に呼び出すコールバック
 			/// </summary>
-			public Action<bool> OnDecision ;
+			public Action<ButtonActionTypes> OnDecision ;
 
 			//-------------------------------------------------
 
@@ -104,6 +104,8 @@ namespace uGUIHelper
 
 		private Action<string,bool>   m_OnFocusChanged ;
 
+		//---------
+
 		// 決定ボタンの識別子
 		private int[] m_DecisionButtonIdentities = { GamePad.B1 } ;
 
@@ -111,10 +113,63 @@ namespace uGUIHelper
 		private KeyCodes[] m_DecisionButtonKeyCodes = { KeyCodes.Z, KeyCodes.Return } ;
 
 		// 決定ボタンの入力があった際に呼ばれるコールバック
-		private Action<string,bool>   m_OnDecision ;
+		private Action<string,ButtonActionTypes>   m_OnDecision ;
 
 		// 決定ボタンは、押した際と離した際に、個別にコールバックを呼ぶため、その状態判定用の値
 		private bool m_IsDecisionButtonPressing = false ;
+
+		/// <summary>
+		/// 決定ボタンを押している最中かどうか
+		/// </summary>
+		public bool IsDecisionButtonPressing => m_IsDecisionButtonPressing ;
+
+		// 決定ボタンの長押しが行われたかどうか
+		private bool m_IsDecisionButtonLongPressed = false ;
+
+		// 決定ボタンの長押し継続時間
+		private float m_DecisionButtonLongPressingTime = 0 ;
+
+		// 決定ボタンが押されたかどうか
+		private bool m_IsDecisionButtonDown = false ;
+
+		/// <summary>
+		/// 決定ボタンが長押しを行っている時間
+		/// </summary>
+		public float DecisionButtonPressingTime
+		{
+			get
+			{
+				if( m_DecisionButtonLongPressingTime <= 0 )
+				{
+					return 0 ;
+				}
+
+				float deltaTime = m_DecisionButtonLongPressingTime ;
+
+				if( deltaTime >  m_ButtonLongPressConfirmationTime )
+				{
+					deltaTime  = m_ButtonLongPressConfirmationTime ;
+				}
+
+				return deltaTime ;
+			}
+		}
+
+		/// <summary>
+		/// 決定ボタンが長押しと判定されるまでの時間比率
+		/// </summary>
+		public float DecisionButtonLongPressProgress
+		{
+			get
+			{
+				return DecisionButtonPressingTime / m_ButtonLongPressConfirmationTime ;
+			}
+		}
+
+		// インスタンスが有効になった直後から決定ボタンが押されていた場合に一度解放するまで決定ボタンを無効にするフラグ
+		private bool    m_IsInvalidDecisionButton ;
+
+		//---------
 
 		// キャンセルボタンの識別子
 		private int[] m_CancelButtonIdentities = { GamePad.B2 } ;
@@ -123,10 +178,76 @@ namespace uGUIHelper
 		private KeyCodes[] m_CancelButtonKeyCodes = { KeyCodes.X, KeyCodes.Escape } ;
 
 		// キャンセルボタンの入力があった際に呼ばれるコールバック
-		private Func<string,string>   m_OnCancel ;
+		private Func<string,ButtonActionTypes,string>   m_OnCancel ;
 
 		// 取消ボタンは、押した際と離した際に、個別にコールバックを呼ぶため、その状態判定用の値
 		private bool m_IsCancelButtonPressing = false ;
+
+		/// <summary>
+		/// 取消ボタンを押している最中かどうか
+		/// </summary>
+		public bool IsCancelButtonPressing => m_IsCancelButtonPressing ;
+
+		// 取消ボタンの長押しが行われたかどうか
+		private bool m_IsCancelButtonLongPressed = false ;
+
+		// 取消ボタンの長押し継続時間
+		private float m_CancelButtonLongPressingTime = 0 ;
+
+		// 取消ボタンが押されたかどうか
+		private bool m_IsCancelButtonDown = false ;
+
+		/// <summary>
+		/// 取消ボタンが長押しを行っている時間
+		/// </summary>
+		public float CancelButtonPressingTime
+		{
+			get
+			{
+				if( m_CancelButtonLongPressingTime <= 0 )
+				{
+					return 0 ;
+				}
+
+				float deltaTime = m_CancelButtonLongPressingTime ;
+
+				if( deltaTime >  m_ButtonLongPressConfirmationTime )
+				{
+					deltaTime  = m_ButtonLongPressConfirmationTime ;
+				}
+
+				return deltaTime ;
+			}
+		}
+
+		/// <summary>
+		/// 取消ボタンが長押しと判定されるまでの時間比率
+		/// </summary>
+		public float CancelButtonLongPressProgress
+		{
+			get
+			{
+				return CancelButtonPressingTime / m_ButtonLongPressConfirmationTime ;
+			}
+		}
+
+		// インスタンスが有効になった直後から取消ボタンが押されていた場合に一度解放するまで取消ボタンを無効にするフラグ
+		private bool    m_IsInvalidCancelButton ;
+
+		//---------
+
+		// カーソルが押された際にボタンが押しっぱなしであった場合に入力を一時的に無効化する
+		private bool  m_IsButtonBlocking = false ;
+
+		// 長押しと判定されるまでの時間
+		private float m_ButtonLongPressConfirmationTime = 0.75f ;
+
+		/// <summary>
+		/// 長押し判定時間
+		/// </summary>
+		public float ButtonLongPressConfirmationTime => m_ButtonLongPressConfirmationTime ;
+
+		//---------
 
 		// 拡張ボタンの識別子群
 		private int[] m_ExtraButtonIdentities = null ;
@@ -164,11 +285,26 @@ namespace uGUIHelper
 		// 入力モードが切り替わった際に呼び出されるコールバック
 		private Action<InputTypes,InputTypes>   m_OnInputTypeChanged ;
 
-		// 現在の入力モード
+		// 毎フレーム呼び出すコールバック
+		private Action<string>                  m_OnUpdate ;
+
+		//---------
+
+		// 現在の基本入力モード
 		private InputTypes                      m_BasisInputType ;
 
-		// 現在の入力モード
+		/// <summary>
+		/// 現在の基本入力モード
+		/// </summary>
+		public InputTypes   BasisInputType => m_BasisInputType ;
+
+		// 現在の拡張入力モード
 		private InputTypes                      m_ExtraInputType ;
+
+		/// <summary>
+		/// 現在の拡張入力モード
+		/// </summary>
+		public InputTypes   ExtraInputType => m_ExtraInputType ;
 
 		//-----------------------------------------------------
 
@@ -186,6 +322,9 @@ namespace uGUIHelper
 
 
 		private bool    m_Ready ;
+
+		// 直前までの機能が有効であったかどうかのフラグ(レイキャストでブロッキングされていても無効と判定される)
+		private bool    m_IsActivate ;
 
 		//-------------------------------------------------------------------------------------
 
@@ -231,16 +370,27 @@ namespace uGUIHelper
 			if( Application.isPlaying == true )
 			{
 				// 自身を見えないようにする
-				Color          = m_Transparency ;
-				EffectiveColor = m_Transparency ;
+				Color                       = m_Transparency ;
+				EffectiveColor              = m_Transparency ;
 
 				RaycastTarget               = false ;  // 通常はレイキャストに反応しないようにする
 				IsForceRaycastTargetEnabled = true ;   // レイキャストの判定自体は有効化する
 
-				m_CurrentPointerPosition = Mouse.Position ;
+				m_CurrentPointerPosition    = Mouse.Position ;
+
+				m_IsActivate                = false ;
 			}
 		}
 
+		// 無効時に呼び出される
+		protected override void OnDisable()
+		{
+			base.OnDisable() ;
+
+			// 無効時の処理を行う
+			ProcessDisable() ;
+		}   
+			
 		// 破棄時に呼び出される
 		protected override void OnDestroy()
 		{
@@ -248,6 +398,40 @@ namespace uGUIHelper
 		}
 
 		//-------------------------------------------------------------------------------------
+
+		// 無効時の処理
+		private void ProcessDisable()
+		{
+			if( m_IsActivate == true )
+			{
+				// 無効になった
+				m_IsActivate = false ;
+
+				m_IsDecisionButtonPressing  = false ;
+				m_IsCancelButtonPressing    = false ;
+			}
+		}
+
+		//-------------------------------------------------------------------------------------
+
+		// ボタンに対する動作
+		public enum ButtonActionTypes
+		{
+			/// <summary>
+			/// 押された
+			/// </summary>
+			Down,
+
+			/// <summary>
+			/// 離された
+			/// </summary>
+			Up,
+
+			/// <summary>
+			/// 長押しされた
+			/// </summary>
+			LongPressed,
+		}
 
 		/// <summary>
 		/// 入力要素を設定する
@@ -261,9 +445,10 @@ namespace uGUIHelper
 			Func<string,string[]> onMoveU = null,
 			Func<string,string[]> onMoveD = null,
 			Action<string,bool> onFocusChanged = null,
-			Action<string,bool> onDecision = null,
-			Func<string,string> onCancel = null,
+			Action<string,ButtonActionTypes> onDecision = null,
+			Func<string,ButtonActionTypes,string> onCancel = null,
 			Action<InputTypes,InputTypes> onInputTypeChanged = null,
+			Action<string> onUpdate = null,
 			InputTypes basisInputType = InputTypes.Unknown,
 			InputTypes extraInputType = InputTypes.Unknown
 		)
@@ -310,7 +495,9 @@ namespace uGUIHelper
 			m_OnDecision     = onDecision ;
 			m_OnCancel       = onCancel ;
 
-			m_OnInputTypeChanged = onInputTypeChanged ;
+			m_OnInputTypeChanged    = onInputTypeChanged ;
+
+			m_OnUpdate              = onUpdate ;
 
 			if( m_Ready == false )
 			{
@@ -832,8 +1019,26 @@ namespace uGUIHelper
 			if( IsRaycastAvailable() == false )
 			{
 				// レイキャストが通る状態でなければ処理しない
-				m_IsDecisionButtonPressing = false ;
+
+				// 無効時の処理を行う
+				ProcessDisable() ;
+
 				return ;
+			}
+
+			//------------------------------------------------------------------------------------------
+			// レイキャストが通っているので有効
+
+			if( m_IsActivate == false )
+			{
+				// 有効になった
+				m_IsActivate  = true ;
+
+				//---------------------------------------------
+                // 有効になった直後から決定ボタンまたは取消ボタンが押されていたら一度解放されるまでは入力を無効化する
+
+                m_IsInvalidDecisionButton   = ProcessDecisionButton() ;
+                m_IsInvalidCancelButton     = ProcessCancelButton() ;
 			}
 
 			//-------------------------------------------------
@@ -889,7 +1094,7 @@ namespace uGUIHelper
 				}
 				else
 				{
-					if( m_ExtraInputType == InputTypes.GamePad )
+					if( m_ExtraInputType != InputTypes.Keyboard )
 					{
 						if( IsKeyboardInput( false, true ) == true )
 						{
@@ -898,8 +1103,8 @@ namespace uGUIHelper
 							m_OnInputTypeChanged?.Invoke( m_BasisInputType, m_ExtraInputType ) ;
 						}
 					}
-					else
-					if( m_ExtraInputType == InputTypes.Keyboard )
+					
+					if( m_ExtraInputType != InputTypes.GamePad )
 					{
 						if( IsGamePadInput( false, true ) == true )
 						{
@@ -912,7 +1117,7 @@ namespace uGUIHelper
 					// マウスの戻る判定
 					if( Mouse.GetButtonDown( 1 ) == true )
 					{
-						m_OnCancel?.Invoke( m_CurrentInputElementIdentity ) ;
+						m_OnCancel?.Invoke( m_CurrentInputElementIdentity, ButtonActionTypes.Down ) ;
 					}
 				}
 				return ;
@@ -952,8 +1157,18 @@ namespace uGUIHelper
 			if( ProcessBasisAxis() == false )
 			{
 				// 基本ボタンを処理する
-				ProcessBasisButton();
+				ProcessBasisButton() ;
 			}
+			else
+			{
+				// 決定ボタンと取消ボタンの状態を一時的に無効化する(押しっぱなしである場合に離されるまで無効化)
+				m_IsButtonBlocking = true ;
+			}
+
+			//-------------------------------------------------
+
+			// 毎フレーム呼び出し
+			m_OnUpdate?.Invoke( m_CurrentInputElementIdentity ) ;
 		}
 
 		// 基本アクシスを処理する
@@ -1438,160 +1653,248 @@ namespace uGUIHelper
 
 		//-------------------------------------------------------------------------------------
 
+        // 決定ボタンを判定する
+        protected bool ProcessDecisionButton()
+        {
+			bool isDecisionButtonPressing = false ;
+
+			// ゲームパッド
+			if( m_DecisionButtonIdentities != null && m_DecisionButtonIdentities.Length >  0 )
+			{
+				foreach( var decisionButtonIdentity in m_DecisionButtonIdentities )
+				{
+					if( GamePad.GetButton( decisionButtonIdentity ) == true )
+					{
+						isDecisionButtonPressing = true ;
+						break ;
+					}
+				}
+			}
+
+			// キーボード
+			if( m_DecisionButtonKeyCodes != null && m_DecisionButtonKeyCodes.Length >  0 )
+			{
+				foreach( var keyCode in m_DecisionButtonKeyCodes )
+				{
+					if( Keyboard.GetKey( keyCode ) == true )
+					{
+						isDecisionButtonPressing = true ;
+						break ;
+					}
+				}
+			}
+
+            return isDecisionButtonPressing ;
+        }
+
+        // 取消ボタンを判定する
+        protected bool ProcessCancelButton()
+        {
+			bool isCancelButtonPressing = false ;
+
+			// ゲームパッド
+			if( m_CancelButtonIdentities != null && m_CancelButtonIdentities.Length >  0 )
+			{
+				foreach( var cancelButtonIdentity in m_CancelButtonIdentities )
+				{
+					if( GamePad.GetButton( cancelButtonIdentity ) == true )
+					{
+						isCancelButtonPressing = true ;
+						break ;
+					}
+				}
+			}
+
+			// キーボード
+			if( m_CancelButtonKeyCodes != null && m_CancelButtonKeyCodes.Length >  0 )
+			{
+				foreach( var keyCode in m_CancelButtonKeyCodes )
+				{
+					if( Keyboard.GetKey( keyCode ) == true )
+					{
+						isCancelButtonPressing = true ;
+						break ;
+					}
+				}
+			}
+
+            return isCancelButtonPressing ;
+        }
+
 		// 基本ボタンを処理する
 		protected void ProcessBasisButton()
 		{
+			//-------------------------------------------------
+
+			// 決定ボタンの押下状態を取得
+			bool isDecisionButtonPressing = ProcessDecisionButton() ;
+
+			//-------------------------------------------------
+
+			// 取消ボタンの押下状態を取得
+			bool isCancelButtonPressing = ProcessCancelButton() ;
+
+			//----------------------------------------------------------
+
+			if( isDecisionButtonPressing == false && isCancelButtonPressing == false )
+			{
+                // 解放
+
+				m_IsButtonBlocking          = false ;
+
+				m_IsDecisionButtonPressing  = false ;
+				m_IsCancelButtonPressing    = false ;
+
+                m_IsInvalidDecisionButton   = false ;
+                m_IsInvalidCancelButton     = false ;
+			}
+
+			//----------------------------------------------------------
+
 			int inputFlags = 0 ;
 
-			bool isDecisionButtonUp = false ;
-
-			//-------------------------------------------------
-
-			// 決定ボタン
-			if( m_IsDecisionButtonPressing == false )
+			if( m_IsButtonBlocking == false )
 			{
-				// ゲームパッド
-				if( m_DecisionButtonIdentities != null && m_DecisionButtonIdentities.Length >  0 )
-				{
-					foreach( var decisionButtonIdentity in m_DecisionButtonIdentities )
-					{
-						// GamePad.GetButton( ... ) にしてはならない
-						if( GamePad.GetButtonDown( decisionButtonIdentity ) == true )
-						{
-							m_IsDecisionButtonPressing = true ;
-							inputFlags |= 1 ;
-							break ;
-						}
-					}
-				}
+				//-------------------------
+				// 決定ボタン
 
-				// キーボード
-				if( m_DecisionButtonKeyCodes != null && m_DecisionButtonKeyCodes.Length >  0 )
-				{
-					foreach( var keyCode in m_DecisionButtonKeyCodes )
-					{
-						// Keyboard.GetKey( ... ) にしてはならない
-						if( Keyboard.GetKeyDown( keyCode ) == true )
-						{
-							m_IsDecisionButtonPressing = true ;
-							inputFlags |= 1 ;
-							break ;
-						}
-					}
-				}
-			}
-			else
-			{
-				bool isPressing = false ;
+                if( m_IsInvalidDecisionButton == false )
+                {
+                    // 最初から押しっぱなしを行っていて無効になっていなければ処理する
 
-				// ゲームパッド
-				if( m_DecisionButtonIdentities != null && m_DecisionButtonIdentities.Length >  0 )
-				{
-					foreach( var decisionButtonIdentity in m_DecisionButtonIdentities )
-					{
-						if( GamePad.GetButton( decisionButtonIdentity ) == true )
-						{
-							isPressing = true ;
-							break ;
-						}
-					}
-				}
+				    if( isDecisionButtonPressing == true )
+				    {
+					    // 決定ボタンは押されている
 
-				// キーボード
-				if( m_DecisionButtonKeyCodes != null && m_DecisionButtonKeyCodes.Length >  0 )
-				{
-					foreach( var keyCode in m_DecisionButtonKeyCodes )
-					{
-						if( Keyboard.GetKey( keyCode ) == true )
-						{
-							isPressing = true ;
-							break ;
-						}
-					}
-				}
+					    if( m_IsDecisionButtonPressing == false )
+					    {
+						    // 決定ボタンは押されていなかった
 
-				if( isPressing == false )
-				{
-					m_IsDecisionButtonPressing = false ;
-					isDecisionButtonUp = true ;
-				}
-			}
+						    // 決定ボタンを押された状態にする
+						    m_IsDecisionButtonPressing          = true ;
 
-			//-------------------------------------------------
+						    m_IsDecisionButtonLongPressed       = false ;
+						    m_DecisionButtonLongPressingTime    = 0 ;
 
-			// 取消ボタン
-			if( m_IsCancelButtonPressing == false )
-			{
-				// ゲームパッド
-				if( m_CancelButtonIdentities != null && m_CancelButtonIdentities.Length >  0 )
-				{
-					foreach( var cancelButtonIdentity in m_CancelButtonIdentities )
-					{
-						// GamePad.GetButton( ... ) にしてはならない
-						if( GamePad.GetButtonDown( cancelButtonIdentity ) == true )
-						{
-							m_IsCancelButtonPressing = true ;
-							inputFlags |= 2 ;
-						}
-					}
-				}
+						    inputFlags |= 0x01 ;   // 決定ボタンの Down
+					    }
 
-				// キーボード
-				if( m_CancelButtonKeyCodes != null && m_CancelButtonKeyCodes.Length >  0 )
-				{
-					foreach( var keyCode in m_CancelButtonKeyCodes )
-					{
-						// Keyboard.GetKey( ... ) にしてはならない
-						if( Keyboard.GetKeyDown( keyCode ) == true )
-						{
-							m_IsCancelButtonPressing = true ;
-							inputFlags |= 2 ;
-							break ;
-						}
-					}
-				}
-			}
-			else
-			{
-				bool isPressing = false ;
+					    // 長押し判定
+					    if( m_IsDecisionButtonLongPressed == false )
+					    {
+						    m_DecisionButtonLongPressingTime += Time.fixedDeltaTime ;
+						    if( m_DecisionButtonLongPressingTime >  m_ButtonLongPressConfirmationTime )
+						    {
+							    m_IsDecisionButtonLongPressed = true ;
 
-				// ゲームパッド
-				if( m_CancelButtonIdentities != null && m_CancelButtonIdentities.Length >  0 )
-				{
-					foreach( var cancelButtonIdentity in m_CancelButtonIdentities )
-					{
-						if( GamePad.GetButton( cancelButtonIdentity ) == true )
-						{
-							isPressing = true ;
-							break ;
-						}
-					}
-				}
+							    inputFlags |= 0x04 ;   // 決定ボタンの LongPressed
+						    }
+					    }
+				    }
+				    else
+				    {
+					    // 決定ボタンは離されている
 
-				// キーボード
-				if( m_CancelButtonKeyCodes != null && m_CancelButtonKeyCodes.Length >  0 )
-				{
-					foreach( var keyCode in m_CancelButtonKeyCodes )
-					{
-						if( Keyboard.GetKey( keyCode ) == true )
-						{
-							isPressing = true ;
-							break ;
-						}
-					}
-				}
+					    if( m_IsDecisionButtonPressing == true )
+					    {
+						    // 決定ボタンが離された
+						    m_IsDecisionButtonPressing = false ;
 
-				if( isPressing == false )
-				{
-					m_IsCancelButtonPressing = false ;
-				}
+						    if( m_IsDecisionButtonDown == true )
+						    {
+							    m_IsDecisionButtonDown  = false ;
+
+							    inputFlags |= 0x02 ;   // 決定ボタンの Up
+						    }
+					    }
+				    }
+                }
+
+				//-------------------------
+				// 取消ボタン
+
+                if( m_IsInvalidCancelButton == false )
+                {
+                    // 最初から押しっぱなしを行っていて無効になっていなければ処理する
+
+				    if( isCancelButtonPressing == true )
+				    {
+					    // 取消ボタンは押されている
+
+					    if( m_IsCancelButtonPressing == false )
+					    {
+						    // 取消ボタンは押されていなかった
+
+						    // 取消ボタンを押された状態にする
+						    m_IsCancelButtonPressing            = true ;
+
+						    m_IsCancelButtonLongPressed         = false ;
+						    m_CancelButtonLongPressingTime      = 0 ;
+
+						    m_IsCancelButtonDown                = true ;
+
+						    inputFlags |= 0x10 ;   // 取消ボタンの Down
+					    }
+
+					    // 長押し判定
+					    if( m_IsCancelButtonLongPressed == false )
+					    {
+						    m_CancelButtonLongPressingTime += Time.fixedDeltaTime ;
+						    if( m_CancelButtonLongPressingTime >  m_ButtonLongPressConfirmationTime )
+						    {
+							    m_IsCancelButtonLongPressed = true ;
+
+							    inputFlags |= 0x40 ;   // 取消ボタンの LongPressed
+						    }
+					    }
+				    }
+				    else
+				    {
+					    // 取消ボタンは離されている
+
+					    if( m_IsCancelButtonPressing == true )
+					    {
+						    // 取消ボタンが離された
+						    m_IsCancelButtonPressing = false ;
+
+						    if( m_IsCancelButtonDown == true )
+						    {
+							    m_IsCancelButtonDown  = false ;
+
+							    inputFlags |= 0x20 ;   // 取消ボタンの Up
+						    }
+					    }
+				    }
+                }
 			}
 
 			//-------------------------------------------------
 			// 決定ボタン
 
-			if( inputFlags == 1 )
+			if( inputFlags == 0x01 )
 			{
+				// 決定ボタン Down
+
+				// 現在アクティブになっている入力要素を取得する
+				var currentInputElement = m_InputElements.FirstOrDefault( _ => _.Identity == m_CurrentInputElementIdentity ) ;
+				if( currentInputElement == null )
+				{
+					Debug.LogWarning( "[PadFocusController] 識別名が不正です = " + m_CurrentInputElementIdentity + "\n" + Path ) ;
+					return ;
+				}
+
+				// 決定ボタンのコールバック呼び出し
+				currentInputElement.OnDecision?.Invoke( ButtonActionTypes.Down ) ;
+				m_OnDecision?.Invoke( currentInputElement.Identity, ButtonActionTypes.Down ) ;
+
+				// 決定ボタン Up は発行される
+				m_IsDecisionButtonDown              = true ;
+			}
+			else
+			if( inputFlags == 0x02 )
+			{
+				// 決定ボタン Up
+
 				// 現在アクティブになっている入力要素を取得する
 				var currentInputElement = m_InputElements.FirstOrDefault( _ => _.Identity == m_CurrentInputElementIdentity ) ;
 				if( currentInputElement == null )
@@ -1601,12 +1904,14 @@ namespace uGUIHelper
 				}
 
 				// 決定ボタンのコールバック呼び出し
-				currentInputElement.OnDecision?.Invoke( true ) ;
-				m_OnDecision?.Invoke( currentInputElement.Identity, true ) ;
+				currentInputElement.OnDecision?.Invoke( ButtonActionTypes.Up ) ;
+				m_OnDecision?.Invoke( currentInputElement.Identity, ButtonActionTypes.Up ) ;
 			}
-
-			if( isDecisionButtonUp == true )
+			else
+			if( inputFlags == 0x04 )
 			{
+				// 決定ボタン LongPressed
+
 				// 現在アクティブになっている入力要素を取得する
 				var currentInputElement = m_InputElements.FirstOrDefault( _ => _.Identity == m_CurrentInputElementIdentity ) ;
 				if( currentInputElement == null )
@@ -1616,16 +1921,18 @@ namespace uGUIHelper
 				}
 
 				// 決定ボタンのコールバック呼び出し
-				currentInputElement.OnDecision?.Invoke( false ) ;
-				m_OnDecision?.Invoke( currentInputElement.Identity, false ) ;
+				currentInputElement.OnDecision?.Invoke( ButtonActionTypes.LongPressed ) ;
+				m_OnDecision?.Invoke( currentInputElement.Identity, ButtonActionTypes.LongPressed ) ;
 			}
 
 			//-------------------------------------------------
 			// 取消ボタン
 
-			if( inputFlags == 2 )
+			if( inputFlags == 0x10 )
 			{
-				string currentInputElementIdentity = m_OnCancel?.Invoke( m_CurrentInputElementIdentity ) ;
+				// 取消ボタン Down
+
+				string currentInputElementIdentity = m_OnCancel?.Invoke( m_CurrentInputElementIdentity, ButtonActionTypes.Down ) ;
 
 				if( string.IsNullOrEmpty( currentInputElementIdentity ) == false )
 				{
@@ -1646,7 +1953,27 @@ namespace uGUIHelper
 						UpdateCursors() ;
 					}
 				}
+
+				// 取消ボタン Up は発行される
+				m_IsCancelButtonDown              = true ;
 			}
+			else
+			if( inputFlags == 0x20 )
+			{
+				// 取消ボタン Up
+
+				m_OnCancel?.Invoke( m_CurrentInputElementIdentity, ButtonActionTypes.Up ) ;
+			}
+			else
+			if( inputFlags == 0x40 )
+			{
+				// 取消ボタン Up
+
+				m_OnCancel?.Invoke( m_CurrentInputElementIdentity, ButtonActionTypes.LongPressed ) ;
+			}
+
+			//-------------------------------------------------
+
 		}
 
 		// 拡張ボタンを処理する

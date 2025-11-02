@@ -809,7 +809,7 @@ namespace uGUIHelper
 		/// <summary>
 		/// レイキャストターゲット(ショートカット)
 		/// </summary>
-		override public bool RaycastTarget
+		public override bool RaycastTarget
 		{
 			get
 			{
@@ -1270,7 +1270,7 @@ namespace uGUIHelper
 #endif
 
 
-		override protected void OnStart()
+		protected override void OnStart()
 		{
 			base.OnStart() ;
 
@@ -1408,7 +1408,7 @@ namespace uGUIHelper
 			}
 		}
 
-		override protected void OnDestroy()
+		protected override void OnDestroy()
 		{
 			base.OnDestroy() ;
 
@@ -1436,7 +1436,7 @@ namespace uGUIHelper
 #if UNITY_EDITOR
 		private float m_CharacterSpacingForOverride = 0 ;
 #endif
-		override protected void OnLateUpdate()
+		protected override void OnLateUpdate()
 		{
 #if UNITY_EDITOR
 			if( m_CharacterSpacingForOverride == 0 || m_CharacterSpacingForOverride != CharacterSpacing )
@@ -2146,7 +2146,7 @@ namespace uGUIHelper
 		/// <summary>
 		/// 非アクティブ化された際に呼ばれる
 		/// </summary>
-		override protected void OnDisable()
+		protected override void OnDisable()
 		{
 			base.OnDisable() ;
 

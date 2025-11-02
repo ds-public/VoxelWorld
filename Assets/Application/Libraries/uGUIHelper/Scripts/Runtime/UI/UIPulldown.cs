@@ -503,6 +503,8 @@ namespace uGUIHelper
 
 			var image  = CImage ;
 
+			button.targetGraphic = image ;
+
 			//------------------------------------------
 
 			var size = GetCanvasSize() ;

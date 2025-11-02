@@ -140,6 +140,14 @@ namespace SocketHelper
 		public EndPoint EndPoint => m_EndPoint ;
 		private readonly	EndPoint	m_EndPoint ;
 
+		//-----------------------------------------------------------
+		// DoS攻撃対策用
+
+		private long	m_ReceivingStartTime = 0 ;
+		private long	m_ReceivingDeltaTime = 0 ;
+		private int		m_ReceivingDeltaSize = 0 ;
+		private int		m_ReceivingLimitSize = 0 ;
+
 		//-------------------------------------------------------------------------------------------
 
 		/// <summary>
@@ -153,6 +161,7 @@ namespace SocketHelper
 			Action<ClientHandler,ReadOnlyMemory<byte>>	onTcpReceived,
 			Action<ClientHandler>						onTcpDisconnected,
 			int											maxTcpPacketSize,
+			int											receivingLimitSize,
 			CancellationToken							ownerCancellationToken,
 			SynchronizationContext						mainThreadContext
 		)
@@ -169,6 +178,9 @@ namespace SocketHelper
 			m_OnTcpDisconnected							= onTcpDisconnected ;
 
 			m_MaxTcpPacketSize							= maxTcpPacketSize ;
+
+			// １秒間あたり受信を許容できるサイズ(０で無制限)
+			m_ReceivingLimitSize						= receivingLimitSize ;
 
 			m_OwnerCancellationToken					= ownerCancellationToken ;
 
@@ -395,6 +407,53 @@ namespace SocketHelper
 
 							if( m_TcpReceivePacketStep == m_TcpReceivePacketSize )
 							{
+								//-----------------------------
+								// 秒間あたりの受信量一定量を超えたらDoS攻撃とみなし強制切断する
+
+								if( m_ReceivingLimitSize >  0 )
+								{
+									// １秒あたりの受信サイズ制限あり
+
+									if( m_ReceivingStartTime <= 0 )
+									{
+										m_ReceivingStartTime  = Timer.NowTicks ;
+										m_ReceivingDeltaTime  = 0 ;
+										m_ReceivingDeltaSize  = m_TcpReceivePacketSize ;
+									}
+									else
+									{
+										long nowTicks = Timer.NowTicks ;
+
+										m_ReceivingDeltaTime += ( nowTicks - m_ReceivingStartTime ) ;
+										m_ReceivingDeltaSize += m_TcpReceivePacketSize ;
+
+										// 基準時間を更新
+										m_ReceivingStartTime  = nowTicks ;
+									}
+
+									if( m_ReceivingDeltaTime <= 1000 )
+									{
+//										Console.WriteLine( "受信サイズ " + m_ReceivingDeltaSize + " / " + m_ReceivingLimitSize + " Time = " + m_ReceivingDeltaTime ) ;
+
+										if( m_ReceivingDeltaSize >  m_ReceivingLimitSize )
+										{
+											// １秒間に受信可能なサイズオーバー
+											return false ;
+										}
+									}
+									else
+									{
+										// 検査をリセットする
+										m_ReceivingDeltaTime = 0 ;
+										m_ReceivingDeltaSize = 0 ;
+									}
+								}
+
+								//-----------------------------
+
+
+
+
 //								Debug.Log( "受信パケット完成 EndPoint = " + m_EndPoint.ToString() + " [ " + m_ReceivePacketSize + " ]" ) ;
 #if !UNITY
 								// コールバックを呼ぶ
@@ -547,6 +606,11 @@ namespace SocketHelper
 							if( m_TcpSendPackets.Count >  0 )
 							{
 								// パケットバッファにパケットが溜まっている
+
+								//-----------------------------
+								// 存続して送信が行われる場合は他のスレッドにＣＰＵリソースを回すため僅かにスリープする
+								Thread.Sleep( 1 ) ;
+								//-----------------------------
 
 								// パケットを取り出す
 								var tcpPacket = m_TcpSendPackets[ 0 ] ;
@@ -788,5 +852,100 @@ namespace SocketHelper
 			0x5d681b02, 0x2a6f2b94, 0xb40bbe37, 0xc30c8ea1, 0x5a05df1b,
 			0x2d02ef8d
 		} ;
+	}
+
+	/// <summary>
+	/// 時間計測用のクラス
+	/// </summary>
+	public class Timer
+	{
+		// ※１ティックは１００ナノ秒
+		// ※１ミリ秒＝１００００ティック
+		private const long m_CorrectValue = 10000 ;
+
+		// タイマー計測開始の基準時間(単位はミリ秒)
+		private long m_BaseTicks ;
+
+		//-----------------------------------------------------------
+
+		/// <summary>
+		/// コンストラクタ
+		/// </summary>
+		public Timer()
+		{
+			// 現在基準時刻を記録する
+			Start() ;
+		}
+
+		/// <summary>
+		/// 現在基準時刻を更新する
+		/// </summary>
+		public void Start()
+		{
+			m_BaseTicks = DateTime.Now.Ticks / m_CorrectValue ;
+		}
+
+		/// <summary>
+		/// 計測開始からの経過時間を Long 値で取得する(単位はミリ秒)
+		/// </summary>
+		public long DaltaTicks
+		{
+			get
+			{
+				long nowTicks = DateTime.Now.Ticks / m_CorrectValue ;
+
+				return nowTicks - m_BaseTicks ;
+			}
+		}
+
+		/// <summary>
+		/// 計測開始からの経過時間を float 値で取得する(単位は秒)
+		/// </summary>
+		public float Dalta
+		{
+			get
+			{
+				long nowTicks = DateTime.Now.Ticks / m_CorrectValue ;
+
+				return ( float )( nowTicks - m_BaseTicks ) / 1000.0f ;
+			}
+		}
+
+		//-----------------------------------------------------------
+
+		/// <summary>
+		/// 現在日時を Long 値で取得する(単位はミリ秒)
+		/// </summary>
+		public static long NowTicks
+		{
+			get
+			{
+				return DateTime.Now.Ticks / m_CorrectValue ;
+			}
+		}
+
+		/// <summary>
+		/// 現在日時を Long 値で取得する(単位はミリ秒)
+		/// </summary>
+		public static long NowMicroTicks
+		{
+			get
+			{
+				return DateTime.Now.Ticks / 10 ;
+			}
+		}
+
+
+
+		/// <summary>
+		/// 現在日時を float 値で取得する(単位は秒)
+		/// </summary>
+		public static float Now
+		{
+			get
+			{
+				return ( float )( DateTime.Now.Ticks / m_CorrectValue ) / 1000.0f ;
+			}
+		}
 	}
 }

@@ -23,6 +23,7 @@ using System.Text ;
 using System.Threading.Tasks ;
 using System.Security.Cryptography ;
 
+using UnityEngine ;
 
 
 namespace NetworkPlayHelper
@@ -889,6 +890,63 @@ namespace NetworkPlayHelper
 		/// Byte 配列を追加する
 		/// </summary>
 		/// <param name="data"></param>
+		public static void PutByteArray( List<byte> data, List<byte> byteArray )
+		{
+			if( byteArray == null || byteArray.Count == 0 )
+			{
+				data.Add( 0 ) ;
+				return ;
+			}
+
+			//----------------------------------
+
+			int size = byteArray.Count ;
+
+			if( size <  128 )
+			{
+				// 1 byte ～ 127 byte
+				data.Add( ( byte )size ) ;
+			}
+			else
+			{
+				// 128 byte ～
+				if( size <  16384 )
+				{
+					// ～ 16383 byte (16KB)
+					data.Add( ( byte )( (   size         & 0x7F ) | 0x80 ) ) ;
+					data.Add( ( byte )(     size >>  7                   ) ) ;
+				}
+				else
+				{
+					// 16384 byte (16KB) ～
+					if( size <  2097152 )
+					{
+						// ～ 2097151 byte (2MB)
+						data.Add( ( byte )( (   size         & 0x7F ) | 0x80 ) ) ;
+						data.Add( ( byte )( ( ( size >>  7 ) & 0x7F ) | 0x80 ) ) ;
+						data.Add( ( byte )(     size >> 14                   ) ) ;
+					}
+					else
+					{
+						// 2097152 byte (2MB) ～ 536870911 byte (512MB)
+						data.Add( ( byte )( (   size         & 0x7F ) | 0x80 ) ) ;
+						data.Add( ( byte )( ( ( size >>  7 ) & 0x7F ) | 0x80 ) ) ;
+						data.Add( ( byte )( ( ( size >> 14 ) & 0x7F ) | 0x80 ) ) ;
+						data.Add( ( byte )(     size >> 21                   ) ) ;
+					}
+				}
+			}
+
+			//----------------------------------------------------------
+
+			data.AddRange( byteArray ) ;
+		}
+
+
+		/// <summary>
+		/// Byte 配列を追加する
+		/// </summary>
+		/// <param name="data"></param>
 		public static void PutByteArray( List<byte> data, byte[] byteArray, int offset, int length )
 		{
 			if( byteArray == null || byteArray.Length == 0 || length == 0 )
@@ -980,64 +1038,125 @@ namespace NetworkPlayHelper
 		/// <summary>
 		/// 任意データの送受信(無認証可能)
 		/// </summary>
-		GetStatus			= 10,
+		GetStatus					= 10,
 
 		/// <summary>
 		/// ログイン要求(無認証可能)
 		/// </summary>
-		Login				= 11,
+		Login						= 11,
 
 		/// <summary>
 		/// ログアウト要求
 		/// </summary>
-		Logout				= 12,
+		Logout						= 12,
 
 		/// <summary>
 		/// リフレッシュ要求
 		/// </summary>
-		Refresh				= 13,
+		Refresh						= 13,
 
 		/// <summary>
 		/// ゲストアカウント生成(無認証可能)
 		/// </summary>
-		CreateGuestAccount	= 14,
+		CreateGuestAccount			= 14,
+
+		/// <summary>
+		/// アカウント生成(無認証可能)
+		/// </summary>
+		CreateAccount				=  15,
+
+		/// <summary>
+		/// プラットフォームアカウント生成(無認証可能)
+		/// </summary>
+		CreatePlatformAccount		=  16,
+
+		/// <summary>
+		/// プラットフォームアカウント引継(無認証可能)
+		/// </summary>
+		TakeOverPlatformAccount		=  17,
+
+		/// <summary>
+		/// アカウント生成またはログイン(無認証可能)
+		/// </summary>
+		CreateAccountOrLogin		=  18,
 
 		//-----------------------------------------------------------
 
 		/// <summary>
 		/// 任意機能の実行
 		/// </summary>
-		CallFunction		= 20,
+		CallFunction				= 20,
 
 		/// <summary>
 		/// セッション生成
 		/// </summary>
-		CreateSession		= 21,
+		CreateSession				= 21,
 
 		/// <summary>
 		/// セッション参加
 		/// </summary>
-		JoinToSession		= 22,
+		JoinToSession				= 22,
 
 		/// <summary>
 		/// セッション離脱
 		/// </summary>
-		LeaveFromSession	= 23,
+		LeaveFromSession			= 23,
 
 		/// <summary>
 		/// セッション情報取得
 		/// </summary>
-		GetSessions			= 24,
+		GetSessions					= 24,
 
 		/// <summary>
 		/// フレンド情報取得
 		/// </summary>
-		GetFriends			= 25,
+		GetFriends					= 25,
 
 		/// <summary>
 		/// セッションのスコープタイプの変更
 		/// </summary>
-		SetSessionScopeType	= 26,
+		SetSessionScopeType			= 26,
+
+		//---------------
+
+		/// <summary>
+		/// ユーザー名の更新
+		/// </summary>
+		UpdateUserName				=  32,
+
+		//---------------
+
+		/// <summary>
+		/// ユーザー情報群取得(デバッグ)
+		/// </summary>
+		GetUsers					=  64,
+
+		/// <summary>
+		/// フレンド設定(デバッグ)
+		/// </summary>
+		SetFriend					=  65,
+
+		//-----------------------------------------------------------
+
+		/// <summary>
+		/// グルーピングサービスを開始する
+		/// </summary>
+		StartGroupingService		=  96,
+
+		/// <summary>
+		/// セッションへのマッチングを開始する
+		/// </summary>
+		StartMatchingToSession		=  97,
+
+		/// <summary>
+		/// セッションへのマッチングを実行する
+		/// </summary>
+		ExecuteMatchingToSession	=  98,
+
+		/// <summary>
+		/// セッションへのマッチングを中断する
+		/// </summary>
+		StopMatchingToSession		=  99,
 	}
 
 	/// <summary>
@@ -1080,6 +1199,11 @@ namespace NetworkPlayHelper
 		/// フレーム通信が可能になった事を理解した旨をクライアントからサーバーに通知する(Client→Server)
 		/// </summary>
 		ClientReady							=  13,
+
+		/// <summary>
+		/// 属しているセッションでアラートが発生した
+		/// </summary>
+		SessionAlert						=  15,
 
 		//-----------------------------------
 
@@ -1128,7 +1252,545 @@ namespace NetworkPlayHelper
 		/// 往復時間計測
 		/// </summary>
 		Ping								=  92,
+
+		//-----------------------------------
+
+		/// <summary>
+		/// 通知サービスとのバインド確立要求
+		/// </summary>
+		BindClientToUser					= 120,
+
+		/// <summary>
+		/// 通信サービスとのバインド確立応答
+		/// </summary>
+		BindClientToUserComplated			= 121,
+
+#if MATCHING_SYSTEM_OLD_VERSION
+		/// <summary>
+		/// マッチング要求にてセッションに参加した
+		/// </summary>
+		MatchingToSessionSuccessful			= 124,
+
+		/// <summary>
+		/// マッチング要求に失敗した
+		/// </summary>
+		MatchingToSessionFailed				= 125,
+#endif
+		/// <summary>
+		/// 任意の通知メッセージ
+		/// </summary>
+		NotificationMessage					= 128,
+
+		//---------------
+		// グルーピング関連
+
+		/// <summary>
+		/// 指定したユーザー識別子群の情報を取得する
+		/// </summary>
+		GroupingAction						= 130,
 	}
+
+	/// <summary>
+	/// グルーピングアクションの種別
+	/// </summary>
+	public enum GroupingActionTypes : byte
+	{
+		//---------------
+		// 非同期グルーピングアクション系(待機が必要)
+
+
+		/// <summary>
+		/// グルーピングサービスの固有パラメータを設定する
+		/// </summary>
+		SetGroupingServiceParameter             =  10,
+
+		/// <summary>
+		/// 関連するユーザー情報を確認する
+		/// </summary>
+		CheckRelatedUsers						=  16,
+
+
+		/// <summary>
+		/// グループへの招待を付与する　※リーダー限定行動
+		/// </summary>
+		AffordGroupInvitation					=  20,
+
+		/// <summary>
+		/// グループへの招待を取消する　※リーダー限定行動
+		/// </summary>
+		CancelGroupInvitation					=  21,
+
+		/// <summary>
+		/// グループへの招待を了承する
+		/// </summary>
+		AcceptGroupInvitation					=  24,
+
+		/// <summary>
+		/// グループへの招待を拒否する
+		/// </summary>
+		RejectGroupInvitation					=  25,
+
+
+		/// <summary>
+		/// グループへ参加する
+		/// </summary>
+		JoinToGroup								=  26,
+
+		/// <summary>
+		/// グループ固有パラメータを更新する
+		/// </summary>
+		SetGroupParameter						=  27,
+
+		/// <summary>
+		/// グループ内の固有パラメータを更新する
+		/// </summary>
+		SetGroupMemberParameter					=  28,
+
+		/// <summary>
+		/// グループの準備可能状態を設定する
+		/// </summary>
+		SetGroupMemberReady						=  29,
+
+		/// <summary>
+		/// グループから離脱する
+		/// </summary>
+		LeaveFromGroup							=  30,
+
+		/// <summary>
+		/// グループから排除する
+		/// </summary>
+		RejectGroupMember						=  32,
+
+
+		/// <summary>
+		/// グループを生成する　※フリーユーザー限定行動
+		/// </summary>
+		CreateGroup								=  36,
+
+		/// <summary>
+		/// グループを確定してマッチグを開始する
+		/// </summary>
+		StartSoloMatching						=  40,
+
+		/// <summary>
+		/// グループを確定してマッチグを開始する
+		/// </summary>
+		StartGroupMatching						=  41,
+
+		/// <summary>
+		/// マッチングを取消する
+		/// </summary>
+		StopMatching							=  43,
+
+		/// <summary>
+		/// グループを解散する　※リーダー限定行動　※現在未対応(LeaveFromGroupに内包されている)
+		/// </summary>
+		DeleteGroup								=  48,
+
+		//---------------
+		// プッシュ通知系
+
+		/// <summary>
+		/// グループへの招待を受け取った　※招待の受け取り側
+		/// </summary>
+		GroupInvitationReceived					=  60,
+
+		/// <summary>
+		/// グループへの招待が取り消された　※招待の受け取り側
+		/// </summary>
+		GroupInvitationCanceled					=  61,
+
+		/// <summary>
+		/// グループへの招待が承諾された　※オーナー側
+		/// </summary>
+		GroupInvitationAccepted					=  62,
+
+		/// <summary>
+		/// グループへの招待が拒否された　※オーナー側
+		/// </summary>
+		GroupInvitationRejected					=  63,
+
+
+		/// <summary>
+		/// Smallグループが生成された
+		/// </summary>
+		SmallGroupCreated						=  70,
+
+		/// <summary>
+		/// グループにメンバーが参加した
+		/// </summary>
+		GroupMemberJoined						=  72,
+
+
+		/// <summary>
+		/// グループメンバーの状態(固有パラメータ・準備完了)が更新された
+		/// </summary>
+		GroupParameterUpdated					=  73,
+
+		/// <summary>
+		/// グループメンバーの状態(固有パラメータ・準備完了)が更新された
+		/// </summary>
+		GroupMemberParameterUpdated				=  74,
+
+		/// <summary>
+		/// グループメンバーの状態(固有パラメータ・準備完了)が更新された
+		/// </summary>
+		GroupMemberReadyUpdated					=  75,
+
+
+		/// <summary>
+		/// グループメンバーが離脱した
+		/// </summary>
+		GroupMemberLeft							=  76,
+
+		/// <summary>
+		/// グループメンバーが排除された
+		/// </summary>
+		GroupMemberRejected						=  77,
+
+		/// <summary>
+		/// 参加中のグループが解散した
+		/// </summary>
+		GroupDeleted							=  78,
+
+
+		/// <summary>
+		/// マッチングが開始された
+		/// </summary>
+		MatchingStarted							=  80,
+
+		/// <summary>
+		/// グループマッチングに成功した(セッションプレイヤー全員を対象)
+		/// </summary>
+		MatchingCompleted						=  81,
+#if false
+		/// <summary>
+		/// マッチングが失敗した(タイムアウトなど)
+		/// </summary>
+		MatchingFailed							=  82,
+#endif
+		/// <summary>
+		/// マッチングが中止された(Smallグループの場合は全員準備完了状態を解除する)
+		/// </summary>
+		MatchingCanceled						=  83,
+	}
+
+	/// <summary>
+	/// グルーピングアクションのレスポンスコード種別(サイズがバイトである点に注意)
+	/// </summary>
+	public enum GroupingActionResponseCodes : byte
+	{
+		/// <summary>
+		/// 成功した
+		/// </summary>
+		Succeeded					= 0,
+
+		/// <summary>
+		/// エラーが発生した(これは抽象的なもので後で細かくコードを分けるかもしれない)
+		/// </summary>
+		Error						=  1,
+
+		/// <summary>
+		/// 対象は既にオフライン状態になっている
+		/// </summary>
+		AlreadyTargetOffline		=  2,
+
+		/// <summary>
+		/// 対象は既にグループに参加してしまっている
+		/// </summary>
+		AlreadyTargetGroupJoined	=  3,
+
+		/// <summary>
+		/// アクセストークン異常
+		/// </summary>
+		AccessTokenFailed           =  9,
+
+		/// <summary>
+		/// パスワードが合わない
+		/// </summary>
+		PasswordFailed				= 10,
+
+		/// <summary>
+		/// グループが見つからない
+		/// </summary>
+		GroupUnknown				= 99,
+	}
+
+	/// <summary>
+	/// グループの種別
+	/// </summary>
+	public enum GroupTypes
+	{
+		/// <summary>
+		/// グループではない
+		/// </summary>
+		None	= 0,
+
+		/// <summary>
+		/// 最大４人の小規模グループ
+		/// </summary>
+		Small	= 1,
+
+		/// <summary>
+		/// 最大８人の大規模グループ
+		/// </summary>
+		Large	= 2,
+	}
+
+	/// <summary>
+	/// マッチングの取消が行われた理由
+	/// </summary>
+	public enum MatchingCancellationResons
+	{
+		/// <summary>
+		/// 意味無し
+		/// </summary>
+		None,
+
+		/// <summary>
+		/// 取消要求が行われた
+		/// </summary>
+		Requested,
+
+		/// <summary>
+		/// マッチング要求ユーザーまたはマッチング要求グループ内のユーザーに切断があった
+		/// </summary>
+		Dicconnected,
+
+		/// <summary>
+		/// 何等かの理由でマッチング開始に失敗した(エラーメッセージ参照)
+		/// </summary>
+		Failed,
+	}
+
+	/// <summary>
+	/// 関連性のあるユーザー情報(基本的にはフレンドしかいないはず)
+	/// </summary>
+	public class RelatedUserData
+	{
+		/// <summary>
+		/// ユーザー識別子
+		/// </summary>
+		public string		UserId ;
+
+		/// <summary>
+		/// 名前(ゲーム用の名前に上書きの可能性あり:UserNameとは限らない)
+		/// </summary>
+		public string		UserName ;
+
+		/// <summary>
+		/// オンライン中であるか
+		/// </summary>
+		public bool			IsOnline ;
+
+		/// <summary>
+		/// アプリケーション識別子
+		/// </summary>
+		public string		ApplicationId ;
+
+		/// <summary>
+		/// 参加中のグループ種別
+		/// </summary>
+		public GroupTypes	GroupType ;
+
+		/// <summary>
+		/// 招待中(Small:オーナーでなくても可能・Large:自身がオーナーに限る)
+		/// </summary>
+		public bool			IsInviting ;
+
+		/// <summary>
+		/// 多目的パラメータ
+		/// </summary>
+		public Dictionary<string, string> Parameters ;
+	}
+
+
+	/// <summary>
+	/// グループ招待情報(招待を受けた側のみ使用する)
+	/// </summary>
+	public class GroupInvitationData
+	{
+		/// <summary>
+		/// 招待を送ってきたユーザーのユーザー識別子
+		/// </summary>
+		public string						UserId ;
+
+		/// <summary>
+		/// 招待を送ってきたユーザーの名前(ゲーム用の名前に上書きの可能性あり:UserNameとは限らない)
+		/// </summary>
+		public string						UserName ;
+
+		/// <summary>
+		/// 招待を送ってきたユーザーの多目的パラメータ
+		/// </summary>
+		public Dictionary<string,string>	Parameters ;
+
+		/// <summary>
+		/// アプリケーション識別子
+		/// </summary>
+		public string						ApplicationId ;
+
+		/// <summary>
+		/// 招待の種別(Noneはありえない)
+		/// </summary>
+		public GroupTypes					GroupType ;
+	}
+
+	/// <summary>
+	/// グループメンバー情報
+	/// </summary>
+	public class GroupMemberData
+	{
+		/// <summary>
+		/// ユーザー識別子
+		/// </summary>
+		public string						UserId ;
+
+		/// <summary>
+		/// 名前(ゲーム用の名前に上書きの可能性あり:UserNameとは限らない)
+		/// </summary>
+		public string						UserName ;
+
+		/// <summary>
+		/// 準備完了中かどうか
+		/// </summary>
+		public bool							IsReady ;
+
+		/// <summary>
+		/// 多目的パラメータ
+		/// </summary>
+		public Dictionary<string, string>	Parameters ;
+
+		/// <summary>
+		/// グループのリーダーであるかどうか
+		/// </summary>
+		public bool							IsLeader ;
+
+
+		//-----------------------------------
+
+		/// <summary>
+		/// 複製する
+		/// </summary>
+		/// <returns></returns>
+		public GroupMemberData Clone()
+		{
+			var groupMember = new GroupMemberData()
+			{
+				UserId		= this.UserId,
+				UserName	= this.UserName,
+				IsReady		= this.IsReady,
+				Parameters	= new (),
+				IsLeader	= this.IsLeader
+			} ;
+
+			if( this.Parameters != null )
+			{
+				foreach( ( var key, var value ) in this.Parameters )
+				{
+					groupMember.Parameters.Add( key, value ) ;
+				}
+			}
+
+			return groupMember ;
+		}
+	}
+
+	/// <summary>
+	/// グループ招待の応答結果
+	/// </summary>
+	public enum GroupInvitationResponseTypes
+	{
+		/// <summary>
+		/// 承諾された
+		/// </summary>
+		Accepted,
+
+		/// <summary>
+		/// 拒否された
+		/// </summary>
+		Rejected,
+	}
+
+	/// <summary>
+	/// グループの状況
+	/// </summary>
+	public enum GroupStatus
+	{
+		/// <summary>
+		/// グループが生成された
+		/// </summary>
+		Created,
+
+		/// <summary>
+		/// 固有パラメータが更新された
+		/// </summary>
+		ParameterUpdated,
+
+		/// <summary>
+		/// メンバーが追加された
+		/// </summary>
+		MemberJoined,
+
+		/// <summary>
+		/// メンバーに離脱された
+		/// </summary>
+		MemberLeft,
+
+		/// <summary>
+		/// メンバーが更新された
+		/// </summary>
+		MemberUpdated,
+
+		/// <summary>
+		/// 自身がグループから排除された
+		/// </summary>
+		Rejected,
+
+		/// <summary>
+		/// グループが削除された
+		/// </summary>
+		Deleted,
+	}
+
+
+	/// <summary>
+	/// マッチングの状況
+	/// </summary>
+	public enum MatchingStatus
+	{
+		/// <summary>
+		/// マッチングが開始された
+		/// </summary>
+		Started,
+
+		/// <summary>
+		/// マッチングが完了した
+		/// </summary>
+		Completed,
+
+		/// <summary>
+		/// マッチングが取消された
+		/// </summary>
+		Canceled,
+
+		/// <summary>
+		/// マッチング中の切断が検出された
+		/// </summary>
+		Disconnected,
+
+		/// <summary>
+		/// マッチングに失敗した
+		/// </summary>
+		Failed,
+
+		/// <summary>
+		/// 取消はできない
+		/// </summary>
+		NoCancellation,
+	}
+
+	//------------------------------------------------------------
 
 	/// <summary>
 	/// セッションの管理タイプ
@@ -1160,6 +1822,17 @@ namespace NetworkPlayHelper
 		/// 非公開
 		/// </summary>
 		Private = 2,
+	}
+
+	/// <summary>
+	/// セッションのアラート
+	/// </summary>
+	public enum SessionAlertTypes : byte
+	{
+		/// <summary>
+		/// セッションが開始する前にセッションプレイヤーの切断があった
+		/// </summary>
+		SessionPlayerDisconnectedBeforeSessionStarting,
 	}
 
 	/// <summary>
@@ -1343,6 +2016,49 @@ namespace NetworkPlayHelper
 		}
 
 		/// <summary>
+		/// 現在のポインターの位置から符号なし Short 値を取得する
+		/// </summary>
+		/// <returns></returns>
+		protected ushort GetVUShort()
+		{
+			if( m_Pointer >=  m_Data.Length )
+			{
+				throw new Exception( "データサイズ異常" ) ;
+			}
+
+			ushort value, data ;
+			int shift = 0 ;
+
+			data = m_Data[ m_Pointer ] ;
+			m_Pointer ++ ;
+
+			if( data <  128 )
+			{
+				// 0
+				value = data ;
+			}
+			else
+			{
+				// 0
+				value = ( ushort )( data & 0x7F ) ;
+				shift += 7 ;
+
+				if( m_Pointer >=  m_Data.Length )
+				{
+					throw new Exception( "データサイズ異常" ) ;
+				}
+
+				data = m_Data[ m_Pointer ] ;
+				m_Pointer ++ ;
+
+				// 1
+				value |= ( ushort )( data << shift ) ;
+			}
+
+			return value ;
+		}
+
+		/// <summary>
 		/// 現在のポインターの位置から符号あり Int 値を取得する
 		/// </summary>
 		/// <returns></returns>
@@ -1384,6 +2100,81 @@ namespace NetworkPlayHelper
 			m_Pointer += 4 ;
 
 			return ( uint )value ;
+		}
+
+		/// <summary>
+		/// 現在のポインターの位置から符号なし Int 値を取得する
+		/// </summary>
+		/// <returns></returns>
+		protected uint GetVUInt()
+		{
+			if( m_Pointer >=  m_Data.Length )
+			{
+				throw new Exception( "データサイズ異常" ) ;
+			}
+
+			uint value, data ;
+			int shift = 0 ;
+
+			data = m_Data[ m_Pointer ] ;
+			m_Pointer ++ ;
+
+			if( data <  128 )
+			{
+				// 0
+				value = data ;
+			}
+			else
+			{
+				// 0
+				value = ( ushort )( data & 0x7F ) ;
+				shift += 7 ;
+
+				if( m_Pointer >=  m_Data.Length )
+				{
+					throw new Exception( "データサイズ異常" ) ;
+				}
+
+				data = m_Data[ m_Pointer ] ;
+				m_Pointer ++ ;
+
+				if( data <  128 )
+				{
+					// 1
+					value |= ( data << shift ) ;
+				}
+				else
+				{
+					// 1
+					value |= ( ( data & 0x7F ) << shift ) ;
+					shift += 7 ;
+
+					if( m_Pointer >=  m_Data.Length )
+					{
+						throw new Exception( "データサイズ異常" ) ;
+					}
+
+					data = m_Data[ m_Pointer ] ;
+					m_Pointer ++ ;
+
+					if( data <  128 )
+					{
+						// 2
+						value |= ( data << shift ) ;
+					}
+					else
+					{
+						// 2
+						value |= ( ( data & 0x7F ) << shift ) ;
+						shift += 7 ;
+
+						// 3
+						value |= ( data << shift ) ;
+					}
+				}
+			}
+
+			return value ;
 		}
 
 		/// <summary>
@@ -1435,7 +2226,162 @@ namespace NetworkPlayHelper
 
 			m_Pointer += 8 ;
 
-			return ( ulong )value ;
+			return value ;
+		}
+
+		/// <summary>
+		/// 現在のポインターの位置から符号なし Long 値を取得する
+		/// </summary>
+		/// <returns></returns>
+		protected ulong GetVULong()
+		{
+			if( m_Pointer >=  m_Data.Length )
+			{
+				throw new Exception( "データサイズ異常" ) ;
+			}
+
+			ulong value, data ;
+			int shift = 0 ;
+
+			data = m_Data[ m_Pointer ] ;
+			m_Pointer ++ ;
+
+			if( data <  128 )
+			{
+				// 0
+				value = data ;
+			}
+			else
+			{
+				// 0
+				value = ( ushort )( data & 0x7F ) ;
+				shift += 7 ;
+
+				if( m_Pointer >=  m_Data.Length )
+				{
+					throw new Exception( "データサイズ異常" ) ;
+				}
+
+				data = m_Data[ m_Pointer ] ;
+				m_Pointer ++ ;
+
+				if( data <  128 )
+				{
+					// 1
+					value |= ( data << shift ) ;
+				}
+				else
+				{
+					// 1
+					value |= ( ( data & 0x7F ) << shift ) ;
+					shift += 7 ;
+
+					if( m_Pointer >=  m_Data.Length )
+					{
+						throw new Exception( "データサイズ異常" ) ;
+					}
+
+					data = m_Data[ m_Pointer ] ;
+					m_Pointer ++ ;
+
+					if( data <  128 )
+					{
+						// 2
+						value |= ( data << shift ) ;
+					}
+					else
+					{
+						// 2
+						value |= ( ( data & 0x7F ) << shift ) ;
+						shift += 7 ;
+
+						if( m_Pointer >=  m_Data.Length )
+						{
+							throw new Exception( "データサイズ異常" ) ;
+						}
+
+						data = m_Data[ m_Pointer ] ;
+						m_Pointer ++ ;
+
+						if( data <  128 )
+						{
+							// 3
+							value |= ( data << shift ) ;
+						}
+						else
+						{
+							// 3
+							value |= ( ( data & 0x7F ) << shift ) ;
+							shift += 7 ;
+
+							if( m_Pointer >=  m_Data.Length )
+							{
+								throw new Exception( "データサイズ異常" ) ;
+							}
+
+							data = m_Data[ m_Pointer ] ;
+							m_Pointer ++ ;
+
+							if( data <  128 )
+							{
+								// 4
+								value |= ( data << shift ) ;
+							}
+							else
+							{
+								// 4
+								value |= ( ( data & 0x7F ) << shift ) ;
+								shift += 7 ;
+
+								if( m_Pointer >=  m_Data.Length )
+								{
+									throw new Exception( "データサイズ異常" ) ;
+								}
+
+								data = m_Data[ m_Pointer ] ;
+								m_Pointer ++ ;
+
+								if( data <  128 )
+								{
+									// 5
+									value |= ( data << shift ) ;
+								}
+								else
+								{
+									// 5
+									value |= ( ( data & 0x7F ) << shift ) ;
+									shift += 7 ;
+
+									if( m_Pointer >=  m_Data.Length )
+									{
+										throw new Exception( "データサイズ異常" ) ;
+									}
+
+									data = m_Data[ m_Pointer ] ;
+									m_Pointer ++ ;
+
+									if( data <  128 )
+									{
+										// 6
+										value |= ( data << shift ) ;
+									}
+									else
+									{
+										// 6
+										value |= ( ( data & 0x7F ) << shift ) ;
+										shift += 7 ;
+
+										// 7
+										value |= ( data << shift ) ;
+									}
+								}
+							}
+						}
+					}
+				}
+			}
+
+			return value ;
 		}
 
 		/// <summary>
@@ -1783,6 +2729,16 @@ namespace NetworkPlayHelper
 		//-----------------------------------
 
 		/// <summary>
+		/// 既にログイン状態になっている(多重ログイン禁止)
+		/// </summary>
+		AlreadyLogined          = 50020,
+
+		/// <summary>
+		/// 有効なアクセストークンではない
+		/// </summary>
+		AccessTokenFailed       = 50030,
+
+		/// <summary>
 		/// データベースアクセスで問題が生じた
 		/// </summary>
 		DatabaseFailed			= 50040,
@@ -1852,6 +2808,10 @@ namespace NetworkPlayHelper
 		/// </summary>
 		public bool		IsHost ;
 
+		//---------------
+
+		public Dictionary<string,string>	Parameters ;
+
 		//-----------------------------------------------------------
 
 		/// <summary>
@@ -1861,6 +2821,7 @@ namespace NetworkPlayHelper
 		{
 		}
 
+#if false
 		/// <summary>
 		/// コンストラクタ
 		/// </summary>
@@ -1880,7 +2841,7 @@ namespace NetworkPlayHelper
 			IsGuest		= isGuest ;
 			IsHost		= isHost ;
 		}
-#if false
+
 		/// <summary>
 		/// 値を格納する
 		/// </summary>
@@ -1904,6 +2865,21 @@ namespace NetworkPlayHelper
 			UserName	= DataFormat.GetString( data, ref offset ) ;
 			IsGuest		= DataFormat.GetBool( data, ref offset ) ;
 			IsHost		= DataFormat.GetBool( data, ref offset ) ;
+
+			Parameters = new () ;
+
+			int pi, pl = DataFormat.GetByte( data, ref offset ) ;
+			string key, value ;
+			if( pl >  0 )
+			{
+				for( pi  = 0 ; pi <  pl ; pi ++ )
+				{
+					key		= DataFormat.GetString( data, ref offset ) ;
+					value	= DataFormat.GetString( data, ref offset ) ;
+
+					Parameters.Add( key, value ) ;
+				}
+			}
 		}
 	}
 
@@ -2095,22 +3071,375 @@ namespace NetworkPlayHelper
 			UserId				= DataFormat.GetString( data, ref offset ) ;
 			UserName			= DataFormat.GetString( data, ref offset ) ;
 
-			int i, l = DataFormat.GetByte( data, ref offset ) ;
-			if( l  >  0 )
+			Sessions = new List<SessionData>() ;
+
+			int i, l = DataFormat.GetVUShort( data, ref offset ) ;
+			for( i  = 0 ; i <  l ; i ++ )
 			{
-				Sessions		= new List<SessionData>() ;
-				for( i  = 0 ; i <  l ; i ++ )
+				Sessions.Add( new SessionData()
 				{
-					Sessions.Add( new SessionData()
-					{
-						ApplicationId		= DataFormat.GetString( data, ref offset ),
-						ApplicationName		= DataFormat.GetString( data, ref offset ),
-						SessionId			= DataFormat.GetString( data, ref offset )
-					} ) ;
-				}
+					ApplicationId		= DataFormat.GetString( data, ref offset ),
+					ApplicationName		= DataFormat.GetString( data, ref offset ),
+					SessionId			= DataFormat.GetString( data, ref offset )
+				} ) ;
 			}
 		}
 	}
+
+	//------------------------------------------------------------
+
+	/// <summary>
+	/// マッチング結果
+	/// </summary>
+	public class MatchingToSessionResult
+	{
+		/// <summary>
+		/// マッチング結果
+		/// </summary>
+		public ResponseCodes			    ResponseCode			{ get ; private set ; }
+
+		/// <summary>
+		/// エラーメッセージ
+		/// </summary>
+		public string					    ErrorMessage			{ get ; private set ; }
+
+		//-----------------------------------
+
+		/// <summary>
+		/// マッチング識別子
+		/// </summary>
+		public ulong					    MatchingId				{ get ; private set ; }
+
+		/// <summary>
+		/// アプリケーション識別子
+		/// </summary>
+		public string					    ApplicationId			{ get ; private set ; }
+
+		//---------------
+
+		/// <summary>
+		/// セッション識別子
+		/// </summary>
+		public uint						    SessionId				{ get ; private set ; }
+
+		/// <summary>
+		/// セッションのスコープタイプ
+		/// </summary>
+		public SessionScopeTypes		    ScopeType				{ get ; private set ; }
+
+		/// <summary>
+		/// セッション説明
+		/// </summary>
+		public string					    Description				{ get ; private set ; }
+
+		/// <summary>
+		/// セッションの最大人数
+		/// </summary>
+		public ushort					    MaxPlayers				{ get ; private set ; }
+
+		/// <summary>
+		/// セッションの管理方法
+		/// </summary>
+		public SessionManagementTypes	    ManagementType			{ get ; private set ; }
+
+		/// <summary>
+		/// ＵＤＰ通信が使用可能かどうか
+		/// </summary>
+		public bool						    UdpEnabled				{ get ; private set ; }
+
+		/// <summary>
+		/// ＵＤＰの再送補正が有効かどうか
+		/// </summary>
+		public bool						    UdpCorrectionEnabled	{ get ; private set ; }
+
+		/// <summary>
+		/// セッションの固有パラメータ
+		/// </summary>
+		public Dictionary<string,string>    Parameters              { get ; private set ; }
+
+		/// <summary>
+		/// サーバー側のセッションプロセッサーが有効になっているかどうか
+		/// </summary>
+		public bool						    ProcessorEnabled		{ get ; private set ; }
+
+		//-----------------------------------
+
+		/// <summary>
+		/// セッションのプレイユー群
+		/// </summary>
+		public List<SessionPlayer>		    SessionPlayers			{ get ; private set ; }
+
+		//-----------------------------------
+
+		/// <summary>
+		/// ExchangeServer のアドレス
+		/// </summary>
+		public string					    ExchangeServer_Address	{ get ; private set ; }
+
+		/// <summary>
+		/// ExchangeServer のＴＣＰポート
+		/// </summary>
+		public ushort					    ExchangeServer_TcpPort	{ get ; private set ; }
+
+		/// <summary>
+		/// ExchangeServer のＵＤＰポート
+		/// </summary>
+		public ushort					    ExchangeServer_UdpPort	{ get ; private set ; }
+
+		//-------------------------------------------------------------------------------------------
+
+		/// <summary>
+		/// コンストラクタ(デフォルト)
+		/// </summary>
+		public MatchingToSessionResult()
+		{
+		}
+
+
+		/// <summary>
+		/// コンストラクタ(失敗)
+		/// </summary>
+		public MatchingToSessionResult
+		(
+			ResponseCodes	responseCode,
+			string			errorMessage,
+
+			ulong			matchingId,
+			string			applicationId
+		)
+		{
+			ResponseCode	= responseCode ;
+			ErrorMessage	= errorMessage ;
+			MatchingId		= matchingId ;
+			ApplicationId	= applicationId ;
+		}
+		
+		/// <summary>
+		/// 成功の場合のデコード
+		/// </summary>
+		/// <param name="data"></param>
+		/// <param name="posinter"></param>
+		public bool DecodeSuccessful( byte[] data, ref int offset )
+		{
+			int i, l ;
+
+			ResponseCode = ResponseCodes.Succeeded ;
+
+			try
+			{
+				//-------------
+				// Session
+
+				MatchingId				= DataFormat.GetULong( data, ref offset ) ;
+				
+				ApplicationId			= DataFormat.GetString( data, ref offset ) ;
+
+				//-------------
+
+				SessionId				= DataFormat.GetUInt( data, ref offset ) ;
+				Description				= DataFormat.GetString( data, ref offset ) ;
+				MaxPlayers				= DataFormat.GetUShort( data, ref offset ) ;
+				ScopeType				= ( SessionScopeTypes )DataFormat.GetByte( data, ref offset ) ;
+				ManagementType			= ( SessionManagementTypes )DataFormat.GetByte( data, ref offset ) ;
+				UdpEnabled				= DataFormat.GetBool( data, ref offset ) ;
+				UdpCorrectionEnabled	= DataFormat.GetBool( data, ref offset ) ;
+
+				Parameters              = new () ;
+				l = DataFormat.GetByte( data, ref offset ) ;
+				if( l >  0 )
+				{
+					for( i  = 0 ; i <  l ; i ++ )
+					{
+						string key      = DataFormat.GetString( data, ref offset ) ;
+						string value    = DataFormat.GetString( data, ref offset ) ;
+						if( Parameters.ContainsKey( key ) == false )
+						{
+							Parameters.Add( key, value ) ;
+						}
+					}
+				}
+
+				ProcessorEnabled		= DataFormat.GetBool( data, ref offset ) ;
+
+				//-------------
+				// SessionPlayers
+
+				SessionPlayers = new () ;
+
+				l = DataFormat.GetVUShort( data, ref offset ) ;
+				if( l >  0 )
+				{
+					string						userId ;
+					string						userName ;
+					bool						isGuest ;
+					bool						isHost ;
+
+					Dictionary<string, string>	sessionPlayerParameters ;
+					int pi, pl ;
+					string key, value ;
+
+					for( i  = 0 ; i <  l ; i ++ )
+					{
+						userId		= DataFormat.GetString( data, ref offset ) ;
+						userName	= DataFormat.GetString( data, ref offset ) ;
+						isGuest		= DataFormat.GetBool( data, ref offset ) ;
+						isHost		= DataFormat.GetBool( data, ref offset ) ;
+
+						sessionPlayerParameters = new () ;
+
+						pl = DataFormat.GetByte( data, ref offset ) ;
+						if( pl >  0 )
+						{
+							for( pi  = 0 ; pi <  pl ; pi ++ )
+							{
+								key		= DataFormat.GetString( data, ref offset ) ;
+								value	= DataFormat.GetString( data, ref offset ) ;
+
+								sessionPlayerParameters.Add( key, value ) ;
+							}
+						}
+
+						SessionPlayers.Add( new
+						(
+							userId,
+							userName,
+							isGuest,
+							isHost,
+							sessionPlayerParameters
+						) ) ;
+					}
+				}
+
+				//-------------
+				// ExchangeServer EndPoint
+
+				ExchangeServer_Address	= DataFormat.GetString( data, ref offset ) ;
+				ExchangeServer_TcpPort	= DataFormat.GetUShort( data, ref offset ) ;
+				ExchangeServer_UdpPort	= DataFormat.GetUShort( data, ref offset ) ;
+			}
+			catch( Exception )
+			{
+				// データ異常
+				ResponseCode = ResponseCodes.Error ;
+				ErrorMessage = "マッチング成功通知のデータに異常がある" ;
+
+				Debug.LogWarning( "マッチング失敗通知のデータに異常がある" ) ;
+				return false ;
+			}
+
+			return true ;
+		}
+	
+		/// <summary>
+		/// 失敗の場合のデコード
+		/// </summary>
+		/// <param name="data"></param>
+		/// <param name="posinter"></param>
+		public bool DecodeFailed( byte[] data, ref int offset )
+		{
+			ResponseCode = ResponseCodes.Error ;
+
+			try
+			{
+				MatchingId		= DataFormat.GetULong( data, ref offset ) ;
+				ApplicationId	= DataFormat.GetString( data, ref offset ) ;
+				ErrorMessage	= DataFormat.GetString( data, ref offset ) ;
+			}
+			catch( Exception )
+			{
+				// データ異常
+				Debug.LogWarning( "マッチング失敗通知のデータに異常がある" ) ;
+				return false ;
+			}
+
+			return true ;
+		}
+
+		/// <summary>
+		/// ステータスを更新する
+		/// </summary>
+		/// <param name="responseCode"></param>
+		/// <param name="rrormessage"></param>
+		public void UpdateStatus( ResponseCodes responseCode, string rrormessage )
+		{
+			ResponseCode = responseCode ;
+			ErrorMessage = rrormessage ;
+		}
+	}
+
+
+
+	/// <summary>
+	/// ユーザー情報
+	/// </summary>
+	public class ResponseUserData
+	{
+		/// <summary>
+		/// フレンドのユーザー識別子
+		/// </summary>
+		public string	UserId ;
+
+		/// <summary>
+		/// フレンドのユーザー名
+		/// </summary>
+		public string	UserName ;
+
+		/// <summary>
+		/// ゲストアカウントかどうか
+		/// </summary>
+		public bool		IsGuest ;
+
+		//-----------------------------------------------------------
+
+		/// <summary>
+		/// コンストラクタ
+		/// </summary>
+		public ResponseUserData()
+		{
+		}
+
+		/// <summary>
+		/// コンストラクタ
+		/// </summary>
+		public ResponseUserData
+		(
+			string	userId,
+			string	userName,
+			bool	isGuest
+		)
+		{
+			UserId			= userId ;
+			UserName		= userName ;
+			IsGuest			= isGuest ;
+		}
+
+		/// <summary>
+		/// 値を格納する
+		/// </summary>
+		/// <param name="data"></param>
+		public void Encode( List<byte> data )
+		{
+			DataFormat.PutString( data, UserId ) ;
+			DataFormat.PutString( data, UserName ) ;
+			DataFormat.PutBool( data, IsGuest ) ;
+		}
+
+		/// <summary>
+		/// 値を取得する
+		/// </summary>
+		/// <param name="data"></param>
+		/// <param name="posinter"></param>
+		public void Decode( byte[] data, ref int offset )
+		{
+			UserId				= DataFormat.GetString( data, ref offset ) ;
+			UserName			= DataFormat.GetString( data, ref offset ) ;
+			IsGuest				= DataFormat.GetBool( data, ref offset ) ;
+		}
+	}
+
+
+
+
 
 	//--------------------------------------------------------------------------------------------
 

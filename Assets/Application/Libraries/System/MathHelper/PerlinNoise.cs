@@ -6,7 +6,7 @@ using UnityEngine ;
 namespace MathHelper
 {
 	/// <summary>
-	/// パーリンノイズを取得するためのヘルパークラス
+	/// パーリンノイズを取得するためのヘルパークラス Version 2025/05/17
 	/// </summary>
 	public class PerlinNoise
 	{
@@ -20,8 +20,9 @@ namespace MathHelper
 		private static int[] m_PW ;
 
 		// UNIXエポックを表すDateTimeオブジェクトを取得
-		private static readonly DateTime m_UNIX_EPOCH = new DateTime( 1970, 1, 1, 0, 0, 0, 0 ) ;
+		private static readonly DateTime m_UNIX_EPOCH = new ( 1970, 1, 1, 0, 0, 0, 0 ) ;
 
+        // UNIXエポックからの経過時間を取得
 		private static ulong GetUnixTime( DateTime dateTime )
 		{
 			// UTC時間に変換
@@ -154,7 +155,7 @@ namespace MathHelper
 			int yi = ( int )y ;
 			float xf = x - xi ;
 			float yf = y - yi ;
-			Vector2 f = new Vector2( xf, yf ) ;
+			var f = new Vector2( xf, yf ) ;
 
 			Vector2 g00 = GetGradient( xi,     yi     ) ;
 			Vector2 g10 = GetGradient( xi + 1, yi     ) ;
@@ -192,7 +193,7 @@ namespace MathHelper
 			float xf = x - xi ;
 			float yf = y - yi ;
 			float zf = z - zi ;
-			Vector3 f = new Vector3( xf, yf, zf ) ;
+			var f = new Vector3( xf, yf, zf ) ;
 
 			Vector3 g000 = GetGradient( xi,     yi,     zi     ) ;
 			Vector3 g100 = GetGradient( xi + 1, yi,     zi     ) ;
@@ -251,7 +252,7 @@ namespace MathHelper
 			float yf = y - yi ;
 			float zf = z - zi ;
 			float wf = w - wi ;
-			Vector4 f = new Vector4( xf, yf, zf, wf ) ;
+			var f = new Vector4( xf, yf, zf, wf ) ;
 
 			Vector4 g0000 = GetGradient( xi,     yi,     zi,     wi     ) ;
 			Vector4 g1000 = GetGradient( xi + 1, yi,     zi,     wi     ) ;

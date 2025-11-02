@@ -25,14 +25,14 @@ namespace NetworkPlayHelper
 		/// </summary>
 		/// <param name="SetLoginServer"></param>
 		/// <param name="loginServerPort"></param>
-		public bool SetAccountServer( string accountServerAddress, int accountServerTcpPort )
+		public bool SetAccountServer( string accountServer_Address, int accountServer_TcpPort )
 		{
-			m_AccountServerAddress	= accountServerAddress ;
-			m_AccountServerTcpPort	= accountServerTcpPort ;
+			m_AccountServer_Address	= accountServer_Address ;
+			m_AccountServer_TcpPort	= accountServer_TcpPort ;
 
-			if( IPAddress.TryParse( accountServerAddress, out IPAddress ipAddress ) == false )
+			if( IPAddress.TryParse( accountServer_Address, out IPAddress ipAddress ) == false )
 			{
-				var ipAddresses = Dns.GetHostAddresses( accountServerAddress ) ;
+				var ipAddresses = Dns.GetHostAddresses( accountServer_Address ) ;
 				if( ipAddresses != null && ipAddresses.Length >  0 )
 				{
 					foreach( var _ in ipAddresses )
@@ -48,7 +48,7 @@ namespace NetworkPlayHelper
 
 			if( ipAddress != null && ipAddress.GetAddressBytes() != null )
 			{
-				m_AccountServerTcpEndPoint = new IPEndPoint( ipAddress, accountServerTcpPort ) ;
+				m_AccountServer_TcpEndPoint = new IPEndPoint( ipAddress, accountServer_TcpPort ) ;
 
 				return true ;
 			}
@@ -61,21 +61,21 @@ namespace NetworkPlayHelper
 		/// <summary>
 		/// アカウントサーバーのアドレス
 		/// </summary>
-		public string	AccountServerAddress => m_AccountServerAddress ;
+		public string	AccountServer_Address => m_AccountServer_Address ;
 
 		// アカウントサーバーのアドレス
-		private string							m_AccountServerAddress ;
+		private string							m_AccountServer_Address ;
 
 		/// <summary>
 		/// アカウントサーバーのＴＣＰポート
 		/// </summary>
-		public int		AccountServerTcpPort	=> m_AccountServerTcpPort ;
+		public int		AccountServer_TcpPort	=> m_AccountServer_TcpPort ;
 
 		// アカウントサーバーのＴＣＰポート
-		private int								m_AccountServerTcpPort ;
+		private int								m_AccountServer_TcpPort ;
 
 		// アカウントサーバーのＴＣＰエンドポイント
-		private IPEndPoint						m_AccountServerTcpEndPoint ;
+		private IPEndPoint						m_AccountServer_TcpEndPoint ;
 
 		//-------------------------------------------------------------------------------------------
 
@@ -155,7 +155,7 @@ namespace NetworkPlayHelper
 			// 共通処理部(ＷｅｂＡｐｉ)
 			( var responseCode, var errorMessage, var responseContentData ) = await CallWebApi_A_Async
 			(
-				m_AccountServerTcpEndPoint,
+				m_AccountServer_TcpEndPoint,
 				requestContent.Encode(),
 				cancellationToken
 			) ;
@@ -187,19 +187,194 @@ namespace NetworkPlayHelper
 		//-----------------------------------
 
 		/// <summary>
-		/// アカウントサーバーに対しログインを実行する
+		/// アカウントサーバーに対しゲストアカウント生成を実行する
 		/// </summary>
 		/// <returns></returns>
-		public async Task<Login_Response> LoginAsync
+		public async Task<CreateGuestAccount_Response> CreateGuestAccountAsync
 		(
-			string userId,
-			string password,
+			string userName,
 			CancellationToken cancellationToken = default
 		)
 		{
 			// リクエストコンテント部
-			var requestContent = new Login_RequestPacket
+			var requestContent = new CreateGuestAccount_RequestPacket
 			(
+				userName,
+				m_ClientPublicKey
+			) ;
+
+			//----------------------------------------------------------
+
+			// 共通処理部(ＷｅｂＡｐｉ)
+			( var responseCode, var errorMessage, var responseContentData ) = await CallWebApi_A_Async
+			(
+				m_AccountServer_TcpEndPoint,
+				requestContent.Encode(),
+				cancellationToken
+			) ;
+			if( responseCode != ResponseCodes.Succeeded )
+			{
+				// 失敗
+
+				return new ( responseCode, errorMessage, null, null, null ) ;
+			}
+
+			//----------------------------------------------------------
+
+			// レスポンスコンテント部
+			var responseContent = new CreateGuestAccount_ResponsePacket( responseContentData, 0 ) ;
+			if( responseContent.Decode() == false )
+			{
+				// 失敗(データ異常)
+				return new ( ResponseCodes.BadResponse, "受信データに問題があります", null, null, null ) ;
+			}
+
+			// レスポンスの値を取り出す
+			string userId					= responseContent.UserId ;
+			string password					= responseContent.Password ;
+			userName						= responseContent.UserName ;
+
+			//----------------------------------------------------------
+
+			// 成功
+			return new ( responseCode, string.Empty, userId, password, userName ) ;
+		}
+
+		/// <summary>
+		/// アカウント生成を実行する
+		/// </summary>
+		/// <returns></returns>
+		public async Task<CreateAccount_Response> CreateAccountAsync
+		(
+			string	userId,		// 空文字可能
+			string	password,	// 空文字可能
+			string	userName,	// 空文字可能
+			CancellationToken cancellationToken = default
+		)
+		{
+			// リクエストコンテント部
+			var requestContent = new CreateAccount_RequestPacket
+			(
+				userId,
+				password,
+				userName,
+				m_ClientPublicKey
+			) ;
+
+			//----------------------------------------------------------
+
+			// 共通処理部(ＷｅｂＡｐｉ)
+			( var responseCode, var errorMessage, var responseContentData ) = await CallWebApi_A_Async
+			(
+				m_AccountServer_TcpEndPoint,
+				requestContent.Encode(),
+				cancellationToken
+			) ;
+			if( responseCode != ResponseCodes.Succeeded )
+			{
+				// 失敗
+
+				return new ( responseCode, errorMessage, null, null, null ) ;
+			}
+
+			//----------------------------------------------------------
+
+			// レスポンスコンテント部
+			var responseContent = new CreateAccount_ResponsePacket( responseContentData, 0 ) ;
+			if( responseContent.Decode() == false )
+			{
+				// 失敗(データ異常)
+				return new ( ResponseCodes.BadResponse, "受信データに問題があります", null, null, null ) ;
+			}
+
+			// レスポンスの値を取り出す
+			userId					= responseContent.UserId ;
+			password				= responseContent.Password ;
+			userName				= responseContent.UserName ;
+
+			//----------------------------------------------------------
+
+			// 成功
+			return new ( responseCode, string.Empty, userId, password, userName ) ;
+		}
+
+		/// <summary>
+		/// プラットフォームアカウント生成を実行する
+		/// </summary>
+		/// <returns></returns>
+		public async Task<CreatePlatformAccount_Response> CreatePlatformAccountAsync
+		(
+			string	            platformUserId,
+			int                 platformCode,
+			string	            password,	    // 空文字可能
+			string	            userName,	    // 空文字可能
+			CancellationToken   cancellationToken = default
+		)
+		{
+			// リクエストコンテント部
+			var requestContent = new CreatePlatformAccount_RequestPacket
+			(
+				platformUserId,
+				platformCode,
+				password,
+				userName,
+				m_ClientPublicKey
+			) ;
+
+			//----------------------------------------------------------
+
+			// 共通処理部(ＷｅｂＡｐｉ)
+			( var responseCode, var errorMessage, var responseContentData ) = await CallWebApi_A_Async
+			(
+				m_AccountServer_TcpEndPoint,
+				requestContent.Encode(),
+				cancellationToken
+			) ;
+			if( responseCode != ResponseCodes.Succeeded )
+			{
+				// 失敗
+				return new ( responseCode, errorMessage, null, null, null ) ;
+			}
+
+			//----------------------------------------------------------
+
+			// レスポンスコンテント部
+			var responseContent = new CreatePlatformAccount_ResponsePacket( responseContentData, 0 ) ;
+			if( responseContent.Decode() == false )
+			{
+				// 失敗(データ異常)
+				return new ( ResponseCodes.BadResponse, "受信データに問題があります", null, null, null ) ;
+			}
+
+			// レスポンスの値を取り出す
+			string userId			= responseContent.UserId ;
+			password				= responseContent.Password ;
+			userName				= responseContent.UserName ;
+
+			//----------------------------------------------------------
+
+			// 成功
+			return new ( responseCode, string.Empty, userId, password, userName ) ;
+		}
+
+		/// <summary>
+		/// プラットフォームアカウント引継を実行する
+		/// </summary>
+		/// <returns></returns>
+		public async Task<TakeOverPlatformAccount_Response> TakeOverPlatformAccountAsync
+		(
+			string	            platformUserId,
+			int                 platformCode,
+			string              userId,
+			string	            password,
+			CancellationToken   cancellationToken = default
+		)
+		{
+			// リクエストコンテント部
+			var requestContent = new TakeOverPlatformAccount_RequestPacket
+			(
+				platformUserId,
+				platformCode,
 				userId,
 				password,
 				m_ClientPublicKey
@@ -210,46 +385,108 @@ namespace NetworkPlayHelper
 			// 共通処理部(ＷｅｂＡｐｉ)
 			( var responseCode, var errorMessage, var responseContentData ) = await CallWebApi_A_Async
 			(
-				m_AccountServerTcpEndPoint,
+				m_AccountServer_TcpEndPoint,
 				requestContent.Encode(),
 				cancellationToken
 			) ;
 			if( responseCode != ResponseCodes.Succeeded )
 			{
 				// 失敗
-				return new ( responseCode, errorMessage, null, null, 0, null, null, 0 ) ;
+				return new ( responseCode, errorMessage, null, null, null ) ;
 			}
 
 			//----------------------------------------------------------
 
 			// レスポンスコンテント部
-			var responseContent = new Login_ResponsePacket( responseContentData, 0 ) ;
+			var responseContent = new TakeOverPlatformAccount_ResponsePacket( responseContentData, 0 ) ;
 			if( responseContent.Decode() == false )
 			{
 				// 失敗(データ異常)
-				return new
-				(
-					ResponseCodes.BadResponse,
-					"受信データに問題があります",
-					null, null, 0, null, null, 0
-				) ;
+				return new ( ResponseCodes.BadResponse, "受信データに問題があります", null, null, null ) ;
 			}
 
-			// ユーザー識別子とパスワードも記録しておく
+			// レスポンスの値を取り出す
+			userId                  = responseContent.UserId ;
+			password                = responseContent.Password ;
+			string userName			= responseContent.UserName ;
+
+			//----------------------------------------------------------
+
+			// 成功
+			return new ( responseCode, string.Empty, userId, password, userName ) ;
+		}
+
+		/// <summary>
+		/// アカウント生成またはログインを実行する
+		/// </summary>
+		/// <returns></returns>
+		public async Task<CreateAccountOrLogin_Response> CreateAccountOrLoginAsync
+		(
+			string	                    userId,
+			string	                    userName,
+			bool                        isGroupingServiceEnabled,
+			Dictionary<string,string>   parameters          = null,
+			Action<byte[]>              onMessageReceived   = null,
+			CancellationToken           cancellationToken = default
+		)
+		{
+			if( string.IsNullOrEmpty( userId ) == true )
+			{
+				return new ( ResponseCodes.BadResponse, "ユーザー識別子が異常です", null, 0, null, null, 0, null, 0 ) ;
+			}
+
+			//----------------------------------
+
+			// リクエストコンテント部
+			var requestContent = new CreateAccountOrLogin_RequestPacket
+			(
+				userId,
+				userName,
+				isGroupingServiceEnabled,
+				m_ClientPublicKey
+			) ;
+
+			//----------------------------------------------------------
+
+			// 共通処理部(ＷｅｂＡｐｉ)
+			( var responseCode, var errorMessage, var responseContentData ) = await CallWebApi_A_Async
+			(
+				m_AccountServer_TcpEndPoint,
+				requestContent.Encode(),
+				cancellationToken
+			) ;
+			if( responseCode != ResponseCodes.Succeeded )
+			{
+				// 失敗
+
+				return new ( responseCode, errorMessage, null, 0, null, null, 0, null, 0 ) ;
+			}
+
+			//----------------------------------------------------------
+
+			// レスポンスコンテント部
+			var responseContent = new CreateAccountOrLogin_ResponsePacket( responseContentData, 0 ) ;
+			if( responseContent.Decode() == false )
+			{
+				// 失敗(データ異常)
+				return new ( ResponseCodes.BadResponse, "受信データに問題があります", null, 0, null, null, 0, null, 0 ) ;
+			}
+
+			// ユーザー識別子を記録しておく
 			m_UserId						= userId ;
-//			m_Password						= password ;
 
 			// レスポンスの値を取り出す
-			m_UserName						= responseContent.UserName ;
 			m_AccessToken					= responseContent.AccessToken ;
 			m_AccessLimit					= responseContent.AccessLimit ;
 			m_CommonKey						= responseContent.CommonKey ;
-			m_CommunicationServerAddress	= responseContent.CommunicationServerAddress ;
-			m_CommunicationServerTcpPort	= responseContent.CommunicationServerPort ;
 
-			if( IPAddress.TryParse( m_CommunicationServerAddress, out IPAddress ipAddress ) == false )
+			// CommunicationServer のエンドポイントを取り出す
+			m_CommunicationServer_Address	= responseContent.CommunicationServer_Address ;
+			m_CommunicationServer_TcpPort	= responseContent.CommunicationServer_TcpPort ;
+
+			if( IPAddress.TryParse( m_CommunicationServer_Address, out IPAddress ipAddress ) == false )
 			{
-				var ipAddresses = Dns.GetHostAddresses( m_CommunicationServerAddress ) ;
+				var ipAddresses = Dns.GetHostAddresses( m_CommunicationServer_Address ) ;
 				if( ipAddresses != null && ipAddresses.Length >  0 )
 				{
 					foreach( var _ in ipAddresses )
@@ -266,41 +503,362 @@ namespace NetworkPlayHelper
 
 			if( ipAddress != null && ipAddress.GetAddressBytes() != null )
 			{
-				m_CommunicationServerTcpEndPoint = new IPEndPoint( ipAddress, m_CommunicationServerTcpPort ) ;
+				m_CommunicationServer_TcpEndPoint = new IPEndPoint( ipAddress, m_CommunicationServer_TcpPort ) ;
 			}
 			else
 			{
 				return new
 				(
 					ResponseCodes.BadResponse,
-					"コミュニケーションサーバーのエンドポイントが異常です\n" + m_CommunicationServerAddress + ":" + m_CommunicationServerTcpPort,
-					null, null, 0, null, null, 0
+					"コミュニケーションサーバーのエンドポイントが異常です\n" + m_CommunicationServer_Address + ":" + m_CommunicationServer_TcpPort,
+					null, 0, null, null, 0, null, 0
 				) ;
 			}
 
+			//----------------------------------
+
 			// 共通鍵の暗号器を生成する
+			if( m_Crypter != null )
+			{
+				m_Crypter.Dispose() ;
+				m_Crypter = null ;
+			}
 			m_Crypter = Security.CreateCrypter( m_CommonKey ) ;
 
-			Debug.Log( "<color=#FFFF7F>コミュニケーションサーバーのエンドポイント = " + m_CommunicationServerTcpEndPoint.ToString() + "</color>" ) ;
+			//----------------------------------
+
+			Debug.Log( "<color=#FFFF7F>コミュニケーションサーバーのエンドポイント = " + m_CommunicationServer_TcpEndPoint.ToString() + "</color>" ) ;
+
+			//----------------------------------------------------------
+			// グルーピングサービスの利用
+
+			if( isGroupingServiceEnabled == true )
+			{
+				m_GroupingServerProcessor.Address = responseContent.GroupingServer_Address ;
+				m_GroupingServerProcessor.TcpPort = responseContent.GroupingServer_TcpPort ;
+
+				// グルーピングサーバー接続前に汎用通知メッセージの受信コールバックを設定しておく
+				m_GroupingServerProcessor.SetOnReceived( onMessageReceived ) ;
+
+
+				//----------------------------------------------------------
+				// ※共通化したいが呼び出し元とコードがほとんど変わらないので共通化は断念
+
+				bool isCanceled = false ;
+
+				try
+				{
+					// グルーピングサーバーへＴＣＰ接続を行う
+					( responseCode, errorMessage ) = await m_GroupingServerProcessor.Connect
+					(
+						GroupingServer_Address,
+						GroupingServer_TcpPort,
+						parameters,
+						cancellationToken,
+						m_OwnerCancellationToken
+					) ;
+				}
+				catch( Exception e )
+				{
+					responseCode = ResponseCodes.ConnectionFailed ;
+					errorMessage = "グルーピングサーバーに接続できない\n" + e.Message ;
+
+					if( e is OperationCanceledException )
+					{
+						// キャンセルされた
+						isCanceled = true ;
+					}
+				}
+
+				if( isCanceled == true )
+				{
+					// タスクがキャンセルされた
+					throw new OperationCanceledException() ;
+				}
+
+				if( responseCode != ResponseCodes.Succeeded )
+				{
+					// グルーピングサーバーへの接続に失敗した
+					await m_GroupingServerProcessor.StopServiceAsync( m_OwnerCancellationToken ) ;	// こちらが失敗しても結果は無視する
+
+					return new
+					(
+						responseCode, errorMessage,
+						null, 0, null, null, 0, null, 0
+					) ;
+				}
+
+				//----------------------------------------------------------
+
+				try
+				{
+					// 接続完了のコールバックを呼ぶ
+					m_GroupingServerProcessor.CallOnConnected() ;
+				}
+				catch( Exception )
+				{
+					throw ;
+				}
+			}
 
 			//----------------------------------------------------------
 
 			// 成功
 			return new
 			(
-				responseCode,
-				string.Empty,
-				m_UserName, m_AccessToken, m_AccessLimit, m_CommonKey, m_CommunicationServerAddress, m_CommunicationServerTcpPort
+				responseCode, string.Empty,
+				m_AccessToken, m_AccessLimit, m_CommonKey,
+				m_CommunicationServer_Address, m_CommunicationServer_TcpPort,
+				m_GroupingServerProcessor.Address, m_GroupingServerProcessor.TcpPort
 			) ;
 		}
 
 		//-----------------------------------
 
 		/// <summary>
+		/// アカウントサーバーに対しログインを実行する
+		/// </summary>
+		/// <returns></returns>
+		public async Task<Login_Response> LoginAsync
+		(
+			string                      userId,
+			string                      password,
+			bool                        isGroupingServiceEnabled,
+			Dictionary<string,string>   parameters          = null,
+			Action<byte[]>              onMessageReceived   = null,
+			CancellationToken           cancellationToken = default
+		)
+		{
+			// リクエストコンテント部
+			var requestContent = new Login_RequestPacket
+			(
+				userId,
+				password,
+				isGroupingServiceEnabled,
+				m_ClientPublicKey
+			) ;
+
+			//----------------------------------------------------------
+
+			// 共通処理部(ＷｅｂＡｐｉ)
+			( var responseCode, var errorMessage, var responseContentData ) = await CallWebApi_A_Async
+			(
+				m_AccountServer_TcpEndPoint,
+				requestContent.Encode(),
+				cancellationToken
+			) ;
+			if( responseCode != ResponseCodes.Succeeded )
+			{
+				// 失敗
+				return new ( responseCode, errorMessage, null, null, 0, null, null, 0, null, 0 ) ;
+			}
+
+			//----------------------------------------------------------
+
+			// レスポンスコンテント部
+			var responseContent = new Login_ResponsePacket( responseContentData, 0 ) ;
+			if( responseContent.Decode() == false )
+			{
+				// 失敗(データ異常)
+				return new
+				(
+					ResponseCodes.BadResponse,
+					"受信データに問題があります",
+					null, null, 0, null, null, 0, null, 0
+				) ;
+			}
+
+			// ユーザー識別子を記録しておく
+			m_UserId						= userId ;
+			m_Password                      = password ;
+
+			// レスポンスの値を取り出す
+			m_UserName						= responseContent.UserName ;
+			m_AccessToken					= responseContent.AccessToken ;
+			m_AccessLimit					= responseContent.AccessLimit ;
+			m_CommonKey						= responseContent.CommonKey ;
+
+			// CommunicationServer のエンドポイントを取り出す
+			m_CommunicationServer_Address	= responseContent.CommunicationServer_Address ;
+			m_CommunicationServer_TcpPort	= responseContent.CommunicationServer_TcpPort ;
+
+			if( IPAddress.TryParse( m_CommunicationServer_Address, out IPAddress ipAddress ) == false )
+			{
+				var ipAddresses = Dns.GetHostAddresses( m_CommunicationServer_Address ) ;
+				if( ipAddresses != null && ipAddresses.Length >  0 )
+				{
+					foreach( var _ in ipAddresses )
+					{
+						// IPv4
+						if( _.AddressFamily == AddressFamily.InterNetwork )
+						{
+							ipAddress = _ ;
+							break ;
+						}
+					}
+				}
+			}
+
+			if( ipAddress != null && ipAddress.GetAddressBytes() != null )
+			{
+				m_CommunicationServer_TcpEndPoint = new IPEndPoint( ipAddress, m_CommunicationServer_TcpPort ) ;
+			}
+			else
+			{
+				return new
+				(
+					ResponseCodes.BadResponse,
+					"コミュニケーションサーバーのエンドポイントが異常です\n" + m_CommunicationServer_Address + ":" + m_CommunicationServer_TcpPort,
+					null, null, 0, null, null, 0, null, 0
+				) ;
+			}
+
+			//----------------------------------
+
+			// 共通鍵の暗号器を生成する
+			if( m_Crypter != null )
+			{
+				m_Crypter.Dispose() ;
+				m_Crypter = null ;
+			}
+			m_Crypter = Security.CreateCrypter( m_CommonKey ) ;
+
+			//----------------------------------
+
+			Debug.Log( "<color=#FFFF7F>コミュニケーションサーバーのエンドポイント = " + m_CommunicationServer_TcpEndPoint.ToString() + "</color>" ) ;
+
+			//----------------------------------------------------------
+			// グルーピングサービスの利用
+
+			if( isGroupingServiceEnabled == true )
+			{
+				m_GroupingServerProcessor.Address = responseContent.GroupingServer_Address ;
+				m_GroupingServerProcessor.TcpPort = responseContent.GroupingServer_TcpPort ;
+
+				// グルーピングサーバー接続前に汎用通知メッセージの受信コールバックを設定しておく
+				m_GroupingServerProcessor.SetOnReceived( onMessageReceived ) ;
+
+				//----------------------------------------------------------
+				// ※共通化したいが呼び出し元とコードがほとんど変わらないので共通化は断念
+
+				bool isCanceled = false ;
+
+				try
+				{
+					// グルーピングサーバーへＴＣＰ接続を行う
+					( responseCode, errorMessage ) = await m_GroupingServerProcessor.Connect
+					(
+						GroupingServer_Address,
+						GroupingServer_TcpPort,
+						parameters,
+						cancellationToken,
+						m_OwnerCancellationToken
+					) ;
+				}
+				catch( Exception e )
+				{
+					responseCode = ResponseCodes.ConnectionFailed ;
+					errorMessage = "グルーピングサーバーに接続できない\n" + e.Message ;
+
+					if( e is OperationCanceledException )
+					{
+						// キャンセルされた
+						isCanceled = true ;
+					}
+				}
+
+				if( isCanceled == true )
+				{
+					// タスクがキャンセルされた
+					throw new OperationCanceledException() ;
+				}
+
+				if( responseCode != ResponseCodes.Succeeded )
+				{
+					// グルーピングサーバーへの接続に失敗した
+					await m_GroupingServerProcessor.StopServiceAsync( m_OwnerCancellationToken ) ;	// こちらが失敗しても結果は無視する
+
+					return new
+					(
+						responseCode, errorMessage,
+						null, null, 0, null, null, 0, null, 0
+					) ;
+				}
+
+				//----------------------------------------------------------
+
+				try
+				{
+					// 接続完了のコールバックを呼ぶ
+					m_GroupingServerProcessor.CallOnConnected() ;
+				}
+				catch( Exception )
+				{
+					throw ;
+				}
+			}
+
+			//----------------------------------------------------------
+
+			// 成功
+			return new
+			(
+				responseCode, string.Empty,
+				m_UserName, m_AccessToken, m_AccessLimit, m_CommonKey,
+				m_CommunicationServer_Address, m_CommunicationServer_TcpPort,
+				m_GroupingServerProcessor.Address, m_GroupingServerProcessor.TcpPort
+			) ;
+		}
+
+		//-----------------------------------
+
+		/// <summary>
+		/// アカウントサーバーに対しログアウトを実行する(クライアントのみ情報を消去する)
+		/// </summary>
+		/// <returns></returns>
+		public void Logout
+		(
+		)
+		{
+			if( string.IsNullOrEmpty( m_UserId ) == true || string.IsNullOrEmpty( m_AccessToken ) == true )
+			{
+				return ;
+			}
+
+			//----------------------------------------------------------
+
+			// セッション参加中であれば切断
+			m_ExchangeServerProcessor.CloseSession() ;
+
+			// グルーピングサービス利用中であれば切断
+			m_GroupingServerProcessor.CloseService() ;
+
+			//----------------------------------------------------------
+			// 情報をクリアする
+
+			m_AccessToken						= null ;
+			m_AccessLimit						= 0 ;
+			m_CommonKey							= null ;
+			m_CommunicationServer_Address		= null ;
+			m_CommunicationServer_TcpPort		= 0 ;
+			m_CommunicationServer_TcpEndPoint	= null ;
+
+			m_UserId							= null ;
+			m_Password							= null ;
+
+			// 暗号器を破棄する
+			if( m_Crypter != null )
+			{
+				m_Crypter.Dispose() ;
+				m_Crypter = null ;
+			}
+		}
+
+		/// <summary>
 		/// アカウントサーバーに対しログアウトを実行する
 		/// </summary>
 		/// <returns></returns>
-		public async Task<WebApiResponseBase> LogoutAsync
+		public async Task<Logout_Response> LogoutAsync
 		(
 			CancellationToken cancellationToken = default
 		)
@@ -325,7 +883,7 @@ namespace NetworkPlayHelper
 			// 共通処理部(ＷｅｂＡｐｉ)
 			( var responseCode, var errorMessage, var _ ) = await CallWebApi_A_Async
 			(
-				m_AccountServerTcpEndPoint,
+				m_AccountServer_TcpEndPoint,
 				requestContent.Encode(), cancellationToken
 			) ;
 			if( responseCode != ResponseCodes.Succeeded )
@@ -340,9 +898,9 @@ namespace NetworkPlayHelper
 			m_AccessToken						= null ;
 			m_AccessLimit						= 0 ;
 			m_CommonKey							= null ;
-			m_CommunicationServerAddress		= null ;
-			m_CommunicationServerTcpPort		= 0 ;
-			m_CommunicationServerTcpEndPoint	= null ;
+			m_CommunicationServer_Address		= null ;
+			m_CommunicationServer_TcpPort		= 0 ;
+			m_CommunicationServer_TcpEndPoint	= null ;
 
 			m_UserId							= null ;
 //			m_Password							= null ;
@@ -384,14 +942,17 @@ namespace NetworkPlayHelper
 			// 共通処理部(ＷｅｂＡｐｉ)
 			( var responseCode, var errorMessage, var responseContentData ) = await CallWebApi_A_Async
 			(
-				m_AccountServerTcpEndPoint,
+				m_AccountServer_TcpEndPoint,
 				requestContent.Encode(),
 				cancellationToken
 			) ;
 			if( responseCode != ResponseCodes.Succeeded )
 			{
 				// 失敗
-				return new ( responseCode, errorMessage, null, null, 0, null, null, 0 ) ;
+				return new
+				(
+					responseCode, errorMessage
+				) ;
 			}
 
 			// レスポンスコンテント部
@@ -401,115 +962,20 @@ namespace NetworkPlayHelper
 				// 失敗(データ異常)
 				return new
 				(
-					ResponseCodes.BadResponse,
-					"受信データに問題があります",
-					null, null, 0, null, null, 0
+					ResponseCodes.BadResponse, "受信データに問題があります"
 				) ;
 			}
 
 			// レスポンスの値を取り出す
-			m_UserName						= responseContent.UserName ;
-			m_AccessToken					= responseContent.AccessToken ;
-			m_AccessLimit					= responseContent.AccessLimit ;
-			m_CommonKey						= responseContent.CommonKey ;
-			m_CommunicationServerAddress	= responseContent.CommunicationServerAddress ;
-			m_CommunicationServerTcpPort	= responseContent.CommunicationServerPort ;
-
-			if( IPAddress.TryParse( m_CommunicationServerAddress, out IPAddress ipAddress ) == false )
-			{
-				var ipAddresses = Dns.GetHostAddresses( m_CommunicationServerAddress ) ;
-				if( ipAddresses != null && ipAddresses.Length >  0 )
-				{
-					foreach( var _ in ipAddresses )
-					{
-						// IPv4
-						if( _.AddressFamily == AddressFamily.InterNetwork )
-						{
-							ipAddress = _ ;
-							break ;
-						}
-					}
-				}
-			}
-
-			if( ipAddress != null && ipAddress.GetAddressBytes() != null )
-			{
-				m_CommunicationServerTcpEndPoint = new IPEndPoint( ipAddress, m_CommunicationServerTcpPort ) ;
-			}
-			else
-			{
-				return new
-				(
-					ResponseCodes.BadResponse,
-					"コミュニケーションサーバーのエンドポイントが異常です\n" + m_CommunicationServerAddress + ":" + m_CommunicationServerTcpPort,
-					null, null, 0, null, null, 0
-				) ;
-			}
+			m_AccessLimit	= responseContent.AccessLimit ;
 
 			//----------------------------------------------------------
 
 			// 成功
 			return new
 			(
-				responseCode,
-				string.Empty,
-				m_UserName, m_AccessToken, m_AccessLimit, m_CommonKey, m_CommunicationServerAddress, m_CommunicationServerTcpPort
+				m_AccessLimit
 			) ;
-		}
-
-		//-----------------------------------
-
-		/// <summary>
-		/// アカウントサーバーに対しゲストアカウント生成を実行する
-		/// </summary>
-		/// <returns></returns>
-		public async Task<CreateGuestAccount_Response> CreateGuestAccountAsync
-		(
-			string userName,
-			CancellationToken cancellationToken = default
-		)
-		{
-			// リクエストコンテント部
-			var requestContent = new CreateGuestAccount_RequestPacket
-			(
-				userName,
-				m_ClientPublicKey
-			) ;
-
-			//----------------------------------------------------------
-
-			// 共通処理部(ＷｅｂＡｐｉ)
-			( var responseCode, var errorMessage, var responseContentData ) = await CallWebApi_A_Async
-			(
-				m_AccountServerTcpEndPoint,
-				requestContent.Encode(),
-				cancellationToken
-			) ;
-			if( responseCode != ResponseCodes.Succeeded )
-			{
-				// 失敗
-
-				return new ( responseCode, errorMessage, null, null ) ;
-			}
-
-			//----------------------------------------------------------
-
-			// レスポンスコンテント部
-			var responseContent = new CreateGuestAccount_ResponsePacket( responseContentData, 0 ) ;
-			if( responseContent.Decode() == false )
-			{
-				// 失敗(データ異常)
-				return new ( ResponseCodes.BadResponse, "受信データに問題があります", null, null ) ;
-			}
-
-			// レスポンスの値を取り出す
-			string userId					= responseContent.UserId ;
-			string password					= responseContent.Password ;
-
-			//----------------------------------------------------------
-
-			// 成功
-			return new ( responseCode, string.Empty, userId, password ) ;
 		}
 
 		//-------------------------------------------------------------------------------------------
@@ -619,20 +1085,17 @@ namespace NetworkPlayHelper
 
 		//-----------------------------------
 
+		//-----------------------------------
+
 		/// <summary>
-		/// ログインの要求パケット
+		/// ゲストアカウント生成要求
 		/// </summary>
-		public class Login_RequestPacket : RequestPacketBase
+		public class CreateGuestAccount_RequestPacket : RequestPacketBase
 		{
 			/// <summary>
-			/// ユーザー識別子
+			/// ユーザー名
 			/// </summary>
-			public string			UserId { get ; private set ; }
-
-			/// <summary>
-			/// パスワード
-			/// </summary>
-			public string			Password { get ; private set ; }
+			public string			UserName { get ; private set ; }
 
 			/// <summary>
 			/// 応答用のクライアントの公開鍵
@@ -645,19 +1108,146 @@ namespace NetworkPlayHelper
 			/// コンストラクタ
 			/// </summary>
 			/// <param name="data"></param>
-			public Login_RequestPacket
+			public CreateGuestAccount_RequestPacket
 			(
-				string userId,
-				string password,
+				string userName,
 				string publicKey
 			)
 			{
-				RequestType		= RequestTypes.Login ;
+				RequestType		= RequestTypes.CreateGuestAccount ;
+
+				//-------------
+
+				UserName		= userName ;
+				PublicKey		= publicKey ;
+			}
+
+			/// <summary>
+			/// エンコード
+			/// </summary>
+			/// <returns></returns>
+			public byte[] Encode()
+			{
+				PutByte( ( byte )RequestType ) ;
+
+				//------------
+
+				PutString( UserName ) ;
+				PutString( PublicKey ) ;
+
+				//---------------------------------
+
+				return m_Data.ToArray() ;
+			}
+		}
+
+		/// <summary>
+		/// ゲストアカウント応答パケット
+		/// </summary>
+		public class CreateGuestAccount_ResponsePacket : ResponsePacketBase
+		{
+			/// <summary>
+			/// ユーザー識別子(ゲスト)
+			/// </summary>
+			public string			UserId		{ get ; private set ; }
+
+			/// <summary>
+			/// パスワード
+			/// </summary>
+			public string			Password	{ get ; private set ; }
+
+			/// <summary>
+			/// 実際に設定されたユーザー名
+			/// </summary>
+			public string			UserName	{ get ; private set ; }
+
+			//----------------------------------------------------------
+
+			/// <summary>
+			/// コンストラクタ
+			/// </summary>
+			/// <param name="data"></param>
+			public CreateGuestAccount_ResponsePacket( byte[] data, int pointer ) : base( data, pointer ){}
+
+			/// <summary>
+			/// デコード
+			/// </summary>
+			/// <returns></returns>
+			public bool Decode()
+			{
+				try
+				{
+					UserId						= GetString() ;
+					Password					= GetString() ;
+					UserName					= GetString() ;
+				}
+				catch( Exception )
+				{
+					// 失敗
+					return false ;
+				}
+
+				if
+				(
+					string.IsNullOrEmpty( UserId ) == true ||
+					string.IsNullOrEmpty( Password ) == true
+				)
+				{
+					// 失敗
+					return false ;
+				}
+
+				// 成功
+				return true ;
+			}
+		}
+
+		/// <summary>
+		/// アカウント生成の要求パケット
+		/// </summary>
+		public class CreateAccount_RequestPacket : RequestPacketBase
+		{
+			/// <summary>
+			/// ユーザー識別子
+			/// </summary>
+			public string			UserId		{ get ; private set ; }
+
+			/// <summary>
+			/// パスワード
+			/// </summary>
+			public string			Password	{ get ; private set ; }
+
+			/// <summary>
+			/// ユーザー名
+			/// </summary>
+			public string			UserName	{ get ; private set ; }
+
+			/// <summary>
+			/// 応答用のクライアントの公開鍵
+			/// </summary>
+			public string			PublicKey	{ get ; private set ; }
+
+			//----------------------------------------------------------
+
+			/// <summary>
+			/// コンストラクタ
+			/// </summary>
+			/// <param name="data"></param>
+			public CreateAccount_RequestPacket
+			(
+				string	userId,
+				string	password,
+				string	userName,
+				string	publicKey
+			)
+			{
+				RequestType		= RequestTypes.CreateAccount ;
 
 				//-------------
 
 				UserId			= userId ;
 				Password		= password ;
+				UserName		= userName ;
 				PublicKey		= publicKey ;
 			}
 
@@ -673,6 +1263,582 @@ namespace NetworkPlayHelper
 
 				PutString( UserId ) ;
 				PutString( Password ) ;
+				PutString( UserName ) ;
+				PutString( PublicKey ) ;
+
+				//---------------------------------
+
+				return m_Data.ToArray() ;
+			}
+		}
+
+		/// <summary>
+		/// アカウント作成の応答パケット
+		/// </summary>
+		public class CreateAccount_ResponsePacket : ResponsePacketBase
+		{
+			/// <summary>
+			/// ユーザー識別子(ゲスト)
+			/// </summary>
+			public string			UserId		{ get ; private set ; }
+
+			/// <summary>
+			/// パスワード
+			/// </summary>
+			public string			Password	{ get ; private set ; }
+
+			/// <summary>
+			/// 実際に設定されたユーザー名
+			/// </summary>
+			public string			UserName	{ get ; private set ; }
+
+			//----------------------------------------------------------
+
+			/// <summary>
+			/// コンストラクタ
+			/// </summary>
+			/// <param name="data"></param>
+			public CreateAccount_ResponsePacket( byte[] data, int pointer ) : base( data, pointer ){}
+
+			/// <summary>
+			/// デコード
+			/// </summary>
+			/// <returns></returns>
+			public bool Decode()
+			{
+				try
+				{
+					UserId						= GetString() ;
+					Password					= GetString() ;
+					UserName					= GetString() ;
+				}
+				catch( Exception )
+				{
+					// 失敗
+					return false ;
+				}
+
+				if
+				(
+					string.IsNullOrEmpty( UserId ) == true ||
+					string.IsNullOrEmpty( Password ) == true
+				)
+				{
+					// 失敗
+					return false ;
+				}
+
+				// 成功
+				return true ;
+			}
+		}
+
+		/// <summary>
+		/// プラットフォームアカウント生成の要求パケット
+		/// </summary>
+		public class CreatePlatformAccount_RequestPacket : RequestPacketBase
+		{
+			/// <summary>
+			/// プラットフォームユーザー識別子
+			/// </summary>
+			public string			PlatformUserId		{ get ; private set ; }
+
+			/// <summary>
+			/// プラットフォームコード
+			/// </summary>
+			public int              PlatformCode        { get ; private set ; }
+
+			/// <summary>
+			/// パスワード
+			/// </summary>
+			public string			Password	{ get ; private set ; }
+
+			/// <summary>
+			/// ユーザー名
+			/// </summary>
+			public string			UserName	{ get ; private set ; }
+
+			/// <summary>
+			/// 応答用のクライアントの公開鍵
+			/// </summary>
+			public string			PublicKey	{ get ; private set ; }
+
+			//----------------------------------------------------------
+
+			/// <summary>
+			/// コンストラクタ
+			/// </summary>
+			/// <param name="data"></param>
+			public CreatePlatformAccount_RequestPacket
+			(
+				string	platformUserId,
+				int     platformCode,
+				string	password,
+				string	userName,
+				string	publicKey
+			)
+			{
+				RequestType		= RequestTypes.CreatePlatformAccount ;
+
+				//-------------
+
+				PlatformUserId	= platformUserId ;
+				PlatformCode    = platformCode ;
+				Password		= password ;
+				UserName		= userName ;
+				PublicKey		= publicKey ;
+			}
+
+			/// <summary>
+			/// エンコード
+			/// </summary>
+			/// <returns></returns>
+			public byte[] Encode()
+			{
+				PutByte( ( byte )RequestType ) ;
+
+				//------------
+
+				PutString( PlatformUserId ) ;
+				PutInt( PlatformCode ) ;
+				PutString( Password ) ;
+				PutString( UserName ) ;
+				PutString( PublicKey ) ;
+
+				//---------------------------------
+
+				return m_Data.ToArray() ;
+			}
+		}
+
+		/// <summary>
+		/// プラットフォームアカウント作成の応答パケット
+		/// </summary>
+		public class CreatePlatformAccount_ResponsePacket : ResponsePacketBase
+		{
+			/// <summary>
+			/// ユーザー識別子(ゲスト)
+			/// </summary>
+			public string			UserId		{ get ; private set ; }
+
+			/// <summary>
+			/// パスワード
+			/// </summary>
+			public string			Password	{ get ; private set ; }
+
+			/// <summary>
+			/// 実際に設定されたユーザー名
+			/// </summary>
+			public string			UserName	{ get ; private set ; }
+
+			//----------------------------------------------------------
+
+			/// <summary>
+			/// コンストラクタ
+			/// </summary>
+			/// <param name="data"></param>
+			public CreatePlatformAccount_ResponsePacket( byte[] data, int pointer ) : base( data, pointer ){}
+
+			/// <summary>
+			/// デコード
+			/// </summary>
+			/// <returns></returns>
+			public bool Decode()
+			{
+				try
+				{
+					UserId						= GetString() ;
+					Password					= GetString() ;
+					UserName					= GetString() ;
+				}
+				catch( Exception )
+				{
+					// 失敗
+					return false ;
+				}
+
+				if
+				(
+					string.IsNullOrEmpty( UserId ) == true      ||
+					string.IsNullOrEmpty( Password ) == true    ||
+					string.IsNullOrEmpty( UserName ) == true
+				)
+				{
+					// 失敗
+					return false ;
+				}
+
+				// 成功
+				return true ;
+			}
+		}
+
+		/// <summary>
+		/// プラットフォームアカウント引継の要求パケット
+		/// </summary>
+		public class TakeOverPlatformAccount_RequestPacket : RequestPacketBase
+		{
+			/// <summary>
+			/// プラットフォームユーザー識別子
+			/// </summary>
+			public string			PlatformUserId		{ get ; private set ; }
+
+			/// <summary>
+			/// プラットフォームコード
+			/// </summary>
+			public int              PlatformCode        { get ; private set ; }
+
+			/// <summary>
+			/// ユーザー識別子
+			/// </summary>
+			public string			UserId	    { get ; private set ; }
+
+			/// <summary>
+			/// パスワード
+			/// </summary>
+			public string			Password	{ get ; private set ; }
+
+			/// <summary>
+			/// 応答用のクライアントの公開鍵
+			/// </summary>
+			public string			PublicKey	{ get ; private set ; }
+
+			//----------------------------------------------------------
+
+			/// <summary>
+			/// コンストラクタ
+			/// </summary>
+			/// <param name="data"></param>
+			public TakeOverPlatformAccount_RequestPacket
+			(
+				string	platformUserId,
+				int     platformCode,
+				string  userId,
+				string	password,
+				string	publicKey
+			)
+			{
+				RequestType		= RequestTypes.TakeOverPlatformAccount ;
+
+				//-------------
+
+				PlatformUserId	= platformUserId ;
+				PlatformCode    = platformCode ;
+				UserId          = userId ;
+				Password		= password ;
+				PublicKey		= publicKey ;
+			}
+
+			/// <summary>
+			/// エンコード
+			/// </summary>
+			/// <returns></returns>
+			public byte[] Encode()
+			{
+				PutByte( ( byte )RequestType ) ;
+
+				//------------
+
+				PutString( PlatformUserId ) ;
+				PutInt( PlatformCode ) ;
+				PutString( UserId ) ;
+				PutString( Password ) ;
+				PutString( PublicKey ) ;
+
+				//---------------------------------
+
+				return m_Data.ToArray() ;
+			}
+		}
+
+		/// <summary>
+		/// プラットフォームアカウント引継の応答パケット
+		/// </summary>
+		public class TakeOverPlatformAccount_ResponsePacket : ResponsePacketBase
+		{
+			/// <summary>
+			/// ユーザー識別子(ゲスト)
+			/// </summary>
+			public string			UserId		{ get ; private set ; }
+
+			/// <summary>
+			/// パスワード
+			/// </summary>
+			public string			Password	{ get ; private set ; }
+
+			/// <summary>
+			/// 実際に設定されたユーザー名
+			/// </summary>
+			public string			UserName	{ get ; private set ; }
+
+			//----------------------------------------------------------
+
+			/// <summary>
+			/// コンストラクタ
+			/// </summary>
+			/// <param name="data"></param>
+			public TakeOverPlatformAccount_ResponsePacket( byte[] data, int pointer ) : base( data, pointer ){}
+
+			/// <summary>
+			/// デコード
+			/// </summary>
+			/// <returns></returns>
+			public bool Decode()
+			{
+				try
+				{
+					UserId						= GetString() ;
+					Password					= GetString() ;
+					UserName					= GetString() ;
+				}
+				catch( Exception )
+				{
+					// 失敗
+					return false ;
+				}
+
+				if
+				(
+					string.IsNullOrEmpty( UserId ) == true      ||
+					string.IsNullOrEmpty( Password ) == true    ||
+					string.IsNullOrEmpty( UserName ) == true
+				)
+				{
+					// 失敗
+					return false ;
+				}
+
+				// 成功
+				return true ;
+			}
+		}
+
+		/// <summary>
+		/// アカウント生成またはログインの要求パケット
+		/// </summary>
+		public class CreateAccountOrLogin_RequestPacket : RequestPacketBase
+		{
+			/// <summary>
+			/// ユーザー識別子
+			/// </summary>
+			public string			UserId		                { get ; private set ; }
+
+			/// <summary>
+			/// ユーザー名
+			/// </summary>
+			public string			UserName	                { get ; private set ; }
+
+			/// <summary>
+			/// グルーピングサービスの確認と開始を行うかどうか
+			/// </summary>
+			public bool             IsGroupingServiceEnabled    { get ; private set ; }
+
+			/// <summary>
+			/// 応答用のクライアントの公開鍵
+			/// </summary>
+			public string			PublicKey	                { get ; private set ; }
+
+			//----------------------------------------------------------
+
+			/// <summary>
+			/// コンストラクタ
+			/// </summary>
+			/// <param name="data"></param>
+			public CreateAccountOrLogin_RequestPacket
+			(
+				string	userId,
+				string	userName,
+				bool    isGroupingServiceEnabled,
+				string	publicKey
+			)
+			{
+				RequestType		= RequestTypes.CreateAccountOrLogin ;
+
+				//-------------
+
+				UserId			            = userId ;
+				UserName		            = userName ;
+				IsGroupingServiceEnabled    = isGroupingServiceEnabled ;
+				PublicKey		            = publicKey ;
+			}
+
+			/// <summary>
+			/// エンコード
+			/// </summary>
+			/// <returns></returns>
+			public byte[] Encode()
+			{
+				PutByte( ( byte )RequestType ) ;
+
+				//------------
+
+				PutString( UserId ) ;
+				PutString( UserName ) ;
+				PutBool( IsGroupingServiceEnabled ) ;
+				PutString( PublicKey ) ;
+
+				//---------------------------------
+
+				return m_Data.ToArray() ;
+			}
+		}
+
+		/// <summary>
+		/// アカウントの作成またはログインの応答パケット
+		/// </summary>
+		public class CreateAccountOrLogin_ResponsePacket : ResponsePacketBase
+		{
+			/// <summary>
+			/// アクセストークン
+			/// </summary>
+			public string			AccessToken					{ get ; private set ; }
+
+			/// <summary>
+			/// アクセスリミット
+			/// </summary>
+			public long				AccessLimit					{ get ; private set ; }
+
+			/// <summary>
+			/// 共通鍵
+			/// </summary>
+			public byte[]			CommonKey					{ get ; private set ; }
+
+			/// <summary>
+			/// コミュニケーションサーバーのアドレス
+			/// </summary>
+			public string			CommunicationServer_Address	{ get ; private set ; }
+
+			/// <summary>
+			/// コミュニケーションサーバーのＴＣＰポート
+			/// </summary>
+			public ushort			CommunicationServer_TcpPort	{ get ; private set ; }
+
+			/// <summary>
+			/// グルーピングサーバーのアドレス
+			/// </summary>
+			public string           GroupingServer_Address      { get ; private set ; }
+
+			/// <summary>
+			/// グルーピングサーバーのＴＣＰポート
+			/// </summary>
+			public ushort           GroupingServer_TcpPort      { get ; private set ; }
+
+			//----------------------------------------------------------
+
+			/// <summary>
+			/// コンストラクタ
+			/// </summary>
+			/// <param name="data"></param>
+			public CreateAccountOrLogin_ResponsePacket( byte[] data, int pointer ) : base( data, pointer ){}
+
+			/// <summary>
+			/// デコード
+			/// </summary>
+			/// <returns></returns>
+			public bool Decode()
+			{
+				//-------------
+				// デコード
+
+				try
+				{
+					AccessToken					= GetString() ;
+					AccessLimit					= GetLong() ;
+					CommonKey					= GetByteArray() ;
+
+					CommunicationServer_Address = GetString() ;
+					CommunicationServer_TcpPort	= GetUShort() ;
+					GroupingServer_Address      = GetString() ;
+					GroupingServer_TcpPort      = GetUShort() ;
+				}
+				catch( Exception )
+				{
+					// 失敗
+					return false ;
+				}
+
+				//-------------
+				// バリデーションチェック
+
+				if
+				(
+					string.IsNullOrEmpty( AccessToken ) == true ||
+					CommonKey == null | CommonKey.Length == 0 ||
+					string.IsNullOrEmpty( CommunicationServer_Address ) == true ||
+					CommunicationServer_TcpPort == 0
+				)
+				{
+					// 失敗
+					return false ;
+				}
+
+				// 成功
+				return true ;
+			}
+		}
+
+		/// <summary>
+		/// ログインの要求パケット
+		/// </summary>
+		public class Login_RequestPacket : RequestPacketBase
+		{
+			/// <summary>
+			/// ユーザー識別子
+			/// </summary>
+			public string			UserId                      { get ; private set ; }
+
+			/// <summary>
+			/// パスワード
+			/// </summary>
+			public string			Password                    { get ; private set ; }
+
+			/// <summary>
+			/// グルーピングサービスの確認と開始を行うかどうか
+			/// </summary>
+			public bool             IsGroupingServiceEnabled    { get ; private set ; }
+
+			/// <summary>
+			/// 応答用のクライアントの公開鍵
+			/// </summary>
+			public string			PublicKey                   { get ; private set ; }
+
+			//----------------------------------------------------------
+
+			/// <summary>
+			/// コンストラクタ
+			/// </summary>
+			/// <param name="data"></param>
+			public Login_RequestPacket
+			(
+				string  userId,
+				string  password,
+				bool    isGroupingServiceEnabled,
+				string  publicKey
+			)
+			{
+				RequestType		= RequestTypes.Login ;
+
+				//-------------
+
+				UserId			            = userId ;
+				Password		            = password ;
+				IsGroupingServiceEnabled    = isGroupingServiceEnabled ;
+				PublicKey		            = publicKey ;
+			}
+
+			/// <summary>
+			/// エンコード
+			/// </summary>
+			/// <returns></returns>
+			public byte[] Encode()
+			{
+				PutByte( ( byte )RequestType ) ;
+
+				//------------
+
+				PutString( UserId ) ;
+				PutString( Password ) ;
+				PutBool( IsGroupingServiceEnabled ) ;
 				PutString( PublicKey ) ;
 
 				//---------------------------------
@@ -709,12 +1875,22 @@ namespace NetworkPlayHelper
 			/// <summary>
 			/// コミュニケーションサーバーのアドレス
 			/// </summary>
-			public string			CommunicationServerAddress { get ; private set ; }
+			public string			CommunicationServer_Address { get ; private set ; }
 
 			/// <summary>
 			/// コミュニケーションサーバーのポート
 			/// </summary>
-			public int				CommunicationServerPort { get ; private set ; }
+			public ushort			CommunicationServer_TcpPort { get ; private set ; }
+
+			/// <summary>
+			/// グルーピングサーバーのアドレス
+			/// </summary>
+			public string           GroupingServer_Address      { get ; private set ; }
+
+			/// <summary>
+			/// グルーピングサーバーのＴＣＰポート
+			/// </summary>
+			public ushort           GroupingServer_TcpPort      { get ; private set ; }
 
 			//----------------------------------------------------------
 
@@ -733,17 +1909,14 @@ namespace NetworkPlayHelper
 				try
 				{
 					UserName					= GetString() ;
-//					Debug.Log( "UserName : " + UserName ) ;
 					AccessToken					= GetString() ;
-//					Debug.Log( "AccessToken : " + AccessToken ) ;
 					AccessLimit					= GetLong() ;
-//					Debug.Log( "AccessLimit : " + AccessLimit ) ;
 					CommonKey					= GetByteArray() ;
-//					Debug.Log( "CommonKey : " + CommonKey ) ;
-					CommunicationServerAddress	= GetString() ;
-//					Debug.Log( "CommunicationServerAddress : " + CommunicationServerAddress ) ;
-					CommunicationServerPort		= GetUShort() ;
-//					Debug.Log( "CommunicationServerPort : " + CommunicationServerPort ) ;
+
+					CommunicationServer_Address	= GetString() ;
+					CommunicationServer_TcpPort	= GetUShort() ;
+					GroupingServer_Address      = GetString() ;
+					GroupingServer_TcpPort      = GetUShort() ;
 				}
 				catch( Exception )
 				{
@@ -756,8 +1929,8 @@ namespace NetworkPlayHelper
 					string.IsNullOrEmpty( AccessToken ) == true ||
 					AccessLimit == 0 ||
 					CommonKey == null || CommonKey.Length == 0 ||
-					string.IsNullOrEmpty( CommunicationServerAddress ) == true ||
-					CommunicationServerPort == 0
+					string.IsNullOrEmpty( CommunicationServer_Address ) == true ||
+					CommunicationServer_TcpPort == 0
 				)
 				{
 					// 失敗
@@ -903,34 +2076,9 @@ namespace NetworkPlayHelper
 		public class Refresh_ResponsePacket : ResponsePacketBase
 		{
 			/// <summary>
-			/// ユーザー名
-			/// </summary>
-			public string			UserName { get ; private set ; }
-
-			/// <summary>
-			/// アクセストークン
-			/// </summary>
-			public string			AccessToken { get ; private set ; }
-
-			/// <summary>
 			/// アクセストークンの有効期限
 			/// </summary>
 			public long				AccessLimit { get ; private set ; }
-
-			/// <summary>
-			/// 共通鍵
-			/// </summary>
-			public byte[]			CommonKey { get ; private set ; }
-
-			/// <summary>
-			/// コミュニケーションサーバーのアドレス
-			/// </summary>
-			public string			CommunicationServerAddress { get ; private set ; }
-
-			/// <summary>
-			/// コミュニケーションサーバーのポート
-			/// </summary>
-			public int				CommunicationServerPort { get ; private set ; }
 
 			//----------------------------------------------------------
 
@@ -948,12 +2096,7 @@ namespace NetworkPlayHelper
 			{
 				try
 				{
-					UserName					= GetString() ;
-					AccessToken					= GetString() ;
 					AccessLimit					= GetLong() ;
-					CommonKey					= GetByteArray() ;
-					CommunicationServerAddress	= GetString() ;
-					CommunicationServerPort		= GetUShort() ;
 				}
 				catch( Exception )
 				{
@@ -963,11 +2106,7 @@ namespace NetworkPlayHelper
 
 				if
 				(
-					string.IsNullOrEmpty( AccessToken ) == true ||
-					AccessLimit == 0 ||
-					CommonKey == null || CommonKey.Length == 0 ||
-					string.IsNullOrEmpty( CommunicationServerAddress ) == true ||
-					CommunicationServerPort == 0
+					AccessLimit == 0
 				)
 				{
 					// 失敗
@@ -979,116 +2118,7 @@ namespace NetworkPlayHelper
 			}
 		}
 
-		//-----------------------------------
-
-		/// <summary>
-		/// ゲストアカウント生成要求
-		/// </summary>
-		public class CreateGuestAccount_RequestPacket : RequestPacketBase
-		{
-			/// <summary>
-			/// ユーザー名
-			/// </summary>
-			public string			UserName { get ; private set ; }
-
-			/// <summary>
-			/// 応答用のクライアントの公開鍵
-			/// </summary>
-			public string			PublicKey { get ; private set ; }
-
-			//----------------------------------------------------------
-
-			/// <summary>
-			/// コンストラクタ
-			/// </summary>
-			/// <param name="data"></param>
-			public CreateGuestAccount_RequestPacket
-			(
-				string userName,
-				string publicKey
-			)
-			{
-				RequestType		= RequestTypes.CreateGuestAccount ;
-
-				//-------------
-
-				UserName		= userName ;
-				PublicKey		= publicKey ;
-			}
-
-			/// <summary>
-			/// エンコード
-			/// </summary>
-			/// <returns></returns>
-			public byte[] Encode()
-			{
-				PutByte( ( byte )RequestType ) ;
-
-				//------------
-
-				PutString( UserName ) ;
-				PutString( PublicKey ) ;
-
-				//---------------------------------
-
-				return m_Data.ToArray() ;
-			}
-		}
-
-		/// <summary>
-		/// ゲストアカウント応答パケット
-		/// </summary>
-		public class CreateGuestAccount_ResponsePacket : ResponsePacketBase
-		{
-			/// <summary>
-			/// ユーザー識別子(ゲスト)
-			/// </summary>
-			public string			UserId { get ; private set ; }
-
-			/// <summary>
-			/// パスワード
-			/// </summary>
-			public string			Password { get ; private set ; }
-
-			//----------------------------------------------------------
-
-			/// <summary>
-			/// コンストラクタ
-			/// </summary>
-			/// <param name="data"></param>
-			public CreateGuestAccount_ResponsePacket( byte[] data, int pointer ) : base( data, pointer ){}
-
-			/// <summary>
-			/// デコード
-			/// </summary>
-			/// <returns></returns>
-			public bool Decode()
-			{
-				try
-				{
-					UserId						= GetString() ;
-					Password					= GetString() ;
-				}
-				catch( Exception )
-				{
-					// 失敗
-					return false ;
-				}
-
-				if
-				(
-					string.IsNullOrEmpty( UserId ) == true ||
-					string.IsNullOrEmpty( Password ) == true
-				)
-				{
-					// 失敗
-					return false ;
-				}
-
-				// 成功
-				return true ;
-			}
-		}
+		//-------------------------------------------------------------------------------------------
 
 		// 汎用ＡＰＩコール
 		private async Task<( ResponseCodes, string, byte[] )> CallWebApi_A_Async

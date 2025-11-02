@@ -33,7 +33,7 @@ using UnityEditor ;
 namespace AudioHelper
 {
 	/// <summary>
-	/// オーディオ全般の管理クラス Version 2025/06/12 0
+	/// オーディオ全般の管理クラス Version 2025/11/02 0
 	/// </summary>
 	public class AudioManager_ADX2 : MonoBehaviour
 	{
@@ -308,9 +308,10 @@ namespace AudioHelper
 			}
 		}
 
+#if UNITY_EDITOR
 		// サスペンド中かどうか
 		private bool        m_IsSuspending = false ;
-
+#endif
 		/// <summary>
 		/// リスナーを有効にするかどうか
 		/// </summary>
@@ -1463,7 +1464,72 @@ namespace AudioHelper
 			}
 		}
 #endif
-		//-----------------------------------------------------------------
+
+		//-------------------------------------------------------------------------------------------
+
+		/// <summary>
+		/// カテゴリーごとのＡＩＳＡＣコントロールを設定する
+		/// </summary>
+		/// <param name="categoryName"></param>
+		/// <param name="controlName"></param>
+		/// <param name="value"></param>
+		public static void SetAisacControl( string categoryName, string controlName, float value )
+		{
+			CriAtomExCategory.SetAisacControl( categoryName, controlName, value ) ;
+		}
+
+		//---------
+
+		/// <summary>
+		/// ゲーム変数の個数を取得する
+		/// </summary>
+		/// <returns></returns>
+		public int GetNumberOfGameVariables()
+		{
+			return CriAtomEx.GetNumGameVariables() ;
+		}
+
+		/// <summary>
+		/// ゲーム変数を設定する(識別子が数値版)
+		/// </summary>
+		/// <param name="id"></param>
+		/// <param name="value"></param>
+		public static void SetGameVariable( uint id, float value )
+		{
+			CriAtomEx.SetGameVariable( id, value ) ;
+		}
+
+		/// <summary>
+		/// ゲーム変数を取得する(識別子が数値版)
+		/// </summary>
+		/// <param name="id"></param>
+		/// <param name="value"></param>
+		public static float GetGameVariable( uint id )
+		{
+			return CriAtomEx.GetGameVariable( id ) ;
+		}
+
+		/// <summary>
+		/// ゲーム変数を設定する(識別子が文字列版)
+		/// </summary>
+		/// <param name="id"></param>
+		/// <param name="value"></param>
+		public static void SetGameVariable( string id, float value )
+		{
+			CriAtomEx.SetGameVariable( id, value ) ;
+		}
+
+		/// <summary>
+		/// ゲーム変数を取得する(識別子が文字列版)
+		/// </summary>
+		/// <param name="id"></param>
+		/// <param name="value"></param>
+		public static float GetGameVariable( string id )
+		{
+			return CriAtomEx.GetGameVariable( id ) ;
+		}
+
+		//-------------------------------------------------------------------------------------------
 
 #if USE_MICROPHONE
 		/// <summary>
@@ -1899,22 +1965,43 @@ namespace AudioHelper
 		/// <param name="pitch">ピッチ(-1=1オクターブ下～0=通常～+1=１オクターブ上)</param>
 		/// <param name="tag">複数のチャンネルを同時に操作するための区別用のタグ名</param>
 		/// <returns>発音毎に割り振られるユニークな識別子(-1で失敗)</returns>
-		public static int Play( string sheetName, string cueName, bool loop = false, float volume = 1.0f, float pan = 0.0f, float pitch = 0.0f, string tag = "" )
+		public static int Play
+		(
+			string sheetName, string cueName,
+			bool loop = false,
+			float volume = 1.0f, float pan = 0.0f, float pitch = 0.0f,
+			string selector = null, string label = null,
+			string tag = null
+		)
 		{
 			if( m_Instance == null )
 			{
 				return -1 ;
 			}
 
-			return m_Instance.Play_Private( sheetName, cueName, loop, volume, pan, pitch, tag ) ;
+			return m_Instance.Play_Private
+			(
+				sheetName, cueName,
+				loop,
+				volume, pan, pitch,
+				selector, label,
+				tag
+			) ;
 		}
 
 		//----------------
 
 		// サウンドを再生する(オーディオクリップから)
-		private int Play_Private( string cueSheetName, string cueName, bool loop, float volume, float pan, float pitch, string tag )
+		private int Play_Private
+		(
+			string cueSheetName, string cueName,
+			bool loop,
+			float volume, float pan, float pitch,
+			string selector, string label,
+			string tag
+		)
 		{
-			AudioChannel_ADX2 audioChannel = GetChannel_Private( tag, $"{cueSheetName}|{cueName}" ) ;
+			var audioChannel = GetChannel_Private( tag, $"{cueSheetName}|{cueName}" ) ;
 			if( audioChannel == null )
 			{
 				// 空きがありません（古いやつから停止させるようにするかどうか）
@@ -1970,10 +2057,10 @@ namespace AudioHelper
 				playId,
 				cueSheetName, cueName,
 				loop,
-				GetBaseVolume( tag ), volume,
-				pan,
+				GetBaseVolume( tag ), volume, pan,
 				sourceTransform, listenerTransform, trueListenerTransform, distanceScale, false,
 				pitch,
+				selector, label,
 				tag,
 				m_CueSheetCache_Hash[ cueSheetName ].IsStreaming
 			) ;
@@ -2002,22 +2089,46 @@ namespace AudioHelper
 		/// <param name="pitch">ピッチ(-1=1オクターブ下～0=通常～+1=１オクターブ上</param>
 		/// <param name="tag">複数のチャンネルを同時に操作するための区別用のタグ名</param>
 		/// <returns>発音毎に割り振られるユニークな識別子(-1で失敗)</returns>
-		public static int PlayFade( string sheetName, string cueName, float duration = 1.0f, bool loop = false, float volume = 1.0f, float pan = 0.0f, float pitch = 0.0f, string tag = "" )
+		public static int PlayFade
+		(
+			string sheetName, string cueName,
+			float duration = 1.0f,
+			bool loop = false,
+			float volume = 1.0f, float pan = 0.0f, float pitch = 0.0f,
+			string selector = null, string label = null,
+			string tag = null
+		)
 		{
 			if( m_Instance == null )
 			{
 				return -1 ;
 			}
 
-			return m_Instance.PlayFade_Private( sheetName, cueName, duration, loop, volume, pan, pitch, tag ) ;
+			return m_Instance.PlayFade_Private
+			(
+				sheetName, cueName,
+				duration,
+				loop,
+				volume, pan, pitch,
+				selector, label,
+				tag
+			) ;
 		}
 
 		//--------------------
 
 		// フェード付きでサウンドを再生する(オーディオクリップから)
-		private int PlayFade_Private( string cueSheetName, string cueName, float duration, bool loop, float volume, float pan, float pitch, string tag )
+		private int PlayFade_Private
+		(
+			string cueSheetName, string cueName,
+			float duration,
+			bool loop,
+			float volume, float pan, float pitch,
+			string selector, string label,
+			string tag
+		)
 		{
-			AudioChannel_ADX2 audioChannel = GetChannel_Private( tag, $"{cueSheetName}|{cueName}" ) ;
+			var audioChannel = GetChannel_Private( tag, $"{cueSheetName}|{cueName}" ) ;
 			if( audioChannel == null )
 			{
 				// 空きがありません（古いやつから停止させるようにするかどうか）
@@ -2093,10 +2204,10 @@ namespace AudioHelper
 				playId,
 				cueSheetName, cueName,
 				loop,
-				GetBaseVolume( tag ), volume,
-				pan,
+				GetBaseVolume( tag ), volume, pan,
 				sourceTransform, listenerTransform, trueListenerTransform, distanceScale, false,
 				pitch,
+				selector, label,
 				tag,
 				m_CueSheetCache_Hash[ cueSheetName ].IsStreaming
 			) ;
@@ -2126,8 +2237,8 @@ namespace AudioHelper
 			string cueSheetName, string cueName,
 			Transform sourceTransform, Transform listenerTransform = null, float distanceScale = 1, bool isRealTimeUpdating = true,
 			bool loop = false,
-			float volume = 1.0f,
-			float pitch = 0.0f,
+			float volume = 1.0f, float pitch = 0.0f,
+			string selector = null, string label = null,
 			string tag = null
 		)
 		{
@@ -2141,8 +2252,8 @@ namespace AudioHelper
 				cueSheetName, cueName,
 				sourceTransform, listenerTransform, distanceScale, isRealTimeUpdating,
 				loop,
-				volume,
-				pitch,
+				volume, pitch,
+				selector, label,
 				tag
 			) ;
 		}
@@ -2153,8 +2264,8 @@ namespace AudioHelper
 			string cueSheetName, string cueName,
 			Transform sourceTransform, Transform listenerTransform, float distanceScale, bool isRealTimeUpdatimg,
 			bool loop,
-			float volume,
-			float pitch,
+			float volume, float pitch,
+			string selector, string label,
 			string tag
 		)
 		{
@@ -2177,6 +2288,7 @@ namespace AudioHelper
 
 			//----------------------------------------------------------
 #if false
+			// デバッグ
 			CriAtomExPlayer criAtomExPlayer = new CriAtomExPlayer() ;
 			CriAtomExAcb cueSheet = CriAtom.GetCueSheet( cueSheetName ).acb ;
 
@@ -2224,10 +2336,10 @@ namespace AudioHelper
 				playId,
 				cueSheetName, cueName,
 				loop,
-				GetBaseVolume( tag ), volume,
-				0,
+				GetBaseVolume( tag ), volume, 0,
 				sourceTransform, listenerTransform, trueListener.transform, distanceScale, isRealTimeUpdatimg,
 				pitch,
+				selector, label,
 				tag,
 				m_CueSheetCache_Hash[ cueSheetName ].IsStreaming
 			) ;
@@ -2274,6 +2386,130 @@ namespace AudioHelper
 			//----------------------------------
 
 			return audioChannel.SetBusSendLevel( busName, sendLevel ) ;
+		}
+
+		/// <summary>
+		/// Ａｉｓｃコントロールを設定する
+		/// </summary>
+		/// <param name="busName"></param>
+		/// <param name="sendLevel"></param>
+		/// <returns></returns>
+		public static bool SetAiscControl( int playId, string controlName, float value )
+		{
+			if( m_Instance == null )
+			{
+				return false ;
+			}
+
+			return m_Instance.SetAiscControl_Private( playId, controlName, value ) ;
+		}
+
+		// Ａｉｓｃコントロールを設定する
+		private bool SetAiscControl_Private( int playId, string busName, float sendLevel )
+		{
+			var audioChannel = GetChannelByPlayId( playId ) ;
+			if( audioChannel == null )
+			{
+				// 失敗(元々存在しないか既に停止している)
+				return false ;
+			}
+
+			//----------------------------------
+
+			return audioChannel.SetAiscControl( busName, sendLevel ) ;
+		}
+
+		/// <summary>
+		/// セレクターラベルを設定する
+		/// </summary>
+		/// <param name="selector"></param>
+		/// <param name="label"></param>
+		/// <returns></returns>
+		public static bool SetSelectorLabel( int playId, string selector, string label )
+		{
+			if( m_Instance == null )
+			{
+				return false ;
+			}
+
+			return m_Instance.SetSelectorLabel_Private( playId, selector, label ) ;
+		}
+
+		// セレクターラベルを設定する
+		private bool SetSelectorLabel_Private( int playId, string selector, string label )
+		{
+			var audioChannel = GetChannelByPlayId( playId ) ;
+			if( audioChannel == null )
+			{
+				// 失敗(元々存在しないか既に停止している)
+				return false ;
+			}
+
+			//----------------------------------
+
+			return audioChannel.SetSelectorLabel( selector, label ) ;
+		}
+
+		/// <summary>
+		/// セレクターラベルを削除する
+		/// </summary>
+		/// <param name="selector"></param>
+		/// <param name="label"></param>
+		/// <returns></returns>
+		public static bool UnsetSelectorLabel( int playId, string selector )
+		{
+			if( m_Instance == null )
+			{
+				return false ;
+			}
+
+			return m_Instance.UnsetSelectorLabel_Private( playId, selector ) ;
+		}
+
+		// セレクターラベルを削除する
+		private bool UnsetSelectorLabel_Private( int playId, string selector )
+		{
+			var audioChannel = GetChannelByPlayId( playId ) ;
+			if( audioChannel == null )
+			{
+				// 失敗(元々存在しないか既に停止している)
+				return false ;
+			}
+
+			//----------------------------------
+
+			return audioChannel.UnsetSelectorLabel( selector ) ;
+		}
+
+		/// <summary>
+		/// セレクターラベルを全て削除する
+		/// </summary>
+		/// <param name="selector"></param>
+		/// <param name="label"></param>
+		/// <returns></returns>
+		public static bool ClearSelectorLabels( int playId )
+		{
+			if( m_Instance == null )
+			{
+				return false ;
+			}
+
+			return m_Instance.ClearSelectorLabels_Private( playId ) ;
+		}
+
+		// セレクターラベルを全て削除する
+		private bool ClearSelectorLabels_Private( int playId )
+		{
+			var audioChannel = GetChannelByPlayId( playId ) ;
+			if( audioChannel == null )
+			{
+				// 失敗(元々存在しないか既に停止している)
+				return false ;
+			}
+
+			//----------------------------------
+
+			return audioChannel.ClearSelectorLabels() ;
 		}
 
 		//-------------------------------------------------------------------------------------------
@@ -3034,8 +3270,9 @@ namespace AudioHelper
 		// 全サスペンド
 		private bool SuspendAll_Private()
 		{
+#if UNITY_EDITOR
 			m_IsSuspending = true ;
-
+#endif
 			if( m_MuteInBackground == true )
 			{
 				// バックグラウンド時に完全に消音が有効
@@ -3071,8 +3308,9 @@ namespace AudioHelper
 		// 全レジューム
 		private bool ResumeAll_Private()
 		{
+#if UNITY_EDITOR
 			m_IsSuspending = false ;
-
+#endif
 			if( m_MuteInBackground == true )
 			{
 				// バックグラウンド時に完全に消音が有効
@@ -3894,6 +4132,18 @@ namespace AudioHelper
 				m_FadeStopChannels.Remove( audioChannel ) ;
 			}
 		}
+
+		//-------------------------------------------------------------------------------------
+		// 固有拡張機能群
+
+		/// <summary>
+		/// バイノーラライザーの有効化の設定を行う
+		/// </summary>
+		/// <param name="isEnabled"></param>
+		public static void EnableBinauralizer( bool isEnabled )
+		{
+			CriAtomExAsr.EnableBinauralizer( isEnabled ) ; 
+		}
 	}
 
 	//--------------------------------------------------------------------------------------------
@@ -4370,6 +4620,7 @@ namespace AudioHelper
 			float pan,
 			Transform sourceTransform, Transform listenerTransform, Transform trueListenerTransform, float distanceScale, bool isRealTimeUpdating,
 			float pitch,
+			string selector, string label,
 			string tag,
 			bool isStreaming
 		)
@@ -4475,6 +4726,18 @@ namespace AudioHelper
 
 			// 位置
 			m_AudioSource.gameObject.transform.position = sourcePosition ;
+
+			//-------------------------
+			// セレクターの指定があるかどうか
+
+			if( string.IsNullOrEmpty( selector ) == false && string.IsNullOrEmpty( label ) == false )
+			{
+				m_AudioSource.player.SetSelectorLabel( selector, label ) ;
+			}
+			else
+			{
+				m_AudioSource.player.ClearSelectorLabels() ;
+			}
 
 			//-------------------------
 
@@ -4843,6 +5106,95 @@ namespace AudioHelper
 
 			return true ;
 		}
+
+		/// <summary>
+		/// Ａｉｓｃコントロールを設定する
+		/// </summary>
+		/// <param name="controlName"></param>
+		/// <param name="value"></param>
+		/// <returns></returns>
+		internal protected bool SetAiscControl( string controlName, float value )
+		{
+			if( m_AudioSource == null )
+			{
+				return false ;
+			}
+
+			m_AudioSource.SetAisacControl( controlName, value ) ;
+
+			return true ;
+		}
+
+		/// <summary>
+		/// セレクターラベルを設定する
+		/// </summary>
+		/// <param name="selector"></param>
+		/// <param name="label"></param>
+		/// <returns></returns>
+		internal protected bool SetSelectorLabel( string selector, string label )
+		{
+			if( m_AudioSource == null )
+			{
+				return false ;
+			}
+
+			if( string.IsNullOrEmpty( selector ) == false && string.IsNullOrEmpty( label ) == false )
+			{
+				m_AudioSource.player.SetSelectorLabel( selector, label ) ;
+			}
+			else
+			if( string.IsNullOrEmpty( selector ) == false && string.IsNullOrEmpty( label ) == true )
+			{
+				m_AudioSource.player.UnsetSelectorLabel( selector ) ;
+			}
+			else
+			{
+				return false ;
+			}
+
+			return true ;
+		}
+
+		/// <summary>
+		/// セレクターラベルを削除する
+		/// </summary>
+		/// <param name="selector"></param>
+		/// <returns></returns>
+		internal protected bool UnsetSelectorLabel( string selector )
+		{
+			if( m_AudioSource == null )
+			{
+				return false ;
+			}
+
+			if( string.IsNullOrEmpty( selector ) == true )
+			{
+				return  false ;
+			}
+
+			m_AudioSource.player.UnsetSelectorLabel( selector ) ;
+
+			return true ;
+		}
+
+		/// <summary>
+		/// セレクターラベルを全て削除する
+		/// </summary>
+		/// <returns></returns>
+		internal protected bool ClearSelectorLabels()
+		{
+			if( m_AudioSource == null )
+			{
+				return false ;
+			}
+
+			m_AudioSource.player.ClearSelectorLabels() ;
+
+			return true ;
+		}
+
+
+		//-------------------------------------------------------------------------------------
 	}
 }
 

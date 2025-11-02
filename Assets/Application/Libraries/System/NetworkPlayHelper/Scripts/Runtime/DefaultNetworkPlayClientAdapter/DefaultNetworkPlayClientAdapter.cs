@@ -15,6 +15,7 @@ namespace NetworkPlayHelper
 	{
 		// カスタムセッションプロセッサー
 		private ISessionProcessor		m_SessionProcessor ;
+		public  ISessionProcessor		  SessionProcessor => m_SessionProcessor ;
 
 		/// <summary>
 		/// セッションプロセッサーを設定する(Abstruct)
@@ -54,6 +55,13 @@ namespace NetworkPlayHelper
 		/// </summary>
 		public string	UserId => m_UserId ;
 
+		// パスワード
+		private string  m_Password ;
+
+		/// <summary>
+		/// パスワード(確認専用)
+		/// </summary>
+		public string	Password => m_Password ;
 
 		// ユーザー名
 		private string	m_UserName ;
@@ -107,11 +115,13 @@ namespace NetworkPlayHelper
 
 		// 共通鍵の暗号器
 		private Security.Crypter				m_Crypter ;
+		public  Security.Crypter				  Crypter => m_Crypter ;
 
 		//-----------------------------------
 
 		// ＴＣＰの最大パケットサイズ
 		private int m_MaxTcpPacketSize = 65536 ;
+		public  int   MaxTcpPacketSize => m_MaxTcpPacketSize ;
 
 		/// <summary>
 		/// ＴＣＰの最大パケットサイズを設定する
@@ -123,17 +133,19 @@ namespace NetworkPlayHelper
 		}
 
 		//-----------------------------------------------------------
-
+#if false
 		// メインスレッドのコンテキスト
 		private SynchronizationContext			m_MainThreadContext ;
 
 		// メインスレッドのコンテキスト(セッションプロセッサー用)
 		private SynchronizationContext			m_MainThreadContext_ForSessionProcessor ;
-
+#endif
 		//-----------------------------------
 
 		// オーナーのキャンセレーショントークン
 		private CancellationToken				m_OwnerCancellationToken ;
+		public  CancellationToken				  OwnerCancellationToken => m_OwnerCancellationToken ;
+
 
 		/// <summary>
 		/// 自身のキャンセレーショントークンソース
@@ -144,9 +156,11 @@ namespace NetworkPlayHelper
 
 		// シグネチャ
 		private readonly byte[]					m_Signature = new byte[]{ ( byte )'N', ( byte )'P', ( byte )'H', ( byte )'P' } ;
+		public           byte[]					  Signature => m_Signature ;
 
 		// バージョンコード
 		private readonly int					m_VersionCode = 2 ;
+		public           int					  VersionCode => m_VersionCode ;
 
 		//-------------------------------------------------------------------------------------------
 
@@ -167,6 +181,12 @@ namespace NetworkPlayHelper
 			{
 				m_ClientCancellationTokenSource = CancellationTokenSource.CreateLinkedTokenSource( m_OwnerCancellationToken ) ;
 			}
+
+			// エクスチェンジサーバーのプロセッサーを生成する
+			m_ExchangeServerProcessor = new ExchangeServerProcesor( this ) ;
+
+			// グルーピングサーバーのプロセッサーを生成する
+			m_GroupingServerProcessor = new GroupingServerProcesor( this ) ;
 		}
 
 		/// <summary>
@@ -187,16 +207,30 @@ namespace NetworkPlayHelper
 
 			//----------------------------------
 
-			m_ActiveFrames.Clear() ;
-			m_ActiveFrames_ForSessionProcessor.Clear() ;
+			// グルーピングサーバーのプロセッサーを破棄する
+			if( m_GroupingServerProcessor != null )
+			{
+				m_GroupingServerProcessor.Dispose() ;
+				m_GroupingServerProcessor = null ;
+			}
 
-			DeleteRealTimeSocketClient() ;
+			// エクスチェンジサーバーのプロセッサーを破棄する
+			if( m_ExchangeServerProcessor != null )
+			{
+				m_ExchangeServerProcessor.Dispose() ;
+				m_ExchangeServerProcessor = null ;
+			}
 
+			//----------------------------------------------------------
+
+			// 暗号器を破棄する
 			if( m_Crypter != null )
 			{
 				m_Crypter.Dispose() ;
 				m_Crypter = null ;
 			}
+
+			//----------------------------------------------------------
 
 			m_OwnerCancellationToken = default ;
 		}

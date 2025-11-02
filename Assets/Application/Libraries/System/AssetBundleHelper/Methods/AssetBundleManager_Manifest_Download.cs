@@ -1,3 +1,5 @@
+#pragma warning disable IDE0350
+
 using System ;
 using System.Text ;
 using System.Collections ;

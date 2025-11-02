@@ -24,10 +24,16 @@ namespace NetworkPlayHelper
 	public interface ISessionFunction
 	{
 		/// <summary>
+		/// セッション固有のパラメータを取得する
+		/// </summary>
+		/// <returns></returns>
+		public Dictionary<string,string> GetSessionParameters() ;
+
+		/// <summary>
 		/// セッション内の全プレイヤー情報を取得する
 		/// </summary>
 		/// <returns></returns>
-		public SessionPlayer[] GetSessionPlayers() ;
+		public List<SessionPlayer> GetSessionPlayers() ;
 
 		/// <summary>
 		/// セッション内のホストプレイヤーの情報を取得する
@@ -90,7 +96,7 @@ namespace NetworkPlayHelper
 		/// セッションが実際に有効化された際に呼び出される
 		/// </summary>
 		/// <param name="sessionPlayers"></param>
-		public void OnActive( SessionPlayer[] sessionPlayers ) ;
+		public void OnActive( List<SessionPlayer> sessionPlayers ) ;
 
 		/// <summary>
 		/// セッションが破棄された際に呼び出される

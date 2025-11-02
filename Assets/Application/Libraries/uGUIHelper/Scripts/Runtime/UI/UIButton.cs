@@ -447,6 +447,9 @@ namespace uGUIHelper
 			Image	image	= CImage  != null ? CImage  : gameObject.AddComponent<Image>() ;
 			Button	button	= CButton != null ? CButton : gameObject.AddComponent<Button>() ;
 
+			// いつのまにか自動で設定されなくなっている
+			button.targetGraphic = image ;
+
 #if UNITY_EDITOR
 			// Image コンポーネントを一番上にもってくる
 			while( ComponentUtility.MoveComponentUp( image ) ){}
@@ -871,29 +874,29 @@ namespace uGUIHelper
 		private void OnButtonClickInner()
 		{
 #if UNITY_EDITOR || !UNITY_ANDROID && !UNITY_IOS
-            if( UnityEngine.Cursor.visible == false )
-            {
-                return ;
-            }
+			if( UnityEngine.Cursor.visible == false )
+			{
+				return ;
+			}
 #endif
-            //-------------------------
+			//-------------------------
 
-            // 注意：
-            // UIInteraction または UIInteractionForScrollView が付いている場合
-            // OnClickInner は UIButton と合わせて２回コールされてしまう
-            // 上記のケースでは UIButton からのインタラクションでは
-            // OnClickInner をコールしないようにして
-            // ２回のコールが行われないようにする
+			// 注意：
+			// UIInteraction または UIInteractionForScrollView が付いている場合
+			// OnClickInner は UIButton と合わせて２回コールされてしまう
+			// 上記のケースでは UIButton からのインタラクションでは
+			// OnClickInner をコールしないようにして
+			// ２回のコールが行われないようにする
 
-            if( IsInteraction == true || IsInteractionForScrollView == true )
-            {
-                // UIIneraction または UIInteractionForScrollView が有効であ場合は UIButton のインタラクションは無視する
-                return ;
-            }
+			if( IsInteraction == true || IsInteractionForScrollView == true )
+			{
+				// UIIneraction または UIInteractionForScrollView が有効であ場合は UIButton のインタラクションは無視する
+				return ;
+			}
 
-            // UIButton のインタラクションで実行する
-            OnClickInner() ;
-        }
+			// UIButton のインタラクションで実行する
+			OnClickInner() ;
+		}
 
 		/// <summary>
 		/// ボタンクリックを強制的に実行する

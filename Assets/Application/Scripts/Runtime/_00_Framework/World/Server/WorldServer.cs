@@ -58,6 +58,9 @@ namespace DSW.World
 		// 展開中のチャンクセット群
 		private readonly Dictionary<int,ServerChunkSetData>	m_ActiveChunkSets = new Dictionary<int,ServerChunkSetData>() ;
 
+		// 排他制御用のオブジェクト
+		private object m_ActiveChunkSets_LockObject = new () ;
+
 		//-----------------------------------------------------------
 
 		// サーバーが稼働中かどうか
@@ -207,7 +210,6 @@ namespace DSW.World
 
 			// 自身のインスタンスを初期化する
 			m_Instance = null ;
-
 		}
 	}
 }
