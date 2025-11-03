@@ -5,6 +5,7 @@ using System.Collections ;
 using System.Collections.Generic ;
 using UnityEngine ;
 using UnityEngine.UI ;
+using UnityEngine.Rendering ;
 
 
 namespace uGUIHelper
@@ -775,7 +776,12 @@ namespace uGUIHelper
 
 			camera.depth = depth ;
 
-			camera.stereoTargetEye = StereoTargetEyeMask.None ;
+			RenderPipelineAsset currentPipeline = GraphicsSettings.currentRenderPipeline ;
+			if( currentPipeline == null )
+			{
+				// Builtin Shader Pipeline Only
+				camera.stereoTargetEye = StereoTargetEyeMask.None ;
+			}
 
 			//------------------------
 			
