@@ -20,6 +20,8 @@ namespace InputHelper
 		{
 			private static readonly Dictionary<KeyCodes, Key> m_KeyCodeMapper = new ()
 			{
+				{ KeyCodes.None,                Key.OEM5                },  // ひとまず反応しなさそうなキーを割り当てておく(無視はダメ)
+
 				{ KeyCodes.Backspace,		    Key.Backspace			},
 				{ KeyCodes.Delete,			    Key.Delete				},
 				{ KeyCodes.Tab,				    Key.Tab					},
@@ -362,13 +364,13 @@ namespace InputHelper
 
 				foreach( Key keyCode in Enum.GetValues( typeof( Key ) ) )
 				{
-					if( keyCode == Key.None || keyCode == Key.IMESelected )
+					if( keyCode == Key.None )
 					{
 						// エラーになってしまうのでスキップ
 						continue ;
 					}
 
-					if( keyboard[ keyCode ].wasPressedThisFrame == true )
+					if( keyboard[ keyCode ] != null && keyboard[ keyCode ].wasPressedThisFrame == true )
 					{
 						Debug.Log( "Pressing Key : " + keyCode ) ;
 					}

@@ -79,7 +79,8 @@ namespace NetworkPlayHelper
 
 		//-------------------------------------------------------------------------------------------
 
-		protected string					m_ServerPublicKey = string.Empty ;
+		// サーバーの公開鍵
+		protected string                        m_ServerPublicKey = "<RSAKeyValue><Modulus>yOQKhA85YOIvuBdTlhGoovESaRvDqHRNbUpWYG/Ka9cErmKZ3o3FoPvSrMxWaDsxdJLFj1ARcFBM8OnvtykobCZgteVmAHsOPPDcJ0Lld+sjbnM3tAjwYGMP59l2rc8B0SJKJ77crYaqOk3F7Q7+adRjOeqfOPPVfdxMe8+yoSYIDW/F6ZgUCV0k9ahfSZJhm57O4fxXbsSKIxzjw0qynvwnCARosEUCdZ6cRgA0sdU/mlq2ozqvw1pZiMZQLyOy0fzRwsLBuWMBePW7U+9Jgu9vkH4anVcM2XFvwogDcXlpjyjtBN1KlNwfFalimSaN9EO7AtSPi3YmMQwOECWdrQ==</Modulus><Exponent>AQAB</Exponent></RSAKeyValue>" ;
 
 		/// <summary>
 		/// 公開鍵を取得する
@@ -92,23 +93,18 @@ namespace NetworkPlayHelper
 				return m_ServerPublicKey ;
 			}
 
-			return Security.ShiftAscii( m_ServerPublicKey_Default, -8 ) ;
+			return string.Empty ;
 		}
-
-		/// <summary>
-		/// 公開鍵(ログインサーバー)
-		/// </summary>
-		protected string					m_ServerPublicKey_Default = "DZ[ISm`+it}mFDUwl}t}{F`WYSpI@=.WQ~}Jl)tpOww~M[iZ~LyPZVj*x,.O7SiAkMzuS/;w;NwX~[zU_,iL{_lRTNr9IZkNJU@Wv~|`swjK/o|m+uIP{WXXLkR8Ttl3{rjvU;|Ir^.OUX=At:zk@J8[RSR??kz.iyWs;N?Y?3ilZrWmynWXX+nl_Um@3`w[.QL,7N>/o*K+8sAipn[/Rpu=?W<n_-j{[SQ_ar^8y`v~^vKIZw{M*Kl/>kZoI8{l*7uty:way~^9x/qU/YT`W`8naZ^{TJ},UJmX,?*3ARo}A~sP<iv+kU:-N~^woLk-txr`r|JV9StV^nNitqu[iVAMW?I|[Xq;.uUY^WMK,lzYEED7Uwl}t}{FDM_xwvmv|FIYIJD7M_xwvmv|FD7Z[ISm`+it}mF" ;
 
 		/// <summary>
 		/// 公開鍵
 		/// </summary>
-		protected string					m_ClientPublicKey = "<RSAKeyValue><Modulus>ky0gvetIlm/IvLfGPY+iaQ3pjfh784LRB5m45eEVnd24Rjv6MUzSpc6t74sqYZryd9Cop75xiQ4pCOzDtd5EHg/uaNNpjpb/YjMh220AY1DkutdgxHnQ/Mh1hjlpcP2FprV5T6tTpPQcdojZ8tky+wOPO/UPFk9cL6FCLdnlQw60Eb8AyehERMk8aRkWixBnD/YDKWS6twkXHZ90cvVt7fQt6s4vIPThjHMMOHLYd7CjRQNfhzLPDlTVQFFaQZ9LQOo6ZviGMO8Wusu0N92K+z1vTpb86JzTm6dLLzlujZUiU+FjhsAlYA7vAxyLF7In6cCK+HnP9L9Os83U6s+g/Q==</Modulus><Exponent>AQAB</Exponent></RSAKeyValue>" ;
+		protected string					    m_ClientPublicKey = "<RSAKeyValue><Modulus>ky0gvetIlm/IvLfGPY+iaQ3pjfh784LRB5m45eEVnd24Rjv6MUzSpc6t74sqYZryd9Cop75xiQ4pCOzDtd5EHg/uaNNpjpb/YjMh220AY1DkutdgxHnQ/Mh1hjlpcP2FprV5T6tTpPQcdojZ8tky+wOPO/UPFk9cL6FCLdnlQw60Eb8AyehERMk8aRkWixBnD/YDKWS6twkXHZ90cvVt7fQt6s4vIPThjHMMOHLYd7CjRQNfhzLPDlTVQFFaQZ9LQOo6ZviGMO8Wusu0N92K+z1vTpb86JzTm6dLLzlujZUiU+FjhsAlYA7vAxyLF7In6cCK+HnP9L9Os83U6s+g/Q==</Modulus><Exponent>AQAB</Exponent></RSAKeyValue>" ;
 
 		/// <summary>
 		/// 秘密鍵
 		/// </summary>
-		protected string					m_ClientSecretKey = "<RSAKeyValue><Modulus>ky0gvetIlm/IvLfGPY+iaQ3pjfh784LRB5m45eEVnd24Rjv6MUzSpc6t74sqYZryd9Cop75xiQ4pCOzDtd5EHg/uaNNpjpb/YjMh220AY1DkutdgxHnQ/Mh1hjlpcP2FprV5T6tTpPQcdojZ8tky+wOPO/UPFk9cL6FCLdnlQw60Eb8AyehERMk8aRkWixBnD/YDKWS6twkXHZ90cvVt7fQt6s4vIPThjHMMOHLYd7CjRQNfhzLPDlTVQFFaQZ9LQOo6ZviGMO8Wusu0N92K+z1vTpb86JzTm6dLLzlujZUiU+FjhsAlYA7vAxyLF7In6cCK+HnP9L9Os83U6s+g/Q==</Modulus><Exponent>AQAB</Exponent><P>+Ko+f/MLRHHwc4NfKvBrMgFOHtuJYpRQE4iWoNMQuuL05hbq8Axk80K0Syhnt8q/ARZtB/CZpXxaqMZEtisiCcjwZgYCwe/h46F67UY3CtG3+Pk/10jNZQQC2evLvmADyA1BLa2aHJrsjAysIv9ThBH5K35AE3iIXxzLSyssnRc=</P><Q>l4SB0GgeEPhOMYTlKw5wktCRbx6kDCPQL6J+wti4VzcaPlTpbfgZ6GurWPZzJtqHwvRzFQ3YJQHkk+BDmHxsLnS7N3KWaykyB/SKCC3aa6u2f9qw2lDWb+00D4CyP8pVUlwee7GhwrbfDxWqrLNGBQXNQs2T+Zvy/WN4cpl4xws=</Q><DP>tnKK2uwjhzumNcrdB69Qp2bnv6JKYgb53esowaU7MDQXhb6o8CnX49g8WqyxtNtQW2bt5pZ01UOxbQXUImjxV4aUQ/cDDPKJpa+0duU+u3R2bHnMipPDB+vyf5wPaIYgICcBfJdUbMqK5pLhtefqigt565x9PQwB2u9Qhb2OxU8=</DP><DQ>SjtVDjG0aUP9qy0cyZdtd8BPQE2WuYviNzQ5PmTHC5One9pF8uaWatQ1QoSbrfFqig0RRMNfneHrhrdc5pwutCPkhSnSn/Wy2UrpRVCRriaWZtVRx+PK61MfKmk26yHJ42vWU2uXgLnvVoia8blzGIrbIVtun9/TkGjnXd3q2jk=</DQ><InverseQ>Bd+1lfE4hNhxxfgue+Zo/D8vxBVE7Pf0rSrOF55Ls4IqtnRmUt2Hl8Y/6aoWNlqFZGyGPFuILlLjazYvAAA/nU6B8U7pc5ptdepyO0qdeHq2VmS0jC+lUsJ6SHURkVKnjoidQgMmqgxyP5KToT2Y6YKvTWHEIGKUbsxzQlj50Tc=</InverseQ><D>EMQxWLF3IXw2mBkvgk/cpq8pDj1ikYkzmvQONlIADm310jp+9CLWVIFJG2L1Pw1R1gh1TjbJ5F0ym4uteAiMJgiWlmaPPelBysQcdUzjoGzUwdxLb9aY0lNb4CCmPHMFSMqfuU3BR6dvnqlUeu/3eNUc+i2evGHqFJsAWQzbq1nR3sg4/UTPHSJwwF08Wjycxwnz658XD0Ei9Bx6cNZC187d2BNJmT5wyK3ZTCEeGrRo88yUhdPHW0q6ibp3keOkENiPNDC0i50yOwxRKykSpIpxVeOf7K09BdmrqW2FDikGldaViG7vNCzDX3XnNUsqvK0Lmzd/DeFvtCNlI7noGQ==</D></RSAKeyValue>" ;
+		protected string					    m_ClientSecretKey = "<RSAKeyValue><Modulus>ky0gvetIlm/IvLfGPY+iaQ3pjfh784LRB5m45eEVnd24Rjv6MUzSpc6t74sqYZryd9Cop75xiQ4pCOzDtd5EHg/uaNNpjpb/YjMh220AY1DkutdgxHnQ/Mh1hjlpcP2FprV5T6tTpPQcdojZ8tky+wOPO/UPFk9cL6FCLdnlQw60Eb8AyehERMk8aRkWixBnD/YDKWS6twkXHZ90cvVt7fQt6s4vIPThjHMMOHLYd7CjRQNfhzLPDlTVQFFaQZ9LQOo6ZviGMO8Wusu0N92K+z1vTpb86JzTm6dLLzlujZUiU+FjhsAlYA7vAxyLF7In6cCK+HnP9L9Os83U6s+g/Q==</Modulus><Exponent>AQAB</Exponent><P>+Ko+f/MLRHHwc4NfKvBrMgFOHtuJYpRQE4iWoNMQuuL05hbq8Axk80K0Syhnt8q/ARZtB/CZpXxaqMZEtisiCcjwZgYCwe/h46F67UY3CtG3+Pk/10jNZQQC2evLvmADyA1BLa2aHJrsjAysIv9ThBH5K35AE3iIXxzLSyssnRc=</P><Q>l4SB0GgeEPhOMYTlKw5wktCRbx6kDCPQL6J+wti4VzcaPlTpbfgZ6GurWPZzJtqHwvRzFQ3YJQHkk+BDmHxsLnS7N3KWaykyB/SKCC3aa6u2f9qw2lDWb+00D4CyP8pVUlwee7GhwrbfDxWqrLNGBQXNQs2T+Zvy/WN4cpl4xws=</Q><DP>tnKK2uwjhzumNcrdB69Qp2bnv6JKYgb53esowaU7MDQXhb6o8CnX49g8WqyxtNtQW2bt5pZ01UOxbQXUImjxV4aUQ/cDDPKJpa+0duU+u3R2bHnMipPDB+vyf5wPaIYgICcBfJdUbMqK5pLhtefqigt565x9PQwB2u9Qhb2OxU8=</DP><DQ>SjtVDjG0aUP9qy0cyZdtd8BPQE2WuYviNzQ5PmTHC5One9pF8uaWatQ1QoSbrfFqig0RRMNfneHrhrdc5pwutCPkhSnSn/Wy2UrpRVCRriaWZtVRx+PK61MfKmk26yHJ42vWU2uXgLnvVoia8blzGIrbIVtun9/TkGjnXd3q2jk=</DQ><InverseQ>Bd+1lfE4hNhxxfgue+Zo/D8vxBVE7Pf0rSrOF55Ls4IqtnRmUt2Hl8Y/6aoWNlqFZGyGPFuILlLjazYvAAA/nU6B8U7pc5ptdepyO0qdeHq2VmS0jC+lUsJ6SHURkVKnjoidQgMmqgxyP5KToT2Y6YKvTWHEIGKUbsxzQlj50Tc=</InverseQ><D>EMQxWLF3IXw2mBkvgk/cpq8pDj1ikYkzmvQONlIADm310jp+9CLWVIFJG2L1Pw1R1gh1TjbJ5F0ym4uteAiMJgiWlmaPPelBysQcdUzjoGzUwdxLb9aY0lNb4CCmPHMFSMqfuU3BR6dvnqlUeu/3eNUc+i2evGHqFJsAWQzbq1nR3sg4/UTPHSJwwF08Wjycxwnz658XD0Ei9Bx6cNZC187d2BNJmT5wyK3ZTCEeGrRo88yUhdPHW0q6ibp3keOkENiPNDC0i50yOwxRKykSpIpxVeOf7K09BdmrqW2FDikGldaViG7vNCzDX3XnNUsqvK0Lmzd/DeFvtCNlI7noGQ==</D></RSAKeyValue>" ;
 
 		//-------------------------------------------------------------------------------------------
 
@@ -134,6 +130,58 @@ namespace NetworkPlayHelper
 		//-----------------------------------------------------------
 
 		/// <summary>
+		/// アカウントサーバーに対し公開鍵取得を実行する
+		/// </summary>
+		/// <returns></returns>
+		public async Task<GetPublicKey_Response> GetPublicKeyAsync
+		(
+			CancellationToken cancellationToken = default
+		)
+		{
+			// リクエストコンテント部
+			var requestContent = new GetPublicKey_RequestPacket
+			(
+				m_ClientPublicKey
+			) ;
+
+			//----------------------------------------------------------
+
+			// 共通処理部(ＷｅｂＡｐｉ)
+			( var responseCode, var errorMessage, var responseContentData ) = await CallWebApi_A_Async
+			(
+				m_AccountServer_TcpEndPoint,
+				false,
+				requestContent.Encode(),
+				cancellationToken
+			) ;
+			if( responseCode != ResponseCodes.Succeeded )
+			{
+				// 失敗
+				return new ( responseCode, errorMessage ) ;
+			}
+
+			//----------------------------------------------------------
+
+			// レスポンスコンテント部
+			var responseContent = new GetPublicKey_ResponsePacket( responseContentData, 0 ) ;
+			if( responseContent.Decode() == false )
+			{
+				// 失敗(データ異常)
+				return new ( ResponseCodes.BadResponse, "受信データに問題があります" ) ;
+			}
+
+			// レスポンスの値を取り出す
+			m_ServerPublicKey			= responseContent.PublicKey ;
+
+			//----------------------------------------------------------
+
+			// 成功
+			return new ( m_ServerPublicKey ) ;
+		}
+
+		//-----------------------------------
+
+		/// <summary>
 		/// アカウントサーバーに対し任意データの送受信を実行する
 		/// </summary>
 		/// <returns></returns>
@@ -156,13 +204,14 @@ namespace NetworkPlayHelper
 			( var responseCode, var errorMessage, var responseContentData ) = await CallWebApi_A_Async
 			(
 				m_AccountServer_TcpEndPoint,
+				true,
 				requestContent.Encode(),
 				cancellationToken
 			) ;
 			if( responseCode != ResponseCodes.Succeeded )
 			{
 				// 失敗
-				return new ( responseCode, errorMessage, null ) ;
+				return new ( responseCode, errorMessage ) ;
 			}
 
 			//----------------------------------------------------------
@@ -172,7 +221,7 @@ namespace NetworkPlayHelper
 			if( responseContent.Decode() == false )
 			{
 				// 失敗(データ異常)
-				return new ( ResponseCodes.BadResponse, "受信データに問題があります", null ) ;
+				return new ( ResponseCodes.BadResponse, "受信データに問題があります" ) ;
 			}
 
 			// レスポンスの値を取り出す
@@ -181,7 +230,7 @@ namespace NetworkPlayHelper
 			//----------------------------------------------------------
 
 			// 成功
-			return new ( responseCode, string.Empty, data ) ;
+			return new ( data ) ;
 		}
 
 		//-----------------------------------
@@ -209,6 +258,7 @@ namespace NetworkPlayHelper
 			( var responseCode, var errorMessage, var responseContentData ) = await CallWebApi_A_Async
 			(
 				m_AccountServer_TcpEndPoint,
+				true,
 				requestContent.Encode(),
 				cancellationToken
 			) ;
@@ -216,7 +266,7 @@ namespace NetworkPlayHelper
 			{
 				// 失敗
 
-				return new ( responseCode, errorMessage, null, null, null ) ;
+				return new ( responseCode, errorMessage ) ;
 			}
 
 			//----------------------------------------------------------
@@ -226,7 +276,7 @@ namespace NetworkPlayHelper
 			if( responseContent.Decode() == false )
 			{
 				// 失敗(データ異常)
-				return new ( ResponseCodes.BadResponse, "受信データに問題があります", null, null, null ) ;
+				return new ( ResponseCodes.BadResponse, "受信データに問題があります" ) ;
 			}
 
 			// レスポンスの値を取り出す
@@ -237,7 +287,7 @@ namespace NetworkPlayHelper
 			//----------------------------------------------------------
 
 			// 成功
-			return new ( responseCode, string.Empty, userId, password, userName ) ;
+			return new ( userId, password, userName ) ;
 		}
 
 		/// <summary>
@@ -267,6 +317,7 @@ namespace NetworkPlayHelper
 			( var responseCode, var errorMessage, var responseContentData ) = await CallWebApi_A_Async
 			(
 				m_AccountServer_TcpEndPoint,
+				true,
 				requestContent.Encode(),
 				cancellationToken
 			) ;
@@ -274,7 +325,7 @@ namespace NetworkPlayHelper
 			{
 				// 失敗
 
-				return new ( responseCode, errorMessage, null, null, null ) ;
+				return new ( responseCode, errorMessage ) ;
 			}
 
 			//----------------------------------------------------------
@@ -284,7 +335,7 @@ namespace NetworkPlayHelper
 			if( responseContent.Decode() == false )
 			{
 				// 失敗(データ異常)
-				return new ( ResponseCodes.BadResponse, "受信データに問題があります", null, null, null ) ;
+				return new ( ResponseCodes.BadResponse, "受信データに問題があります" ) ;
 			}
 
 			// レスポンスの値を取り出す
@@ -295,7 +346,7 @@ namespace NetworkPlayHelper
 			//----------------------------------------------------------
 
 			// 成功
-			return new ( responseCode, string.Empty, userId, password, userName ) ;
+			return new ( userId, password, userName ) ;
 		}
 
 		/// <summary>
@@ -327,13 +378,14 @@ namespace NetworkPlayHelper
 			( var responseCode, var errorMessage, var responseContentData ) = await CallWebApi_A_Async
 			(
 				m_AccountServer_TcpEndPoint,
+				true,
 				requestContent.Encode(),
 				cancellationToken
 			) ;
 			if( responseCode != ResponseCodes.Succeeded )
 			{
 				// 失敗
-				return new ( responseCode, errorMessage, null, null, null ) ;
+				return new ( responseCode, errorMessage ) ;
 			}
 
 			//----------------------------------------------------------
@@ -343,7 +395,7 @@ namespace NetworkPlayHelper
 			if( responseContent.Decode() == false )
 			{
 				// 失敗(データ異常)
-				return new ( ResponseCodes.BadResponse, "受信データに問題があります", null, null, null ) ;
+				return new ( ResponseCodes.BadResponse, "受信データに問題があります" ) ;
 			}
 
 			// レスポンスの値を取り出す
@@ -354,7 +406,7 @@ namespace NetworkPlayHelper
 			//----------------------------------------------------------
 
 			// 成功
-			return new ( responseCode, string.Empty, userId, password, userName ) ;
+			return new ( userId, password, userName ) ;
 		}
 
 		/// <summary>
@@ -386,13 +438,14 @@ namespace NetworkPlayHelper
 			( var responseCode, var errorMessage, var responseContentData ) = await CallWebApi_A_Async
 			(
 				m_AccountServer_TcpEndPoint,
+				true,
 				requestContent.Encode(),
 				cancellationToken
 			) ;
 			if( responseCode != ResponseCodes.Succeeded )
 			{
 				// 失敗
-				return new ( responseCode, errorMessage, null, null, null ) ;
+				return new ( responseCode, errorMessage ) ;
 			}
 
 			//----------------------------------------------------------
@@ -402,7 +455,7 @@ namespace NetworkPlayHelper
 			if( responseContent.Decode() == false )
 			{
 				// 失敗(データ異常)
-				return new ( ResponseCodes.BadResponse, "受信データに問題があります", null, null, null ) ;
+				return new ( ResponseCodes.BadResponse, "受信データに問題があります" ) ;
 			}
 
 			// レスポンスの値を取り出す
@@ -413,7 +466,7 @@ namespace NetworkPlayHelper
 			//----------------------------------------------------------
 
 			// 成功
-			return new ( responseCode, string.Empty, userId, password, userName ) ;
+			return new ( userId, password, userName ) ;
 		}
 
 		/// <summary>
@@ -432,7 +485,7 @@ namespace NetworkPlayHelper
 		{
 			if( string.IsNullOrEmpty( userId ) == true )
 			{
-				return new ( ResponseCodes.BadResponse, "ユーザー識別子が異常です", null, 0, null, null, 0, null, 0 ) ;
+				return new ( ResponseCodes.BadResponse, "ユーザー識別子が異常です" ) ;
 			}
 
 			//----------------------------------
@@ -452,6 +505,7 @@ namespace NetworkPlayHelper
 			( var responseCode, var errorMessage, var responseContentData ) = await CallWebApi_A_Async
 			(
 				m_AccountServer_TcpEndPoint,
+				true,
 				requestContent.Encode(),
 				cancellationToken
 			) ;
@@ -459,7 +513,7 @@ namespace NetworkPlayHelper
 			{
 				// 失敗
 
-				return new ( responseCode, errorMessage, null, 0, null, null, 0, null, 0 ) ;
+				return new ( responseCode, errorMessage ) ;
 			}
 
 			//----------------------------------------------------------
@@ -469,7 +523,7 @@ namespace NetworkPlayHelper
 			if( responseContent.Decode() == false )
 			{
 				// 失敗(データ異常)
-				return new ( ResponseCodes.BadResponse, "受信データに問題があります", null, 0, null, null, 0, null, 0 ) ;
+				return new ( ResponseCodes.BadResponse, "受信データに問題があります" ) ;
 			}
 
 			// ユーザー識別子を記録しておく
@@ -510,8 +564,7 @@ namespace NetworkPlayHelper
 				return new
 				(
 					ResponseCodes.BadResponse,
-					"コミュニケーションサーバーのエンドポイントが異常です\n" + m_CommunicationServer_Address + ":" + m_CommunicationServer_TcpPort,
-					null, 0, null, null, 0, null, 0
+					"コミュニケーションサーバーのエンドポイントが異常です\n" + m_CommunicationServer_Address + ":" + m_CommunicationServer_TcpPort					
 				) ;
 			}
 
@@ -583,8 +636,7 @@ namespace NetworkPlayHelper
 
 					return new
 					(
-						responseCode, errorMessage,
-						null, 0, null, null, 0, null, 0
+						responseCode, errorMessage
 					) ;
 				}
 
@@ -606,7 +658,6 @@ namespace NetworkPlayHelper
 			// 成功
 			return new
 			(
-				responseCode, string.Empty,
 				m_AccessToken, m_AccessLimit, m_CommonKey,
 				m_CommunicationServer_Address, m_CommunicationServer_TcpPort,
 				m_GroupingServerProcessor.Address, m_GroupingServerProcessor.TcpPort
@@ -644,13 +695,14 @@ namespace NetworkPlayHelper
 			( var responseCode, var errorMessage, var responseContentData ) = await CallWebApi_A_Async
 			(
 				m_AccountServer_TcpEndPoint,
+				true,
 				requestContent.Encode(),
 				cancellationToken
 			) ;
 			if( responseCode != ResponseCodes.Succeeded )
 			{
 				// 失敗
-				return new ( responseCode, errorMessage, null, null, 0, null, null, 0, null, 0 ) ;
+				return new ( responseCode, errorMessage ) ;
 			}
 
 			//----------------------------------------------------------
@@ -663,8 +715,7 @@ namespace NetworkPlayHelper
 				return new
 				(
 					ResponseCodes.BadResponse,
-					"受信データに問題があります",
-					null, null, 0, null, null, 0, null, 0
+					"受信データに問題があります"
 				) ;
 			}
 
@@ -708,8 +759,7 @@ namespace NetworkPlayHelper
 				return new
 				(
 					ResponseCodes.BadResponse,
-					"コミュニケーションサーバーのエンドポイントが異常です\n" + m_CommunicationServer_Address + ":" + m_CommunicationServer_TcpPort,
-					null, null, 0, null, null, 0, null, 0
+					"コミュニケーションサーバーのエンドポイントが異常です\n" + m_CommunicationServer_Address + ":" + m_CommunicationServer_TcpPort
 				) ;
 			}
 
@@ -732,6 +782,12 @@ namespace NetworkPlayHelper
 
 			if( isGroupingServiceEnabled == true )
 			{
+				// デバッグ(GroupingServer とタイムアウトまでにバインドしない)
+//				await Task.Delay( 20 * 1000, m_ClientCancellationTokenSource.Token ) ;
+
+				//---------------------------------
+
+				// グルーピングサーバーのエンドポイント
 				m_GroupingServerProcessor.Address = responseContent.GroupingServer_Address ;
 				m_GroupingServerProcessor.TcpPort = responseContent.GroupingServer_TcpPort ;
 
@@ -780,8 +836,7 @@ namespace NetworkPlayHelper
 
 					return new
 					(
-						responseCode, errorMessage,
-						null, null, 0, null, null, 0, null, 0
+						responseCode, errorMessage
 					) ;
 				}
 
@@ -803,7 +858,6 @@ namespace NetworkPlayHelper
 			// 成功
 			return new
 			(
-				responseCode, string.Empty,
 				m_UserName, m_AccessToken, m_AccessLimit, m_CommonKey,
 				m_CommunicationServer_Address, m_CommunicationServer_TcpPort,
 				m_GroupingServerProcessor.Address, m_GroupingServerProcessor.TcpPort
@@ -884,7 +938,9 @@ namespace NetworkPlayHelper
 			( var responseCode, var errorMessage, var _ ) = await CallWebApi_A_Async
 			(
 				m_AccountServer_TcpEndPoint,
-				requestContent.Encode(), cancellationToken
+				true,
+				requestContent.Encode(),
+				cancellationToken
 			) ;
 			if( responseCode != ResponseCodes.Succeeded )
 			{
@@ -915,7 +971,7 @@ namespace NetworkPlayHelper
 			//----------------------------------------------------------
 
 			// 成功
-			return new ( responseCode, string.Empty ) ;
+			return new () ;
 		}
 
 		//-----------------------------------
@@ -943,6 +999,7 @@ namespace NetworkPlayHelper
 			( var responseCode, var errorMessage, var responseContentData ) = await CallWebApi_A_Async
 			(
 				m_AccountServer_TcpEndPoint,
+				true,
 				requestContent.Encode(),
 				cancellationToken
 			) ;
@@ -980,6 +1037,102 @@ namespace NetworkPlayHelper
 
 		//-------------------------------------------------------------------------------------------
 		// パケットデータ定義
+
+		/// <summary>
+		/// 公開鍵の要求パケット
+		/// </summary>
+		public class GetPublicKey_RequestPacket : RequestPacketBase
+		{
+			/// <summary>
+			/// 応答用のクライアントの公開鍵
+			/// </summary>
+			public string			PublicKey { get ; private set ; }
+
+			//----------------------------------------------------------
+
+			/// <summary>
+			/// コンストラクタ
+			/// </summary>
+			/// <param name="data"></param>
+			public GetPublicKey_RequestPacket
+			(
+				string publicKey
+			)
+			{
+				RequestType		= RequestTypes.GetPublicKey ;
+				
+				//-------------
+
+				PublicKey		= publicKey ;
+			}
+
+			/// <summary>
+			/// エンコード
+			/// </summary>
+			/// <returns></returns>
+			public byte[] Encode()
+			{
+				PutByte( ( byte )RequestType ) ;
+
+				//------------
+
+				PutString( PublicKey ) ;
+
+				//---------------------------------
+
+				return m_Data.ToArray() ;
+			}
+		}
+
+		/// <summary>
+		/// 公開鍵取得の応答パケット
+		/// </summary>
+		public class GetPublicKey_ResponsePacket : ResponsePacketBase
+		{
+			/// <summary>
+			/// サーバーの公開鍵
+			/// </summary>
+			public string			PublicKey { get ; private set ; }
+
+			//----------------------------------------------------------
+
+			/// <summary>
+			/// コンストラクタ
+			/// </summary>
+			/// <param name="data"></param>
+			public GetPublicKey_ResponsePacket( byte[] data, int pointer ) : base( data, pointer ){}
+
+			/// <summary>
+			/// デコード
+			/// </summary>
+			/// <returns></returns>
+			public bool Decode()
+			{
+				try
+				{
+					PublicKey						= GetString() ;
+				}
+				catch( Exception )
+				{
+					// 失敗
+					return false ;
+				}
+
+				if
+				(
+					string.IsNullOrEmpty( PublicKey ) == true
+				)
+				{
+					// 失敗
+					return false ;
+				}
+
+				// 成功
+				return true ;
+			}
+		}
+
+		//-----------------------------------
 
 		/// <summary>
 		/// 任意データの送受信の要求パケット
@@ -2124,6 +2277,7 @@ namespace NetworkPlayHelper
 		private async Task<( ResponseCodes, string, byte[] )> CallWebApi_A_Async
 		(
 			IPEndPoint endPoint,
+			bool isEncrypt,
 			byte[] requestContentData,
 			CancellationToken cancellationToken = default
 		)
@@ -2142,19 +2296,32 @@ namespace NetworkPlayHelper
 			request.Add( ( byte )( ( m_VersionCode >> 16 ) & 0xFF ) ) ; 
 			request.Add( ( byte )( ( m_VersionCode >> 24 ) & 0xFF ) ) ; 
 
+			// 暗号化の有無
+			request.Add( isEncrypt == false ? ( byte )0 : ( byte )1 ) ;
+
 			// コンテント
 			if( requestContentData != null && requestContentData.Length >  0 )
 			{
-				try
+				if( isEncrypt == false )
 				{
-					// サーバー側の公開鍵による暗号化を行う
-					byte[] encryptedData = Security.EncryptByPublicKey( requestContentData, GetServerPublicKey() ) ;
-					request.AddRange( encryptedData ) ;
+					// 暗号化は行わない
+					request.AddRange( requestContentData ) ;
 				}
-				catch( Exception )
+				else
 				{
-					// 失敗
-					return ( ResponseCodes.BadRequest, "[AccountServer] リクエスト情報に誤りがあります", null ) ;
+					// 暗号化を行う
+
+					try
+					{
+						// サーバー側の公開鍵による暗号化を行う
+						byte[] encryptedData = Security.EncryptByPublicKey( requestContentData, GetServerPublicKey() ) ;
+						request.AddRange( encryptedData ) ;
+					}
+					catch( Exception )
+					{
+						// 失敗
+						return ( ResponseCodes.BadRequest, "[AccountServer] リクエスト情報に誤りがあります", null ) ;
+					}
 				}
 			}
 			else
@@ -2198,7 +2365,6 @@ namespace NetworkPlayHelper
 			if( await socketClient.SendTcpAsync( request.ToArray(), null, cancellationToken ) == false )
 			{
 				// 切断
-//				await m_SocketClient.DisconnectAsync() ;
 				socketClient.Disconnect( false ) ;
 				socketClient.Dispose() ;
 
@@ -2270,7 +2436,6 @@ namespace NetworkPlayHelper
 				// 中断された場合は例外を投げる
 
 				// 切断
-//				await m_SocketClient.DisconnectAsync() ;
 				socketClient.Disconnect( false ) ;
 				socketClient.Dispose() ;
 
@@ -2292,7 +2457,6 @@ namespace NetworkPlayHelper
 				// 失敗(データ異常)
 
 				// 切断
-//				await m_SocketClient.DisconnectAsync() ;
 				socketClient.Disconnect( false ) ;
 				socketClient.Dispose() ;
 
@@ -2315,7 +2479,6 @@ namespace NetworkPlayHelper
 				// 失敗(データ異常)
 
 				// 切断
-//				await m_SocketClient.DisconnectAsync() ;
 				socketClient.Disconnect( false ) ;
 				socketClient.Dispose() ;
 

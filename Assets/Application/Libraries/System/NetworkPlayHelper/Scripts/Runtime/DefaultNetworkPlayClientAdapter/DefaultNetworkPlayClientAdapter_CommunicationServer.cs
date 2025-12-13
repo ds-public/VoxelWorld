@@ -52,7 +52,7 @@ namespace NetworkPlayHelper
 		{
 			if( string.IsNullOrEmpty( ApplicationId ) == true )
 			{
-				return new ( ResponseCodes.InvalidApplicationIdentifier, "アプリケーション識別子が設定されていません", null ) ;
+				return new ( ResponseCodes.InvalidApplicationIdentifier, "アプリケーション識別子が設定されていません" ) ;
 			}
 
 			//----------------------------------
@@ -76,7 +76,7 @@ namespace NetworkPlayHelper
 			if( responseCode != ResponseCodes.Succeeded )
 			{
 				// 失敗
-				return new ( responseCode, errorMessage, null ) ;
+				return new ( responseCode, errorMessage ) ;
 			}
 
 			//----------------------------------------------------------
@@ -86,7 +86,7 @@ namespace NetworkPlayHelper
 			if( responseContent.Decode() == false )
 			{
 				// 失敗(データ異常)
-				return new ( ResponseCodes.BadResponse, "受信データに問題があります", null ) ;
+				return new ( ResponseCodes.BadResponse, "[WebApi] 受信データに問題があります" ) ;
 			}
 
 			data = responseContent.Data ;
@@ -734,15 +734,15 @@ namespace NetworkPlayHelper
 		/// <returns></returns>
 		public async Task<GetSessions_Response> GetSessionsAsync
 		(
-			uint	offset,
-			uint	length,
+			ushort	offset,
+			ushort	length,
 			CancellationToken cancellationToken
 		)
 		{
 			if( string.IsNullOrEmpty( m_ApplicationId ) == true  )
 			{
 				// 無効なアプリケーション識別子
-				return new ( ResponseCodes.InvalidApplicationIdentifier, "[Client] 無効なアプリケーション識別子です", null, 0 ) ;
+				return new ( ResponseCodes.InvalidApplicationIdentifier, "[Client] 無効なアプリケーション識別子です" ) ;
 			}
 
 			//----------------------------------------------------------
@@ -767,7 +767,7 @@ namespace NetworkPlayHelper
 			if( responseCode != ResponseCodes.Succeeded )
 			{
 				// 失敗
-				return new ( responseCode, errorMessage, null, 0 ) ;
+				return new ( responseCode, errorMessage ) ;
 			}
 
 			//----------------------------------------------------------
@@ -777,16 +777,17 @@ namespace NetworkPlayHelper
 			if( responseContent.Decode() == false )
 			{
 				// 失敗(データ異常)
-				return new ( ResponseCodes.BadResponse, "[Client] 受信データに問題があります", null, 0 ) ;
+				return new ( ResponseCodes.BadResponse, "[Client] 受信データに問題があります" ) ;
 			}
 
-			var sessions	= responseContent.Sessions ;
 			var count		= responseContent.Count ;
+			offset          = responseContent.Offset ;
+			var sessions	= responseContent.Sessions ;
 
 			//----------------------------------------------------------
 
 			// 成功
-			return new ( responseCode, string.Empty, sessions, count ) ;
+			return new ( responseCode, string.Empty, count, offset, sessions ) ;
 		}
 
 		/// <summary>
@@ -819,7 +820,7 @@ namespace NetworkPlayHelper
 			if( responseCode != ResponseCodes.Succeeded )
 			{
 				// 失敗
-				return new ( responseCode, errorMessage, null, 0 ) ;
+				return new ( responseCode, errorMessage ) ;
 			}
 
 			//----------------------------------------------------------
@@ -829,18 +830,18 @@ namespace NetworkPlayHelper
 			if( responseContent.Decode() == false )
 			{
 				// 失敗(データ異常)
-				return new ( ResponseCodes.BadResponse, "[Client] 受信データに問題があります", null, 0 ) ;
+				return new ( ResponseCodes.BadResponse, "[Client] 受信データに問題があります" ) ;
 			}
 
-			var friends		= responseContent.Friends ;
 			var count		= responseContent.Count ;
+			offset          = responseContent.Offset ;
+			var friends		= responseContent.Friends ;
 
 			//----------------------------------------------------------
 
 			// 成功
-			return new ( responseCode, string.Empty, friends, count ) ;
+			return new ( responseCode, string.Empty, count, offset, friends ) ;
 		}
-
 
 		//-----------------------------------------------------------
 
@@ -1154,8 +1155,10 @@ namespace NetworkPlayHelper
 				{
 					Data = GetByteArray() ;
 				}
-				catch( Exception )
+				catch( Exception e )
 				{
+					Debug.LogWarning( "WebApi のデータ取得で例外発生 : " + e.Message ) ;
+
 					// 失敗
 					return false ;
 				}
@@ -2284,12 +2287,12 @@ namespace NetworkPlayHelper
 			/// <summary>
 			/// 取得開始位置
 			/// </summary>
-			public uint				Offset { get ; private set ; }
+			public ushort	    	Offset { get ; private set ; }
 
 			/// <summary>
 			/// 取得数
 			/// </summary>
-			public uint				Length { get ; private set ; }
+			public ushort			Length { get ; private set ; }
 
 			//----------------------------------------------------------
 
@@ -2300,8 +2303,8 @@ namespace NetworkPlayHelper
 			public GetSessions_RequestPacket
 			(
 				string	applicationId,
-				uint	offset,
-				uint	length
+				ushort	offset,
+				ushort	length
 			)
 			{
 				RequestType		= RequestTypes.GetSessions ;
@@ -2324,8 +2327,8 @@ namespace NetworkPlayHelper
 				//------------
 
 				PutString( ApplicationId ) ;
-				PutUInt( Offset ) ;
-				PutUInt( Length ) ;
+				PutVUShort( Offset ) ;
+				PutVUShort( Length ) ;
 
 				//---------------------------------
 
@@ -2338,15 +2341,21 @@ namespace NetworkPlayHelper
 		/// </summary>
 		public class GetSessions_ResponsePacket : ResponsePacketBase
 		{
-			/// <summary>
-			/// セッション情報
-			/// </summary>
-			public List<Session>	Sessions	{ get ; private set ; }
 
 			/// <summary>
 			/// 最大セッション数
 			/// </summary>
-			public uint				Count		{ get ; private set ; }
+			public ushort			Count		{ get ; private set ; }
+
+			/// <summary>
+			/// オフセット
+			/// </summary>
+			public ushort           Offset      { get ; private set ; }
+
+			/// <summary>
+			/// セッション情報
+			/// </summary>
+			public List<Session>	Sessions	{ get ; private set ; }
 
 			//----------------------------------------------------------
 
@@ -2367,42 +2376,45 @@ namespace NetworkPlayHelper
 
 				try
 				{
-					var sessions = new List<Session>() ;
+					Count		= GetVUShort() ;
 
-					uint i, l = GetVUInt() ;
-					for( i  = 0 ; i <  l ; i ++ )
+					if( Count >  0 )
 					{
-						var sessionId			= GetUInt() ;
-						var passwordRequired	= GetBool() ;
-						var nowPlayers			= GetUShort() ;
-						var maxPlayers			= GetUShort() ;
-						var description			= GetString() ;
+						Offset      = GetVUShort() ;
 
-						sessions.Add( new
-						(
-							sessionId:sessionId,
-							description:description,
-							maxPlayers:maxPlayers,
-							passwordRequired:passwordRequired,
-							nowPlayers:nowPlayers
-						) ) ;
+						var sessions = new List<Session>() ;
+
+						int i, l = GetVUShort() ;
+						for( i  = 0 ; i <  l ; i ++ )
+						{
+							var sessionId			= GetUInt() ;
+							var passwordRequired	= GetBool() ;
+							var nowPlayers			= GetUShort() ;
+							var maxPlayers			= GetUShort() ;
+							var description			= GetString() ;
+
+							sessions.Add( new
+							(
+								sessionId:sessionId,
+								description:description,
+								maxPlayers:maxPlayers,
+								passwordRequired:passwordRequired,
+								nowPlayers:nowPlayers
+							) ) ;
+						}
+
+						Sessions	= sessions ;
 					}
+					else
+					{
+						Offset = 0 ;
 
-					Sessions	= sessions ;
-
-					Count		= GetUInt() ;
+						Sessions    = new () ;
+					}
 				}
 				catch( Exception )
 				{
 					// 失敗
-					return false ;
-				}
-
-				//---------------------------------
-				// バリデーションチェック
-
-				if( Count <  0 )
-				{
 					return false ;
 				}
 
@@ -2475,14 +2487,20 @@ namespace NetworkPlayHelper
 		public class GetFriends_ResponsePacket : ResponsePacketBase
 		{
 			/// <summary>
-			/// フレンド情報群
-			/// </summary>
-			public List<ResponseFriendData>	Friends { get ; private set ; }
-
-			/// <summary>
 			/// フレンド総数
 			/// </summary>
-			public ushort					Count	{ get ; private set ; }
+			public ushort					Count	    { get ; private set ; }
+
+			/// <summary>
+			/// オフセット
+			/// </summary>
+			public ushort                   Offset      { get ; private set ; }
+
+			/// <summary>
+			/// フレンド情報群
+			/// </summary>
+			public List<ResponseFriendData>	Friends     { get ; private set ; }
+
 
 			//----------------------------------------------------------
 
@@ -2500,21 +2518,33 @@ namespace NetworkPlayHelper
 			{
 				try
 				{
-					var friends = new List<ResponseFriendData>() ;
+					Count       = GetVUShort() ;
 
-					ResponseFriendData friend ;
-
-					ushort i, l = GetVUShort() ;
-					for( i  = 0 ; i <  l ; i ++ )
+					if( Count >  0 )
 					{
-						friend = new ResponseFriendData() ;
-						friend.Decode( m_Data, ref m_Pointer ) ;
-						friends.Add( friend ) ;
+						Offset      = GetVUShort() ;
+
+						var friends = new List<ResponseFriendData>() ;
+
+						ResponseFriendData friend ;
+
+						int i, l = GetVUShort() ;
+						for( i  = 0 ; i <  l ; i ++ )
+						{
+							friend = new ResponseFriendData() ;
+							friend.Decode( m_Data, ref m_Pointer ) ;
+							friends.Add( friend ) ;
+						}
+
+						Friends     = friends ;
+					}
+					else
+					{
+						Offset = 0 ;
+
+						Friends     = new () ;
 					}
 
-					Friends = friends ;
-
-					Count = GetUShort() ;
 				}
 				catch( Exception )
 				{

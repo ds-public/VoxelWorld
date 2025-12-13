@@ -16,6 +16,8 @@ namespace uGUIHelper.InputAdapter
 		{
 			private static readonly Dictionary<KeyCodes, KeyCode> m_KeyCodeMapper = new ()
 			{
+				{ KeyCodes.None,            KeyCode.None            },  // ひとまず反応しなさそうなキーを割り当てておく(無視はダメ)
+
 				{ KeyCodes.Backspace,		KeyCode.Backspace		},
 				{ KeyCodes.Delete,			KeyCode.Delete			},
 				{ KeyCodes.Tab,				KeyCode.Tab				},

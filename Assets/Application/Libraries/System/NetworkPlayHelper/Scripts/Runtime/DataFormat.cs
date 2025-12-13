@@ -720,10 +720,10 @@ namespace NetworkPlayHelper
 		/// <param name="value"></param>
 		public static void PutInt( List<byte> data, int value )
 		{
-			data.Add( ( byte )  value          ) ;
-			data.Add( ( byte )( value >>  8  ) ) ;
-			data.Add( ( byte )( value >> 16  ) ) ;
-			data.Add( ( byte )( value >> 24  ) ) ;
+			data.Add( ( byte )  value         ) ;
+			data.Add( ( byte )( value >>  8 ) ) ;
+			data.Add( ( byte )( value >> 16 ) ) ;
+			data.Add( ( byte )( value >> 24 ) ) ;
 		}
 
 		/// <summary>
@@ -732,10 +732,10 @@ namespace NetworkPlayHelper
 		/// <param name="value"></param>
 		public static void PutUInt( List<byte> data, uint value )
 		{
-			data.Add( ( byte )  value          ) ;
-			data.Add( ( byte )( value >>  8  ) ) ;
-			data.Add( ( byte )( value >> 16  ) ) ;
-			data.Add( ( byte )( value >> 24  ) ) ;
+			data.Add( ( byte )  value         ) ;
+			data.Add( ( byte )( value >>  8 ) ) ;
+			data.Add( ( byte )( value >> 16 ) ) ;
+			data.Add( ( byte )( value >> 24 ) ) ;
 		}
 
 		/// <summary>
@@ -744,14 +744,14 @@ namespace NetworkPlayHelper
 		/// <param name="value"></param>
 		public static void PutLong( List<byte> data, long value )
 		{
-			data.Add( ( byte )  value          ) ;
-			data.Add( ( byte )( value >>  8  ) ) ;
-			data.Add( ( byte )( value >> 16  ) ) ;
-			data.Add( ( byte )( value >> 24  ) ) ;
-			data.Add( ( byte )( value >> 32  ) ) ;
-			data.Add( ( byte )( value >> 40  ) ) ;
-			data.Add( ( byte )( value >> 48  ) ) ;
-			data.Add( ( byte )( value >> 56  ) ) ;
+			data.Add( ( byte )  value         ) ;
+			data.Add( ( byte )( value >>  8 ) ) ;
+			data.Add( ( byte )( value >> 16 ) ) ;
+			data.Add( ( byte )( value >> 24 ) ) ;
+			data.Add( ( byte )( value >> 32 ) ) ;
+			data.Add( ( byte )( value >> 40 ) ) ;
+			data.Add( ( byte )( value >> 48 ) ) ;
+			data.Add( ( byte )( value >> 56 ) ) ;
 		}
 
 		/// <summary>
@@ -760,14 +760,14 @@ namespace NetworkPlayHelper
 		/// <param name="value"></param>
 		public static void PutULong( List<byte> data, ulong value )
 		{
-			data.Add( ( byte )  value          ) ;
-			data.Add( ( byte )( value >>  8  ) ) ;
-			data.Add( ( byte )( value >> 16  ) ) ;
-			data.Add( ( byte )( value >> 24  ) ) ;
-			data.Add( ( byte )( value >> 32  ) ) ;
-			data.Add( ( byte )( value >> 40  ) ) ;
-			data.Add( ( byte )( value >> 48  ) ) ;
-			data.Add( ( byte )( value >> 56  ) ) ;
+			data.Add( ( byte )  value         ) ;
+			data.Add( ( byte )( value >>  8 ) ) ;
+			data.Add( ( byte )( value >> 16 ) ) ;
+			data.Add( ( byte )( value >> 24 ) ) ;
+			data.Add( ( byte )( value >> 32 ) ) ;
+			data.Add( ( byte )( value >> 40 ) ) ;
+			data.Add( ( byte )( value >> 48 ) ) ;
+			data.Add( ( byte )( value >> 56 ) ) ;
 		}
 
 		/// <summary>
@@ -784,11 +784,11 @@ namespace NetworkPlayHelper
 			}
 			else
 			{
-				byte[] codes = Encoding.UTF8.GetBytes( text ) ;
+				byte[] buffer = Encoding.UTF8.GetBytes( text ) ;
 
 				// 文字列のサイズ値は可変長
 
-				int size = codes.Length ;
+				int size = buffer.Length ;
 
 				if( size <  128 )
 				{
@@ -825,7 +825,7 @@ namespace NetworkPlayHelper
 
 				//----------------------------------------------------------
 
-				data.AddRange( codes ) ;
+				data.AddRange( buffer ) ;
 			}
 		}
 
@@ -1035,6 +1035,11 @@ namespace NetworkPlayHelper
 	/// </summary>
 	public enum RequestTypes : byte
 	{
+		/// <summary>
+		/// 公開鍵を取得する
+		/// </summary>
+		GetPublicKey                =   1,
+
 		/// <summary>
 		/// 任意データの送受信(無認証可能)
 		/// </summary>
@@ -1265,17 +1270,6 @@ namespace NetworkPlayHelper
 		/// </summary>
 		BindClientToUserComplated			= 121,
 
-#if MATCHING_SYSTEM_OLD_VERSION
-		/// <summary>
-		/// マッチング要求にてセッションに参加した
-		/// </summary>
-		MatchingToSessionSuccessful			= 124,
-
-		/// <summary>
-		/// マッチング要求に失敗した
-		/// </summary>
-		MatchingToSessionFailed				= 125,
-#endif
 		/// <summary>
 		/// 任意の通知メッセージ
 		/// </summary>
@@ -1332,34 +1326,39 @@ namespace NetworkPlayHelper
 
 
 		/// <summary>
+		/// グループ情報群を取得する
+		/// </summary>
+		GetGroups                               =  27,
+
+		/// <summary>
 		/// グループへ参加する
 		/// </summary>
-		JoinToGroup								=  26,
+		JoinToGroup								=  28,
 
 		/// <summary>
 		/// グループ固有パラメータを更新する
 		/// </summary>
-		SetGroupParameter						=  27,
+		SetGroupParameter						=  29,
 
 		/// <summary>
 		/// グループ内の固有パラメータを更新する
 		/// </summary>
-		SetGroupMemberParameter					=  28,
+		SetGroupMemberParameter					=  30,
 
 		/// <summary>
 		/// グループの準備可能状態を設定する
 		/// </summary>
-		SetGroupMemberReady						=  29,
+		SetGroupMemberReady						=  31,
 
 		/// <summary>
 		/// グループから離脱する
 		/// </summary>
-		LeaveFromGroup							=  30,
+		LeaveFromGroup							=  32,
 
 		/// <summary>
 		/// グループから排除する
 		/// </summary>
-		RejectGroupMember						=  32,
+		RejectGroupMember						=  34,
 
 
 		/// <summary>
@@ -1463,12 +1462,7 @@ namespace NetworkPlayHelper
 		/// グループマッチングに成功した(セッションプレイヤー全員を対象)
 		/// </summary>
 		MatchingCompleted						=  81,
-#if false
-		/// <summary>
-		/// マッチングが失敗した(タイムアウトなど)
-		/// </summary>
-		MatchingFailed							=  82,
-#endif
+
 		/// <summary>
 		/// マッチングが中止された(Smallグループの場合は全員準備完了状態を解除する)
 		/// </summary>
@@ -1509,6 +1503,11 @@ namespace NetworkPlayHelper
 		/// パスワードが合わない
 		/// </summary>
 		PasswordFailed				= 10,
+
+		/// <summary>
+		/// メンバー数が最大に到達している
+		/// </summary>
+		IsMaxMembers                = 11,
 
 		/// <summary>
 		/// グループが見つからない
@@ -1561,6 +1560,11 @@ namespace NetworkPlayHelper
 		/// 何等かの理由でマッチング開始に失敗した(エラーメッセージ参照)
 		/// </summary>
 		Failed,
+
+		/// <summary>
+		/// タイムアウト(フレックスマッチのみ)
+		/// </summary>
+		Timeout,
 	}
 
 	/// <summary>
@@ -1602,6 +1606,11 @@ namespace NetworkPlayHelper
 		/// 多目的パラメータ
 		/// </summary>
 		public Dictionary<string, string> Parameters ;
+
+        /// <summary>
+        /// セッション識別子(０以外でセッション参加中)
+        /// </summary>
+        public uint         SessionId ;
 	}
 
 
@@ -1783,6 +1792,11 @@ namespace NetworkPlayHelper
 		/// マッチングに失敗した
 		/// </summary>
 		Failed,
+
+		/// <summary>
+		/// タイムアウトした(フレックスマッチのみ)
+		/// </summary>
+		Timeout,
 
 		/// <summary>
 		/// 取消はできない
@@ -2168,6 +2182,9 @@ namespace NetworkPlayHelper
 						value |= ( ( data & 0x7F ) << shift ) ;
 						shift += 7 ;
 
+						data = m_Data[ m_Pointer ] ;
+						m_Pointer ++ ;
+
 						// 3
 						value |= ( data << shift ) ;
 					}
@@ -2371,6 +2388,9 @@ namespace NetworkPlayHelper
 										value |= ( ( data & 0x7F ) << shift ) ;
 										shift += 7 ;
 
+										data = m_Data[ m_Pointer ] ;
+										m_Pointer ++ ;
+
 										// 7
 										value |= ( data << shift ) ;
 									}
@@ -2426,7 +2446,7 @@ namespace NetworkPlayHelper
 				byte hSize = m_Data[ m_Pointer ] ;
 				m_Pointer ++ ;
 
-				size = ( lSize & 0x7F ) | ( hSize << 8 ) ;
+				size = ( lSize & 0x7F ) | ( hSize << 7 ) ;
 			}
 
 			if( ( m_Pointer + size ) >  m_Data.Length )
@@ -2541,35 +2561,42 @@ namespace NetworkPlayHelper
 		}
 
 		/// <summary>
-		/// 符号なし Short 値を追加する
-		/// </summary>
-		/// <param name="value"></param>
-		protected void PutUShort( ushort value )
-		{
-			m_Data.Add( ( byte )(   value         & 0xFF ) ) ;
-			m_Data.Add( ( byte )( ( value >>  8 ) & 0xFF ) ) ;
-		}
-
-		/// <summary>
 		/// 符号あり Short 値を追加する
 		/// </summary>
 		/// <param name="value"></param>
 		protected void PutShort( short value )
 		{
-			m_Data.Add( ( byte )(   value         & 0xFF ) ) ;
-			m_Data.Add( ( byte )( ( value >>  8 ) & 0xFF ) ) ;
+			m_Data.Add( ( byte )(   value         ) ) ;
+			m_Data.Add( ( byte )( ( value >>  8 ) ) ) ;
 		}
 
 		/// <summary>
-		/// 符号なし Int 値を追加する
+		/// 符号なし Short 値を追加する
 		/// </summary>
 		/// <param name="value"></param>
-		protected void PutUInt( uint value )
+		protected void PutUShort( ushort value )
 		{
-			m_Data.Add( ( byte )(   value         & 0xFF ) ) ;
-			m_Data.Add( ( byte )( ( value >>  8 ) & 0xFF ) ) ;
-			m_Data.Add( ( byte )( ( value >> 16 ) & 0xFF ) ) ;
-			m_Data.Add( ( byte )( ( value >> 24 ) & 0xFF ) ) ;
+			m_Data.Add( ( byte )(   value         ) ) ;
+			m_Data.Add( ( byte )( ( value >>  8 ) ) ) ;
+		}
+
+		/// <summary>
+		/// 可変長符号なし Short 値を追加する
+		/// </summary>
+		/// <param name="value"></param>
+		protected void PutVUShort( ushort value )
+		{
+			if( value <  128 )
+			{
+				// 1 byte
+				m_Data.Add( ( byte )value ) ;
+			}
+			else
+			{
+				// 2 byte
+				m_Data.Add( ( byte )( ( value & 0x7F ) | 0x80 ) ) ;
+				m_Data.Add( ( byte )(   value >>  7  ) ) ;
+			}
 		}
 
 		/// <summary>
@@ -2578,26 +2605,22 @@ namespace NetworkPlayHelper
 		/// <param name="value"></param>
 		protected void PutInt( int value )
 		{
-			m_Data.Add( ( byte )(   value         & 0xFF ) ) ;
-			m_Data.Add( ( byte )( ( value >>  8 ) & 0xFF ) ) ;
-			m_Data.Add( ( byte )( ( value >> 16 ) & 0xFF ) ) ;
-			m_Data.Add( ( byte )( ( value >> 24 ) & 0xFF ) ) ;
+			m_Data.Add( ( byte )(   value         ) ) ;
+			m_Data.Add( ( byte )( ( value >>  8 ) ) ) ;
+			m_Data.Add( ( byte )( ( value >> 16 ) ) ) ;
+			m_Data.Add( ( byte )( ( value >> 24 ) ) ) ;
 		}
 
 		/// <summary>
-		/// 符号なし Long 値を追加する
+		/// 符号なし Int 値を追加する
 		/// </summary>
 		/// <param name="value"></param>
-		protected void PutULong( ulong value )
+		protected void PutUInt( uint value )
 		{
-			m_Data.Add( ( byte )(   value         & 0xFF ) ) ;
-			m_Data.Add( ( byte )( ( value >>  8 ) & 0xFF ) ) ;
-			m_Data.Add( ( byte )( ( value >> 16 ) & 0xFF ) ) ;
-			m_Data.Add( ( byte )( ( value >> 24 ) & 0xFF ) ) ;
-			m_Data.Add( ( byte )( ( value >> 32 ) & 0xFF ) ) ;
-			m_Data.Add( ( byte )( ( value >> 40 ) & 0xFF ) ) ;
-			m_Data.Add( ( byte )( ( value >> 48 ) & 0xFF ) ) ;
-			m_Data.Add( ( byte )( ( value >> 56 ) & 0xFF ) ) ;
+			m_Data.Add( ( byte )(   value         ) ) ;
+			m_Data.Add( ( byte )( ( value >>  8 ) ) ) ;
+			m_Data.Add( ( byte )( ( value >> 16 ) ) ) ;
+			m_Data.Add( ( byte )( ( value >> 24 ) ) ) ;
 		}
 
 		/// <summary>
@@ -2606,14 +2629,30 @@ namespace NetworkPlayHelper
 		/// <param name="value"></param>
 		protected void PutLong( long value )
 		{
-			m_Data.Add( ( byte )(   value         & 0xFF ) ) ;
-			m_Data.Add( ( byte )( ( value >>  8 ) & 0xFF ) ) ;
-			m_Data.Add( ( byte )( ( value >> 16 ) & 0xFF ) ) ;
-			m_Data.Add( ( byte )( ( value >> 24 ) & 0xFF ) ) ;
-			m_Data.Add( ( byte )( ( value >> 32 ) & 0xFF ) ) ;
-			m_Data.Add( ( byte )( ( value >> 40 ) & 0xFF ) ) ;
-			m_Data.Add( ( byte )( ( value >> 48 ) & 0xFF ) ) ;
-			m_Data.Add( ( byte )( ( value >> 56 ) & 0xFF ) ) ;
+			m_Data.Add( ( byte )(   value         ) ) ;
+			m_Data.Add( ( byte )( ( value >>  8 ) ) ) ;
+			m_Data.Add( ( byte )( ( value >> 16 ) ) ) ;
+			m_Data.Add( ( byte )( ( value >> 24 ) ) ) ;
+			m_Data.Add( ( byte )( ( value >> 32 ) ) ) ;
+			m_Data.Add( ( byte )( ( value >> 40 ) ) ) ;
+			m_Data.Add( ( byte )( ( value >> 48 ) ) ) ;
+			m_Data.Add( ( byte )( ( value >> 56 ) ) ) ;
+		}
+
+		/// <summary>
+		/// 符号なし Long 値を追加する
+		/// </summary>
+		/// <param name="value"></param>
+		protected void PutULong( ulong value )
+		{
+			m_Data.Add( ( byte )(   value         ) ) ;
+			m_Data.Add( ( byte )( ( value >>  8 ) ) ) ;
+			m_Data.Add( ( byte )( ( value >> 16 ) ) ) ;
+			m_Data.Add( ( byte )( ( value >> 24 ) ) ) ;
+			m_Data.Add( ( byte )( ( value >> 32 ) ) ) ;
+			m_Data.Add( ( byte )( ( value >> 40 ) ) ) ;
+			m_Data.Add( ( byte )( ( value >> 48 ) ) ) ;
+			m_Data.Add( ( byte )( ( value >> 56 ) ) ) ;
 		}
 
 		/// <summary>
@@ -2643,7 +2682,7 @@ namespace NetworkPlayHelper
 			{
 				// 128 byte ～ 32767 byte (32KB)
 				m_Data.Add( ( byte )( ( size & 0x7F ) | 0x80 ) ) ;
-				m_Data.Add( ( byte )( ( size >>   7 ) & 0xFF ) ) ;
+				m_Data.Add( ( byte )( ( size >>   7 ) ) ) ;
 			}
 
 			//----------------------------------------------------------
@@ -2678,7 +2717,7 @@ namespace NetworkPlayHelper
 				{
 					// 最大 32767 文字まで
 					m_Data.Add( ( byte )( ( size & 0x7F ) | 0x80 ) ) ;
-					m_Data.Add( ( byte )( ( size >>   7 ) & 0xFF ) ) ;
+					m_Data.Add( ( byte )( ( size >>   7 ) ) ) ;
 				}
 
 				//----------------------------------------------------------
@@ -2883,6 +2922,7 @@ namespace NetworkPlayHelper
 		}
 	}
 
+#if false
 	/// <summary>
 	/// セッション情報
 	/// </summary>
@@ -2968,7 +3008,7 @@ namespace NetworkPlayHelper
 			Description			= DataFormat.GetString( data, ref offset ) ;
 		}
 	}
-
+#endif
 	/// <summary>
 	/// フレンド情報
 	/// </summary>

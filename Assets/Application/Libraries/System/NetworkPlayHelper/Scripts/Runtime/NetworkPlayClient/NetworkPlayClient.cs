@@ -11,7 +11,7 @@ using UnityEngine ;
 namespace NetworkPlayHelper
 {
 	/// <summary>
-	/// NetworkPlay 機能のクライアント側の管理用クラス Version 2025/10/01
+	/// NetworkPlay 機能のクライアント側の管理用クラス Version 2025/11/12
 	/// </summary>
 	public partial class NetworkPlayClient
 	{
@@ -211,6 +211,105 @@ namespace NetworkPlayHelper
 	}
 
 	//--------------------------------------------------------------------------------------------
+
+	/// <summary>
+	/// グループ情報
+	/// </summary>
+	public class Group
+	{
+		/// <summary>
+		/// グループ種別
+		/// </summary>
+		public GroupTypes   GroupType       { get ; private set ; }
+
+		/// <summary>
+		/// グループ識別子
+		/// </summary>
+		public uint         GroupId         { get ; private set ; }
+
+		/// <summary>
+		/// パスワードが有効であるかどうか
+		/// </summary>
+		public bool         HasPassword     { get ; private set ; }
+
+		/// <summary>
+		/// 招待数
+		/// </summary>
+		public ushort       InvitationCount { get ;  private set ; }
+
+		/// <summary>
+		/// 参加数
+		/// </summary>
+		public ushort       NowMembers      { get ; private set ; }
+
+		/// <summary>
+		/// 最大数
+		/// </summary>
+		public ushort       MaxMembers      { get ; private set ; }
+
+		/// <summary>
+		/// グループ固有パラメータ
+		/// </summary>
+		public Dictionary<string,string>    GroupParameters { get ; private set ; }
+
+		//-----------------------------
+
+		/// <summary>
+		/// リーダーのユーザー識別子
+		/// </summary>
+		public string       GroupLeaderUserId    { get ; private set ; }
+
+		/// <summary>
+		/// リーダーの名前
+		/// </summary>
+		public string       GroupLeaderUserName  { get ; private set ; }
+
+		/// <summary>
+		/// リーダーの固有パラメータ
+		/// </summary>
+		public Dictionary<string,string>    GroupLeaderParameters   { get ; private set ; }
+
+
+		//-----------------------------------------------------------
+
+		/// <summary>
+		/// コンストラクタ
+		/// </summary>
+		public Group()
+		{
+		}
+
+		/// <summary>
+		/// コンストラクタ
+		/// </summary>
+		public Group
+		(
+			GroupTypes                  groupType,
+			uint                        groupId,
+			bool                        hasPassword,
+			ushort                      invitationCount,
+			ushort                      nowMembers,
+			ushort                      maxMembers,
+			Dictionary<string,string>   groupParameters,
+
+			string                      groupLeaderUserId,
+			string                      groupLeaderUserName,
+			Dictionary<string,string>   groupLeaderParameters
+		)
+		{
+			GroupType                   = groupType ;
+			GroupId                     = groupId ;
+			HasPassword                 = hasPassword ;
+			InvitationCount             = invitationCount ;
+			NowMembers                  = nowMembers ;
+			MaxMembers                  = maxMembers ;
+			GroupParameters             = groupParameters ;
+
+			GroupLeaderUserId           = groupLeaderUserId ;
+			GroupLeaderUserName         = groupLeaderUserName ;
+			GroupLeaderParameters       = groupLeaderParameters ;
+		}
+	}
 
 	/// <summary>
 	/// セッション情報

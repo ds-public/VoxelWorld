@@ -126,18 +126,94 @@ namespace uGUIHelper.InputAdapter
 						}
 					}
 
-					if( GetButton_Compatible( buttonNames[ profile.ButtonNumbers[  4 ] ] ) == true )
+					//------------
+
+					// DPad_R
+					if( profile.ButtonNumbers[  4 ] >= 0 )
+					{
+						if( GetButton_Compatible( buttonNames[ profile.ButtonNumbers[  4 ] ] ) == true )
+						{
+							buttonFlags |= DPad_R ;
+						}
+					}
+					else
+					{
+						var axis =   GetAxis_Compatible( axisNames[ profile.AxisNumbers[  0 ] ] ) ;
+						if( axis >= profile.AnalogButtonThreshold )
+						{
+							buttonFlags |= DPad_R ;
+						}
+					}
+
+					// DPad_L
+					if( profile.ButtonNumbers[  5 ] >= 0 )
+					{
+						if( GetButton_Compatible( buttonNames[ profile.ButtonNumbers[  5 ] ] ) == true )
+						{
+							buttonFlags |= DPad_L ;
+						}
+					}
+					else
+					{
+						var axis = - GetAxis_Compatible( axisNames[ profile.AxisNumbers[  0 ] ] ) ;
+						if( axis >= profile.AnalogButtonThreshold )
+						{
+							buttonFlags |= DPad_L ;
+						}
+					}
+
+					// DPad_U
+					if( profile.ButtonNumbers[  6 ] >= 0 )
+					{
+						if( GetButton_Compatible( buttonNames[ profile.ButtonNumbers[  6 ] ] ) == true )
+						{
+							buttonFlags |= DPad_U ;
+						}
+					}
+					else
+					{
+						var axis =   GetAxis_Compatible( axisNames[ profile.AxisNumbers[  1 ] ] ) ;
+						if( axis >= profile.AnalogButtonThreshold )
+						{
+							buttonFlags |= DPad_U ;
+						}
+					}
+
+					// DPad_D
+					if( profile.ButtonNumbers[  7 ] >= 0 )
+					{
+						if( GetButton_Compatible( buttonNames[ profile.ButtonNumbers[  7 ] ] ) == true )
+						{
+							buttonFlags |= DPad_D ;
+						}
+					}
+					else
+					{
+						var axis = - GetAxis_Compatible( axisNames[ profile.AxisNumbers[  1 ] ] ) ;
+						if( axis >= profile.AnalogButtonThreshold )
+						{
+							buttonFlags |= DPad_D ;
+						}
+					}
+
+					//------------
+
+					// R1
+					if( GetButton_Compatible( buttonNames[ profile.ButtonNumbers[  8 ] ] ) == true )
 					{
 						buttonFlags |= R1 ;
 					}
-					if( GetButton_Compatible( buttonNames[ profile.ButtonNumbers[  5 ] ] ) == true )
+
+					// L1
+					if( GetButton_Compatible( buttonNames[ profile.ButtonNumbers[  9 ] ] ) == true )
 					{
 						buttonFlags |= L1 ;
 					}
 
-					if( profile.ButtonNumbers[  6 ] >= 0 )
+					// R2
+					if( profile.ButtonNumbers[ 10 ] >= 0 )
 					{
-						if( GetButton_Compatible( buttonNames[ profile.ButtonNumbers[  6 ] ] ) == true )
+						if( GetButton_Compatible( buttonNames[ profile.ButtonNumbers[ 10 ] ] ) == true )
 						{
 							buttonFlags |= R2 ;
 						}
@@ -155,9 +231,10 @@ namespace uGUIHelper.InputAdapter
 						}
 					}
 
+					// L2
 					if( profile.ButtonNumbers[  7 ] >= 0 )
 					{
-						if( GetButton_Compatible( buttonNames[ profile.ButtonNumbers[  7 ] ] ) == true )
+						if( GetButton_Compatible( buttonNames[ profile.ButtonNumbers[ 11 ] ] ) == true )
 						{
 							buttonFlags |= L2 ;
 						}
@@ -175,27 +252,40 @@ namespace uGUIHelper.InputAdapter
 						}
 					}
 
-					if( GetButton_Compatible( buttonNames[ profile.ButtonNumbers[  8 ] ] ) == true )
+					// R3
+					if( GetButton_Compatible( buttonNames[ profile.ButtonNumbers[ 12 ] ] ) == true )
 					{
 						buttonFlags |= R3 ;
 					}
-					if( GetButton_Compatible( buttonNames[ profile.ButtonNumbers[  9 ] ] ) == true )
+
+					// L3
+					if( GetButton_Compatible( buttonNames[ profile.ButtonNumbers[ 13 ] ] ) == true )
 					{
 						buttonFlags |= L3 ;
 					}
-					if( GetButton_Compatible( buttonNames[ profile.ButtonNumbers[ 10 ] ] ) == true )
+
+					//------------
+
+					// O1
+					if( GetButton_Compatible( buttonNames[ profile.ButtonNumbers[ 14 ] ] ) == true )
 					{
 						buttonFlags |= O1 ;
 					}
-					if( GetButton_Compatible( buttonNames[ profile.ButtonNumbers[ 11 ] ] ) == true )
+
+					// O2
+					if( GetButton_Compatible( buttonNames[ profile.ButtonNumbers[ 15 ] ] ) == true )
 					{
 						buttonFlags |= O2 ;
 					}
-					if( GetButton_Compatible( buttonNames[ profile.ButtonNumbers[ 12 ] ] ) == true )
+
+					// O3
+					if( GetButton_Compatible( buttonNames[ profile.ButtonNumbers[ 16 ] ] ) == true )
 					{
 						buttonFlags |= O3 ;
 					}
-					if( GetButton_Compatible( buttonNames[ profile.ButtonNumbers[ 13 ] ] ) == true )
+
+					// O4
+					if( GetButton_Compatible( buttonNames[ profile.ButtonNumbers[ 17 ] ] ) == true )
 					{
 						buttonFlags |= O4 ;
 					}
@@ -302,18 +392,78 @@ namespace uGUIHelper.InputAdapter
 							}
 						break ;
 
-						case R1 :
-							if( GetButton_Compatible( buttonNames[ profile.ButtonNumbers[  4 ] ] ) == true ){ return true ; }
+						case DPad_R :
+							if( profile.ButtonNumbers[  4 ] >= 0 )
+							{
+								if( GetButton_Compatible( buttonNames[ profile.ButtonNumbers[  4 ] ] ) == true ){ return true ; }
+							}
+							else
+							{
+								var axis =   GetAxis_Compatible( axisNames[ profile.AxisNumbers[  0 ] ] ) ;
+								if( axis >= profile.AnalogButtonThreshold )
+								{
+									return true ;
+								}
+							}
 						break ;
 
-						case L1 :
-							if( GetButton_Compatible( buttonNames[ profile.ButtonNumbers[  5 ] ] ) == true ){ return true ; }
+						case DPad_L :
+							if( profile.ButtonNumbers[  5 ] >= 0 )
+							{
+								if( GetButton_Compatible( buttonNames[ profile.ButtonNumbers[  5 ] ] ) == true ){ return true ; }
+							}
+							else
+							{
+								var axis = - GetAxis_Compatible( axisNames[ profile.AxisNumbers[  0 ] ] ) ;
+								if( axis >= profile.AnalogButtonThreshold )
+								{
+									return true ;
+								}
+							}
 						break ;
 
-						case R2 :
+						case DPad_U :
 							if( profile.ButtonNumbers[  6 ] >= 0 )
 							{
 								if( GetButton_Compatible( buttonNames[ profile.ButtonNumbers[  6 ] ] ) == true ){ return true ; }
+							}
+							else
+							{
+								var axis =   GetAxis_Compatible( axisNames[ profile.AxisNumbers[  1 ] ] ) ;
+								if( axis >= profile.AnalogButtonThreshold )
+								{
+									return true ;
+								}
+							}
+						break ;
+
+						case DPad_D :
+							if( profile.ButtonNumbers[  7 ] >= 0 )
+							{
+								if( GetButton_Compatible( buttonNames[ profile.ButtonNumbers[  7 ] ] ) == true ){ return true ; }
+							}
+							else
+							{
+								var axis = - GetAxis_Compatible( axisNames[ profile.AxisNumbers[  1 ] ] ) ;
+								if( axis >= profile.AnalogButtonThreshold )
+								{
+									return true ;
+								}
+							}
+						break ;
+
+						case R1 :
+							if( GetButton_Compatible( buttonNames[ profile.ButtonNumbers[  8 ] ] ) == true ){ return true ; }
+						break ;
+
+						case L1 :
+							if( GetButton_Compatible( buttonNames[ profile.ButtonNumbers[  9 ] ] ) == true ){ return true ; }
+						break ;
+
+						case R2 :
+							if( profile.ButtonNumbers[ 10 ] >= 0 )
+							{
+								if( GetButton_Compatible( buttonNames[ profile.ButtonNumbers[ 10 ] ] ) == true ){ return true ; }
 							}
 							else
 							{
@@ -330,9 +480,9 @@ namespace uGUIHelper.InputAdapter
 						break ;
 
 						case L2 :
-							if( profile.ButtonNumbers[  7 ] >= 0 )
+							if( profile.ButtonNumbers[ 11 ] >= 0 )
 							{
-								if( GetButton_Compatible( buttonNames[ profile.ButtonNumbers[  7 ] ] ) == true ){ return true ; }
+								if( GetButton_Compatible( buttonNames[ profile.ButtonNumbers[ 11 ] ] ) == true ){ return true ; }
 							}
 							else
 							{
@@ -349,27 +499,27 @@ namespace uGUIHelper.InputAdapter
 						break ;
 
 						case R3 :
-							if( GetButton_Compatible( buttonNames[ profile.ButtonNumbers[  8 ] ] ) == true ){ return true ; }
-						break ;
-
-						case L3 :
-							if( GetButton_Compatible( buttonNames[ profile.ButtonNumbers[  9 ] ] ) == true ){ return true ; }
-						break ;
-
-						case O1 :
-							if( GetButton_Compatible( buttonNames[ profile.ButtonNumbers[ 10 ] ] ) == true ){ return true ; }
-						break ;
-
-						case O2 :
-							if( GetButton_Compatible( buttonNames[ profile.ButtonNumbers[ 11 ] ] ) == true ){ return true ; }
-						break ;
-
-						case O3 :
 							if( GetButton_Compatible( buttonNames[ profile.ButtonNumbers[ 12 ] ] ) == true ){ return true ; }
 						break ;
 
-						case O4 :
+						case L3 :
 							if( GetButton_Compatible( buttonNames[ profile.ButtonNumbers[ 13 ] ] ) == true ){ return true ; }
+						break ;
+
+						case O1 :
+							if( GetButton_Compatible( buttonNames[ profile.ButtonNumbers[ 14 ] ] ) == true ){ return true ; }
+						break ;
+
+						case O2 :
+							if( GetButton_Compatible( buttonNames[ profile.ButtonNumbers[ 15 ] ] ) == true ){ return true ; }
+						break ;
+
+						case O3 :
+							if( GetButton_Compatible( buttonNames[ profile.ButtonNumbers[ 16 ] ] ) == true ){ return true ; }
+						break ;
+
+						case O4 :
+							if( GetButton_Compatible( buttonNames[ profile.ButtonNumbers[ 17 ] ] ) == true ){ return true ; }
 						break ;
 					}
 				}

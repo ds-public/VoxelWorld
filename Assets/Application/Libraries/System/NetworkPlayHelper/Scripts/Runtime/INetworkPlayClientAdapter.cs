@@ -10,7 +10,7 @@ using UnityEngine ;
 namespace NetworkPlayHelper
 {
 	/// <summary>
-	/// 基本通信機能の定義インターフェース Version 2025/10/29
+	/// 基本通信機能の定義インターフェース Version 2025/11/28
 	/// </summary>
 	public interface INetworkPlayClientAdapter
 	{
@@ -160,6 +160,17 @@ namespace NetworkPlayHelper
 		public void SetClientKeys( string publicKey, string secretKey ) ;
 
 		//---------------
+
+		/// <summary>
+		/// アカウントサーバーから公開鍵取得を行う
+		/// </summary>
+		/// <param name="data"></param>
+		/// <param name="cancellationToken"></param>
+		/// <returns></returns>
+		public Task<GetPublicKey_Response> GetPublicKeyAsync
+		(
+			CancellationToken cancellationToken = default
+		) ;
 
 		/// <summary>
 		/// アカウントサーバーと任意データの送受信を行う
@@ -337,36 +348,6 @@ namespace NetworkPlayHelper
 		/// </summary>
 		public bool IsGroupingServerConnected { get ; }
 
-#if MATCHING_SYSTEM_OLD_VERSION
-		/// <summary>
-		/// セッションへのマッチングを開始する(旧版)
-		/// </summary>
-		/// <param name="onSessionJoined"></param>
-		/// <returns></returns>
-		public Task<StartMatchingToSession_Response> StartMatchingToSessionAsync
-		(
-			string							description,
-			string							password,
-			ushort							maxPlayers,
-			SessionScopeTypes				scopeType,
-			SessionManagementTypes			managementType,
-			bool							udpEnabled,
-			bool							udpCorrectionEnabled,
-			Dictionary<string,string>       parameters,
-			string							playerName,
-			Action<MatchingToSessionResult>	onMatchinToSession,
-			CancellationToken				cancellationToken
-		) ;
-
-		/// <summary>
-		/// セッションへのマッチングを中断する(旧版)
-		/// </summary>
-		/// <returns></returns>
-		public Task<StopMatchingToSession_Response> StopMatchingToSessionAsync
-		(
-			CancellationToken			cancellationToken	
-		) ;
-#endif
 		//-----------------------------------------------------------
 		// グループ関係
 
@@ -565,9 +546,31 @@ namespace NetworkPlayHelper
 		) ;
 
 		/// <summary>
+		/// グループ情報群を取得する
+		/// </summary>
+		/// <param name="applicationId"></param>
+		/// <param name="filter"></param>
+		/// <param name="offset"></param>
+		/// <param name="length"></param>
+		/// <param name="cancellationToken"></param>
+		/// <returns></returns>
+		public Task<GetGroups_Response> GetGroupsAsync
+		(
+			string                      applicationId,
+			byte                        filter,
+			ushort	                    offset,
+			ushort	                    length,
+			CancellationToken           cancellationToken
+		) ;
+
+		/// <summary>
 		/// グループへ参加する　※フリーユーザー限定行動
 		/// </summary>
-		/// <param name="userIds"></param>
+		/// <param name="userId"></param>
+		/// <param name="groupId"></param>
+		/// <param name="password"></param>
+		/// <param name="parameters"></param>
+		/// <param name="cancellationToken"></param>
 		/// <returns></returns>
 		public Task<JoinToGroup_Response> JoinToGroupAsync
 		(
@@ -643,6 +646,7 @@ namespace NetworkPlayHelper
 			string						applicationId,		// アプリケーション識別子
 			GroupTypes					groupType,
 			string						password,
+            bool                        isAutomaticMatchingStarting,
 			Dictionary<string,string>	groupParameters,
 			Dictionary<string,string>	groupMemberParameters,
 			CancellationToken			cancellationToken
@@ -735,9 +739,9 @@ namespace NetworkPlayHelper
 		/// <returns></returns>
 		public Task<GetSessions_Response> GetSessionsAsync
 		(
-			uint	offset,
-			uint	length,
-			CancellationToken cancellationToken
+			ushort	                    offset,
+			ushort	                    length,
+			CancellationToken           cancellationToken
 		) ;
 
 		/// <summary>
@@ -1048,6 +1052,48 @@ namespace NetworkPlayHelper
 	//--------------------------------------------------------------------------------------------
 
 	/// <summary>
+	/// 公開鍵取得のレスポンス
+	/// </summary>
+	public class GetPublicKey_Response : WebApiResponseBase
+	{
+		/// <summary>
+		/// 公開鍵
+		/// </summary>
+		public string			PublicKey { get ; private set ; }
+
+		//----------------------------------------------------------
+
+		/// <summary>
+		/// コンストラクタ(失敗)
+		/// </summary>
+		/// <param name="responseCode"></param>
+		/// <param name="errorMessage"></param>
+		public GetPublicKey_Response
+		(
+			ResponseCodes   responseCode,
+			string          errorMessage
+		) : base( responseCode, errorMessage )
+		{
+		}
+
+		/// <summary>
+		/// コンストラクタ(成功)
+		/// </summary>
+		/// <param name="responseCode"></param>
+		/// <param name="errorMessage"></param>
+		/// <param name="UserId"></param>
+		/// <param name="Password"></param>
+		public GetPublicKey_Response
+		(
+			string          publicKey
+		) : base( ResponseCodes.Succeeded, string.Empty )
+		{
+			PublicKey		= publicKey ;
+		}
+	}
+
+
+	/// <summary>
 	/// 任意データの送受信のレスポンス
 	/// </summary>
 	public class GetStatus_Response : WebApiResponseBase
@@ -1060,18 +1106,27 @@ namespace NetworkPlayHelper
 		//----------------------------------------------------------
 
 		/// <summary>
-		/// コンストラクタ
+		/// コンストラクタ(失敗)
 		/// </summary>
 		/// <param name="responseCode"></param>
 		/// <param name="errorMessage"></param>
+		public GetStatus_Response
+		(
+			ResponseCodes responseCode,
+			string errorMessage
+		) : base( responseCode, errorMessage )
+		{
+		}
+
+		/// <summary>
+		/// コンストラクタ(成功)
+		/// </summary>
 		/// <param name="UserId"></param>
 		/// <param name="Password"></param>
 		public GetStatus_Response
 		(
-			ResponseCodes responseCode,
-			string errorMessage,
 			byte[] data
-		) : base( responseCode, errorMessage )
+		) : base( ResponseCodes.Succeeded, string.Empty )
 		{
 			Data						= data ;
 		}
@@ -1103,20 +1158,30 @@ namespace NetworkPlayHelper
 		//-----------------------------------------------------------
 
 		/// <summary>
-		/// コンストラクタ
+		/// コンストラクタ(失敗)
 		/// </summary>
 		/// <param name="responseCode"></param>
 		/// <param name="errorMessage"></param>
-		/// <param name="UserId"></param>
-		/// <param name="Password"></param>
 		public CreateGuestAccount_Response
 		(
 			ResponseCodes responseCode,
-			string errorMessage,
+			string errorMessage
+		) : base( responseCode, errorMessage )
+		{
+		}
+
+		/// <summary>
+		/// コンストラクタ(成功)
+		/// </summary>
+		/// <param name="userId"></param>
+		/// <param name="password"></param>
+		/// <param name="userName"></param>
+		public CreateGuestAccount_Response
+		(
 			string userId,
 			string password,
 			string userName
-		) : base( responseCode, errorMessage )
+		) : base( ResponseCodes.Succeeded, string.Empty )
 		{
 			UserId		= userId ;
 			Password	= password ;
@@ -1148,22 +1213,31 @@ namespace NetworkPlayHelper
 		public string	UserName	{  get ; private set ; }
 
 		//-----------------------------------------------------------
-
+		
 		/// <summary>
-		/// コンストラクタ
+		/// コンストラクタ(失敗)
 		/// </summary>
 		/// <param name="responseCode"></param>
 		/// <param name="errorMessage"></param>
+		public CreateAccount_Response
+		(
+			ResponseCodes responseCode,
+			string errorMessage
+		) : base( responseCode, errorMessage )
+		{
+		}
+
+		/// <summary>
+		/// コンストラクタ(成功)
+		/// </summary>
 		/// <param name="UserId"></param>
 		/// <param name="Password"></param>
 		public CreateAccount_Response
 		(
-			ResponseCodes responseCode,
-			string errorMessage,
 			string userId,
 			string password,
 			string userName
-		) : base( responseCode, errorMessage )
+		) : base( ResponseCodes.Succeeded, string.Empty )
 		{
 			UserId		= userId ;
 			Password	= password ;
@@ -1197,20 +1271,30 @@ namespace NetworkPlayHelper
 		//-----------------------------------------------------------
 
 		/// <summary>
-		/// コンストラクタ
+		/// コンストラクタ(失敗)
 		/// </summary>
 		/// <param name="responseCode"></param>
 		/// <param name="errorMessage"></param>
-		/// <param name="UserId"></param>
-		/// <param name="Password"></param>
 		public CreatePlatformAccount_Response
 		(
 			ResponseCodes responseCode,
-			string errorMessage,
+			string errorMessage
+		) : base( responseCode, errorMessage )
+		{
+		}
+
+		/// <summary>
+		/// コンストラクタ(成功)
+		/// </summary>
+		/// <param name="userId"></param>
+		/// <param name="password"></param>
+		/// <param name="userName"></param>
+		public CreatePlatformAccount_Response
+		(
 			string userId,
 			string password,
 			string userName
-		) : base( responseCode, errorMessage )
+		) : base( ResponseCodes.Succeeded, string.Empty )
 		{
 			UserId		= userId ;
 			Password	= password ;
@@ -1244,7 +1328,7 @@ namespace NetworkPlayHelper
 		//-----------------------------------------------------------
 
 		/// <summary>
-		/// コンストラクタ
+		/// コンストラクタ(失敗)
 		/// </summary>
 		/// <param name="responseCode"></param>
 		/// <param name="errorMessage"></param>
@@ -1253,11 +1337,24 @@ namespace NetworkPlayHelper
 		public TakeOverPlatformAccount_Response
 		(
 			ResponseCodes responseCode,
-			string errorMessage,
+			string errorMessage
+		) : base( responseCode, errorMessage )
+		{
+		}
+
+		/// <summary>
+		/// コンストラクタ(成功)
+		/// </summary>
+		/// <param name="responseCode"></param>
+		/// <param name="errorMessage"></param>
+		/// <param name="UserId"></param>
+		/// <param name="Password"></param>
+		public TakeOverPlatformAccount_Response
+		(
 			string userId,
 			string password,
 			string userName
-		) : base( responseCode, errorMessage )
+		) : base( ResponseCodes.Succeeded, string.Empty )
 		{
 			UserId		= userId ;
 			Password	= password ;
@@ -1312,7 +1409,20 @@ namespace NetworkPlayHelper
 		//-----------------------------------------------------------
 
 		/// <summary>
-		/// コンストラクタ
+		/// コンストラクタ(失敗)
+		/// </summary>
+		/// <param name="responseCode"></param>
+		/// <param name="errorMessage"></param>
+		public CreateAccountOrLogin_Response
+		(
+			ResponseCodes   responseCode,
+			string          errorMessage
+		) : base( responseCode, errorMessage )
+		{
+		}
+
+		/// <summary>
+		/// コンストラクタ(成功)
 		/// </summary>
 		/// <param name="responseCode"></param>
 		/// <param name="errorMessage"></param>
@@ -1320,9 +1430,6 @@ namespace NetworkPlayHelper
 		/// <param name="Password"></param>
 		public CreateAccountOrLogin_Response
 		(
-			ResponseCodes responseCode,
-			string errorMessage,
-
 			string	accessToken,
 			long	accessLimit,
 			byte[]	commonKey,
@@ -1332,7 +1439,7 @@ namespace NetworkPlayHelper
 			string  groupingServer_Address,
 			ushort  groupingServer_TcpPort
 
-		) : base( responseCode, errorMessage )
+		) : base( ResponseCodes.Succeeded, string.Empty )
 		{
 			AccessToken					= accessToken ;
 			AccessLimit					= accessLimit ;
@@ -1393,7 +1500,20 @@ namespace NetworkPlayHelper
 		//----------------------------------------------------------
 
 		/// <summary>
-		/// コンストラクタ
+		/// コンストラクタ(失敗)
+		/// </summary>
+		/// <param name="responseCode"></param>
+		/// <param name="errorMessage"></param>
+		public Login_Response
+		(
+			ResponseCodes   responseCode,
+			string	        errorMessage
+		) : base( responseCode, errorMessage )
+		{
+		}
+
+		/// <summary>
+		/// コンストラクタ(成功)
 		/// </summary>
 		/// <param name="responseCode"></param>
 		/// <param name="errorMessage"></param>
@@ -1401,8 +1521,6 @@ namespace NetworkPlayHelper
 		/// <param name="Password"></param>
 		public Login_Response
 		(
-			ResponseCodes responseCode,
-			string	errorMessage,
 			string	userName,
 			string	accessToken,
 			long	accessLimit,
@@ -1411,7 +1529,7 @@ namespace NetworkPlayHelper
 			ushort	communicationServer_TcpPort,
 			string  groupingServer_Address,
 			ushort  groupingServer_TcpPort
-		) : base( responseCode, errorMessage )
+		) : base( ResponseCodes.Succeeded, string.Empty )
 		{
 			UserName					= userName ;
 			AccessToken					= accessToken ;
@@ -1433,7 +1551,7 @@ namespace NetworkPlayHelper
 		//----------------------------------------------------------
 
 		/// <summary>
-		/// コンストラクタ
+		/// コンストラクタ(失敗)
 		/// </summary>
 		/// <param name="responseCode"></param>
 		/// <param name="errorMessage"></param>
@@ -1444,6 +1562,19 @@ namespace NetworkPlayHelper
 			ResponseCodes responseCode,
 			string	errorMessage
 		) : base( responseCode, errorMessage )
+		{
+		}
+
+		/// <summary>
+		/// コンストラクタ(成功)
+		/// </summary>
+		/// <param name="responseCode"></param>
+		/// <param name="errorMessage"></param>
+		/// <param name="UserId"></param>
+		/// <param name="Password"></param>
+		public Logout_Response
+		(
+		) : base( ResponseCodes.Succeeded, string.Empty )
 		{
 		}
 	}
@@ -1840,16 +1971,30 @@ namespace NetworkPlayHelper
 	public class GetSessions_Response : WebApiResponseBase
 	{
 		/// <summary>
+		/// セッション総数
+		/// </summary>
+		public ushort					Count		{ get ; private set ; }
+
+		/// <summary>
+		/// オフセット
+		/// </summary>
+		public ushort                   Offset      { get ; private set ; }
+
+		/// <summary>
 		/// セッション情報
 		/// </summary>
 		public List<Session>			Sessions	{ get ; private set ; }
 
-		/// <summary>
-		/// セッション総数
-		/// </summary>
-		public uint						Count		{ get ; private set ; }
-
 		//----------------------------------------------------------
+
+		// 失敗のケース
+		public GetSessions_Response
+		(
+			ResponseCodes				responseCode,
+			string						errorMessage
+		) : base( responseCode, errorMessage )
+		{
+		}
 
 		/// <summary>
 		/// コンストラクタ
@@ -1862,13 +2007,16 @@ namespace NetworkPlayHelper
 		(
 			ResponseCodes				responseCode,
 			string						errorMessage,
-			List<Session>				sessions,
-			uint						count
+
+			ushort						count,
+			ushort                      offset,
+			List<Session>				sessions
 
 		) : base( responseCode, errorMessage )
 		{
-			Sessions					= sessions ;
 			Count						= count ;
+			Offset                      = offset ;
+			Sessions					= sessions ;
 		}
 	}
 
@@ -1878,19 +2026,38 @@ namespace NetworkPlayHelper
 	public class GetFriends_Response : WebApiResponseBase
 	{
 		/// <summary>
-		/// フレンド情報
-		/// </summary>
-		public List<ResponseFriendData>	Friends { get ; private set ; }
-
-		/// <summary>
 		/// フレンド総数
 		/// </summary>
 		public ushort					Count	{ get ; private set ; }
 
+		/// <summary>
+		/// オフセット
+		/// </summary>
+		public ushort                   Offset  { get ; private set ; }
+
+		/// <summary>
+		/// フレンド情報
+		/// </summary>
+		public List<ResponseFriendData>	Friends { get ; private set ; }
+
 		//----------------------------------------------------------
 
 		/// <summary>
-		/// コンストラクタ
+		/// コンストラクタ(失敗)
+		/// </summary>
+		/// <param name="responseCode"></param>
+		/// <param name="errorMessage"></param>
+		public GetFriends_Response
+		(
+			ResponseCodes				responseCode,
+			string						errorMessage
+
+		) : base( responseCode, errorMessage )
+		{
+		}
+
+		/// <summary>
+		/// コンストラクタ(成功)
 		/// </summary>
 		/// <param name="responseCode"></param>
 		/// <param name="errorMessage"></param>
@@ -1900,13 +2067,16 @@ namespace NetworkPlayHelper
 		(
 			ResponseCodes				responseCode,
 			string						errorMessage,
-			List<ResponseFriendData>	friends,
-			ushort						count
+
+			ushort						count,
+			ushort                      offset,
+			List<ResponseFriendData>	friends
 
 		) : base( responseCode, errorMessage )
 		{
-			Friends						= friends ;
 			Count						= count ;
+			Offset                      = offset ;
+			Friends						= friends ;
 		}
 	}
 
@@ -2104,7 +2274,22 @@ namespace NetworkPlayHelper
 		//----------------------------------------------------------
 
 		/// <summary>
-		/// コンストラクタ
+		/// コンストラクタ(失敗)
+		/// </summary>
+		/// <param name="responseCode"></param>
+		/// <param name="errorMessage"></param>
+		/// <param name="UserId"></param>
+		/// <param name="Password"></param>
+		public CallFunction_Response
+		(
+			ResponseCodes				responseCode,
+			string						errorMessage
+		) : base( responseCode, errorMessage )
+		{
+		}
+
+		/// <summary>
+		/// コンストラクタ(成功)
 		/// </summary>
 		/// <param name="responseCode"></param>
 		/// <param name="errorMessage"></param>
@@ -2389,6 +2574,71 @@ namespace NetworkPlayHelper
 			ErrorMessage	= string.Empty ;
 		}
 	}
+
+	/// <summary>
+	/// グループ情報群取得のレスポンス
+	/// </summary>
+	public class GetGroups_Response
+	{
+		public GroupingActionResponseCodes	ResponseCode	{ get ; private set ; }
+		public string						ErrorMessage	{ get ; private set ; }
+
+
+		/// <summary>
+		/// グループ総数
+		/// </summary>
+		public ushort						Count		    { get ; private set ; }
+
+		/// <summary>
+		/// オフセット
+		/// </summary>
+		public ushort                       Offset          { get; private set ; }
+
+		/// <summary>
+		/// グループ情報
+		/// </summary>
+		public List<Group>			        Groups          { get ; private set ; }
+
+		//-----------------------------------------------------------
+
+		/// <summary>
+		/// コンストラクタ(失敗)
+		/// </summary>
+		/// <param name="responseCode"></param>
+		/// <param name="errorMessage"></param>
+		public GetGroups_Response
+		(
+			GroupingActionResponseCodes	responseCode,
+			string						errorMessage
+		)
+		{
+			ResponseCode	= responseCode ;
+			ErrorMessage	= errorMessage ;
+		}
+
+		/// <summary>
+		/// コンストラクタ(成功)
+		/// </summary>
+		/// <param name="responseCode"></param>
+		/// <param name="errorMessage"></param>
+		/// <param name="relatedUsers"></param>
+		public GetGroups_Response
+		(
+			ushort                  count,
+			ushort                  offset,
+			List<Group>             groups
+		)
+		{
+			ResponseCode	= GroupingActionResponseCodes.Succeeded ;
+			ErrorMessage	= string.Empty ;
+
+			Count           = count ;
+			Offset          = offset ;
+			Groups          = groups ;
+		}
+	}
+
+
 
 	/// <summary>
 	/// グループ参加のレスポンス

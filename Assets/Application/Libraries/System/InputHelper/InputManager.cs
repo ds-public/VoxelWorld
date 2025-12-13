@@ -15,7 +15,7 @@ using UnityEditor ;
 namespace InputHelper
 {
 	/// <summary>
-	/// 入力操作クラス Version 2025/04/15 0
+	/// 入力操作クラス Version 2025/12/02 0
 	/// </summary>
 	[DefaultExecutionOrder( -90 )]
 	public partial class InputManager : MonoBehaviour
@@ -522,6 +522,9 @@ namespace InputHelper
 
 						if( basisInputType == InputTypes.Keyboard || basisInputType == InputTypes.GamePad )
 						{
+							// 状態を消去する
+							GamePad.Clear() ;
+
 							// 入力モード移行
 							SetInputType_Private( basisInputType, basisInputType ) ;
 						}

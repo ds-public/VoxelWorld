@@ -14,7 +14,7 @@ using UnityEngine.InputSystem.UI ;
 namespace uGUIHelper.InputAdapter
 {
 	/// <summary>
-	/// uGUI:EventSystem の機能拡張コンポーネントクラス Version 2025/04/15
+	/// uGUI:EventSystem の機能拡張コンポーネントクラス Version 2025/12/02
 	/// </summary>
 	[ExecuteInEditMode][DefaultExecutionOrder( -900 )]
 	public partial class UIEventSystem : MonoBehaviour
@@ -540,6 +540,9 @@ namespace uGUIHelper.InputAdapter
 
 						if( basisInputType == InputTypes.Keyboard || basisInputType == InputTypes.GamePad )
 						{
+							// 状態を消去する
+							GamePad.Clear() ;
+
 							// 入力モード移行
 							SetInputType_Private( basisInputType, basisInputType ) ;
 						}

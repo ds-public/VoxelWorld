@@ -3,8 +3,8 @@
 #if USE_CRI_ADX2
 
 //#define USE_MICROPHONE
-//#define UseCPK
-//#define UseEncrypt
+#define UseCPK
+#define UseEncrypt
 
 using System ;
 using System.IO ;
@@ -128,6 +128,10 @@ namespace AudioHelper
 		/// 最大チャンネル数
 		/// </summary>
 		public	int Max = 32 ;
+
+		//-----------------------------------------------------------
+
+		private CriAtomSource m_CurSettingSource = null ;
 
 		//-----------------------------------------------------------
 
@@ -328,6 +332,11 @@ namespace AudioHelper
 		private bool        m_PreviewModeEnabled = false ;
 
 		/// <summary>
+		/// バイノーラライザーを有効にするかどうか
+		/// </summary>
+		private bool        m_BinauralizerEnabled = false ;
+
+		/// <summary>
 		/// 使用中のバインダーの数
 		/// </summary>
 		[SerializeField]
@@ -512,7 +521,8 @@ namespace AudioHelper
 			bool runInBackground = false,
 			bool muteInBackground = true,
 			bool enableLowLatency = false,
-			bool previewModeEnabled = false
+			bool previewModeEnabled = false,
+			bool binauralizerEnabled = false
 		)
 		{
 			if( m_Instance != null )
@@ -558,17 +568,18 @@ namespace AudioHelper
 				go.AddComponent<AudioManager_ADX2>() ;
 			}
 
-			m_Instance.m_MaxNumberOfBinders	= maxNumberOfBinders ;
-			m_Instance.m_EncryptKey			= encryptKey ;
-			m_Instance.m_AtomDecryptEnabled	= atomDecryptEnabled ;
-			m_Instance.m_ManaDecryptEnabled	= manaDecryptEnabled ;
+			m_Instance.m_MaxNumberOfBinders	    = maxNumberOfBinders ;
+			m_Instance.m_EncryptKey			    = encryptKey ;
+			m_Instance.m_AtomDecryptEnabled	    = atomDecryptEnabled ;
+			m_Instance.m_ManaDecryptEnabled	    = manaDecryptEnabled ;
 
-			m_Instance.m_RunInBackground	= runInBackground ;
-			m_Instance.m_MuteInBackground	= muteInBackground ;
-			m_Instance.m_EnableListaner		= enableListener ;
-			m_Instance.m_EnableLowLatency	= enableLowLatency ;
+			m_Instance.m_RunInBackground	    = runInBackground ;
+			m_Instance.m_MuteInBackground	    = muteInBackground ;
+			m_Instance.m_EnableListaner		    = enableListener ;
+			m_Instance.m_EnableLowLatency	    = enableLowLatency ;
 
-			m_Instance.m_PreviewModeEnabled = previewModeEnabled ;
+			m_Instance.m_PreviewModeEnabled     = previewModeEnabled ;
+			m_Instance.m_BinauralizerEnabled    = binauralizerEnabled ;
 
 			return m_Instance ;
 		}
@@ -666,6 +677,9 @@ namespace AudioHelper
 
 		internal IEnumerator Start()
 		{
+			// バイノーラライザー有効化(Initialize を実行する前に実行する必要がありそうな気配)
+			CriAtomExAsr.EnableBinauralizer( m_BinauralizerEnabled ) ; 
+
 			//----------------------------------------------------------
 			// ADX2 固有の初期化
 
@@ -706,6 +720,7 @@ namespace AudioHelper
 			m_CriWareInitializer.DecrypterConfig.enableAtomDecryption = m_AtomDecryptEnabled ;
 			m_CriWareInitializer.DecrypterConfig.enableManaDecryption = m_ManaDecryptEnabled ;
 #endif
+
 			//----------------------------------
 
 			// iOS 限定
@@ -777,6 +792,8 @@ namespace AudioHelper
 
 			// 初期化完了
 			m_IsInitialized = true ;
+
+			//-------------------------------------------------
 
 			yield break ;
 		}
@@ -2510,6 +2527,76 @@ namespace AudioHelper
 			//----------------------------------
 
 			return audioChannel.ClearSelectorLabels() ;
+		}
+
+		//---------------------------------------------------------
+
+		/// <summary>
+		/// Cue設定をセットする
+		/// </summary>
+		/// <param name="cueSheetName"></param>
+		/// <param name="cueName"></param>
+		/// <returns></returns>
+		public static bool SetCueSetting( string cueSheetName, string cueName )
+		{
+			if( m_Instance == null )
+			{
+				return false ;
+			}
+
+			return m_Instance.SetCueSetting_Private( cueSheetName, cueName ) ;
+		}
+
+		// Cue設定をセットする
+		public bool SetCueSetting_Private( string cueSheetName, string cueName )
+		{
+			// キューシートのロード状況を確認する
+			if( m_CueSheetCache_Hash.ContainsKey( cueSheetName ) == false )
+			{
+				// キューシートがロードされていない
+				Debug.LogWarningFormat( "[サウンド] キューシート '{0}' がロードされていません", cueSheetName ) ;
+				return false ;
+			}
+			m_CueSheetCache_Hash[ cueSheetName ].Count ++ ;
+
+			//----------------------------------------------------------
+
+			if( m_CurSettingSource == null )
+			{
+				var cueSettingSourceObject = new GameObject( "CueSettingSource" ) ;
+				cueSettingSourceObject.transform.SetParent( transform, false ) ;
+
+				m_CurSettingSource = cueSettingSourceObject.AddComponent<CriAtomSource>() ;
+			}
+
+			// キューシート上にそのキュー名があるのか
+			CriAtomExAcb acb = CriAtom.GetAcb( cueSheetName ) ;
+			if( acb == null )
+			{
+				Debug.LogWarningFormat( "[サウンド] キューシート '{0}' を読み込めませんでした", cueSheetName ) ;
+				return false ;
+			}
+
+			if( acb.GetCueInfo(cueName, out CriAtomEx.CueInfo _ ) == false)
+			{
+				Debug.LogWarningFormat
+				(
+					"[サウンド] キュー名 '{0}' が キューシート '{1}' から読み取れませんでした",
+					cueName,
+					cueSheetName
+				) ;
+				return false ;
+			}
+
+			//----------------------------------
+
+			m_CurSettingSource.cueSheet = cueSheetName ;
+			m_CurSettingSource.cueName  = cueName ;
+
+			// 再生
+			m_CurSettingSource.Play() ;
+
+			return true ;
 		}
 
 		//-------------------------------------------------------------------------------------------

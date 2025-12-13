@@ -23,7 +23,7 @@ namespace InputHelper
 			public static InputTypes			PreviousBasisInputType	= InputTypes.Pointer ;
 
 			// 現在の入力タイプ(UIEventSystem がシーン単位で破棄されてしまうため、この値のみ static で保持する)
-			public static InputTypes	        ExtraInputType	        = InputTypes.Pointer ;	// デフォルトはポインターモード
+			public static InputTypes	        ExtraInputType	        = InputTypes.Keyboard ;	// デフォルトはキーボードモード
 
 			//-------------------------------------------------
 

@@ -736,14 +736,18 @@ namespace uGUIHelper.InputAdapter
 							case  1 : state = gamepad.buttonEast.isPressed			; break ;
 							case  2 : state = gamepad.buttonWest.isPressed			; break ;
 							case  3 : state = gamepad.buttonNorth.isPressed			; break ;
-							case  4 : state = gamepad.rightShoulder.isPressed		; break ;
-							case  5 : state = gamepad.leftShoulder.isPressed		; break ;
-							case  6 : state = gamepad.rightTrigger.isPressed		; break ;
-							case  7 : state = gamepad.leftTrigger.isPressed			; break ;
-							case  8 : state = gamepad.rightStickButton.isPressed	; break ;
-							case  9 : state = gamepad.leftStickButton.isPressed		; break ;
-							case 10 : state = gamepad.startButton.isPressed			; break ;
-							case 11 : state = gamepad.selectButton.isPressed		; break ;
+							case  4 : state = gamepad.dpad.right.isPressed			; break ;
+							case  5 : state = gamepad.dpad.left.isPressed			; break ;
+							case  6 : state = gamepad.dpad.up.isPressed			    ; break ;
+							case  7 : state = gamepad.dpad.down.isPressed			; break ;
+							case  8 : state = gamepad.rightShoulder.isPressed		; break ;
+							case  9 : state = gamepad.leftShoulder.isPressed		; break ;
+							case 10 : state = gamepad.rightTrigger.isPressed		; break ;
+							case 11 : state = gamepad.leftTrigger.isPressed			; break ;
+							case 12 : state = gamepad.rightStickButton.isPressed	; break ;
+							case 13 : state = gamepad.leftStickButton.isPressed		; break ;
+							case 14 : state = gamepad.startButton.isPressed			; break ;
+							case 15 : state = gamepad.selectButton.isPressed		; break ;
 						}
 
 						return state ;
@@ -839,14 +843,18 @@ namespace uGUIHelper.InputAdapter
 							case  1 : state = gamepad.buttonEast.wasPressedThisFrame		; break ;
 							case  2 : state = gamepad.buttonWest.wasPressedThisFrame		; break ;
 							case  3 : state = gamepad.buttonNorth.wasPressedThisFrame		; break ;
-							case  4 : state = gamepad.rightShoulder.wasPressedThisFrame		; break ;
-							case  5 : state = gamepad.leftShoulder.wasPressedThisFrame		; break ;
-							case  6 : state = gamepad.rightTrigger.wasPressedThisFrame		; break ;
-							case  7 : state = gamepad.leftTrigger.wasPressedThisFrame		; break ;
-							case  8 : state = gamepad.rightStickButton.wasPressedThisFrame	; break ;
-							case  9 : state = gamepad.leftStickButton.wasPressedThisFrame	; break ;
-							case 10 : state = gamepad.startButton.wasPressedThisFrame		; break ;
-							case 11 : state = gamepad.selectButton.wasPressedThisFrame		; break ;
+							case  4 : state = gamepad.dpad.right.wasPressedThisFrame		; break ;
+							case  5 : state = gamepad.dpad.left.wasPressedThisFrame		    ; break ;
+							case  6 : state = gamepad.dpad.up.wasPressedThisFrame		    ; break ;
+							case  7 : state = gamepad.dpad.down.wasPressedThisFrame		    ; break ;
+							case  8 : state = gamepad.rightShoulder.wasPressedThisFrame		; break ;
+							case  9 : state = gamepad.leftShoulder.wasPressedThisFrame		; break ;
+							case 10 : state = gamepad.rightTrigger.wasPressedThisFrame		; break ;
+							case 11 : state = gamepad.leftTrigger.wasPressedThisFrame		; break ;
+							case 12 : state = gamepad.rightStickButton.wasPressedThisFrame	; break ;
+							case 13 : state = gamepad.leftStickButton.wasPressedThisFrame	; break ;
+							case 14 : state = gamepad.startButton.wasPressedThisFrame		; break ;
+							case 15 : state = gamepad.selectButton.wasPressedThisFrame		; break ;
 						}
 
 						return state ;
@@ -942,14 +950,18 @@ namespace uGUIHelper.InputAdapter
 							case  1 : state = gamepad.buttonEast.wasReleasedThisFrame		; break ;
 							case  2 : state = gamepad.buttonWest.wasReleasedThisFrame		; break ;
 							case  3 : state = gamepad.buttonNorth.wasReleasedThisFrame		; break ;
-							case  4 : state = gamepad.rightShoulder.wasReleasedThisFrame	; break ;
-							case  5 : state = gamepad.leftShoulder.wasReleasedThisFrame		; break ;
-							case  6 : state = gamepad.rightTrigger.wasReleasedThisFrame		; break ;
-							case  7 : state = gamepad.leftTrigger.wasReleasedThisFrame		; break ;
-							case  8 : state = gamepad.rightStickButton.wasReleasedThisFrame	; break ;
-							case  9 : state = gamepad.leftStickButton.wasReleasedThisFrame	; break ;
-							case 10 : state = gamepad.startButton.wasReleasedThisFrame		; break ;
-							case 11 : state = gamepad.selectButton.wasReleasedThisFrame		; break ;
+							case  4 : state = gamepad.dpad.right.wasReleasedThisFrame		; break ;
+							case  5 : state = gamepad.dpad.left.wasReleasedThisFrame		; break ;
+							case  6 : state = gamepad.dpad.up.wasReleasedThisFrame		    ; break ;
+							case  7 : state = gamepad.dpad.down.wasReleasedThisFrame		; break ;
+							case  8 : state = gamepad.rightShoulder.wasReleasedThisFrame	; break ;
+							case  9 : state = gamepad.leftShoulder.wasReleasedThisFrame		; break ;
+							case 10 : state = gamepad.rightTrigger.wasReleasedThisFrame		; break ;
+							case 11 : state = gamepad.leftTrigger.wasReleasedThisFrame		; break ;
+							case 12 : state = gamepad.rightStickButton.wasReleasedThisFrame	; break ;
+							case 13 : state = gamepad.leftStickButton.wasReleasedThisFrame	; break ;
+							case 14 : state = gamepad.startButton.wasReleasedThisFrame		; break ;
+							case 15 : state = gamepad.selectButton.wasReleasedThisFrame		; break ;
 						}
 
 						return state ;

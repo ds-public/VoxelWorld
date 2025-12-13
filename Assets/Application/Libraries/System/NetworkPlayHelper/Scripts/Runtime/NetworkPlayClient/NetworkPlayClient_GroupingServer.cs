@@ -310,9 +310,34 @@ namespace NetworkPlayHelper
 		}
 
 		/// <summary>
+		/// グループ情報群を取得する
+		/// </summary>
+		/// <param name="applicationId"></param>
+		/// <param name="filter"></param>
+		/// <param name="offset"></param>
+		/// <param name="length"></param>
+		/// <param name="cancellationToken"></param>
+		/// <returns></returns>
+		public async Task<GetGroups_Response> GetGroupsAsync
+		(
+			string                      applicationId,
+			byte                        filter,
+			ushort	                    offset,
+			ushort	                    length,
+			CancellationToken           cancellationToken
+		)
+		{
+			return await m_NetworkPlayClientAdapter.GetGroupsAsync( applicationId, filter, offset, length, cancellationToken ) ;
+		}
+
+		/// <summary>
 		/// グループへ参加する　※フリーユーザー限定行動
 		/// </summary>
-		/// <param name="userIds"></param>
+		/// <param name="userId"></param>
+		/// <param name="groupId"></param>
+		/// <param name="password"></param>
+		/// <param name="parameters"></param>
+		/// <param name="cancellationToken"></param>
 		/// <returns></returns>
 		public async Task<JoinToGroup_Response> JoinToGroupAsync
 		(
@@ -406,12 +431,22 @@ namespace NetworkPlayHelper
 			string						applicationId,
 			GroupTypes					groupType,
 			string						password,
+            bool                        isAutomaticMatchingStarting,
 			Dictionary<string,string>	groupParameters,
 			Dictionary<string,string>	groupMemberParameters,
 			CancellationToken			cancellationToken
 		)
 		{
-			return await m_NetworkPlayClientAdapter.CreateGroupAsync( applicationId, groupType, password, groupParameters, groupMemberParameters, cancellationToken ) ;
+			return await m_NetworkPlayClientAdapter.CreateGroupAsync
+            (
+                applicationId,
+                groupType,
+                password,
+                isAutomaticMatchingStarting,
+                groupParameters,
+                groupMemberParameters,
+                cancellationToken
+            ) ;
 		}
 
 

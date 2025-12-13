@@ -142,6 +142,7 @@ namespace InputHelper
 		{
 			if( m_Instance == null )
 			{
+                Debug.LogWarning( "InputManager is null created." ) ;
 				return ;
 			}
 

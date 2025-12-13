@@ -247,8 +247,8 @@ namespace NetworkPlayHelper
 		/// <returns></returns>
 		public Task<GetSessions_Response> GetSessionsAsync
 		(
-			uint	offset = 0,
-			uint	length = 0,
+			ushort	offset = 0,
+			ushort	length = 0,
 			CancellationToken cancellationToken = default
 		)
 		{

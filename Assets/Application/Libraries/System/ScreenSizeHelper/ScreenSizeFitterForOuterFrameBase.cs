@@ -6,7 +6,7 @@ using UnityEngine.EventSystems ;
 namespace ScreenSizeHelper
 {
 	/// <summary>
-	/// スクリーンのサイズ調整クラス Version 2024/08/14 0
+	/// スクリーンのサイズ調整クラス Version 2025/11/28 0
 	/// </summary>
 	[ExecuteAlways]
 	[DisallowMultipleComponent]
@@ -86,6 +86,12 @@ namespace ScreenSizeHelper
 		protected float					m_LimitHeight ;
 
 
+		[Header( "３Ｄ表示が有効時のパースの強度" )]
+
+		[SerializeField][Range( 28, 90 )]
+		protected float                 m_Perspective ; // 0 で 28度 ～ 1 で 90度
+
+
 		//-----------------------------------
 		// 状態変化確認用
 
@@ -117,6 +123,9 @@ namespace ScreenSizeHelper
 
 		// 自身の RectTransform
 		protected RectTransform			m_RectTransform ;
+
+		// パースペクティブの変化検知用
+		protected float                 m_Perspective_Active ;
 
 		// 自身の RectTransform の更新が必要かどうか
 		protected bool					m_IsDirty = false ;
@@ -168,17 +177,7 @@ namespace ScreenSizeHelper
 				{
 					// セーフエリア対応は有効
 
-					Canvas canvas = null ;
-					var t = transform.parent ;
-
-					while( canvas == null && t != null )
-					{
-						if( t.TryGetComponent<Canvas>( out canvas ) == false )
-						{
-							// 直親の Canvas は発見出来ず
-							t = t.parent ;
-						}
-					}
+					Canvas canvas = GetCanvas() ;
 
 					if( canvas != null )
 					{
@@ -210,17 +209,7 @@ namespace ScreenSizeHelper
 				{
 					// セーフエリア対応は無効
 
-					Canvas canvas = null ;
-					var t = transform.parent ;
-
-					while( canvas == null && t != null )
-					{
-						if( t.TryGetComponent<Canvas>( out canvas ) == false )
-						{
-							// 直親の Canvas は発見出来ず
-							t = t.parent ;
-						}
-					}
+					Canvas canvas = GetCanvas() ;
 
 					if( canvas != null )
 					{
@@ -234,6 +223,25 @@ namespace ScreenSizeHelper
 				}
 			}
 		}
+
+		// 直親のキャンバスを取得する
+		private Canvas GetCanvas()
+		{
+			Canvas canvas = null ;
+			var t = transform.parent ;
+
+			while( canvas == null && t != null )
+			{
+				if( t.TryGetComponent<Canvas>( out canvas ) == false )
+				{
+					// 直親の Canvas は発見出来ず
+					t = t.parent ;
+				}
+			}
+
+			return canvas ;
+		}
+
 
 		// 継承クラスで基準解像度と最大解像度を設定してもらう
 		protected virtual void OnAwake(){}
@@ -330,6 +338,15 @@ namespace ScreenSizeHelper
 				// OnRectTransformDimensionsChange は呼ばれない事がある
 				m_IsDirty = true ;
 			}
+
+			//----------------------------------------------------------
+
+			// 画角変化
+			if( m_Perspective_Active != m_Perspective )
+			{
+				m_Perspective_Active  = m_Perspective ;
+				m_IsDirty = true ;
+			}
 		}
 
 		// 表示更新する
@@ -339,6 +356,147 @@ namespace ScreenSizeHelper
 			{
 				// まさか取れない事は無いと思うが
 				return ;
+			}
+
+			//------------------------------------------------------------------------------------------
+
+			float width, height ;
+
+			var canvas = GetCanvas() ;
+			if( canvas != null )
+			{
+				if( canvas.renderMode == RenderMode.WorldSpace && canvas.worldCamera != null )
+				{
+					// ３Ｄパースあり
+
+					float screenWidth  = Screen.width ;
+					float screenHeight = Screen.height ;
+
+					if( screenWidth >  screenHeight )
+					{
+						// 画面は横長
+						float screenAspect = screenWidth    / screenHeight ;
+						float basicAspect  = m_BasicWidth   / m_BasicHeight  ;
+
+						if( screenAspect >  basicAspect )
+						{
+							// より横長
+							width   = screenAspect * m_BasicHeight ;
+							height	= m_BasicHeight ;
+						}
+						else
+						if( screenAspect <  basicAspect )
+						{
+							// 基準より少ない横長
+							width	= m_BasicWidth ;
+							height  = m_BasicWidth / screenAspect ;
+						}
+						else
+						{
+							// 丁度
+							width	= m_BasicWidth ;
+							height	= m_BasicHeight ;
+						}
+					}
+					else
+					{
+						// 画面は縦長
+						float screenAspect = screenHeight   / screenWidth ;
+						float basicAspect  = m_BasicHeight  / m_BasicWidth  ;
+
+						if( screenAspect >  basicAspect )
+						{
+							// より縦長
+							height  = screenAspect * m_BasicHeight ;
+							width	= m_BasicWidth  ;
+						}
+						else
+						if( screenAspect <  basicAspect )
+						{
+							// 基準より少ない縦長
+							height = m_BasicHeight ;
+							width  = m_BasicWidth / screenAspect ;
+						}
+						else
+						{
+							// 丁度
+							height	= m_BasicHeight ;
+							width	= m_BasicWidth  ;
+						}
+					}
+
+					//--------------------------------------------------------
+
+					var canvasRectTransform = canvas.transform as RectTransform ;
+
+					// サイズ
+					canvasRectTransform.sizeDelta	= new Vector2( width, height ) ;
+
+					canvasRectTransform.SetPositionAndRotation( Vector3.zero, Quaternion.identity ) ;
+					canvasRectTransform.localScale = Vector3.one ;
+					canvasRectTransform.anchorMin	= new Vector2( 0.5f, 0.5f ) ;
+					canvasRectTransform.anchorMax	= new Vector2( 0.5f, 0.5f ) ;
+					canvasRectTransform.pivot		= new Vector2( 0.5f, 0.5f ) ;
+
+					// 強制更新
+					canvasRectTransform.ForceUpdateRectTransforms() ;
+
+					//--------------------------------------------------------
+
+					// カメラの位置と画角を調整する
+
+					float canvasHeight = canvasRectTransform.sizeDelta.y ;
+
+					var uiCamera = canvas.worldCamera ;
+
+					if( uiCamera.orthographic == true )
+					{
+						// 並行投影
+
+						uiCamera.orthographicSize = canvasHeight * 0.5f ;
+
+						uiCamera.transform.SetPositionAndRotation( new Vector3( 0, 0, - canvasHeight ), Quaternion.identity );
+						uiCamera.transform.localScale = Vector3.one ;
+
+						float farClipPlane = uiCamera.orthographicSize + 100.0f ;
+						if( uiCamera.farClipPlane <  farClipPlane )
+						{
+							uiCamera.farClipPlane  = farClipPlane ;
+						}
+					}
+					else
+					{
+						// 投射投影
+						float perspective = m_Perspective ;
+//						perspective  = Mathf.Clamp( perspective,  0,  1 ) ;
+						perspective  = Mathf.Clamp( perspective, 28, 90 ) ;
+
+						// 0 = 28.08度 距離が縦幅の２倍
+						// 1 = 90.00度 距離が縦幅の１／２
+//						float degree = Mathf.Lerp( 28.08f, 90.00f, perspective ) ;
+						float degree = perspective ;
+
+						//-------------------------------
+
+						// 画角を設定
+						uiCamera.fieldOfView = degree ;
+
+						// Tan 値を求める
+
+						float tan = Mathf.Tan( Mathf.PI * degree / 360.0f ) ;
+
+						float distance = canvasHeight * ( 0.5f / tan ) ;
+
+						uiCamera.transform.SetPositionAndRotation( new Vector3( 0, 0, - distance ), Quaternion.identity );
+						uiCamera.transform.localScale = Vector3.one ;
+
+						float farClipPlane = distance * 1.25f ;
+						if( uiCamera.farClipPlane <  farClipPlane )
+						{
+							uiCamera.farClipPlane  = farClipPlane ;
+						}
+					}
+				}
 			}
 
 			//------------------------------------------------------------------------------------------
@@ -370,10 +528,6 @@ namespace ScreenSizeHelper
 			m_RectTransform.anchorMin	= new Vector2( 0.5f, 0.5f ) ;
 			m_RectTransform.anchorMax	= new Vector2( 0.5f, 0.5f ) ;
 			m_RectTransform.pivot		= new Vector2( 0.5f, 0.5f ) ;
-
-			//----------------------------------------------------------
-
-			float width, height ;
 
 			//------------------------------------------------------------------------------------------
 

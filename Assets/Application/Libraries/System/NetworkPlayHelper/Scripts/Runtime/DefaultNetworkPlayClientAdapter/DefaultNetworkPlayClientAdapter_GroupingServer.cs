@@ -9,9 +9,6 @@ using System.Linq ;
 using System.Threading ;
 using System.Threading.Tasks ;
 
-using System.Net ;
-using System.Net.Sockets ;
-
 using UnityEngine ;
 
 using SocketHelper ;
@@ -307,9 +304,33 @@ namespace NetworkPlayHelper
 		}
 
 		/// <summary>
+		/// グループ情報群を取得する
+		/// </summary>
+		/// <param name="filter"></param>
+		/// <param name="offset"></param>
+		/// <param name="length"></param>
+		/// <param name="cancellationToken"></param>
+		/// <returns></returns>
+		public async Task<GetGroups_Response> GetGroupsAsync
+		(
+			string                      applicationId,
+			byte					    filter,
+			ushort                      offset,
+			ushort                      length,
+			CancellationToken			cancellationToken
+		)
+		{
+			return await m_GroupingServerProcessor.GetGroupsAsync( applicationId, filter, offset, length, cancellationToken ) ;
+		}
+
+		/// <summary>
 		/// グループへ参加する　※フリーユーザー限定行動
 		/// </summary>
-		/// <param name="userIds"></param>
+		/// <param name="userId"></param>
+		/// <param name="groupId"></param>
+		/// <param name="password"></param>
+		/// <param name="parameters"></param>
+		/// <param name="cancellationToken"></param>
 		/// <returns></returns>
 		public async Task<JoinToGroup_Response> JoinToGroupAsync
 		(
@@ -403,12 +424,22 @@ namespace NetworkPlayHelper
 			string						applicationId,
 			GroupTypes					groupType,
 			string						password,
+			bool                        isAutomaticMatchingStarting,
 			Dictionary<string,string>	groupParameters,
 			Dictionary<string,string>	groupMemberParameters,
 			CancellationToken			cancellationToken
 		)
 		{
-			return await m_GroupingServerProcessor.CreateGroupAsync( applicationId, groupType, password, groupParameters, groupMemberParameters, cancellationToken ) ;
+			return await m_GroupingServerProcessor.CreateGroupAsync
+			(
+				applicationId,
+				groupType,
+				password,
+				isAutomaticMatchingStarting,
+				groupParameters,
+				groupMemberParameters,
+				cancellationToken
+			) ;
 		}
 
 		/// <summary>
@@ -1212,29 +1243,6 @@ namespace NetworkPlayHelper
 
 						return ;
 					}
-#if MATCHING_SYSTEM_OLD_VERSION
-					else
-					if( commandType == CommandTypes.MatchingToSessionSuccessful )
-					{
-						// セッションにマッチング(参加)成功の際の通知
-
-						int offset = 1 ;
-						OnMatchingToSessionSuccessful( commandData, ref offset ) ;
-
-						return ;
-					}
-					else
-					if( commandType == CommandTypes.MatchingToSessionFailed )
-					{
-						// セッションにマッチング(参加)失敗の際の通知
-
-						int offset = 1 ;
-						OnMatchingToSessionFailed( commandData, ref offset ) ;
-
-						return ;
-
-					}
-#endif
 					else
 					if( commandType == CommandTypes.NotificationMessage )
 					{
@@ -1477,6 +1485,42 @@ namespace NetworkPlayHelper
 			}
 
 			//----------------------------------
+			// キャッシュするグループ情報群
+
+			// キャッシュされたグループ情報群
+			private readonly List<Group> m_CachedGroups = new () ;
+
+			/// <summary>
+			/// キャッシュされたグループ情報群
+			/// </summary>
+			public List<Group> CachedGroups => m_CachedGroups ;
+
+
+			// グループ情報群のオフセット
+			private ushort    m_OffsetOfGroups = 0 ;
+
+			/// <summary>
+			/// グループ情報群のオフセット
+			/// </summary>
+			public  ushort    OffsetOfGroups => m_OffsetOfGroups ;
+
+			// グループ情報群のレングス
+			private ushort    m_LengthOfGroups = 0 ;
+
+			/// <summary>
+			/// グループ情報群のレングス
+			/// </summary>
+			public  ushort    LengthOfGroups => m_LengthOfGroups ;
+
+			// グループ情報群のカウント(全体数)
+			private ushort    m_CountOfGroups = 0 ;
+
+			/// <summary>
+			/// グループ情報群のカウント(全体数)
+			/// </summary>
+			public  ushort    CountOfGroups => m_CountOfGroups ;
+
+			//----------------------------------
 
 			// 現在マッチング処理中かどうか
 			private	bool	m_IsMatchingRunning = false ;
@@ -1691,6 +1735,11 @@ namespace NetworkPlayHelper
 								ProcessGroupingActionResponse_RejectGroupInvitation( groupingActionResponse.GroupingActionData ) ;
 							break ;
 
+							// グループ情報群を取得する
+							case GroupingActionTypes.GetGroups :
+								ProcessGroupingActionResponse_GetGroups( groupingActionResponse.GroupingActionData ) ;
+							break ;
+
 							// グループに参加する
 							case GroupingActionTypes.JoinToGroup :
 								ProcessGroupingActionResponse_JoinToGroup( groupingActionResponse.GroupingActionData ) ;
@@ -1876,9 +1925,10 @@ namespace NetworkPlayHelper
 					GroupTypes					groupType ;
 					bool						isInviting ;
 					Dictionary<string, string>	parameters ;
+					uint                        sessionId ;
 
 					// グループの所属状況を取得する
-					var onlineUsers = new Dictionary<string, ( string ApplicationId, GroupTypes GroupType, bool IsInviting, Dictionary<string, string> Parameters )>() ;
+					var onlineUsers = new Dictionary<string, ( string ApplicationId, GroupTypes GroupType, bool IsInviting, Dictionary<string, string> Parameters, uint SessionId )>() ;
 
 					for( i  = 0 ; i <  l ; i ++ )
 					{
@@ -1897,8 +1947,11 @@ namespace NetworkPlayHelper
 						// 固有パラメータ
 						parameters		= GetUserParameters( data, ref offset ) ;
 
+						// 参加中のセッション識別子
+						sessionId       = DataFormat.GetUInt( data, ref offset ) ;
+
 						// 追加
-						onlineUsers.Add( userId, ( applicationId, groupType, isInviting, parameters ) ) ;
+						onlineUsers.Add( userId, ( applicationId, groupType, isInviting, parameters, sessionId ) ) ;
 					}
 
 					//-------------------------------
@@ -1916,6 +1969,7 @@ namespace NetworkPlayHelper
 							relatedUser.GroupType		= onlineUser.GroupType ;
 							relatedUser.IsInviting		= onlineUser.IsInviting ;
 							relatedUser.Parameters		= onlineUser.Parameters ;
+							relatedUser.SessionId       = onlineUser.SessionId ;
 						}
 						else
 						{
@@ -1925,6 +1979,7 @@ namespace NetworkPlayHelper
 							relatedUser.GroupType		= GroupTypes.None ;
 							relatedUser.IsInviting		= false ;
 							relatedUser.Parameters		= new () ;
+							relatedUser.SessionId       = 0 ;
 						}
 					}
 
@@ -2172,6 +2227,92 @@ namespace NetworkPlayHelper
 					{
 						Debug.LogWarning( "招待リストに指定のユーザー識別子のものが見つからない UserId = " + userId ) ;
 					}
+
+					return true ;
+				}
+				catch( Exception e )
+				{
+					Debug.LogWarning( "受信データ異常です\n" + e.Message ) ;
+					return false ;
+				}
+			}
+
+			// グループ情報群を取得する
+			private bool ProcessGroupingActionResponse_GetGroups( byte[] data )
+			{
+				try
+				{
+					int offset = 0 ;
+
+					// フィルタ適用後の該当グループ総数
+					m_CountOfGroups = DataFormat.GetVUShort( data, ref offset ) ;
+
+					if( m_CountOfGroups >   0 )
+					{
+						// オフセット
+						m_OffsetOfGroups = DataFormat.GetVUShort( data, ref offset ) ;
+
+						// レングス
+						m_LengthOfGroups = DataFormat.GetVUShort( data, ref offset ) ;
+
+						//-------------------------------------
+						// 展開
+
+						m_CachedGroups.Clear() ;
+
+						for( ushort index  = 0 ; index <  m_LengthOfGroups ; index ++ )
+						{
+							// グループタイプ
+							GroupTypes groupType	    = ( GroupTypes )DataFormat.GetByte( data, ref offset ) ;
+
+							// グループ識別子
+							uint groupId			    = DataFormat.GetUInt( data, ref offset ) ;
+
+							// パスワードが必要か
+							bool hasPassword            = DataFormat.GetBool( data, ref offset ) ;
+
+							// 招待数
+							ushort invitationCount      = DataFormat.GetUShort( data, ref offset ) ;
+
+							// 参加数
+							ushort nowMembers           = DataFormat.GetUShort( data, ref offset ) ;
+
+							// 最大数
+							ushort maxMembers           = DataFormat.GetUShort( data, ref offset ) ;
+
+							// グループの固有パラメータ
+							var groupParameters         = GetUserParameters( data, ref offset ) ;
+
+							//-------------
+
+							// リーダーのユーザー識別子
+							string groupLeaderUserId    = DataFormat.GetString( data, ref offset ) ;
+
+							// リーダーのユーザー名
+							string groupLeaderUserName  = DataFormat.GetString( data, ref offset ) ;
+
+							// リーザーの固有パラメータ
+							var groupLeaderParameters   = GetUserParameters( data, ref offset ) ;
+
+							//-------------------------------------
+
+							m_CachedGroups.Add( new
+							(
+								groupType, groupId, hasPassword, invitationCount, nowMembers, maxMembers, groupParameters,
+								groupLeaderUserId, groupLeaderUserName, groupLeaderParameters
+							) ) ;
+						}
+					}
+					else
+					{
+						m_OffsetOfGroups = 0 ;
+
+						m_LengthOfGroups = 0 ;
+
+						m_CachedGroups.Clear() ;
+					}
+
+					//-----------------------------------------
 
 					return true ;
 				}
@@ -2490,7 +2631,7 @@ namespace NetworkPlayHelper
 					}
 					else
 					{
-						Debug.LogWarning( "関連性のあるユーザー情報群に指定のユーザー識別子のものが見つからない UserId = " + userId ) ;
+						Debug.LogWarning( "関連性のあるユーザー情報群に指定のユーザー識別子のものが見つからない UserId = " + userId + "\n<color=#FFFF00>フレンドではないユーザーがグループから離脱したので、デバッグ機能を使用してグループに加わっていた可能性あり</color>" ) ;
 					}
 
 					var groupMember = m_GroupMembers.FirstOrDefault( _ => _.UserId == userId ) ;
@@ -2861,7 +3002,7 @@ namespace NetworkPlayHelper
 						}
 						else
 						{
-							Debug.LogWarning( "フレンドリストに指定のユーザー識別子のものが見つからない UserId = " + userId ) ;
+							Debug.LogWarning( "フレンドリストに指定のユーザー識別子のものが見つからない UserId = " + userId + "\n<color=#FFFF00>招待を送っていないユーザーがグループに加わったため、デバッグ機能を使用してグループに加わった可能性あり</color>" ) ;
 						}
 
 						//------------
@@ -3449,7 +3590,7 @@ namespace NetworkPlayHelper
 
 					// ソロでのマッチング申請の場合は userId は null になっている
 
-					Debug.Log( "<color=#FF7F00>------->マッチング取消リクエストの結果 isCanceled = " + isCanceled ) ;
+					Debug.Log( "<color=#FF7F00>------->マッチング取消リクエストの結果 isCanceled = " + isCanceled + "</color>\n" + reason + " " + failureDetails ) ;
 
 					//--------------------------------
 
@@ -3531,6 +3672,27 @@ namespace NetworkPlayHelper
 
 							// コールバックを呼ぶ
 							m_OnMatchingStatusUpdated?.Invoke( MatchingStatus.Failed ) ;
+						}
+						else
+						{
+							// コールバックを呼ぶ
+							m_OnMatchingStatusUpdated?.Invoke( MatchingStatus.NoCancellation ) ;
+						}
+					}
+					else
+					if( reason == MatchingCancellationResons.Timeout )
+					{
+						// 失敗
+						if( isCanceled == true )
+						{
+							// マッチング停止完了
+							m_IsMatchingRunning		= false ;
+
+							// マッチング取消不可
+							m_IsMatchingStoppable	= false ;
+
+							// コールバックを呼ぶ
+							m_OnMatchingStatusUpdated?.Invoke( MatchingStatus.Timeout ) ;
 						}
 						else
 						{
@@ -4318,7 +4480,9 @@ namespace NetworkPlayHelper
 						GroupType	= GroupTypes.None,
 
 						IsInviting	= false,
-						Parameters	= new ()
+						Parameters	= new (),
+
+						SessionId   = 0
 					} ) ;
 				}
 
@@ -4652,9 +4816,93 @@ namespace NetworkPlayHelper
 			}
 
 			/// <summary>
+			/// グループ情報群を取得する
+			/// </summary>
+			/// <param name="filter"></param>
+			/// <param name="offset"></param>
+			/// <param name="length"></param>
+			/// <param name="cancellationToken"></param>
+			/// <returns></returns>
+			public async Task<GetGroups_Response> GetGroupsAsync
+			(
+				string                      applicationId,
+				byte                        filter,
+				ushort                      offset,
+				ushort                      length,
+				CancellationToken			cancellationToken
+			)
+			{
+				//---------------------------------------------------------
+
+				// 非同期グルーピングアクションのシーケンスを取得する
+				uint asyncGroupingActionSequence = m_AsyncGroupingActionSequence ;
+
+				// 非同期グルーピングアクションのシーケンスの値を変化させる
+				m_AsyncGroupingActionSequence ++ ;
+
+				// 非同期グルーピングアクションを送信する
+				if( SendCommand
+				(
+					CommandTypes.GroupingAction,
+					( List<byte> commandContentData ) =>
+					{
+						// グルーピングアクションの種別
+						DataFormat.PutByte( commandContentData, ( byte )GroupingActionTypes.GetGroups ) ;
+
+						// グルーピングアクションのコマンドシーケンス
+						DataFormat.PutUInt( commandContentData, asyncGroupingActionSequence ) ;
+
+						//-------------------------------
+						// 以下がグルーピングアクション毎に異なるデータ
+
+						var data = new List<byte>() ;
+
+						// アプリケーション識別子
+						DataFormat.PutString( data, applicationId ) ;
+
+						// フィルター(0・3=すべて・1=Small・2=Large)
+						DataFormat .PutByte( data, filter ) ;
+
+						// オフセット
+						DataFormat.PutVUShort( data, offset ) ;
+
+						// レングス
+						DataFormat.PutVUShort( data, length ) ;
+
+						//-----------
+
+						DataFormat.PutByteArray( commandContentData, data ) ;
+					}
+				) == false )
+				{
+					return new ( GroupingActionResponseCodes.Error, "グーピングアクションの送信に失敗しました" ) ;
+				}
+
+				//---------------------------------------------------------
+				// シーケンスに該当するグルーピングアクションを受信するまで待つ
+
+				( var responseCode, var errorMessage ) = await WaitForAsyncGroupingActionResult( asyncGroupingActionSequence, cancellationToken ) ;
+
+				if( responseCode == GroupingActionResponseCodes.Succeeded )
+				{
+					// 成功
+					return new ( m_CountOfGroups, m_OffsetOfGroups, m_CachedGroups ) ;
+				}
+				else
+				{
+					// 失敗
+					return new ( responseCode, errorMessage ) ;
+				}
+			}
+
+			/// <summary>
 			/// グループへ参加する　※フリーユーザー限定行動
 			/// </summary>
-			/// <param name="userIds"></param>
+			/// <param name="userId"></param>
+			/// <param name="groupId"></param>
+			/// <param name="password"></param>
+			/// <param name="parameters"></param>
+			/// <param name="cancellationToken"></param>
 			/// <returns></returns>
 			public async Task<JoinToGroup_Response> JoinToGroupAsync
 			(
@@ -5014,6 +5262,7 @@ namespace NetworkPlayHelper
 				string						applicationId,
 				GroupTypes					groupType,
 				string						password,
+				bool                        isAutomaticMatchingStarting,
 				Dictionary<string,string>	groupParameters,
 				Dictionary<string,string>	groupMemberParameters,
 				CancellationToken			cancellationToken
@@ -5054,6 +5303,9 @@ namespace NetworkPlayHelper
 
 						// パスワード(オプショナル)
 						DataFormat.PutString( data, password ) ;
+
+						// 全員が準備完了で自動的にマッチングを開始するかどうか
+						DataFormat.PutBool( data, isAutomaticMatchingStarting ) ;
 
 						//-----------
 

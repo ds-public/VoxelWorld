@@ -109,6 +109,9 @@ namespace uGUIHelper
 		// 決定ボタンの識別子
 		private int[] m_DecisionButtonIdentities = { GamePad.B1 } ;
 
+		// 決定アクションの名前
+		private string m_DecisionButtonActionName = null ;
+
 		// 決定キーの識別子群
 		private KeyCodes[] m_DecisionButtonKeyCodes = { KeyCodes.Z, KeyCodes.Return } ;
 
@@ -171,13 +174,16 @@ namespace uGUIHelper
 
 		//---------
 
-		// キャンセルボタンの識別子
+		// 取消ボタンの識別子
 		private int[] m_CancelButtonIdentities = { GamePad.B2 } ;
 
-		// キャンセルキーの識別子群
+		// 取消アクションの名前
+		private string m_CancelButtonActionName = null ;
+
+		// 取消キーの識別子群
 		private KeyCodes[] m_CancelButtonKeyCodes = { KeyCodes.X, KeyCodes.Escape } ;
 
-		// キャンセルボタンの入力があった際に呼ばれるコールバック
+		// 取消ボタンの入力があった際に呼ばれるコールバック
 		private Func<string,ButtonActionTypes,string>   m_OnCancel ;
 
 		// 取消ボタンは、押した際と離した際に、個別にコールバックを呼ぶため、その状態判定用の値
@@ -245,7 +251,17 @@ namespace uGUIHelper
 		/// <summary>
 		/// 長押し判定時間
 		/// </summary>
-		public float ButtonLongPressConfirmationTime => m_ButtonLongPressConfirmationTime ;
+		public float ButtonLongPressConfirmationTime
+		{
+			get
+			{
+				return m_ButtonLongPressConfirmationTime ;
+			}
+			set
+			{
+				m_ButtonLongPressConfirmationTime = value ;
+			}
+		}
 
 		//---------
 
@@ -253,32 +269,56 @@ namespace uGUIHelper
 		private int[] m_ExtraButtonIdentities = null ;
 
 		// 拡張キーの識別子群
-		private KeyCodes[][] m_ExtraButtonKeyCodes = null ;
+		private KeyCodes[][] m_ExtraButtonKeyCodeSets = null ;
+
+		// 拡張ボタンアクションの識別子群
+		private string[] m_ExtraButtonActionNames = null ;
 
 		// 拡張ボタンの入力があった際に呼ばれるコールバック
-		private Action<int,string>      m_OnExtraButton ; 
+		private Action<int,string>              m_OnExtraButton = null ; 
+
+		// 拡張ボタンの入力があった際に呼ばれるコールバック
+		private Action<string,string,object>    m_OnExtraButtonAction = null ;
+
+		// コールバック呼び出し時に渡す任意オブジェクト
+		private object                          m_ExtraButtonActionObject = null ;
+		
+		// 拡張ボタンは、押した際と離した際に、個別にコールバックを呼ぶため、その状態判定用の値
+		private bool[] m_IsExtraButtonIdentities_Pressing = null ;
 
 		// 拡張ボタンは、押した際と離した際に、個別にコールバックを呼ぶため、その状態判定用の値
-		private bool[] m_IsExtraButtonPressing = null ;
+		private bool[] m_IsExtraButtonActionNames_Pressing = null ;
 
 		//-----------------------------
 
 		// 基本アクシスのスティック識別番号群(カーソル移動に関係あり)
 		private int[] m_BasisAxisNumbers = { 0 } ;
 
+		// 基本アクシスアクションの名前
+		private string m_BasisAxisActionName = null ;
+
 		// 基本アクシスのキーコード群(カーソル移動に関係あり)
-		private KeyCodes[][]    m_BasisAxisKeyCodes =
+		private KeyCodes[][]    m_BasisAxisKeyCodeSets =
 		{
 			new []{ KeyCodes.LeftArrow, KeyCodes.RightArrow, KeyCodes.UpArrow, KeyCodes.DownArrow },
 		} ;
 
 		// 拡張アクシスの識別番号群(カーソル移動に関係なし)
-		private int[]                           m_ExtraAxisNumbers = null ;
+		private int[]                                   m_ExtraAxisNumbers = null ;
 
-		private KeyCodes[][]                    m_ExtraAxisKeyCodes = null ;
+		private KeyCodes[][]                            m_ExtraAxisKeyCodeSets = null ;
+
+		// 拡張アクシスの識別番号群(カーソル移動に関係なし)
+		private string[]                                m_ExtraAxisActionNames = null ;
 
 		// 拡張アクシスの入力があった際に呼ばれるコールバック
-		private Action<int,Vector2,string>      m_OnExtraAxis ;
+		private Action<int,Vector2,string>              m_OnExtraAxis = null ;
+
+		// 拡張アクシスの入力があった際に呼ばれるコールバック
+		private Action<string,Vector2,string,object>    m_OnExtraAxisAction = null ;
+
+		// コールバック呼び出し時に渡す任意オブジェクト
+		private object                                  m_ExtraAxisActionObject = null ;
 
 		//-----------------------------
 
@@ -558,7 +598,7 @@ namespace uGUIHelper
 		public void SetBasisConfiguration
 		(
 			int[] decisionButtonIdentities, int[] cancalButtonIdentities, int[] basisAxisNumbers,
-			KeyCodes[] decisionButtonKeyCodes, KeyCodes[] cancalButtonKeyCodes, KeyCodes[][] basisAxisKeyCodes
+			KeyCodes[] decisionButtonKeyCodes, KeyCodes[] cancalButtonKeyCodes, KeyCodes[][] basisAxisKeyCodeSets
 		)
 		{
 			m_DecisionButtonIdentities  = decisionButtonIdentities ;
@@ -571,7 +611,7 @@ namespace uGUIHelper
 			m_DecisionButtonKeyCodes    = decisionButtonKeyCodes ;
 			m_CancelButtonKeyCodes      = cancalButtonKeyCodes ;
 
-			m_BasisAxisKeyCodes         = basisAxisKeyCodes ;
+			m_BasisAxisKeyCodeSets      = basisAxisKeyCodeSets ;
 		}
 
 		/// <summary>
@@ -595,7 +635,24 @@ namespace uGUIHelper
 			m_DecisionButtonKeyCodes    = null ;
 			m_CancelButtonKeyCodes      = null ;
 
-			m_BasisAxisKeyCodes         = null ;
+			m_BasisAxisKeyCodeSets      = null ;
+		}
+
+		/// <summary>
+		/// 基本入力ゲームパッドを設定する(抽象化アクション指定)
+		/// </summary>
+		/// <param name="decisionButtonIdentity"></param>
+		/// <param name="cancalButtonIdentity"></param>
+		/// <param name="availableAxisNumbers"></param>
+		public void SetBasisConfiguration
+		(
+			string decisionButtonActionName, string cancalButtonActionName, string basisAxisActionName
+		)
+		{
+			m_DecisionButtonActionName  = decisionButtonActionName ;
+			m_CancelButtonActionName    = cancalButtonActionName ;
+
+			m_BasisAxisActionName       = basisAxisActionName ;
 		}
 
 		//---------
@@ -608,21 +665,21 @@ namespace uGUIHelper
 		public void SetExtraButtonConfiguration
 		(
 			int[] extraButtonIdentities,
-			KeyCodes[][] extraButtonKeyCodes,
+			KeyCodes[][] extraButtonKeyCodeSets,
 			Action<int,string> onExtraButton
 		)
 		{
-			m_ExtraButtonIdentities = extraButtonIdentities ;
-			m_ExtraButtonKeyCodes   = extraButtonKeyCodes ;
-			m_OnExtraButton         = onExtraButton ;
+			m_ExtraButtonIdentities     = extraButtonIdentities ;
+			m_ExtraButtonKeyCodeSets    = extraButtonKeyCodeSets ;
+			m_OnExtraButton             = onExtraButton ;
 
 			if( m_ExtraButtonIdentities != null && m_ExtraButtonIdentities.Length >  0 )
 			{
-				m_IsExtraButtonPressing = new bool[ m_ExtraButtonIdentities.Length ] ;
+				m_IsExtraButtonIdentities_Pressing = new bool[ m_ExtraButtonIdentities.Length ] ;
 			}
 			else
 			{
-				m_IsExtraButtonPressing = null ;
+				m_IsExtraButtonIdentities_Pressing = null ;
 			}
 		}
 
@@ -637,17 +694,43 @@ namespace uGUIHelper
 			Action<int,string> onExtraButton
 		)
 		{
-			m_ExtraButtonIdentities = extraButtonIdentities ;
-			m_ExtraButtonKeyCodes   = null ;
-			m_OnExtraButton         = onExtraButton ;
+			m_ExtraButtonIdentities     = extraButtonIdentities ;
+			m_ExtraButtonKeyCodeSets    = null ;
+			m_OnExtraButton             = onExtraButton ;
 
 			if( m_ExtraButtonIdentities != null && m_ExtraButtonIdentities.Length >  0 )
 			{
-				m_IsExtraButtonPressing = new bool[ m_ExtraButtonIdentities.Length ] ;
+				m_IsExtraButtonIdentities_Pressing = new bool[ m_ExtraButtonIdentities.Length ] ;
 			}
 			else
 			{
-				m_IsExtraButtonPressing = null ;
+				m_IsExtraButtonIdentities_Pressing = null ;
+			}
+		}
+
+		/// <summary>
+		/// 拡張入力ゲームパッドボタンを設定する(抽象化アクション指定)
+		/// </summary>
+		/// <param name="extraActionButtonIdentities"></param>
+		/// <param name="onExtraAction"></param>
+		public void SetExtraButtonConfiguration
+		(
+			string[] extraButtonActionNames,
+			Action<string,string,object> onExtraButtonAction,
+			object extraButtonActionObject
+		)
+		{
+			m_ExtraButtonActionNames    = extraButtonActionNames ;
+			m_OnExtraButtonAction       = onExtraButtonAction ;
+			m_ExtraButtonActionObject   = extraButtonActionObject ;
+
+			if( m_ExtraButtonActionNames != null && m_ExtraButtonActionNames.Length >  0 )
+			{
+				m_IsExtraButtonActionNames_Pressing = new bool[ m_ExtraButtonActionNames.Length ] ;
+			}
+			else
+			{
+				m_IsExtraButtonActionNames_Pressing = null ;
 			}
 		}
 
@@ -659,12 +742,12 @@ namespace uGUIHelper
 		public void SetExtraAxisConfiguration
 		(
 			int[] extraAxisNumbers,
-			KeyCodes[][] extraAxisKeyCodes,
+			KeyCodes[][] extraAxisKeyCodeSets,
 			Action<int,Vector2,string> onExtraAxis
 		)
 		{
 			m_ExtraAxisNumbers      = extraAxisNumbers ;
-			m_ExtraAxisKeyCodes     = extraAxisKeyCodes ;
+			m_ExtraAxisKeyCodeSets  = extraAxisKeyCodeSets ;
 			m_OnExtraAxis           = onExtraAxis ;
 		}
 
@@ -680,8 +763,25 @@ namespace uGUIHelper
 		)
 		{
 			m_ExtraAxisNumbers      = extraAxisNumbers ;
-			m_ExtraAxisKeyCodes     = null ;
+			m_ExtraAxisKeyCodeSets  = null ;
 			m_OnExtraAxis           = onExtraAxis ;
+		}
+
+		/// <summary>
+		/// 拡張入力ゲームパッドアクシスを設定する(抽象化アクション指定)
+		/// </summary>
+		/// <param name="extraAxisNumbers"></param>
+		/// <param name="onExtraAxis"></param>
+		public void SetExtraAxisConfiguration
+		(
+			string[] extraAxisActionNames,
+			Action<string,Vector2,string,object> onExtraAxisAction,
+			object extraAxisActionObject
+		)
+		{
+			m_ExtraAxisActionNames  = extraAxisActionNames ;
+			m_OnExtraAxisAction     = onExtraAxisAction ;
+			m_ExtraAxisActionObject = extraAxisActionObject ;
 		}
 
 		//-------------------------------------------------------------------------------------
@@ -727,7 +827,6 @@ namespace uGUIHelper
 			return false ;
 		}
 
-
 		// ゲームパッドによる入力があったかどうか判定する
 		private bool IsGamePadInput( bool hasBasis, bool hasExtra )
 		{
@@ -748,6 +847,24 @@ namespace uGUIHelper
 					}
 				}
 
+				// 決定キーのアクション
+				if( string.IsNullOrEmpty( m_DecisionButtonActionName ) == false )
+				{
+					if( GamePad.AcquireButtonAction( m_DecisionButtonActionName, out var decisionButtonIdentites, out _, out _ ) == true )
+					{
+						if( decisionButtonIdentites != null && decisionButtonIdentites.Length >  0 )
+						{
+							foreach( var decisionButtonIdentity in decisionButtonIdentites )
+							{
+								if( GamePad.GetButton( decisionButtonIdentity ) == true )
+								{
+									return true ;
+								}
+							}
+						}
+					}
+				}
+
 				//-----
 
 				// 取消キー
@@ -758,6 +875,24 @@ namespace uGUIHelper
 						if( GamePad.GetButton( cancelButtonIdentity ) == true )
 						{
 							return true ;
+						}
+					}
+				}
+
+				// 取消キーのアクション
+				if( string.IsNullOrEmpty( m_CancelButtonActionName ) == false )
+				{
+					if( GamePad.AcquireButtonAction( m_CancelButtonActionName, out var cancelButtonIdentites, out _, out _ ) == true )
+					{
+						if( cancelButtonIdentites != null && cancelButtonIdentites.Length >  0 )
+						{
+							foreach( var cancelButtonIdentity in cancelButtonIdentites )
+							{
+								if( GamePad.GetButton( cancelButtonIdentity ) == true )
+								{
+									return true ;
+								}
+							}
 						}
 					}
 				}
@@ -779,6 +914,28 @@ namespace uGUIHelper
 						}
 					}
 				}
+
+				// 方向キーのアクション
+				if( string.IsNullOrEmpty( m_BasisAxisActionName ) == false )
+				{
+					if( GamePad.AcquireAxisAction( m_BasisAxisActionName, out var basisAxisNumbers, out _, out _ ) == true )
+					{
+						if( basisAxisNumbers != null && basisAxisNumbers.Length >  0 )
+						{
+							foreach( var basisAxisNumber in basisAxisNumbers )
+							{
+								var axis = GamePad.GetAxis( basisAxisNumber ) ;
+								axis.x = axis.x <  0 ? - axis.x : axis.x ;
+								axis.y = axis.y <  0 ? - axis.y : axis.y ;
+
+								if( axis.x >  0.1f || axis.y >  0.1f )
+								{
+									return true ;
+								}
+							}
+						}
+					}
+				}
 			}
 
 			//---------------------------------------------------------------------------------
@@ -786,6 +943,7 @@ namespace uGUIHelper
 
 			if( hasExtra == true )
 			{
+				// ボタン
 				if( m_ExtraButtonIdentities != null && m_ExtraButtonIdentities.Length >  0 )
 				{
 					foreach( var extraButtonIdentity in m_ExtraButtonIdentities )
@@ -797,6 +955,30 @@ namespace uGUIHelper
 					}
 				}
 
+				// ボタンのアクション
+				if( m_ExtraButtonActionNames != null && m_ExtraButtonActionNames.Length >  0 )
+				{
+					foreach( var extraButtonActionName in m_ExtraButtonActionNames )
+					{
+						if( GamePad.AcquireButtonAction( extraButtonActionName, out var extraButtonIdentites, out _, out _ ) == true )
+						{
+							if( extraButtonIdentites != null && extraButtonIdentites.Length >  0 )
+							{
+								foreach( var extraButtonIdentity in extraButtonIdentites )
+								{
+									if( GamePad.GetButton( extraButtonIdentity ) == true )
+									{
+										return true ;
+									}
+								}
+							}
+						}
+					}
+				}
+
+				//-------------------------
+
+				// アクシス
 				if( m_ExtraAxisNumbers != null && m_ExtraAxisNumbers.Length >  0 )
 				{
 					foreach( var extraAxisNumber in m_ExtraAxisNumbers )
@@ -811,10 +993,36 @@ namespace uGUIHelper
 						}
 					}
 				}
+
+				// アクシスのアクション
+				if( m_ExtraAxisActionNames != null && m_ExtraAxisActionNames.Length >  0 )
+				{
+					foreach( var extraAxisActionName in m_ExtraAxisActionNames )
+					{
+						if( GamePad.AcquireAxisAction( extraAxisActionName, out var extraAxisNumbers, out _, out _ ) == true )
+						{
+							if( extraAxisNumbers != null && extraAxisNumbers.Length >  0 )
+							{
+								foreach( var extraAxisNumber in extraAxisNumbers )
+								{
+									var axis = GamePad.GetAxis( extraAxisNumber ) ;
+									axis.x = axis.x <  0 ? - axis.x : axis.x ;
+									axis.y = axis.y <  0 ? - axis.y : axis.y ;
+
+									if( axis.x >  0.1f || axis.y >  0.1f )
+									{
+										return true ;
+									}
+								}
+							}
+						}
+					}
+				}
 			}
 
 			//---------------------------------------------------------------------------------
 
+			// ゲームパッドによる入力は無い
 			return false ;
 		}
 
@@ -829,11 +1037,29 @@ namespace uGUIHelper
 				// 決定キー
 				if( m_DecisionButtonKeyCodes != null && m_DecisionButtonKeyCodes.Length >  0 )
 				{
-					foreach( var keyCode in m_DecisionButtonKeyCodes )
+					foreach( var decisionButtonKeyCode in m_DecisionButtonKeyCodes )
 					{
-						if( Keyboard.GetKey( keyCode ) == true )
+						if( Keyboard.GetKey( decisionButtonKeyCode ) == true )
 						{
 							return true ;
+						}
+					}
+				}
+
+				// 決定キーのアクション
+				if( string.IsNullOrEmpty( m_DecisionButtonActionName ) == false )
+				{
+					if( GamePad.AcquireButtonAction( m_DecisionButtonActionName, out _, out var decisionButtonKeyCodes, out _ ) == true )
+					{
+						if( decisionButtonKeyCodes != null && decisionButtonKeyCodes.Length >  0 )
+						{
+							foreach( var decisionButtonKeyCode in decisionButtonKeyCodes )
+							{
+								if( Keyboard.GetKey( decisionButtonKeyCode ) == true )
+								{
+									return true ;
+								}
+							}
 						}
 					}
 				}
@@ -843,11 +1069,29 @@ namespace uGUIHelper
 				// 取消キー
 				if( m_CancelButtonKeyCodes != null && m_CancelButtonKeyCodes.Length >  0 )
 				{
-					foreach( var keyCode in m_CancelButtonKeyCodes )
+					foreach( var cancelButtonKeyCode in m_CancelButtonKeyCodes )
 					{
-						if( Keyboard.GetKey( keyCode ) == true )
+						if( Keyboard.GetKey( cancelButtonKeyCode ) == true )
 						{
 							return true ;
+						}
+					}
+				}
+
+				// 取消キーのアクション
+				if( string.IsNullOrEmpty( m_CancelButtonActionName ) == false )
+				{
+					if( GamePad.AcquireButtonAction( m_CancelButtonActionName, out _, out var cancelButtonKeyCodes, out _ ) == true )
+					{
+						if( cancelButtonKeyCodes != null && cancelButtonKeyCodes.Length >  0 )
+						{
+							foreach( var cancelButtonKeyCode in cancelButtonKeyCodes )
+							{
+								if( Keyboard.GetKey( cancelButtonKeyCode ) == true )
+								{
+									return true ;
+								}
+							}
 						}
 					}
 				}
@@ -855,31 +1099,68 @@ namespace uGUIHelper
 				//-------------------------
 
 				// 方向キー
-				if( m_BasisAxisKeyCodes != null && m_BasisAxisKeyCodes.Length >  0 )
+				if( m_BasisAxisKeyCodeSets != null && m_BasisAxisKeyCodeSets.Length >  0 )
 				{
-					foreach( var basisAxiskeyCodes in m_BasisAxisKeyCodes )
+					foreach( var basisAxisKeyCodeSet in m_BasisAxisKeyCodeSets )
 					{
-						if( basisAxiskeyCodes != null && basisAxiskeyCodes.Length == 4 )
+						if( basisAxisKeyCodeSet != null && basisAxisKeyCodeSet.Length == 4 )
 						{
-							if( Keyboard.GetKey( basisAxiskeyCodes[ 0 ] ) == true )
+							if( Keyboard.GetKey( basisAxisKeyCodeSet[ 0 ] ) == true )
 							{
 								// →
 								return true ;
 							}
-							if( Keyboard.GetKey( basisAxiskeyCodes[ 1 ] ) == true )
+							if( Keyboard.GetKey( basisAxisKeyCodeSet[ 1 ] ) == true )
 							{
 								// ←
 								return true ;
 							}
-							if( Keyboard.GetKey( basisAxiskeyCodes[ 2 ] ) == true )
+							if( Keyboard.GetKey( basisAxisKeyCodeSet[ 2 ] ) == true )
 							{
 								// ↑
 								return true ;
 							}
-							if( Keyboard.GetKey( basisAxiskeyCodes[ 3 ] ) == true )
+							if( Keyboard.GetKey( basisAxisKeyCodeSet[ 3 ] ) == true )
 							{
 								// ↓
 								return true ;
+							}
+						}
+					}
+				}
+
+				// 方向キーのアクション
+				if( string.IsNullOrEmpty( m_BasisAxisActionName ) == false )
+				{
+					if( GamePad.AcquireAxisAction( m_BasisAxisActionName, out _, out var basisAxisKeyCodeSets, out _ ) == true )
+					{
+						if( basisAxisKeyCodeSets != null && basisAxisKeyCodeSets.Length >  0 )
+						{
+							foreach( var basisAxisKeyCodeSet in basisAxisKeyCodeSets )
+							{
+								if( basisAxisKeyCodeSet != null && basisAxisKeyCodeSet.Length == 4 )
+								{
+									if( Keyboard.GetKey( basisAxisKeyCodeSet[ 0 ] ) == true )
+									{
+										// →
+										return true ;
+									}
+									if( Keyboard.GetKey( basisAxisKeyCodeSet[ 1 ] ) == true )
+									{
+										// ←
+										return true ;
+									}
+									if( Keyboard.GetKey( basisAxisKeyCodeSet[ 2 ] ) == true )
+									{
+										// ↑
+										return true ;
+									}
+									if( Keyboard.GetKey( basisAxisKeyCodeSet[ 3 ] ) == true )
+									{
+										// ↓
+										return true ;
+									}
+								}
 							}
 						}
 					}
@@ -891,19 +1172,16 @@ namespace uGUIHelper
 
 			if( hasExtra == true )
 			{
-				int i, l ;
-
-				if( m_ExtraButtonKeyCodes != null && m_ExtraButtonKeyCodes.Length >  0 )
+				// ボタン
+				if( m_ExtraButtonKeyCodeSets != null && m_ExtraButtonKeyCodeSets.Length >  0 )
 				{
-					l = m_ExtraButtonKeyCodes.Length ;
-					for( i  = 0 ; i <  l ; i ++ )
+					foreach( var extraButtonKeyCodeSet in m_ExtraButtonKeyCodeSets )
 					{
-						var extraButtonKeyCodes = m_ExtraButtonKeyCodes[ i ] ;
-						if( extraButtonKeyCodes != null && extraButtonKeyCodes.Length >  0 )
+						if( extraButtonKeyCodeSet != null && extraButtonKeyCodeSet.Length >  0 )
 						{
-							foreach( var keyCode in extraButtonKeyCodes )
+							foreach( var extraButtonKeyCode in extraButtonKeyCodeSet )
 							{
-								if( Keyboard.GetKey( keyCode ) == true )
+								if( Keyboard.GetKey( extraButtonKeyCode ) == true )
 								{
 									return true ;
 								}
@@ -912,33 +1190,93 @@ namespace uGUIHelper
 					}
 				}
 
-				if( m_ExtraAxisKeyCodes != null && m_ExtraAxisKeyCodes.Length >  0 )
+				// ボタンのアクション
+				if( m_ExtraButtonActionNames != null && m_ExtraButtonActionNames.Length >  0 )
 				{
-					l = m_ExtraAxisKeyCodes.Length ;
-					for( i  = 0 ; i <  l ; i ++ )
+					foreach( var extraButtonActionName in m_ExtraButtonActionNames )
 					{
-						var extraAxisKeyCodes = m_ExtraAxisKeyCodes[ i ] ;
-						if( extraAxisKeyCodes != null && extraAxisKeyCodes.Length == 4 )
+						if( GamePad.AcquireButtonAction( extraButtonActionName, out _, out var extraButtonKeyCodeSet, out _ ) == true )
 						{
-							if( Keyboard.GetKey( extraAxisKeyCodes[ 0 ] ) == true )
+							if( extraButtonKeyCodeSet != null && extraButtonKeyCodeSet.Length >  0 )
+							{
+								foreach( var extraButtonKeyCode in extraButtonKeyCodeSet )
+								{
+									if( Keyboard.GetKey( extraButtonKeyCode ) == true )
+									{
+										return true ;
+									}
+								}
+							}
+						}
+					}
+				}
+
+				// アクシス
+				if( m_ExtraAxisKeyCodeSets != null && m_ExtraAxisKeyCodeSets.Length >  0 )
+				{
+					foreach( var extraAxisKeyCodeSet in m_ExtraAxisKeyCodeSets )
+					{
+						if( extraAxisKeyCodeSet != null && extraAxisKeyCodeSet.Length == 4 )
+						{
+							if( Keyboard.GetKey( extraAxisKeyCodeSet[ 0 ] ) == true )
 							{
 								// →
 								return true ;
 							}
-							if( Keyboard.GetKey( extraAxisKeyCodes[ 1 ] ) == true )
+							if( Keyboard.GetKey( extraAxisKeyCodeSet[ 1 ] ) == true )
 							{
 								// ←
 								return true ;
 							}
-							if( Keyboard.GetKey( extraAxisKeyCodes[ 2 ] ) == true )
+							if( Keyboard.GetKey( extraAxisKeyCodeSet[ 2 ] ) == true )
 							{
 								// ↑
 								return true ;
 							}
-							if( Keyboard.GetKey( extraAxisKeyCodes[ 3 ] ) == true )
+							if( Keyboard.GetKey( extraAxisKeyCodeSet[ 3 ] ) == true )
 							{
 								// ↓
 								return true ;
+							}
+						}
+					}
+				}
+
+				// アクシスのアクション
+				if( m_ExtraAxisActionNames != null && m_ExtraAxisActionNames.Length >  0 )
+				{
+					foreach( var extraAxisActionName in m_ExtraAxisActionNames )
+					{
+						if( GamePad.AcquireAxisAction( extraAxisActionName, out _, out var extraAxisKeyCodeSets, out _ ) == true )
+						{
+							if( extraAxisKeyCodeSets != null && extraAxisKeyCodeSets.Length >  0 )
+							{
+								foreach( var extraAxisKeyCodeSet in extraAxisKeyCodeSets )
+								{
+									if( extraAxisKeyCodeSet != null && extraAxisKeyCodeSet.Length == 4 )
+									{
+										if( Keyboard.GetKey( extraAxisKeyCodeSet[ 0 ] ) == true )
+										{
+											// →
+											return true ;
+										}
+										if( Keyboard.GetKey( extraAxisKeyCodeSet[ 1 ] ) == true )
+										{
+											// ←
+											return true ;
+										}
+										if( Keyboard.GetKey( extraAxisKeyCodeSet[ 2 ] ) == true )
+										{
+											// ↑
+											return true ;
+										}
+										if( Keyboard.GetKey( extraAxisKeyCodeSet[ 3 ] ) == true )
+										{
+											// ↓
+											return true ;
+										}
+									}
+								}
 							}
 						}
 					}
@@ -947,6 +1285,7 @@ namespace uGUIHelper
 
 			//---------------------------------------------------------------------------------
 
+			// キーボードによる入力は無い
 			return false ;
 		}
 
@@ -970,11 +1309,11 @@ namespace uGUIHelper
 //				return ;
 //			}
 
+			Vector2 pointerPosition = Mouse.Position ;
+
 			if( m_IsFocusEnabled == true )
 			{
 				// フォーカスが有効になっている
-
-				Vector2 pointerPosition = Mouse.Position ;
 				if
 				(
 					( ( m_CurrentPointerPosition.x != pointerPosition.x || m_CurrentPointerPosition .y != pointerPosition.y ) && Mouse.GetButton( 0 ) == false && Mouse.GetButton( 1 ) == false && Mouse.GetButton( 2 ) == false ) ||
@@ -1001,12 +1340,12 @@ namespace uGUIHelper
 					m_IsDecisionButtonPressing = false ;
 					m_IsCancelButtonPressing = false ;
 
-					if( m_IsExtraButtonPressing != null && m_IsExtraButtonPressing.Length >  0 )
+					if( m_IsExtraButtonIdentities_Pressing != null && m_IsExtraButtonIdentities_Pressing.Length >  0 )
 					{
-						int i, l = m_IsExtraButtonPressing.Length ;
+						int i, l = m_IsExtraButtonIdentities_Pressing.Length ;
 						for( i  = 0 ; i <  l ; i ++ )
 						{
-							m_IsExtraButtonPressing[ i ] = false ;
+							m_IsExtraButtonIdentities_Pressing[ i ] = false ;
 						}
 					}
 
@@ -1023,6 +1362,69 @@ namespace uGUIHelper
 				// 無効時の処理を行う
 				ProcessDisable() ;
 
+				//---------------------------------------------
+				// フォーカスのフラグのみはチェックして更新する(でないとマウスーカーソルの表示状態とフォーカスの状態が合わなくなる)
+
+				if( m_IsFocusEnabled == false )
+				{
+					// フォーカスが有効になっていない(ポインター)
+
+					bool isGamePadInput  = IsGamePadInput( true, false ) ;
+					bool isKeyboardInput = IsKeyboardInput( true, false ) ;
+
+					if( isGamePadInput == true || isKeyboardInput == true )
+					{
+						// 入力が有効になる
+						m_IsFocusEnabled = true ;
+
+						// フォーカスを得る
+						CallOnFocusChanged( m_CurrentInputElementIdentity, true ) ;
+
+						// カーソルの表示を更新する
+						UpdateCursors() ;
+
+						// キーボードまたはゲームパッド
+						if( isKeyboardInput == false )
+						{
+							// ゲームパッド入力
+							m_BasisInputType = InputTypes.GamePad ;
+							m_ExtraInputType = InputTypes.GamePad ;
+							m_OnInputTypeChanged?.Invoke( m_BasisInputType, m_ExtraInputType ) ;
+						}
+						else
+						{
+							// キーボード入力
+							m_BasisInputType = InputTypes.Keyboard ;
+							m_ExtraInputType = InputTypes.Keyboard ;
+							m_OnInputTypeChanged?.Invoke( m_BasisInputType, m_ExtraInputType ) ;
+						}
+
+						m_CurrentPointerPosition = pointerPosition ;
+					}
+					else
+					{
+						if( m_ExtraInputType != InputTypes.Keyboard )
+						{
+							if( IsKeyboardInput( false, true ) == true )
+							{
+								// 拡張操作がキーボード入力モードに変化する
+								m_ExtraInputType = InputTypes.Keyboard ;
+								m_OnInputTypeChanged?.Invoke( m_BasisInputType, m_ExtraInputType ) ;
+							}
+						}
+					
+						if( m_ExtraInputType != InputTypes.GamePad )
+						{
+							if( IsGamePadInput( false, true ) == true )
+							{
+								// 拡張操作がゲームパッド入力モードに変化する
+								m_ExtraInputType = InputTypes.GamePad ;
+								m_OnInputTypeChanged?.Invoke( m_BasisInputType, m_ExtraInputType ) ;
+							}
+						}
+					}
+				}
+
 				return ;
 			}
 
@@ -1035,10 +1437,10 @@ namespace uGUIHelper
 				m_IsActivate  = true ;
 
 				//---------------------------------------------
-                // 有効になった直後から決定ボタンまたは取消ボタンが押されていたら一度解放されるまでは入力を無効化する
+				// 有効になった直後から決定ボタンまたは取消ボタンが押されていたら一度解放されるまでは入力を無効化する
 
-                m_IsInvalidDecisionButton   = ProcessDecisionButton() ;
-                m_IsInvalidCancelButton     = ProcessCancelButton() ;
+				m_IsInvalidDecisionButton   = ProcessDecisionButton() ;
+				m_IsInvalidCancelButton     = ProcessCancelButton() ;
 			}
 
 			//-------------------------------------------------
@@ -1068,10 +1470,8 @@ namespace uGUIHelper
 					// フォーカスを得る
 					CallOnFocusChanged( m_CurrentInputElementIdentity, true ) ;
 
+					// カーソルの表示を更新する
 					UpdateCursors() ;
-
-					// マウスカーソルは隠蔽する
-					Cursor.visible = false ;
 
 					// キーボードまたはゲームパッド
 					if( isKeyboardInput == false )
@@ -1090,7 +1490,15 @@ namespace uGUIHelper
 					}
 
 					// 最初の入力は無視する
-					m_CurrentPointerPosition = Mouse.Position ;
+					m_CurrentPointerPosition = pointerPosition ;
+
+				    // 決定ボタンと取消ボタンの状態を一時的に無効化する(押しっぱなしである場合に離されるまで無効化)
+				    m_IsButtonBlocking = true ;
+
+					//-----------------------------------------
+
+					// マウスカーソルは隠蔽する
+					Cursor.visible = false ;
 				}
 				else
 				{
@@ -1523,21 +1931,22 @@ namespace uGUIHelper
 
 			float v ;
 
+			// ゲームパッド
 			if( m_BasisAxisNumbers != null && m_BasisAxisNumbers.Length >  0 )
 			{
-				foreach( var axisNumber in m_BasisAxisNumbers )
+				foreach( var basisAxisNumber in m_BasisAxisNumbers )
 				{
-					var axis = GamePad.GetAxisRepeat( axisNumber ) ;
+					var axis = GamePad.GetAxisRepeat( basisAxisNumber ) ;
 
 					// Ｘ入力
-					v = axis.x <  0 ? - axis.x : axis.x ;
+					v = axis.x <  0 ? - axis.x : axis.x ;   // 傾きの閾値判定用
 					if( fixedAxis.x == 0 && v >  0.1f )
 					{
 						fixedAxis.x = axis.x ;
 					}
 
 					// Ｙ入力
-					v = axis.y <  0 ? - axis.y : axis.y ;
+					v = axis.y <  0 ? - axis.y : axis.y ;   // 傾きの閾値判定用
 					if( fixedAxis.y == 0 && v >  0.1f )
 					{
 						fixedAxis.y = axis.y ;
@@ -1545,20 +1954,21 @@ namespace uGUIHelper
 				}
 			}
 
-			if( m_BasisAxisKeyCodes != null && m_BasisAxisKeyCodes.Length >  0 )
+			// キーボード
+			if( m_BasisAxisKeyCodeSets != null && m_BasisAxisKeyCodeSets.Length >  0 )
 			{
-				foreach( var basisAxiskeyCodes in m_BasisAxisKeyCodes )
+				foreach( var basisAxiskeyCodeSet in m_BasisAxisKeyCodeSets )
 				{
-					if( basisAxiskeyCodes != null && basisAxiskeyCodes.Length == 4 )
+					if( basisAxiskeyCodeSet != null && basisAxiskeyCodeSet.Length == 4 )
 					{
 						if( fixedAxis.x == 0 )
 						{
-							if( Keyboard.GetKeyRepeat( basisAxiskeyCodes[ 0 ] ) == true )
+							if( Keyboard.GetKeyRepeat( basisAxiskeyCodeSet[ 0 ] ) == true )
 							{
 								// →
 								fixedAxis.x += 1 ;
 							}
-							if( Keyboard.GetKeyRepeat( basisAxiskeyCodes[ 1 ] ) == true )
+							if( Keyboard.GetKeyRepeat( basisAxiskeyCodeSet[ 1 ] ) == true )
 							{
 								// ←
 								fixedAxis.x -= 1 ;
@@ -1566,15 +1976,82 @@ namespace uGUIHelper
 						}
 						if( fixedAxis.y == 0 )
 						{
-							if( Keyboard.GetKeyRepeat( basisAxiskeyCodes[ 2 ] ) == true )
+							if( Keyboard.GetKeyRepeat( basisAxiskeyCodeSet[ 2 ] ) == true )
 							{
 								// ↑
 								fixedAxis.y += 1 ;
 							}
-							if( Keyboard.GetKeyRepeat( basisAxiskeyCodes[ 3 ] ) == true )
+							if( Keyboard.GetKeyRepeat( basisAxiskeyCodeSet[ 3 ] ) == true )
 							{
 								// ↓
 								fixedAxis.y -= 1 ;
+							}
+						}
+					}
+				}
+			}
+
+			// アクション
+			if( string.IsNullOrEmpty( m_BasisAxisActionName ) == false )
+			{
+				if( GamePad.AcquireAxisAction( m_BasisAxisActionName, out var basisAxisNumbers, out var basisAxisKeyCodeSets, out _ ) == true )
+				{
+					// ゲームパッド
+					if( basisAxisNumbers != null && basisAxisNumbers.Length >  0 )
+					{
+						foreach( var basisAxisNumber in basisAxisNumbers )
+						{
+							var axis = GamePad.GetAxisRepeat( basisAxisNumber ) ;
+
+							// Ｘ入力
+							v = axis.x <  0 ? - axis.x : axis.x ;   // 傾きの閾値判定用
+							if( fixedAxis.x == 0 && v >  0.1f )
+							{
+								fixedAxis.x = axis.x ;
+							}
+
+							// Ｙ入力
+							v = axis.y <  0 ? - axis.y : axis.y ;   // 傾きの閾値判定用
+							if( fixedAxis.y == 0 && v >  0.1f )
+							{
+								fixedAxis.y = axis.y ;
+							}
+						}
+					}
+
+					// キーボード
+					if( basisAxisKeyCodeSets != null && basisAxisKeyCodeSets.Length >  0 )
+					{
+						foreach( var basisAxiskeyCodeSet in basisAxisKeyCodeSets )
+						{
+							if( basisAxiskeyCodeSet != null && basisAxiskeyCodeSet.Length == 4 )
+							{
+								if( fixedAxis.x == 0 )
+								{
+									if( Keyboard.GetKeyRepeat( basisAxiskeyCodeSet[ 0 ] ) == true )
+									{
+										// →
+										fixedAxis.x += 1 ;
+									}
+									if( Keyboard.GetKeyRepeat( basisAxiskeyCodeSet[ 1 ] ) == true )
+									{
+										// ←
+										fixedAxis.x -= 1 ;
+									}
+								}
+								if( fixedAxis.y == 0 )
+								{
+									if( Keyboard.GetKeyRepeat( basisAxiskeyCodeSet[ 2 ] ) == true )
+									{
+										// ↑
+										fixedAxis.y += 1 ;
+									}
+									if( Keyboard.GetKeyRepeat( basisAxiskeyCodeSet[ 3 ] ) == true )
+									{
+										// ↓
+										fixedAxis.y -= 1 ;
+									}
+								}
 							}
 						}
 					}
@@ -1588,61 +2065,153 @@ namespace uGUIHelper
 		protected bool ProcessExtraAxis()
 		{
 			bool inputFlags = false ;
-			float x, y ;
 
+			// ゲームパッド＆キーボード
 			if( m_ExtraAxisNumbers != null && m_ExtraAxisNumbers.Length >  0 )
 			{
+				float vx, vy ;    // 傾きの絶対値
+
 				// 個別に処理する
-				foreach( var axisNumber in m_ExtraAxisNumbers )
+				foreach( var extraAxisNumber in m_ExtraAxisNumbers )
 				{
-					if( axisNumber >= 0 )
+					if( extraAxisNumber >= 0 )
 					{
 						// ゲームパッド
-						var axis = GamePad.GetAxisRepeat( axisNumber ) ;
+						var axis = GamePad.GetAxisRepeat( extraAxisNumber ) ;
 
-						x = axis.x <  0 ? - axis.x : axis.x ;
-						y = axis.y <  0 ? - axis.y : axis.y ;
+						vx = axis.x <  0 ? - axis.x : axis.x ;
+						vy = axis.y <  0 ? - axis.y : axis.y ;
 
 						// キーボード
-						if( m_ExtraAxisKeyCodes != null && axisNumber <  m_ExtraAxisKeyCodes.Length )
+						if( m_ExtraAxisKeyCodeSets != null && extraAxisNumber <  m_ExtraAxisKeyCodeSets.Length )
 						{
-							var extraAxisKeyCodes = m_ExtraAxisKeyCodes[ axisNumber ] ;
-							if( extraAxisKeyCodes != null && extraAxisKeyCodes.Length == 4 )
+							var extraAxisKeyCodeSet = m_ExtraAxisKeyCodeSets[ extraAxisNumber ] ;
+							if( extraAxisKeyCodeSet != null && extraAxisKeyCodeSet.Length == 4 )
 							{
-								if( x == 0 )
+								if( vx == 0 )
 								{
-									if( Keyboard.GetKeyRepeat( extraAxisKeyCodes[ 0 ] ) == true )
+									if( Keyboard.GetKeyRepeat( extraAxisKeyCodeSet[ 0 ] ) == true )
 									{
 										// →
-										x += 1 ;
+										axis.x = +1 ;
+										vx += 1 ;
 									}
-									if( Keyboard.GetKeyRepeat( extraAxisKeyCodes[ 1 ] ) == true )
+									if( Keyboard.GetKeyRepeat( extraAxisKeyCodeSet[ 1 ] ) == true )
 									{
 										// ←
-										x -= 1 ;
+										axis.x = -1 ;
+										vx -= 1 ;
 									}
+									vx = vx < 0 ? - vx : vx ;
 								}
-								if( y == 0 )
+								if( vy == 0 )
 								{
-									if( Keyboard.GetKeyRepeat( extraAxisKeyCodes[ 2 ] ) == true )
+									if( Keyboard.GetKeyRepeat( extraAxisKeyCodeSet[ 2 ] ) == true )
 									{
 										// ↑
-										y += 1 ;
+										axis.y = +1 ;
+										vy += 1 ;
 									}
-									if( Keyboard.GetKeyRepeat( extraAxisKeyCodes[ 3 ] ) == true )
+									if( Keyboard.GetKeyRepeat( extraAxisKeyCodeSet[ 3 ] ) == true )
 									{
 										// ↓
-										y -= 1 ;
+										axis.y = -1 ;
+										vy -= 1 ;
+									}
+									vy = vy < 0 ? - vy : vy ;
+								}
+							}
+						}
+
+						if( vx >  0.1f || vy >  0.1f )  // キャリブレーション閾値判定
+						{
+							inputFlags = true ;
+
+							m_OnExtraAxis?.Invoke( extraAxisNumber, axis, m_CurrentInputElementIdentity ) ;
+						}
+					}
+				}
+			}
+
+			// アクション
+			if( m_ExtraAxisActionNames != null && m_ExtraAxisActionNames.Length >  0 )
+			{
+				Vector2 axis ;
+				float vx, vy ;    // 傾きの絶対値
+
+				foreach( var extraAxisActionName in m_ExtraAxisActionNames )
+				{
+					if( GamePad.AcquireAxisAction( extraAxisActionName, out var extraAxisNumbers, out var extraAxisKeyCodeSets, out _ ) == true )
+					{
+						axis.x = 0 ;
+						axis.y = 0 ;
+						vx = 0 ;
+						vy = 0 ;
+
+						// ゲームパッド
+						if( extraAxisNumbers != null && extraAxisNumbers.Length >  0 )
+						{
+							foreach( var extraAxisNumber in extraAxisNumbers )
+							{
+								if( extraAxisNumber >= 0 )
+								{
+									// ゲームパッド
+									axis = GamePad.GetAxisRepeat( extraAxisNumber ) ;
+
+									vx = axis.x <  0 ? - axis.x : axis.x ;
+									vy = axis.y <  0 ? - axis.y : axis.y ;
+								}
+							}
+						}
+
+						// キーボード
+						if( extraAxisKeyCodeSets != null && extraAxisKeyCodeSets.Length >  0 )
+						{
+							foreach( var extraAxisKeyCodeSet in extraAxisKeyCodeSets )
+							{
+								if( extraAxisKeyCodeSet != null && extraAxisKeyCodeSet.Length == 4 )
+								{
+									if( vx == 0 )
+									{
+										if( Keyboard.GetKeyRepeat( extraAxisKeyCodeSet[ 0 ] ) == true )
+										{
+											// →
+											axis.x = +1 ;
+											vx += 1 ;
+										}
+										if( Keyboard.GetKeyRepeat( extraAxisKeyCodeSet[ 1 ] ) == true )
+										{
+											// ←
+											axis.x = -1 ;
+											vx -= 1 ;
+										}
+										vx = vx <  0 ? - vx : vx ;
+									}
+									if( vy == 0 )
+									{
+										if( Keyboard.GetKeyRepeat( extraAxisKeyCodeSet[ 2 ] ) == true )
+										{
+											// ↑
+											axis.y = +1 ;
+											vy += 1 ;
+										}
+										if( Keyboard.GetKeyRepeat( extraAxisKeyCodeSet[ 3 ] ) == true )
+										{
+											// ↓
+											axis.y = -1 ;
+											vy -= 1 ;
+										}
+										vy = vy < 0 ? - vy : vy ;
 									}
 								}
 							}
 						}
 
-						if( x >  0.1f || y >  0.1f )
+						if( vx >  0.1f || vy >  0.1f )  // キャリブレーション閾値判定
 						{
 							inputFlags = true ;
 
-							m_OnExtraAxis?.Invoke( axisNumber, axis, m_CurrentInputElementIdentity ) ;
+							m_OnExtraAxisAction?.Invoke( extraAxisActionName, axis, m_CurrentInputElementIdentity, m_ExtraAxisActionObject ) ;
 						}
 					}
 				}
@@ -1653,9 +2222,9 @@ namespace uGUIHelper
 
 		//-------------------------------------------------------------------------------------
 
-        // 決定ボタンを判定する
-        protected bool ProcessDecisionButton()
-        {
+		// 決定ボタンを判定する
+		protected bool ProcessDecisionButton()
+		{
 			bool isDecisionButtonPressing = false ;
 
 			// ゲームパッド
@@ -1674,9 +2243,9 @@ namespace uGUIHelper
 			// キーボード
 			if( m_DecisionButtonKeyCodes != null && m_DecisionButtonKeyCodes.Length >  0 )
 			{
-				foreach( var keyCode in m_DecisionButtonKeyCodes )
+				foreach( var decisionButtonKeyCode in m_DecisionButtonKeyCodes )
 				{
-					if( Keyboard.GetKey( keyCode ) == true )
+					if( Keyboard.GetKey( decisionButtonKeyCode ) == true )
 					{
 						isDecisionButtonPressing = true ;
 						break ;
@@ -1684,12 +2253,46 @@ namespace uGUIHelper
 				}
 			}
 
-            return isDecisionButtonPressing ;
-        }
+			// アクション
+			if( string.IsNullOrEmpty( m_DecisionButtonActionName ) == false )
+			{
+				if( GamePad.AcquireButtonAction( m_DecisionButtonActionName, out var decisionButtonIdentities, out var decisionButtonKeyCodes, out _ ) == true )
+				{
+					// ゲームパッド
+					if( decisionButtonIdentities != null && decisionButtonIdentities.Length >  0 )
+					{
+						foreach( var decisionButtonIdentity in decisionButtonIdentities )
+						{
+							if( GamePad.GetButton( decisionButtonIdentity ) == true )
+							{
+								isDecisionButtonPressing = true ;
+								break ;
+							}
+						}
+					}
 
-        // 取消ボタンを判定する
-        protected bool ProcessCancelButton()
-        {
+					// キーボード
+					if( decisionButtonKeyCodes != null && decisionButtonKeyCodes.Length >  0 )
+					{
+						foreach( var decisionButtonKeyCode in decisionButtonKeyCodes )
+						{
+							if( Keyboard.GetKey( decisionButtonKeyCode ) == true )
+							{
+								isDecisionButtonPressing = true ;
+								break ;
+							}
+						}
+
+					}
+				}
+			}
+
+			return isDecisionButtonPressing ;
+		}
+
+		// 取消ボタンを判定する
+		protected bool ProcessCancelButton()
+		{
 			bool isCancelButtonPressing = false ;
 
 			// ゲームパッド
@@ -1718,8 +2321,41 @@ namespace uGUIHelper
 				}
 			}
 
-            return isCancelButtonPressing ;
-        }
+			// アクション
+			if( string.IsNullOrEmpty( m_CancelButtonActionName ) == false )
+			{
+				if( GamePad.AcquireButtonAction( m_CancelButtonActionName, out var cancelButtonIdentities, out var cancelButtonKeyCodes, out _ ) == true )
+				{
+					// ゲームパッド
+					if( cancelButtonIdentities != null && cancelButtonIdentities.Length >  0 )
+					{
+						foreach( var cancelButtonIdentity in cancelButtonIdentities )
+						{
+							if( GamePad.GetButton( cancelButtonIdentity ) == true )
+							{
+								isCancelButtonPressing = true ;
+								break ;
+							}
+						}
+					}
+
+					// キーボード
+					if( cancelButtonKeyCodes != null && cancelButtonKeyCodes.Length >  0 )
+					{
+						foreach( var cancelButtonKeyCode in cancelButtonKeyCodes )
+						{
+							if( Keyboard.GetKey( cancelButtonKeyCode ) == true )
+							{
+								isCancelButtonPressing = true ;
+								break ;
+							}
+						}
+					}
+				}
+			}
+
+			return isCancelButtonPressing ;
+		}
 
 		// 基本ボタンを処理する
 		protected void ProcessBasisButton()
@@ -1738,15 +2374,15 @@ namespace uGUIHelper
 
 			if( isDecisionButtonPressing == false && isCancelButtonPressing == false )
 			{
-                // 解放
+				// 解放
 
 				m_IsButtonBlocking          = false ;
 
 				m_IsDecisionButtonPressing  = false ;
 				m_IsCancelButtonPressing    = false ;
 
-                m_IsInvalidDecisionButton   = false ;
-                m_IsInvalidCancelButton     = false ;
+				m_IsInvalidDecisionButton   = false ;
+				m_IsInvalidCancelButton     = false ;
 			}
 
 			//----------------------------------------------------------
@@ -1758,114 +2394,114 @@ namespace uGUIHelper
 				//-------------------------
 				// 決定ボタン
 
-                if( m_IsInvalidDecisionButton == false )
-                {
-                    // 最初から押しっぱなしを行っていて無効になっていなければ処理する
+				if( m_IsInvalidDecisionButton == false )
+				{
+					// 最初から押しっぱなしを行っていて無効になっていなければ処理する
 
-				    if( isDecisionButtonPressing == true )
-				    {
-					    // 決定ボタンは押されている
+					if( isDecisionButtonPressing == true )
+					{
+						// 決定ボタンは押されている
 
-					    if( m_IsDecisionButtonPressing == false )
-					    {
-						    // 決定ボタンは押されていなかった
+						if( m_IsDecisionButtonPressing == false )
+						{
+							// 決定ボタンは押されていなかった
 
-						    // 決定ボタンを押された状態にする
-						    m_IsDecisionButtonPressing          = true ;
+							// 決定ボタンを押された状態にする
+							m_IsDecisionButtonPressing          = true ;
 
-						    m_IsDecisionButtonLongPressed       = false ;
-						    m_DecisionButtonLongPressingTime    = 0 ;
+							m_IsDecisionButtonLongPressed       = false ;
+							m_DecisionButtonLongPressingTime    = 0 ;
 
-						    inputFlags |= 0x01 ;   // 決定ボタンの Down
-					    }
+							inputFlags |= 0x01 ;   // 決定ボタンの Down
+						}
 
-					    // 長押し判定
-					    if( m_IsDecisionButtonLongPressed == false )
-					    {
-						    m_DecisionButtonLongPressingTime += Time.fixedDeltaTime ;
-						    if( m_DecisionButtonLongPressingTime >  m_ButtonLongPressConfirmationTime )
-						    {
-							    m_IsDecisionButtonLongPressed = true ;
+						// 長押し判定
+						if( m_IsDecisionButtonLongPressed == false )
+						{
+							m_DecisionButtonLongPressingTime += Time.fixedDeltaTime ;
+							if( m_DecisionButtonLongPressingTime >  m_ButtonLongPressConfirmationTime )
+							{
+								m_IsDecisionButtonLongPressed = true ;
 
-							    inputFlags |= 0x04 ;   // 決定ボタンの LongPressed
-						    }
-					    }
-				    }
-				    else
-				    {
-					    // 決定ボタンは離されている
+								inputFlags |= 0x04 ;   // 決定ボタンの LongPressed
+							}
+						}
+					}
+					else
+					{
+						// 決定ボタンは離されている
 
-					    if( m_IsDecisionButtonPressing == true )
-					    {
-						    // 決定ボタンが離された
-						    m_IsDecisionButtonPressing = false ;
+						if( m_IsDecisionButtonPressing == true )
+						{
+							// 決定ボタンが離された
+							m_IsDecisionButtonPressing = false ;
 
-						    if( m_IsDecisionButtonDown == true )
-						    {
-							    m_IsDecisionButtonDown  = false ;
+							if( m_IsDecisionButtonDown == true )
+							{
+								m_IsDecisionButtonDown  = false ;
 
-							    inputFlags |= 0x02 ;   // 決定ボタンの Up
-						    }
-					    }
-				    }
-                }
+								inputFlags |= 0x02 ;   // 決定ボタンの Up
+							}
+						}
+					}
+				}
 
 				//-------------------------
 				// 取消ボタン
 
-                if( m_IsInvalidCancelButton == false )
-                {
-                    // 最初から押しっぱなしを行っていて無効になっていなければ処理する
+				if( m_IsInvalidCancelButton == false )
+				{
+					// 最初から押しっぱなしを行っていて無効になっていなければ処理する
 
-				    if( isCancelButtonPressing == true )
-				    {
-					    // 取消ボタンは押されている
+					if( isCancelButtonPressing == true )
+					{
+						// 取消ボタンは押されている
 
-					    if( m_IsCancelButtonPressing == false )
-					    {
-						    // 取消ボタンは押されていなかった
+						if( m_IsCancelButtonPressing == false )
+						{
+							// 取消ボタンは押されていなかった
 
-						    // 取消ボタンを押された状態にする
-						    m_IsCancelButtonPressing            = true ;
+							// 取消ボタンを押された状態にする
+							m_IsCancelButtonPressing            = true ;
 
-						    m_IsCancelButtonLongPressed         = false ;
-						    m_CancelButtonLongPressingTime      = 0 ;
+							m_IsCancelButtonLongPressed         = false ;
+							m_CancelButtonLongPressingTime      = 0 ;
 
-						    m_IsCancelButtonDown                = true ;
+							m_IsCancelButtonDown                = true ;
 
-						    inputFlags |= 0x10 ;   // 取消ボタンの Down
-					    }
+							inputFlags |= 0x10 ;   // 取消ボタンの Down
+						}
 
-					    // 長押し判定
-					    if( m_IsCancelButtonLongPressed == false )
-					    {
-						    m_CancelButtonLongPressingTime += Time.fixedDeltaTime ;
-						    if( m_CancelButtonLongPressingTime >  m_ButtonLongPressConfirmationTime )
-						    {
-							    m_IsCancelButtonLongPressed = true ;
+						// 長押し判定
+						if( m_IsCancelButtonLongPressed == false )
+						{
+							m_CancelButtonLongPressingTime += Time.fixedDeltaTime ;
+							if( m_CancelButtonLongPressingTime >  m_ButtonLongPressConfirmationTime )
+							{
+								m_IsCancelButtonLongPressed = true ;
 
-							    inputFlags |= 0x40 ;   // 取消ボタンの LongPressed
-						    }
-					    }
-				    }
-				    else
-				    {
-					    // 取消ボタンは離されている
+								inputFlags |= 0x40 ;   // 取消ボタンの LongPressed
+							}
+						}
+					}
+					else
+					{
+						// 取消ボタンは離されている
 
-					    if( m_IsCancelButtonPressing == true )
-					    {
-						    // 取消ボタンが離された
-						    m_IsCancelButtonPressing = false ;
+						if( m_IsCancelButtonPressing == true )
+						{
+							// 取消ボタンが離された
+							m_IsCancelButtonPressing = false ;
 
-						    if( m_IsCancelButtonDown == true )
-						    {
-							    m_IsCancelButtonDown  = false ;
+							if( m_IsCancelButtonDown == true )
+							{
+								m_IsCancelButtonDown  = false ;
 
-							    inputFlags |= 0x20 ;   // 取消ボタンの Up
-						    }
-					    }
-				    }
-                }
+								inputFlags |= 0x20 ;   // 取消ボタンの Up
+							}
+						}
+					}
+				}
 			}
 
 			//-------------------------------------------------
@@ -1979,41 +2615,38 @@ namespace uGUIHelper
 		// 拡張ボタンを処理する
 		protected void ProcessExtraButton()
 		{
-			int inputFlags = 0 ;
-
 			//-------------------------------------------------
 
 			// 拡張ボタン
 			if( m_ExtraButtonIdentities != null && m_ExtraButtonIdentities.Length >  0 )
 			{
+				int inputFlags = 0 ;
+
 				int i, l = m_ExtraButtonIdentities.Length ;
 				for( i  = 0 ; i <  l ; i ++ )
 				{
-					// ゲームパッド
-					if( m_IsExtraButtonPressing[ i ] == false )
+					if( m_IsExtraButtonIdentities_Pressing[ i ] == false )
 					{
+						// ゲームパッド
 						var extraButtonIdentity = m_ExtraButtonIdentities[ i ] ;
-						if( extraButtonIdentity != 0 )
+						if( GamePad.GetButtonDown( extraButtonIdentity ) == true )
 						{
-							if( GamePad.GetButtonDown( extraButtonIdentity ) == true )
-							{
-								 m_IsExtraButtonPressing[ i ] = true ;
-								inputFlags |= ( 4 << i ) ;
-							}
+							m_IsExtraButtonIdentities_Pressing[ i ] = true ;
+							inputFlags |= ( 4 << i ) ;
 						}
 
 						// キーボード
-						if( m_ExtraButtonKeyCodes != null && i <  m_ExtraButtonKeyCodes.Length )
+						if( m_ExtraButtonKeyCodeSets != null && i <  m_ExtraButtonKeyCodeSets.Length )
 						{
-							var extraButtonKeyCodes = m_ExtraButtonKeyCodes[ i ] ;
-							if( extraButtonKeyCodes != null && extraButtonKeyCodes.Length >  0 )
+							var extraButtonKeyCodeSet = m_ExtraButtonKeyCodeSets[ i ] ;
+							if( extraButtonKeyCodeSet != null && extraButtonKeyCodeSet.Length >  0 )
 							{
-								foreach( var keyCode in extraButtonKeyCodes )
+								foreach( var extraButtonKeyCode in extraButtonKeyCodeSet )
 								{
 									// Keyboard.GetKey( ... ) にしてはならない
-									if( Keyboard.GetKeyDown( keyCode ) == true )
+									if( Keyboard.GetKeyDown( extraButtonKeyCode ) == true )
 									{
-										m_IsExtraButtonPressing[ i ] = true ;
+										m_IsExtraButtonIdentities_Pressing[ i ] = true ;
 										inputFlags |= ( 4 << i ) ;
 										break ;
 									}
@@ -2027,23 +2660,20 @@ namespace uGUIHelper
 
 						// ゲームパッド
 						var extraButtonIdentity = m_ExtraButtonIdentities[ i ] ;
-						if( extraButtonIdentity != 0 )
+						if( GamePad.GetButton( extraButtonIdentity ) == true )
 						{
-							if( GamePad.GetButton( extraButtonIdentity ) == true )
-							{
-								isPressing = true ;
-							}
+							isPressing = true ;
 						}
 
 						// キーボード
-						if( m_ExtraButtonKeyCodes != null && i <  m_ExtraButtonKeyCodes.Length )
+						if( m_ExtraButtonKeyCodeSets != null && i <  m_ExtraButtonKeyCodeSets.Length )
 						{
-							var extraButtonKeyCodes = m_ExtraButtonKeyCodes[ i ] ;
-							if( extraButtonKeyCodes != null && extraButtonKeyCodes.Length >  0 )
+							var extraButtonKeyCodeSet = m_ExtraButtonKeyCodeSets[ i ] ;
+							if( extraButtonKeyCodeSet != null && extraButtonKeyCodeSet.Length >  0 )
 							{
-								foreach( var keyCode in extraButtonKeyCodes )
+								foreach( var extraButtonKeyCode in extraButtonKeyCodeSet )
 								{
-									if( Keyboard.GetKey( keyCode ) == true )
+									if( Keyboard.GetKey( extraButtonKeyCode ) == true )
 									{
 										isPressing = true ;
 										break ;
@@ -2054,14 +2684,14 @@ namespace uGUIHelper
 
 						if( isPressing == false )
 						{
-							m_IsExtraButtonPressing[ i ] = false ;
+							m_IsExtraButtonIdentities_Pressing[ i ] = false ;
 						}
 					}
 				}
 
 				//---------------------------------------------
 
-				// 決定ボタンとキャンセルボタンのフラグを削除
+				// 決定ボタンと取消ボタンのフラグを削除
 				int extraInputFlags = inputFlags >> 2 ;
 
 				int index = -1, count = 0 ;
@@ -2078,6 +2708,111 @@ namespace uGUIHelper
 				{
 					// 同時押しは不可
 					m_OnExtraButton?.Invoke( m_ExtraButtonIdentities[ index ], m_CurrentInputElementIdentity ) ;
+				}
+			}
+
+			//----------------------------------------------------------
+
+			if( m_ExtraButtonActionNames != null && m_ExtraButtonActionNames.Length >  0 )
+			{
+				int inputFlags = 0 ;
+
+				int i, l = m_ExtraButtonActionNames.Length ;
+				for( i  = 0 ; i <  l ; i ++ )
+				{
+					if( m_IsExtraButtonActionNames_Pressing[ i ] == false )
+					{
+						var extraButtonActionName = m_ExtraButtonActionNames[ i ] ;
+						if( GamePad.AcquireButtonAction( extraButtonActionName, out var extraButtonIdentities, out var extraButtonKeyCodeSet, out _ ) == true )
+						{
+							// ゲームパッド
+							if( extraButtonIdentities != null && extraButtonIdentities.Length >  0 )
+							{
+								foreach( var extraButtonIdentity in extraButtonIdentities )
+								{
+									if( GamePad.GetButtonDown( extraButtonIdentity ) == true )
+									{
+										m_IsExtraButtonActionNames_Pressing[ i ] = true ;
+										inputFlags |= ( 4 << i ) ;
+									}
+								}
+							}
+
+							// キーボード
+							if( extraButtonKeyCodeSet != null && extraButtonKeyCodeSet.Length >  0 )
+							{
+								foreach( var extraButtonKeyCode in extraButtonKeyCodeSet )
+								{
+									// Keyboard.GetKey( ... ) にしてはならない
+									if( Keyboard.GetKeyDown( extraButtonKeyCode ) == true )
+									{
+										m_IsExtraButtonActionNames_Pressing[ i ] = true ;
+										inputFlags |= ( 4 << i ) ;
+										break ;
+									}
+								}
+							}
+						}
+					}
+					else
+					{
+						bool isPressing = false ;
+
+						var extraButtonActionName = m_ExtraButtonActionNames[ i ] ;
+						if( GamePad.AcquireButtonAction( extraButtonActionName, out var extraButtonIdentities, out var extraButtonKeyCodeSet, out _ ) == true )
+						{
+							// ゲームパッド
+							if( extraButtonIdentities != null && extraButtonIdentities.Length >  0 )
+							{
+								foreach( var extraButtonIdentity in extraButtonIdentities )
+								{
+									if( GamePad.GetButton( extraButtonIdentity ) == true )
+									{
+										isPressing = true ;
+									}
+								}
+							}
+
+							// キーボード
+							if( extraButtonKeyCodeSet != null && extraButtonKeyCodeSet.Length >  0 )
+							{
+								foreach( var extraButtonKeyCode in extraButtonKeyCodeSet )
+								{
+									if( Keyboard.GetKey( extraButtonKeyCode ) == true )
+									{
+										isPressing = true ;
+										break ;
+									}
+								}
+							}
+						}
+
+						if( isPressing == false )
+						{
+							m_IsExtraButtonActionNames_Pressing[ i ] = false ;
+						}
+					}
+				}
+
+				//---------------------------------------------
+
+				// 決定ボタンと取消ボタンのフラグを削除
+				int extraInputFlags = inputFlags >> 2 ;
+
+				int index = -1, count = 0 ;
+				for( i  = 0 ; i <  l ; i ++ )
+				{
+					if( ( extraInputFlags & ( 1 << i ) ) != 0 )
+					{
+						index = i ;
+						count ++ ;
+					}
+				}
+
+				if( index >= 0 && count == 1 )
+				{
+					// 同時押しは不可
+					m_OnExtraButtonAction?.Invoke( m_ExtraButtonActionNames[ index ], m_CurrentInputElementIdentity, m_ExtraButtonActionObject ) ;
 				}
 			}
 		}

@@ -67,6 +67,23 @@ namespace NetworkPlayHelper
 		//-----------------------------------------------------------
 
 		/// <summary>
+		/// アカウントサーバーから公開鍵を取得する
+		/// </summary>
+		/// <returns></returns>
+		public Task<GetPublicKey_Response> GetPublicKeyAsync
+		(
+			CancellationToken cancellationToken = default
+		)
+		{
+			return m_NetworkPlayClientAdapter.GetPublicKeyAsync
+			(
+				cancellationToken
+			) ;
+		}
+
+		//-----------------------------------
+
+		/// <summary>
 		/// アカウントサーバーに対し任意データの送受信を実行する
 		/// </summary>
 		/// <returns></returns>

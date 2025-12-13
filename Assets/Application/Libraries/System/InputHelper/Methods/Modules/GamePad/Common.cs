@@ -17,6 +17,52 @@ namespace InputHelper
 	/// </summary>
 	public partial class GamePad
 	{
+		//-----------------------------------------------------------
+		// ↓共有不可 InputManager 専用
+
+		// オーナーのインスタンス
+		private static InputManager m_Owner ;
+
+		/// <summary>
+		/// 初期化を行う
+		/// </summary>
+		public static void Initialize( bool inputSystemEnabled, InputManager owner )
+		{
+			m_Owner = owner ;
+
+			if( inputSystemEnabled == false )
+			{
+				// 旧版の実装を採用
+				m_Implementation = new Implementation_OldVersion() ;
+
+				// プロファイル情報を初期化する
+				m_Profiles.Clear() ;
+				m_Profiles.Add( -1, Profile_Xbox ) ;		// デフォルトプロファイル
+			}
+#if ENABLE_INPUT_SYSTEM
+			else
+			{
+				// 新版の実装を採用
+				m_Implementation = new Implementation_NewVersion() ;
+
+				// プロファイル情報を初期化する
+				m_Profiles.Clear() ;
+				m_Profiles.Add( -1, Profile_InputSystem ) ;	// デフォルトプロファイル
+			}
+#endif
+			//----------------------------------
+
+			// プレイヤー情報を初期化する
+			m_Players.Clear() ;
+			for( int playerNumber  = 0 ; playerNumber <  MaximumNumberOfPlayers ; playerNumber ++ )
+			{
+				m_Players.Add( new Player( playerNumber ) ) ;
+			}
+		}
+
+		// 共有不可
+		//-----------------------------------------------------------
+
 		/// <summary>
 		/// 全てゲームパッドの有効状況
 		/// </summary>
@@ -30,7 +76,7 @@ namespace InputHelper
 		/// <summary>
 		/// 最大のボタンの数
 		/// </summary>
-		public const int	MaximumNumberOfButtons	= 16 ;
+		public const int	MaximumNumberOfButtons	= 18 ;
 
 		/// <summary>
 		/// 最大のアクシスの数
@@ -67,91 +113,116 @@ namespace InputHelper
 		//-----------------------------------
 
 		/// <summary>
+		/// 無し
+		/// </summary>
+		public const int None   = 0 ;
+
+		/// <summary>
 		/// 基本ボタン１
 		/// </summary>
-		public const int B1	= 0x0001 ;
+		public const int B1	    = 0x00001 ;
 
 		/// <summary>
 		/// 基本ボタン２
 		/// </summary>
-		public const int B2	= 0x0002 ;
+		public const int B2	    = 0x00002 ;
 
 		/// <summary>
 		/// 基本ボタン３
 		/// </summary>
-		public const int B3	= 0x0004 ;
+		public const int B3	    = 0x00004 ;
 
 		/// <summary>
 		/// 基本ボタン４
 		/// </summary>
-		public const int B4	= 0x0008 ;
+		public const int B4	    = 0x00008 ;
+
+		/// <summary>
+		/// 方向ボタン→
+		/// </summary>
+		public const int DPad_R = 0x00010 ;
+
+		/// <summary>
+		/// 方向ボタン←
+		/// </summary>
+		public const int DPad_L = 0x00020 ;
+
+		/// <summary>
+		/// 方向ボタン↑
+		/// </summary>
+		public const int DPad_U = 0x00040 ;
+
+		/// <summary>
+		/// 方向ボタン↓
+		/// </summary>
+		public const int DPad_D = 0x00080 ;
 
 		/// <summary>
 		/// Ｒボタン１
 		/// </summary>
-		public const int R1	= 0x0010 ;
+		public const int R1	    = 0x00100 ;
 
 		/// <summary>
 		/// Ｌボタン１
 		/// </summary>
-		public const int L1	= 0x0020 ;
+		public const int L1	    = 0x00200 ;
 
 		/// <summary>
 		/// Ｒボタン２
 		/// </summary>
-		public const int R2	= 0x0040 ;
+		public const int R2	    = 0x00400 ;
 
 		/// <summary>
 		/// Ｌボタン２
 		/// </summary>
-		public const int L2	= 0x0080 ;
+		public const int L2	    = 0x00800 ;
 
 		/// <summary>
 		/// Ｒボタン３
 		/// </summary>
-		public const int R3	= 0x0100 ;
+		public const int R3 	= 0x01000 ;
 		
 		/// <summary>
 		/// Ｌボタン３
 		/// </summary>
-		public const int L3	= 0x0200 ;
+		public const int L3	    = 0x02000 ;
 
 		/// <summary>
 		/// オプションボタン１
 		/// </summary>
-		public const int O1	= 0x0400 ;
+		public const int O1	    = 0x04000 ;
 
 		/// <summary>
 		/// オプションボタン２
 		/// </summary>
-		public const int O2	= 0x0800 ;
+		public const int O2	    = 0x08000 ;
 
 		/// <summary>
 		/// オプションボタン３
 		/// </summary>
-		public const int O3	= 0x1000 ;
+		public const int O3	    = 0x10000 ;
 
 		/// <summary>
 		/// オプションボタン４
 		/// </summary>
-		public const int O4	= 0x2000 ;
+		public const int O4	    = 0x20000 ;
 
 		//---------------
 
 		/// <summary>
 		/// 方向ボタン
 		/// </summary>
-		public const int DPad = 0 ;
+		public const int DPad   = 0 ;
 
 		/// <summary>
 		/// 左スティック
 		/// </summary>
-		public const int LStick = 1 ; 
+		public const int RStick = 1 ; 
 
 		/// <summary>
 		/// 右スティック
 		/// </summary>
-		public const int RStick = 2 ;
+		public const int LStick = 2 ;
 
 		/// <summary>
 		/// トリガーボタン(アナログ取得)
@@ -245,6 +316,7 @@ namespace InputHelper
 		private static readonly int[] m_ButtonIdentities =
 		{
 			B1, B2, B3, B4,
+			DPad_R, DPad_L, DPad_U, DPad_D,
 			R1, L1, R2, L2, R3, L3,
 			O1, O2, O3, O4,
 		} ;
@@ -252,9 +324,10 @@ namespace InputHelper
 		// ボタン識別子のインデックス番号との関係(ボタン番号ではない事に注意)　ボタン識別子には対応する順番値(インデックス)が存在する
 		private static readonly Dictionary<int,int> m_ButtonIdentityToIndex = new ()
 		{
-			{ B1,  0 }, { B2,  1 }, { B3,  2 }, { B4,  3 },
-			{ R1,  4 }, { L1,  5 }, { R2,  6 }, { L2,  7 }, { R3,  8 }, { L3,  9 },
-			{ O1, 10 }, { O2, 11 }, { O3, 12 }, { O4, 13 },
+			{ B1,      0 }, { B2,      1 }, { B3,      2 }, { B4,      3 },
+			{ DPad_R,  4 }, { DPad_L,  5 }, { DPad_U,  6 }, { DPad_D,  7 },
+			{ R1,      8 }, { L1,      9 }, { R2,     10 }, { L2,     11 }, { R3,     12 }, { L3,     13 },
+			{ O1,     14 }, { O2,     15 }, { O3,     16 }, { O4,     17 },
 		} ;
 
 		//-----
@@ -279,45 +352,6 @@ namespace InputHelper
 		//  index
 
 		//-------------------------------------------------------------------------------------------
-
-		private static InputManager m_Owner ;
-
-		/// <summary>
-		/// 初期化を行う
-		/// </summary>
-		public static void Initialize( bool inputSystemEnabled, InputManager owner )
-		{
-			m_Owner = owner ;
-
-			if( inputSystemEnabled == false )
-			{
-				// 旧版の実装を採用
-				m_Implementation = new Implementation_OldVersion() ;
-
-				// プロファイル情報を初期化する
-				m_Profiles.Clear() ;
-				m_Profiles.Add( -1, Profile_Xbox ) ;		// デフォルトプロファイル
-			}
-#if ENABLE_INPUT_SYSTEM
-			else
-			{
-				// 新版の実装を採用
-				m_Implementation = new Implementation_NewVersion() ;
-
-				// プロファイル情報を初期化する
-				m_Profiles.Clear() ;
-				m_Profiles.Add( -1, Profile_InputSystem ) ;	// デフォルトプロファイル
-			}
-#endif
-			//----------------------------------
-
-			// プレイヤー情報を初期化する
-			m_Players.Clear() ;
-			for( int playerNumber  = 0 ; playerNumber <  MaximumNumberOfPlayers ; playerNumber ++ )
-			{
-				m_Players.Add( new Player( playerNumber ) ) ;
-			}
-		}
 
 		//-------------------------------------------------------------------------------------------
 
@@ -372,8 +406,18 @@ namespace InputHelper
 		/// </summary>
 		public static Profile Profile_Xbox { get ; set ; } = new
 		(
-			new int[]{  0,  1,  2,  3,  5,  4, -1, -1,  9,  8,  7,  6,	11, 10 },
-			new int[]{  6,  7,  1,  2,  4,  5, 10,  9 },
+			new int[]{  0,  1,  2,  3, -1, -1, -1, -1,  5,  4, -1, -1,  9,  8,  7,  6,	11, 10 },
+			new int[]
+			{
+				 6, // DPad_X
+				 7, // DPad_Y
+				 1, // LStick_X
+				 2, // LStick_Y
+				 4, // RStick_X
+				 5, // RStick_Y
+				10, // RTrigger
+				 9  // LTrigger
+			},
 			false, 0.4f
 		) ;
 
@@ -384,8 +428,18 @@ namespace InputHelper
 		/// </summary>
 		public static Profile Profile_Xbox { get ; set ; } = new
 		(
-			new int[]{  0,  1,  2,  3,  5,  4, -1, -1,  9,  8,  7,  6,	11, 10 },
-			new int[]{  5,  6,  1,  2,  3,  4,  8,  7 },
+			new int[]{  0,  1,  2,  3, -1, -1, -1, -1,  5,  4, -1, -1,  9,  8,  7,  6,	11, 10 },
+			new int[]
+			{
+				 5, // DPad_X
+				 6, // DPad_Y
+				 1, // LStick_X
+				 2, // LStick_Y
+				 3, // RStick_X
+				 4, // RStick_Y
+				 8, // RTrigger
+				 7, // LTrigger
+			},
 			false, 0.4f
 		) ;
 #endif
@@ -395,8 +449,18 @@ namespace InputHelper
 		/// </summary>
 		public static Profile Profile_DualShock { get ; set ; } = new
 		(
-			new int[]{  1,  2,  0,  3,  5,  4,  7,  6, 11, 10,  9,  8, 13, 12 },
-			new int[]{  7,  8,  1,  2,  3,  6,  5,  4 },
+			new int[]{  1,  2,  0,  3, -1, -1, -1, -1,  5,  4,  7,  6, 11, 10,  9,  8, 13, 12 },
+			new int[]
+			{
+				 7, // DPad_X
+				 8, // DPad_Y
+				 1, // LStick_X
+				 2, // LStick_Y
+				 3, // RStick_X
+				 6, // RStick_Y
+				 5, // RTrigger
+				 4, // LTrigger
+			},
 			true,  0.4f
 		) ;
 
@@ -408,8 +472,18 @@ namespace InputHelper
 		/// </summary>
 		public static Profile Profile_InputSystem { get ; set ; } = new
 		(
-			new int[]{  0,  1,  2,  3,  4,  5,  6,  7,  8,  9, 10, 11, 12, 13 },
-			new int[]{  0,  1,  2,  3,  4,  5,  6,  7 },
+			new int[]{  0,  1,  2,  3,   4,   5,   6,   7,  8,  9, 10, 11, 12, 13, 14, 15, 16, 17 },
+			new int[]
+			{
+				0,  // DPad_X
+				1,  // DPad_Y
+				2,  // LStick_X
+				3,  // LStick_Y
+				4,  // RStick_X
+				5,  // RStick_Y
+				6,  // RTrigger
+				7,  // LTrigger
+		   },
 			true,  0.4f
 		) ;
 
@@ -596,6 +670,25 @@ namespace InputHelper
 			}
 
 			/// <summary>
+			/// ボタンの状態消去を行う(アクセス禁止)
+			/// </summary>
+			/// <param name="buttonIndex"></param>
+			/// <param name="buttonIdentity"></param>
+			/// <param name="buttonFlags"></param>
+			public void ClearButtonStates( int buttonIndex )
+			{
+				var state = m_ButtonStates[ buttonIndex ] ;
+
+				//---------------------------------
+
+				state.RepeatKeepFlag    = false ;
+
+				state.IsRepeat	        = false ;
+				state.IsDown	        = false ;
+				state.IsUp		        = false ;
+			}
+
+			/// <summary>
 			/// ボタンの状態更新を行う(アクセス禁止)
 			/// </summary>
 			/// <param name="buttonIndex"></param>
@@ -651,6 +744,25 @@ namespace InputHelper
 						state.RepeatKeepFlag  = false ;
 					}
 				}
+			}
+
+			/// <summary>
+			/// アクシスの状態消去を行う(アクセス禁止)
+			/// </summary>
+			/// <param name="playerNumber"></param>
+			/// <param name="axisIndex"></param>
+			/// <param name="axis"></param>
+			public void ClearAxisStates( int axisIndex )
+			{
+				var state = m_AxisStates[ axisIndex ] ;
+
+				//---------------------------------
+
+				state.RepeatKeepFlag    = false ;
+
+				state.IsRepeat	= Vector2.zero ;
+				state.IsDown	= Vector2.zero ;
+				state.IsUp		= Vector2.zero ;
 			}
 
 			/// <summary>
@@ -817,6 +929,15 @@ namespace InputHelper
 
 			//--------------
 			// 振動関連
+
+			/// <summary>
+			/// ハプティクスの状態消去を行う
+			/// </summary>
+			public void ClearHapticsState()
+			{
+				// 停止させる
+				StopMotor( Number ) ;
+			}
 
 			/// <summary>
 			/// ハプティクスの状態更新を行う
@@ -1087,6 +1208,96 @@ namespace InputHelper
 		}
 
 		/// <summary>
+		/// 任意の名前で識別するボタンアクションを取得する
+		/// </summary>
+		/// <param name="actionName"></param>
+		/// <param name="buttonIdentities"></param>
+		/// <param name="buttonKeyCodes"></param>
+		/// <param name="inputCategory"></param>
+		/// <returns></returns>
+		public static bool AcquireButtonAction( string actionName, out int[] buttonIdentities, out KeyCodes[] buttonKeyCodes, out InputCategories inputCategory )
+		{
+			buttonIdentities    = null ;
+			buttonKeyCodes      = null ;
+			inputCategory       = InputCategories.Basis ;
+
+			if( string.IsNullOrEmpty( actionName ) == true )
+			{
+				// 不可
+				return false ;
+			}
+
+			if( m_ButtonActionElements.ContainsKey( actionName ) == false )
+			{
+				// 登録が無い
+				return false ;
+			}
+
+			//-------------------------
+
+			// 設定値を取得する
+			var buttonActionElement = m_ButtonActionElements[ actionName ] ;
+
+			buttonIdentities    = buttonActionElement.ButtonIdentities ;
+			buttonKeyCodes      = buttonActionElement.ButtonKeyCodes ;
+			inputCategory       = buttonActionElement.InputCategory ;
+
+			//-------------------------
+
+			// 成功
+			return true ;
+		}
+
+		/// <summary>
+		/// 任意の名前で識別するボタンアクションを取得する
+		/// </summary>
+		/// <param name="actionName"></param>
+		/// <param name="buttonIdentities"></param>
+		/// <param name="buttonKeyCodes"></param>
+		/// <param name="inputCategory"></param>
+		/// <returns></returns>
+		public static bool AcquireButtonActionInFirstElement( string actionName, out int buttonIdentity, out KeyCodes buttonKeyCode, out InputCategories inputCategory )
+		{
+			buttonIdentity      = GamePad.None ;
+			buttonKeyCode       = KeyCodes.None ;
+			inputCategory       = InputCategories.Basis ;
+
+			if( string.IsNullOrEmpty( actionName ) == true )
+			{
+				// 不可
+				return false ;
+			}
+
+			if( m_ButtonActionElements.ContainsKey( actionName ) == false )
+			{
+				// 登録が無い
+				return false ;
+			}
+
+			//-------------------------
+
+			// 設定値を取得する
+			var buttonActionElement = m_ButtonActionElements[ actionName ] ;
+
+			if( buttonActionElement.ButtonIdentities != null && buttonActionElement.ButtonIdentities.Length >  0 )
+			{
+				buttonIdentity  = buttonActionElement.ButtonIdentities[ 0 ] ;
+			}
+
+			if( buttonActionElement.ButtonKeyCodes != null && buttonActionElement.ButtonKeyCodes.Length >  0 )
+			{
+				buttonKeyCode   = buttonActionElement.ButtonKeyCodes[ 0 ] ;
+			}
+
+			inputCategory       = buttonActionElement.InputCategory ;
+
+			//-------------------------
+
+			// 成功
+			return true ;
+		}
+
+		/// <summary>
 		/// 任意の名前で識別するボタンアクションを削除する
 		/// </summary>
 		/// <param name="actionName"></param>
@@ -1129,7 +1340,7 @@ namespace InputHelper
 		public class AxisActionElement
 		{
 			public int[]			AxisNumbers ;
-			public KeyCodes[][]		AxisKeyCodes ;
+			public KeyCodes[][]		AxisKeyCodeSets ;
 			public InputCategories	InputCategory ;
 
 			//----------------------------------
@@ -1154,7 +1365,7 @@ namespace InputHelper
 		/// <param name="buttonKeyCodes"></param>
 		/// <param name="inputCategory"></param>
 		/// <returns></returns>
-		public static bool RegisterAxisAction( string actionName, int[] axisNumbers, KeyCodes[][] axisKeyCodes = null, InputCategories inputCategory = InputCategories.Basis )
+		public static bool RegisterAxisAction( string actionName, int[] axisNumbers, KeyCodes[][] axisKeyCodeSets = null, InputCategories inputCategory = InputCategories.Basis )
 		{
 			if( string.IsNullOrEmpty( actionName ) == true )
 			{
@@ -1162,7 +1373,7 @@ namespace InputHelper
 				return false ;
 			}
 
-			if( ( axisNumbers == null || axisNumbers.Length == 0 ) && ( axisKeyCodes == null || axisKeyCodes.Length == 0 ) )
+			if( ( axisNumbers == null || axisNumbers.Length == 0 ) && ( axisKeyCodeSets == null || axisKeyCodeSets.Length == 0 ) )
 			{
 				// 不可
 				return false ;
@@ -1178,7 +1389,7 @@ namespace InputHelper
 				m_AxisActionElements.Add( actionName, new AxisActionElement()
 				{
 					AxisNumbers			= axisNumbers,
-					AxisKeyCodes		= axisKeyCodes,
+					AxisKeyCodeSets		= axisKeyCodeSets,
 					InputCategory		= inputCategory
 				} ) ;
 			}
@@ -1190,10 +1401,108 @@ namespace InputHelper
 				m_AxisActionElements[ actionName ] = new AxisActionElement()
 				{
 					AxisNumbers			= axisNumbers,
-					AxisKeyCodes		= axisKeyCodes,
+					AxisKeyCodeSets		= axisKeyCodeSets,
 					InputCategory		= inputCategory
 				} ;
 			}
+
+			// 成功
+			return true ;
+		}
+
+		/// <summary>
+		/// 任意の名前で識別するアクシスアクションを取得する
+		/// </summary>
+		/// <param name="actionName"></param>
+		/// <param name="buttonIdentities"></param>
+		/// <param name="buttonKeyCodes"></param>
+		/// <param name="inputCategory"></param>
+		/// <returns></returns>
+		public static bool AcquireAxisAction( string actionName, out int[] axisNumbers, out KeyCodes[][] axisKeyCodeSets, out InputCategories inputCategory )
+		{
+			axisNumbers     = null ;
+			axisKeyCodeSets = null ;
+			inputCategory   = InputCategories.Basis ;
+
+			if( string.IsNullOrEmpty( actionName ) == true )
+			{
+				// 不可
+				return false ;
+			}
+
+			//----------------------------------------------------------
+
+			if( m_AxisActionElements.ContainsKey( actionName ) == false )
+			{
+				// 登録が無い
+				return false ;
+			}
+
+			//-------------------------
+
+			// 設定値を取得する
+			var axisActionElement = m_AxisActionElements[ actionName ] ;
+
+			axisNumbers     = axisActionElement.AxisNumbers ;
+			axisKeyCodeSets = axisActionElement.AxisKeyCodeSets ;
+			inputCategory   = axisActionElement.InputCategory ;
+
+			//-------------------------
+
+			// 成功
+			return true ;
+		}
+
+		/// <summary>
+		/// 任意の名前で識別するアクシスアクションを取得する
+		/// </summary>
+		/// <param name="actionName"></param>
+		/// <param name="buttonIdentities"></param>
+		/// <param name="buttonKeyCodes"></param>
+		/// <param name="inputCategory"></param>
+		/// <returns></returns>
+		public static bool AcquireAxisActionInFirstElement( string actionName, out int axisNumber, out KeyCodes[] axisKeyCodeSet, out InputCategories inputCategory )
+		{
+			axisNumber      = -1 ;
+			axisKeyCodeSet  = null ;
+			inputCategory   = InputCategories.Basis ;
+
+			if( string.IsNullOrEmpty( actionName ) == true )
+			{
+				// 不可
+				return false ;
+			}
+
+			//----------------------------------------------------------
+
+			if( m_AxisActionElements.ContainsKey( actionName ) == false )
+			{
+				// 登録が無い
+				return false ;
+			}
+
+			//-------------------------
+
+			// 設定値を取得する
+			var axisActionElement = m_AxisActionElements[ actionName ] ;
+
+			if( axisActionElement.AxisNumbers != null && axisActionElement.AxisNumbers.Length >  0 )
+			{
+				axisNumber     = axisActionElement.AxisNumbers[ 0 ] ;
+			}
+
+			if( axisActionElement.AxisKeyCodeSets != null && axisActionElement.AxisKeyCodeSets.Length >  0 )
+			{
+				var primaryAxisKeyCodeSet = axisActionElement.AxisKeyCodeSets[ 0 ] ;
+				if( primaryAxisKeyCodeSet != null && primaryAxisKeyCodeSet.Length == 4 )
+				{
+					axisKeyCodeSet = primaryAxisKeyCodeSet ;
+				}
+			}
+
+			inputCategory   = axisActionElement.InputCategory ;
+
+			//-------------------------
 
 			// 成功
 			return true ;
@@ -1382,6 +1691,64 @@ namespace InputHelper
 		// 独自メソッド
 
 		/// <summary>
+		/// 状態
+		/// </summary>
+		public static void Clear()
+		{
+			int playerNumber ;
+			int buttonIndex ;
+
+			int buttonIndexMax	= MaximumNumberOfButtons <  m_ButtonIdentities.Length ? MaximumNumberOfButtons : m_ButtonIdentities.Length ;
+
+			// 接続しているしているプレイヤー(最大４)しかし０ならば１にする(キーボード入力のため)
+			int max = NumberOfGamePads <  MaximumNumberOfPlayers ? NumberOfGamePads : MaximumNumberOfPlayers ;
+			if( max <= 0 )
+			{
+				max  = 1 ;
+			}
+			
+			for( playerNumber  = 0 ; playerNumber <  max ; playerNumber ++ )
+			{
+				// プレイヤー情報
+				var player = m_Players[ playerNumber ] ;
+
+				// Button
+				for( buttonIndex  = 0 ; buttonIndex <  buttonIndexMax ; buttonIndex ++ )
+				{
+					player.ClearButtonStates( buttonIndex ) ;
+				}
+
+				// Axis
+				player.ClearAxisStates( 0 ) ;
+				player.ClearAxisStates( 1 ) ;
+				player.ClearAxisStates( 2 ) ;
+
+				// Haptics
+				player.ClearHapticsState() ;
+			}
+
+			// ボタン
+			foreach( var buttonActionElement in m_ButtonActionElements.Values )
+			{
+				buttonActionElement.KeyRepeatKeepFlag   = false ;
+
+				buttonActionElement.IsKeyRepeat	        = false ;
+				buttonActionElement.IsKeyDown	        = false ;
+				buttonActionElement.IsKeyUp		        = false ;
+			}
+
+			// アクシス
+			foreach( var axisActionElement in m_AxisActionElements.Values )
+			{
+				axisActionElement.KeyRepeatKeepFlag     = false ;
+
+				axisActionElement.IsKeyRepeat	        = Vector2.zero ;
+				axisActionElement.IsKeyDown		        = Vector2.zero ;
+				axisActionElement.IsKeyUp		        = Vector2.zero ;
+			}
+		}
+
+		/// <summary>
 		/// Repeat 系の状態更新
 		/// </summary>
 		public static void Update()
@@ -1509,22 +1876,22 @@ namespace InputHelper
 					Vector2 axis = Vector2.zero ;
 
 					// キーボード
-					var axisKeyCodes = axisActionElement.AxisKeyCodes ;
-					if( axisKeyCodes != null && axisKeyCodes.Length >  0 )
+					var axisKeyCodeSets = axisActionElement.AxisKeyCodeSets ;
+					if( axisKeyCodeSets != null && axisKeyCodeSets.Length >  0 )
 					{
-						foreach( var axisKeyCode in axisKeyCodes )
+						foreach( var axisKeyCodeSet in axisKeyCodeSets )
 						{
-							if( axisKeyCode != null && axisKeyCode.Length == 4 )
+							if( axisKeyCodeSet != null && axisKeyCodeSet.Length == 4 )
 							{
 								if( axis.x == 0 )
 								{
 									// →
-									if( Keyboard.GetKey( axisKeyCode[ 0 ] ) == true )
+									if( Keyboard.GetKey( axisKeyCodeSet[ 0 ] ) == true )
 									{
 										axis.x += 1 ;
 									}
 									// ←
-									if( Keyboard.GetKey( axisKeyCode[ 1 ] ) == true )
+									if( Keyboard.GetKey( axisKeyCodeSet[ 1 ] ) == true )
 									{
 										axis.x -= 1 ;
 									}
@@ -1532,12 +1899,12 @@ namespace InputHelper
 								if( axis.y == 0 )
 								{
 									// ↑
-									if( Keyboard.GetKey( axisKeyCode[ 2 ] ) == true )
+									if( Keyboard.GetKey( axisKeyCodeSet[ 2 ] ) == true )
 									{
 										axis.y += 1 ;
 									}
 									// ↓
-									if( Keyboard.GetKey( axisKeyCode[ 3 ] ) == true )
+									if( Keyboard.GetKey( axisKeyCodeSet[ 3 ] ) == true )
 									{
 										axis.y -= 1 ;
 									}
@@ -1639,6 +2006,8 @@ namespace InputHelper
 			}
 			return m_Implementation.GetButtonAll( playerNumber ) ;
 		}
+
+		//-----
 
 		/// <summary>
 		/// ボタンが押されているかどうか判定する
@@ -1756,6 +2125,14 @@ namespace InputHelper
 		// ボタンが押されたかどうか判定する
 		private static bool CheckButtonDown( int buttonIdentity, int playerNumber = -1 )
 		{
+			if( m_ButtonIdentityToIndex.ContainsKey( buttonIdentity ) == false )
+			{
+				// 不正なボタン識別子
+				return false ;
+			}
+
+			//-------------------------
+
 			int buttonIndex = m_ButtonIdentityToIndex[ buttonIdentity ] ;
 
 			int p, ps, pe ;
@@ -1895,6 +2272,14 @@ namespace InputHelper
 		// ボタンが離されたかどうか判定する
 		private static bool CheckButtonUp( int buttonIdentity, int playerNumber = -1 )
 		{
+			if( m_ButtonIdentityToIndex.ContainsKey( buttonIdentity ) == false )
+			{
+				// 不正なボタン識別子
+				return false ;
+			}
+
+			//-------------------------
+
 			int buttonIndex = m_ButtonIdentityToIndex[ buttonIdentity ] ;
 
 			int p, ps, pe ;
@@ -2034,6 +2419,14 @@ namespace InputHelper
 		// ボタンが押されているかどうか判定する(リピート有効)
 		private static bool CheckButtonRepeat( int buttonIdentity, int playerNumber = -1 )
 		{
+			if( m_ButtonIdentityToIndex.ContainsKey( buttonIdentity ) == false )
+			{
+				// 不正なボタン識別子
+				return false ;
+			}
+
+			//-------------------------
+
 			int buttonIndex = m_ButtonIdentityToIndex[ buttonIdentity ] ;
 
 			int p, ps, pe ;
@@ -2264,22 +2657,22 @@ namespace InputHelper
 			}
 			if( playerNumber <= 0 )
 			{
-				var axisKeyCodes = axisActionElement.AxisKeyCodes ;
-				if( axisKeyCodes != null && axisKeyCodes.Length >  0 )
+				var axisKeyCodeSets = axisActionElement.AxisKeyCodeSets ;
+				if( axisKeyCodeSets != null && axisKeyCodeSets.Length >  0 )
 				{
-					foreach( var axisKeyCode in axisKeyCodes )
+					foreach( var axisKeyCodeSet in axisKeyCodeSets )
 					{
-						if( axisKeyCode != null && axisKeyCode.Length == 4 )
+						if( axisKeyCodeSet != null && axisKeyCodeSet.Length == 4 )
 						{
 							if( fixedAxis.x == 0 )
 							{
 								// →
-								if( Keyboard.GetKey( axisKeyCode[ 0 ] ) == true )
+								if( Keyboard.GetKey( axisKeyCodeSet[ 0 ] ) == true )
 								{
 									fixedAxis.x += 1 ;
 								}
 								// ←
-								if( Keyboard.GetKey( axisKeyCode[ 1 ] ) == true )
+								if( Keyboard.GetKey( axisKeyCodeSet[ 1 ] ) == true )
 								{
 									fixedAxis.x -= 1 ;
 								}
@@ -2287,12 +2680,12 @@ namespace InputHelper
 							if( fixedAxis.y == 0 )
 							{
 								// ↑
-								if( Keyboard.GetKey( axisKeyCode[ 2 ] ) == true )
+								if( Keyboard.GetKey( axisKeyCodeSet[ 2 ] ) == true )
 								{
 									fixedAxis.y += 1 ;
 								}
 								// ↓
-								if( Keyboard.GetKey( axisKeyCode[ 3 ] ) == true )
+								if( Keyboard.GetKey( axisKeyCodeSet[ 3 ] ) == true )
 								{
 									fixedAxis.y -= 1 ;
 								}
@@ -2441,8 +2834,8 @@ namespace InputHelper
 			}
 			if( playerNumber <= 0 )
 			{
-				var axisKeyCodes = axisActionElement.AxisKeyCodes ;
-				if( axisKeyCodes != null && axisKeyCodes.Length >  0 )
+				var axisKeyCodeSets = axisActionElement.AxisKeyCodeSets ;
+				if( axisKeyCodeSets != null && axisKeyCodeSets.Length >  0 )
 				{
 					var axis = axisActionElement.IsKeyDown ;
 					if( axis.x != 0 )
@@ -2596,8 +2989,8 @@ namespace InputHelper
 			}
 			if( playerNumber <= 0 )
 			{
-				var axisKeyCodes = axisActionElement.AxisKeyCodes ;
-				if( axisKeyCodes != null && axisKeyCodes.Length >  0 )
+				var axisKeyCodeSets = axisActionElement.AxisKeyCodeSets ;
+				if( axisKeyCodeSets!= null && axisKeyCodeSets.Length >  0 )
 				{
 					var axis = axisActionElement.IsKeyUp ;
 					if( axis.x != 0 )
@@ -2751,8 +3144,8 @@ namespace InputHelper
 			}
 			if( playerNumber <= 0 )
 			{
-				var axisKeyCodes = axisActionElement.AxisKeyCodes ;
-				if( axisKeyCodes != null && axisKeyCodes.Length >  0 )
+				var axisKeyCodeSets = axisActionElement.AxisKeyCodeSets ;
+				if( axisKeyCodeSets != null && axisKeyCodeSets.Length >  0 )
 				{
 					var axis = axisActionElement.IsKeyRepeat ;
 					if( axis.x != 0 )
@@ -2801,25 +3194,25 @@ namespace InputHelper
 			{
 				if( axisActionElement.InputCategory == inputCategory )
 				{
-					if( axisActionElement.AxisKeyCodes != null && axisActionElement.AxisKeyCodes.Length >  0 )
+					if( axisActionElement.AxisKeyCodeSets != null && axisActionElement.AxisKeyCodeSets.Length >  0 )
 					{
-						foreach( var axisKeyCode in axisActionElement.AxisKeyCodes )
+						foreach( var axisKeyCodeSet in axisActionElement.AxisKeyCodeSets )
 						{
-							if( axisKeyCode != null && axisKeyCode.Length == 4 )
+							if( axisKeyCodeSet != null && axisKeyCodeSet.Length == 4 )
 							{
-								if( Keyboard.GetKey( axisKeyCode[ 0 ] ) == true )
+								if( Keyboard.GetKey( axisKeyCodeSet[ 0 ] ) == true )
 								{
 									return true ;
 								}
-								if( Keyboard.GetKey( axisKeyCode[ 1 ] ) == true )
+								if( Keyboard.GetKey( axisKeyCodeSet[ 1 ] ) == true )
 								{
 									return true ;
 								}
-								if( Keyboard.GetKey( axisKeyCode[ 2 ] ) == true )
+								if( Keyboard.GetKey( axisKeyCodeSet[ 2 ] ) == true )
 								{
 									return true ;
 								}
-								if( Keyboard.GetKey( axisKeyCode[ 3 ] ) == true )
+								if( Keyboard.GetKey( axisKeyCodeSet[ 3 ] ) == true )
 								{
 									return true ;
 								}
@@ -3082,6 +3475,16 @@ namespace InputHelper
 		/// </summary>
 		public const string Player1Button15 = "Player_1_Button_15" ;
 
+		/// <summary>
+		/// プレイヤー１ボタン１６識別名
+		/// </summary>
+		public const string Player1Button16 = "Player_1_Button_16" ;
+
+		/// <summary>
+		/// プレイヤー１ボタン１７識別名
+		/// </summary>
+		public const string Player1Button17 = "Player_1_Button_17" ;
+
 		//---------------
 
 		/// <summary>
@@ -3163,6 +3566,16 @@ namespace InputHelper
 		/// プレイヤー２ボタン１５識別名
 		/// </summary>
 		public const string Player2Button15 = "Player_2_Button_15" ;
+
+		/// <summary>
+		/// プレイヤー２ボタン１６識別名
+		/// </summary>
+		public const string Player2Button16 = "Player_2_Button_16" ;
+
+		/// <summary>
+		/// プレイヤー２ボタン１７識別名
+		/// </summary>
+		public const string Player2Button17 = "Player_2_Button_17" ;
 
 		//---------------
 
@@ -3246,6 +3659,16 @@ namespace InputHelper
 		/// </summary>
 		public const string Player3Button15 = "Player_3_Button_15" ;
 
+		/// <summary>
+		/// プレイヤー３ボタン１６識別名
+		/// </summary>
+		public const string Player3Button16 = "Player_3_Button_16" ;
+
+		/// <summary>
+		/// プレイヤー３ボタン１７識別名
+		/// </summary>
+		public const string Player3Button17 = "Player_3_Button_17" ;
+
 		//---------------
 
 		/// <summary>
@@ -3327,6 +3750,16 @@ namespace InputHelper
 		/// プレイヤー４ボタン１５識別名
 		/// </summary>
 		public const string Player4Button15 = "Player_4_Button_15" ;
+
+		/// <summary>
+		/// プレイヤー４ボタン１６識別名
+		/// </summary>
+		public const string Player4Button16 = "Player_4_Button_16" ;
+
+		/// <summary>
+		/// プレイヤー４ボタン１７識別名
+		/// </summary>
+		public const string Player4Button17 = "Player_4_Button_17" ;
 
 		//-----------------------------------
 
@@ -3689,19 +4122,19 @@ namespace InputHelper
 		{
 			new string[]
 			{
-				Player1Button00, Player1Button01, Player1Button02, Player1Button03, Player1Button04, Player1Button05, Player1Button06, Player1Button07, Player1Button08, Player1Button09, Player1Button10, Player1Button11, Player1Button12, Player1Button13, Player1Button14, Player1Button15,
+				Player1Button00, Player1Button01, Player1Button02, Player1Button03, Player1Button04, Player1Button05, Player1Button06, Player1Button07, Player1Button08, Player1Button09, Player1Button10, Player1Button11, Player1Button12, Player1Button13, Player1Button14, Player1Button15, Player1Button16, Player1Button17,
 			},
 			new string[]
 			{
-				Player2Button00, Player2Button01, Player2Button02, Player2Button03, Player2Button04, Player2Button05, Player2Button06, Player2Button07, Player2Button08, Player2Button09, Player2Button10, Player2Button11, Player2Button12, Player2Button13, Player2Button14, Player2Button15,
+				Player2Button00, Player2Button01, Player2Button02, Player2Button03, Player2Button04, Player2Button05, Player2Button06, Player2Button07, Player2Button08, Player2Button09, Player2Button10, Player2Button11, Player2Button12, Player2Button13, Player2Button14, Player2Button15, Player2Button16, Player2Button17,
 			},
 			new string[]
 			{
-				Player3Button00, Player3Button01, Player3Button02, Player3Button03, Player3Button04, Player3Button05, Player3Button06, Player3Button07, Player3Button08, Player3Button09, Player3Button10, Player3Button11, Player3Button12, Player3Button13, Player3Button14, Player3Button15,
+				Player3Button00, Player3Button01, Player3Button02, Player3Button03, Player3Button04, Player3Button05, Player3Button06, Player3Button07, Player3Button08, Player3Button09, Player3Button10, Player3Button11, Player3Button12, Player3Button13, Player3Button14, Player3Button15, Player3Button16, Player3Button17,
 			},
 			new string[]
 			{
-				Player4Button00, Player4Button01, Player4Button02, Player4Button03, Player4Button04, Player4Button05, Player4Button06, Player4Button07, Player4Button08, Player4Button09, Player4Button10, Player4Button11, Player4Button12, Player4Button13, Player4Button14, Player4Button15,
+				Player4Button00, Player4Button01, Player4Button02, Player4Button03, Player4Button04, Player4Button05, Player4Button06, Player4Button07, Player4Button08, Player4Button09, Player4Button10, Player4Button11, Player4Button12, Player4Button13, Player4Button14, Player4Button15, Player4Button16, Player4Button17,
 			},
 		} ;
 

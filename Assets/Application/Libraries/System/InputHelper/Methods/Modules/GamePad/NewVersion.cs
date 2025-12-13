@@ -32,6 +32,8 @@ namespace InputHelper
 			/// <returns></returns>
 			public int GetButtonAll( int playerNumber = -1 )
 			{
+				// ゲームパッドの場合はキーボードのマッピングもあるため単純にゲームパッドデバイスの有無で処理の終了は出来ない
+
 				int buttonFlags = 0 ;
 
 				//----------------------------------
@@ -51,7 +53,6 @@ namespace InputHelper
 				if( max == 0 )
 				{
 					// ゲームパッドの接続数が０なら処理はここで終了
-
 					return buttonFlags ;
 				}
 
@@ -130,18 +131,90 @@ namespace InputHelper
 						}
 					}
 
-					if( GetGamePadButton( gamepad, profile.ButtonNumbers[  4 ] ) == true )
+					// DPad_R
+					if( profile.ButtonNumbers[  4 ] >= 0 )
+					{
+						if( GetGamePadButton( gamepad, profile.ButtonNumbers[  4 ] ) == true )
+						{
+							buttonFlags |= DPad_R ;
+						}
+					}
+					else
+					{
+						float axis =   GetGamePadAxis( gamepad, profile.AxisNumbers[  0 ] ) ;
+						if( axis >= profile.AnalogButtonThreshold )
+						{
+							buttonFlags |= DPad_R ;
+						}
+					}
+					
+					// DPad_L
+					if( profile.ButtonNumbers[  5 ] >= 0 )
+					{
+						if( GetGamePadButton( gamepad, profile.ButtonNumbers[  5 ] ) == true )
+						{
+							buttonFlags |= DPad_L ;
+						}
+					}
+					else
+					{
+						float axis = - GetGamePadAxis( gamepad, profile.AxisNumbers[  0 ] ) ;
+						if( axis >= profile.AnalogButtonThreshold )
+						{
+							buttonFlags |= DPad_L ;
+						}
+					}
+					
+					// DPad_U
+					if( profile.ButtonNumbers[  6 ] >= 0 )
+					{
+						if( GetGamePadButton( gamepad, profile.ButtonNumbers[  6 ] ) == true )
+						{
+							buttonFlags |= DPad_U ;
+						}
+					}
+					else
+					{
+						float axis =   GetGamePadAxis( gamepad, profile.AxisNumbers[  1 ] ) ;
+						if( axis >= profile.AnalogButtonThreshold )
+						{
+							buttonFlags |= DPad_U ;
+						}
+					}
+					
+					// DPad_D
+					if( profile.ButtonNumbers[  7 ] >= 0 )
+					{
+						if( GetGamePadButton( gamepad, profile.ButtonNumbers[  7 ] ) == true )
+						{
+							buttonFlags |= DPad_D ;
+						}
+					}
+					else
+					{
+						float axis = - GetGamePadAxis( gamepad, profile.AxisNumbers[  1 ] ) ;
+						if( axis >= profile.AnalogButtonThreshold )
+						{
+							buttonFlags |= DPad_D ;
+						}
+					}
+					
+					// R1
+					if( GetGamePadButton( gamepad, profile.ButtonNumbers[  8 ] ) == true )
 					{
 						buttonFlags |= R1 ;
 					}
-					if( GetGamePadButton( gamepad, profile.ButtonNumbers[  5 ] ) == true )
+
+					// L1
+					if( GetGamePadButton( gamepad, profile.ButtonNumbers[  9 ] ) == true )
 					{
 						buttonFlags |= L1 ;
 					}
 
-					if( profile.ButtonNumbers[  6 ] >= 0 )
+					// R2
+					if( profile.ButtonNumbers[ 10 ] >= 0 )
 					{
-						if( GetGamePadButton( gamepad, profile.ButtonNumbers[  6 ] ) == true )
+						if( GetGamePadButton( gamepad, profile.ButtonNumbers[ 10 ] ) == true )
 						{
 							buttonFlags |= R2 ;
 						}
@@ -154,10 +227,11 @@ namespace InputHelper
 							buttonFlags |= R2 ;
 						}
 					}
-
-					if( profile.ButtonNumbers[  7 ] >= 0 )
+					
+					// L2
+					if( profile.ButtonNumbers[ 11 ] >= 0 )
 					{
-						if( GetGamePadButton( gamepad, profile.ButtonNumbers[ 7 ] ) == true )
+						if( GetGamePadButton( gamepad, profile.ButtonNumbers[ 11 ] ) == true )
 						{
 							buttonFlags |= L2 ;
 						}
@@ -171,19 +245,26 @@ namespace InputHelper
 						}
 					}
 
-					if( GetGamePadButton( gamepad, profile.ButtonNumbers[  8 ] ) == true )
+					// R3
+					if( GetGamePadButton( gamepad, profile.ButtonNumbers[ 12 ] ) == true )
 					{
 						buttonFlags |= R3 ;
 					}
-					if( GetGamePadButton( gamepad, profile.ButtonNumbers[  9 ] ) == true )
+
+					// L3
+					if( GetGamePadButton( gamepad, profile.ButtonNumbers[ 13 ] ) == true )
 					{
 						buttonFlags |= L3 ;
 					}
-					if( GetGamePadButton( gamepad, profile.ButtonNumbers[ 10 ] ) == true )
+
+					// O1
+					if( GetGamePadButton( gamepad, profile.ButtonNumbers[ 14 ] ) == true )
 					{
 						buttonFlags |= O1 ;
 					}
-					if( GetGamePadButton( gamepad, profile.ButtonNumbers[ 11 ] ) == true )
+
+					// O2
+					if( GetGamePadButton( gamepad, profile.ButtonNumbers[ 15 ] ) == true )
 					{
 						buttonFlags |= O2 ;
 					}
@@ -217,7 +298,6 @@ namespace InputHelper
 				if( max == 0 )
 				{
 					// ゲームパッドの接続数が０なら処理はここで終了
-
 					return false ;
 				}
 
@@ -292,18 +372,78 @@ namespace InputHelper
 							}
 						break ;
 
-						case R1 :
-							if( GetGamePadButton( gamepad, profile.ButtonNumbers[  4 ] ) == true ){ return true ; }
+						case DPad_R :
+							if( profile.ButtonNumbers[  4 ] >= 0 )
+							{
+								if( GetGamePadButton( gamepad, profile.ButtonNumbers[  4 ] ) == true ){ return true ; }
+							}
+							else
+							{
+								float axis =   GetGamePadAxis( gamepad, profile.AxisNumbers[  0 ] ) ;
+								if( axis >= profile.AnalogButtonThreshold )
+								{
+									return true ;
+								}
+							}
 						break ;
 
-						case L1 :
-							if( GetGamePadButton( gamepad, profile.ButtonNumbers[  5 ] ) == true ){ return true ; }
+						case DPad_L :
+							if( profile.ButtonNumbers[  5 ] >= 0 )
+							{
+								if( GetGamePadButton( gamepad, profile.ButtonNumbers[  5 ] ) == true ){ return true ; }
+							}
+							else
+							{
+								float axis = - GetGamePadAxis( gamepad, profile.AxisNumbers[  0 ] ) ;
+								if( axis >= profile.AnalogButtonThreshold )
+								{
+									return true ;
+								}
+							}
 						break ;
 
-						case R2 :
+						case DPad_U :
 							if( profile.ButtonNumbers[  6 ] >= 0 )
 							{
 								if( GetGamePadButton( gamepad, profile.ButtonNumbers[  6 ] ) == true ){ return true ; }
+							}
+							else
+							{
+								float axis =   GetGamePadAxis( gamepad, profile.AxisNumbers[  1 ] ) ;
+								if( axis >= profile.AnalogButtonThreshold )
+								{
+									return true ;
+								}
+							}
+						break ;
+
+						case DPad_D :
+							if( profile.ButtonNumbers[  7 ] >= 0 )
+							{
+								if( GetGamePadButton( gamepad, profile.ButtonNumbers[  7 ] ) == true ){ return true ; }
+							}
+							else
+							{
+								float axis = - GetGamePadAxis( gamepad, profile.AxisNumbers[  1 ] ) ;
+								if( axis >= profile.AnalogButtonThreshold )
+								{
+									return true ;
+								}
+							}
+						break ;
+
+						case R1 :
+							if( GetGamePadButton( gamepad, profile.ButtonNumbers[  8 ] ) == true ){ return true ; }
+						break ;
+
+						case L1 :
+							if( GetGamePadButton( gamepad, profile.ButtonNumbers[  9 ] ) == true ){ return true ; }
+						break ;
+
+						case R2 :
+							if( profile.ButtonNumbers[ 10 ] >= 0 )
+							{
+								if( GetGamePadButton( gamepad, profile.ButtonNumbers[ 10 ] ) == true ){ return true ; }
 							}
 							else
 							{
@@ -316,9 +456,9 @@ namespace InputHelper
 						break ;
 
 						case L2 :
-							if( profile.ButtonNumbers[  7 ] >= 0 )
+							if( profile.ButtonNumbers[ 11 ] >= 0 )
 							{
-								if( GetGamePadButton( gamepad, profile.ButtonNumbers[ 7 ] ) == true ){ return true ; }
+								if( GetGamePadButton( gamepad, profile.ButtonNumbers[ 11 ] ) == true ){ return true ; }
 							}
 							else
 							{
@@ -331,19 +471,19 @@ namespace InputHelper
 						break ;
 
 						case R3 :
-							if( GetGamePadButton( gamepad, profile.ButtonNumbers[  8 ] ) == true ){ return true ; }
+							if( GetGamePadButton( gamepad, profile.ButtonNumbers[ 12 ] ) == true ){ return true ; }
 						break ;
 
 						case L3 :
-							if( GetGamePadButton( gamepad, profile.ButtonNumbers[  9 ] ) == true ){ return true ; }
+							if( GetGamePadButton( gamepad, profile.ButtonNumbers[ 13 ] ) == true ){ return true ; }
 						break ;
 
 						case O1 :
-							if( GetGamePadButton( gamepad, profile.ButtonNumbers[ 10 ] ) == true ){ return true ; }
+							if( GetGamePadButton( gamepad, profile.ButtonNumbers[ 14 ] ) == true ){ return true ; }
 						break ;
 
 						case O2 :
-							if( GetGamePadButton( gamepad, profile.ButtonNumbers[ 11 ] ) == true ){ return true ; }
+							if( GetGamePadButton( gamepad, profile.ButtonNumbers[ 15 ] ) == true ){ return true ; }
 						break ;
 					}
 				}
@@ -513,14 +653,18 @@ namespace InputHelper
 					case  1 : state = gamepad.buttonEast.isPressed			; break ;
 					case  2 : state = gamepad.buttonWest.isPressed			; break ;
 					case  3 : state = gamepad.buttonNorth.isPressed			; break ;
-					case  4 : state = gamepad.rightShoulder.isPressed		; break ;
-					case  5 : state = gamepad.leftShoulder.isPressed		; break ;
-					case  6 : state = gamepad.rightTrigger.isPressed		; break ;
-					case  7 : state = gamepad.leftTrigger.isPressed			; break ;
-					case  8 : state = gamepad.rightStickButton.isPressed	; break ;
-					case  9 : state = gamepad.leftStickButton.isPressed		; break ;
-					case 10 : state = gamepad.startButton.isPressed			; break ;
-					case 11 : state = gamepad.selectButton.isPressed		; break ;
+					case  4 : state = gamepad.dpad.right.isPressed			; break ;
+					case  5 : state = gamepad.dpad.left.isPressed			; break ;
+					case  6 : state = gamepad.dpad.up.isPressed			    ; break ;
+					case  7 : state = gamepad.dpad.down.isPressed			; break ;
+					case  8 : state = gamepad.rightShoulder.isPressed		; break ;
+					case  9 : state = gamepad.leftShoulder.isPressed		; break ;
+					case 10 : state = gamepad.rightTrigger.isPressed		; break ;
+					case 11 : state = gamepad.leftTrigger.isPressed			; break ;
+					case 12 : state = gamepad.rightStickButton.isPressed	; break ;
+					case 13 : state = gamepad.leftStickButton.isPressed		; break ;
+					case 14 : state = gamepad.startButton.isPressed			; break ;
+					case 15 : state = gamepad.selectButton.isPressed		; break ;
 				}
 
 				return state ;

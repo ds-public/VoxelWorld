@@ -7,6 +7,11 @@ namespace uGUIHelper.InputAdapter
 	/// </summary>
 	public enum KeyCodes
 	{
+		/// <summary>
+		/// 何もなし
+		/// </summary>
+		None = 0,
+
 		Backspace,  Delete, Tab, Clear, Return, Pause, Escape, Space,
 		Keypad0, Keypad1, Keypad2, Keypad3, Keypad4, Keypad5, Keypad6, Keypad7, Keypad8, Keypad9,
 		KeypadPeriod, KeypadDivide, KeypadMultiply, KeypadMinus, KeypadPlus, KeypadEnter, KeypadEquals,
