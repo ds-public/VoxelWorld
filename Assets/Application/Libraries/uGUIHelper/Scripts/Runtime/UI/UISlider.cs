@@ -13,6 +13,13 @@ namespace uGUIHelper
 	public class UISlider : UIView
 	{
 		/// <summary>
+		/// 汎用カーソル画像
+		/// </summary>
+		public    UIImage     Cursor{ get{ return m_Cursor ; } set{ m_Cursor = value ; } }
+		[SerializeField]
+		protected UIImage   m_Cursor ;
+
+		/// <summary>
 		/// 全体領域(ショートカット)
 		/// </summary>
 		public RectTransform FillRect

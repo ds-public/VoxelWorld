@@ -1,3 +1,5 @@
+#if false
+
 #if UNITY_EDITOR
 
 using UnityEditor.AnimatedValues;
@@ -156,5 +158,7 @@ namespace UnityEditor.UI
 		}
 	}
 }
+
+#endif
 
 #endif

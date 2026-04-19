@@ -15,29 +15,96 @@ namespace InputHelper
 	/// </summary>
 	public partial class Mouse
 	{
+		//-------------------------------------------------------------------------------------------
+		// ↓共有不可
+
+		// オーナーのインスタンス
 		private static InputManager m_Owner ;
 
+		/// <summary>
+		/// 初期化を行う
+		/// </summary>
+		public static void Initialize( bool inputSystemEnabled, InputManager owner )
+		{
+			m_Owner = owner ;
+
+			if( inputSystemEnabled == false )
+			{
+				// 旧版の実装を採用
+				m_Implementation = new Implementation_OldVersion() ;
+			}
+#if ENABLE_INPUT_SYSTEM
+			else
+			{
+				// 新版の実装を採用
+				m_Implementation = new Implementation_NewVersion() ;
+			}
+#endif
+			m_Implementation.Initialize() ;
+		}
+
+		// ↑共有不可
 		//-------------------------------------------------------------------------------------------
+		// ↓共有可能
+
+		/// <summary>
+		/// 全てマウスの有効状況
+		/// </summary>
+		public static bool	Enabled { get ; set ; } = true ;
+
+		//-----------------------------
+
+		/// <summary>
+		/// 無意味ボタン
+		/// </summary>
+		public const int        None        = -1 ;
 
 		/// <summary>
 		/// 左ボタン番号
 		/// </summary>
-		public const int		LB = 0 ;
+		public const int		LB          =  0 ;
 
 		/// <summary>
 		/// 右ボタン番号
 		/// </summary>
-		public const int		RB = 1 ;
+		public const int		RB          =  1 ;
 
 		/// <summary>
 		/// 中ボタン番号
 		/// </summary>
-		public const int		MB = 2 ;
+		public const int		MB          =  2 ;
+
+		/// <summary>
+		/// ホイールの上回転
+		/// </summary>
+		public const int        Wheel_U     =  3 ;
+
+		/// <summary>
+		/// ホイールの下回転
+		/// </summary>
+		public const int        Wheel_D     =  4 ;
+
+		/// <summary>
+		/// ホイール回転
+		/// </summary>
+		public const int        Wheel_Roll  = 12 ;
+
+		/// <summary>
+		/// ホイール移動
+		/// </summary>
+		public const int        Wheel_Drag  = 13 ;
+
+		/// <summary>
+		/// ポインター移動
+		/// </summary>
+		public const int        Move        = 20 ;
+
+		//---------
 
 		/// <summary>
 		/// ボタンの数
 		/// </summary>
-		public const int		NumberOfButtons = 3 ;
+		public const int		NumberOfButtons = 5 ;
 
 		/// <summary>
 		/// リピート開始までの時間(秒)
@@ -65,7 +132,7 @@ namespace InputHelper
 			/// <summary>
 			/// フレーム毎の更新
 			/// </summary>
-			void Update( out bool button_0, out bool button_1, out bool button_2 ) ;
+			void Update( out bool button_0, out bool button_1, out bool button_2, out bool button_3, out bool button_4 ) ;
 
 			//-----------------------------------------------------------
 
@@ -113,6 +180,35 @@ namespace InputHelper
 			/// <returns></returns>
 			bool GetButtonRepeat( int buttonNumber ) ;
 
+			/// <summary>
+			/// アクシスが押されているかどうかの判定
+			/// </summary>
+			/// <param name="buttonNumber"></param>
+			/// <returns></returns>
+			Vector2 GetAxis( int axisNumber ) ;
+
+			/// <summary>
+			/// ボタンが押されたかどうかの判定
+			/// </summary>
+			/// <param name="buttonNumber"></param>
+			/// <returns></returns>
+			Vector2 GetAxisDown( int axisNumber ) ;
+
+			/// <summary>
+			/// ボタンが離されたどうかの判定
+			/// </summary>
+			/// <param name="buttonNumber"></param>
+			/// <returns></returns>
+			Vector2 GetAxisUp( int axisNumber ) ;
+
+			/// <summary>
+			/// リピート付きでボタンが押されているかどうかの判定
+			/// </summary>
+			/// <param name="buttonNumber"></param>
+			/// <param name="fromFixedUpdate"></param>
+			/// <returns></returns>
+			Vector2 GetAxisRepeat( int axisNumber ) ;
+
 			//----------------------------------
 
 			/// <summary>
@@ -126,28 +222,6 @@ namespace InputHelper
 
 		//-------------------------------------------------------------------------------------------------------------------
 		// 公開メソッド
-
-		/// <summary>
-		/// 初期化を行う
-		/// </summary>
-		public static void Initialize( bool inputSystemEnabled, InputManager owner )
-		{
-			m_Owner = owner ;
-
-			if( inputSystemEnabled == false )
-			{
-				// 旧版の実装を採用
-				m_Implementation = new Implementation_OldVersion() ;
-			}
-#if ENABLE_INPUT_SYSTEM
-			else
-			{
-				// 新版の実装を採用
-				m_Implementation = new Implementation_NewVersion() ;
-			}
-#endif
-			m_Implementation.Initialize() ;
-		}
 
 		/// <summary>
 		/// 毎フレーム実行する処理
@@ -168,7 +242,7 @@ namespace InputHelper
 				throw new Exception( "Not implemented." ) ;
 			}
 
-			m_Implementation.Update( out _, out _, out _ ) ;
+			m_Implementation.Update( out _, out _, out _, out _, out _ ) ;
 
 			return true ;
 		}
@@ -178,11 +252,13 @@ namespace InputHelper
 		/// </summary>
 		/// <param name="buttonNumber"></param>
 		/// <returns></returns>
-		public static bool Update( out bool button_0, out bool button_1, out bool button_2 )
+		public static bool Update( out bool button_0, out bool button_1, out bool button_2, out bool button_3, out bool button_4 )
 		{
 			button_0 = false ;
 			button_1 = false ;
 			button_2 = false ;
+			button_3 = false ;
+			button_4 = false ;
 
 			//----------------------------------
 
@@ -198,7 +274,7 @@ namespace InputHelper
 				throw new Exception( "Not implemented." ) ;
 			}
 
-			m_Implementation.Update( out button_0, out button_1, out button_2 ) ;
+			m_Implementation.Update( out button_0, out button_1, out button_2, out button_3, out button_4 ) ;
 
 			return true ;
 		}
@@ -261,7 +337,7 @@ namespace InputHelper
 		public static bool GetButton( int buttonNumber )
 		{
 			// modeEnabled を判定条件に入れないのは、マウスとキーボードを同時入力するケースを考慮するため
-			if( m_Owner == null || m_Owner.ControlEnabled == false )
+			if( m_Owner == null || m_Owner.ControlEnabled == false || Enabled == false )
 			{
 				// 無効
 				return false ;
@@ -283,7 +359,7 @@ namespace InputHelper
 		public static bool GetButtonDown( int buttonNumber )
 		{
 			// modeEnabled を判定条件に入れないのは、マウスとキーボードを同時入力するケースを考慮するため
-			if( m_Owner == null || m_Owner.ControlEnabled == false )
+			if( m_Owner == null || m_Owner.ControlEnabled == false || Enabled == false )
 			{
 				// 無効
 				return false ;
@@ -305,7 +381,7 @@ namespace InputHelper
 		public static bool GetButtonUp( int buttonNumber )
 		{
 			// modeEnabled を判定条件に入れないのは、マウスとキーボードを同時入力するケースを考慮するため
-			if( m_Owner == null || m_Owner.ControlEnabled == false )
+			if( m_Owner == null || m_Owner.ControlEnabled == false || Enabled == false )
 			{
 				// 無効
 				return false ;
@@ -327,7 +403,7 @@ namespace InputHelper
 		public static bool GetButtonRepeat( int buttonNumber )
 		{
 			// modeEnabled を判定条件に入れないのは、マウスとキーボードを同時入力するケースを考慮するため
-			if( m_Owner == null || m_Owner.ControlEnabled == false )
+			if( m_Owner == null || m_Owner.ControlEnabled == false || Enabled == false )
 			{
 				// 無効
 				return false ;
@@ -344,6 +420,96 @@ namespace InputHelper
 		//-----------------------------------------------------------
 
 		/// <summary>
+		/// アクシスが押されているかどうかの判定
+		/// </summary>
+		/// <param name="buttonNumber"></param>
+		/// <returns></returns>
+		public static Vector2 GetAxis( int axisNumber )
+		{
+			// modeEnabled を判定条件に入れないのは、マウスとキーボードを同時入力するケースを考慮するため
+			if( m_Owner == null || m_Owner.ControlEnabled == false || Enabled == false )
+			{
+				// 無効
+				return Vector2.zero ;
+			}
+
+			if( m_Implementation == null )
+			{
+				throw new Exception( "Not implemented." ) ;
+			}
+
+			return m_Implementation.GetAxis( axisNumber ) ;
+		}
+
+		/// <summary>
+		/// アクシスが押されたかどうかの判定
+		/// </summary>
+		/// <param name="buttonNumber"></param>
+		/// <returns></returns>
+		public static Vector2 GetAxisDown( int axisNumber )
+		{
+			// modeEnabled を判定条件に入れないのは、マウスとキーボードを同時入力するケースを考慮するため
+			if( m_Owner == null || m_Owner.ControlEnabled == false || Enabled == false )
+			{
+				// 無効
+				return Vector2.zero ;
+			}
+
+			if( m_Implementation == null )
+			{
+				throw new Exception( "Not implemented." ) ;
+			}
+
+			return m_Implementation.GetAxisDown( axisNumber ) ;
+		}
+
+		/// <summary>
+		/// アクシスが離されたどうかの判定
+		/// </summary>
+		/// <param name="buttonNumber"></param>
+		/// <returns></returns>
+		public static Vector2 GetAxisUp( int axisNumber )
+		{
+			// modeEnabled を判定条件に入れないのは、マウスとキーボードを同時入力するケースを考慮するため
+			if( m_Owner == null || m_Owner.ControlEnabled == false || Enabled == false )
+			{
+				// 無効
+				return Vector2.zero ;
+			}
+
+			if( m_Implementation == null )
+			{
+				throw new Exception( "Not implemented." ) ;
+			}
+
+			return m_Implementation.GetAxisUp( axisNumber ) ;
+		}
+
+		/// <summary>
+		/// リピート付きでアクシスが押されているかどうかの判定
+		/// </summary>
+		/// <param name="buttonNumber"></param>
+		/// <returns></returns>
+		public static Vector2 GetAxisRepeat( int axisNumber )
+		{
+			// modeEnabled を判定条件に入れないのは、マウスとキーボードを同時入力するケースを考慮するため
+			if( m_Owner == null || m_Owner.ControlEnabled == false || Enabled == false )
+			{
+				// 無効
+				return Vector2.zero ;
+			}
+
+			if( m_Implementation == null )
+			{
+				throw new Exception( "Not implemented." ) ;
+			}
+
+			return m_Implementation.GetAxisRepeat( axisNumber ) ;
+		}
+
+		//-----------------------------------------------------------
+
+		/// <summary>
 		/// ホイールの移動量
 		/// </summary>
 		public static Vector2 ScrollDelta
@@ -351,7 +517,7 @@ namespace InputHelper
 			get
 			{
 				// modeEnabled を判定条件に入れないのは、マウスとキーボードを同時入力するケースを考慮するため
-				if( m_Owner == null || m_Owner.ControlEnabled == false )
+				if( m_Owner == null || m_Owner.ControlEnabled == false || Enabled == false )
 				{
 					// 無効
 					return Vector2.zero ;
@@ -365,6 +531,10 @@ namespace InputHelper
 				return m_Implementation.ScrollDelta ;
 			}
 		}
-	}
-}
+
+		// ↑共有可能
+		//-------------------------------------------------------------------------------------------
+
+	}   // class
+}   // namespace
 

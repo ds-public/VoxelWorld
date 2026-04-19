@@ -6,7 +6,7 @@ using UnityEngine ;
 namespace uGUIHelper
 {
 	/// <summary>
-	/// 実機用デバッグログ Version 2020/11/16
+	/// 実機用デバッグログ Version 2026/01/23
 	/// </summary>
 	// スタティックにしたい場合
 	[ ExecuteInEditMode ]
@@ -18,7 +18,7 @@ namespace uGUIHelper
 		private static DebugScreen m_Instance = null ;
 
 		public GUISkin Skin ;
-		public ArrayList TextArray = new ArrayList() ;
+		public ArrayList TextArray = new () ;
 		public string Text = string.Empty ;
 		public bool Enable = true ;
 		private bool View = true ;
@@ -98,10 +98,7 @@ namespace uGUIHelper
 				DontDestroyOnLoad( this ) ;
 			}
 
-			if( TextArray != null )
-			{
-				TextArray.Clear() ;
-			}
+			TextArray?.Clear() ;
 
 			m_TextStyle = new GUIStyle() ;
 			m_ButtonStyle = new GUIStyle( "button" ) ;
@@ -139,7 +136,7 @@ namespace uGUIHelper
 		
 		private Texture2D MakeButtonColor( int w, int h, Color color, bool r )
 		{
-			Texture2D t = new Texture2D( w, h ) ;
+			var t = new Texture2D( w, h ) ;
 
 			int x, y ;
 			for( y  = 1 ; y <= ( h - 2 ) ; y ++ )
@@ -150,9 +147,9 @@ namespace uGUIHelper
 				}
 			}
 
-			Color c0 = new Color( 0.75f, 0.75f, 0.75f, color.a ) ;
-			Color c1 = new Color( 0.25f, 0.25f, 0.25f, color.a ) ;
-			Color c2 = new Color( 0.50f, 0.50f, 0.50f, color.a ) ;
+			var c0 = new Color( 0.75f, 0.75f, 0.75f, color.a ) ;
+			var c1 = new Color( 0.25f, 0.25f, 0.25f, color.a ) ;
+			var c2 = new Color( 0.50f, 0.50f, 0.50f, color.a ) ;
 
 			if( r == true )
 			{
@@ -503,7 +500,7 @@ namespace uGUIHelper
 				return null ;
 			}
 
-			OutWait ow = new OutWait( m_Instance ) ;
+			var ow = new OutWait( m_Instance ) ;
 			m_Instance.StartCoroutine( m_Instance.OutAndWait_Private( ow ) ) ;
 			return ow ;
 		}
@@ -581,7 +578,7 @@ namespace uGUIHelper
 			DebugScreen ds = ( DebugScreen )GameObject.FindAnyObjectByType( typeof( DebugScreen ) ) ;
 			if( ds == null )
 			{
-				GameObject go = new GameObject( "DebugScreen" ) ;
+				var go = new GameObject( "DebugScreen" ) ;
 				ds = go.AddComponent<DebugScreen>() ;
 			}
 

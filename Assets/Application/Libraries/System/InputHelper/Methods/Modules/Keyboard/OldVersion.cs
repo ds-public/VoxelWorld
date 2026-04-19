@@ -6,6 +6,9 @@ using UnityEngine ;
 
 namespace InputHelper
 {
+	//-------------------------------------------------------------------------------------------
+	// ↓共有可能
+
 	/// <summary>
 	/// キーボード制御
 	/// </summary>
@@ -106,9 +109,9 @@ namespace InputHelper
 				{ KeyCodes.Greater,			KeyCode.Greater			},
 				{ KeyCodes.Question,		KeyCode.Question		},
 				{ KeyCodes.At,				KeyCode.At				},
-				{ KeyCodes.LeftBracket,		KeyCode.LeftBracket		},
+				{ KeyCodes.LeftBracket,		KeyCode.RightBracket	},  // 左右逆転しているバグあり
 				{ KeyCodes.Backslash,		KeyCode.Backslash		},
-				{ KeyCodes.RightBracket,	KeyCode.RightBracket	},
+				{ KeyCodes.RightBracket,	KeyCode.LeftBracket     },  // 左右逆転しているバグあり
 				{ KeyCodes.Caret,			KeyCode.Caret			},
 				{ KeyCodes.Underscore,		KeyCode.Underscore		},
 				{ KeyCodes.BackQuote,		KeyCode.BackQuote		},
@@ -329,6 +332,59 @@ namespace InputHelper
 			//----------------------------------------------------------
 
 			/// <summary>
+			/// いずれかのキーが押されているか判定する
+			/// </summary>
+			/// <returns></returns>
+			public bool IsAnyKey()
+			{
+				foreach( KeyCode keyCode in Enum.GetValues( typeof( KeyCode ) ) )
+				{
+					if( Input.GetKey( keyCode ) == true )
+					{
+						return true ;
+					}
+				}
+
+				return false ;
+			}
+
+			/// <summary>
+			/// いずれかのキーが押されたか判定する
+			/// </summary>
+			/// <returns></returns>
+			public bool IsAnyKeyDown()
+			{
+				foreach( KeyCode keyCode in Enum.GetValues( typeof( KeyCode ) ) )
+				{
+					if( Input.GetKeyDown( keyCode ) == true )
+					{
+						return true ;
+					}
+				}
+
+				return false ;
+			}
+
+			/// <summary>
+			/// いずれかのキーが離されたか判定する
+			/// </summary>
+			/// <returns></returns>
+			public bool IsAnyKeyUp()
+			{
+				foreach( KeyCode keyCode in Enum.GetValues( typeof( KeyCode ) ) )
+				{
+					if( Input.GetKeyUp( keyCode ) == true )
+					{
+						return true ;
+					}
+				}
+
+				return false ;
+			}
+
+			//----------------------------------
+
+			/// <summary>
 			/// どのキーが押されているか確認する
 			/// </summary>
 			public void CheckAllKeys()
@@ -402,5 +458,10 @@ namespace InputHelper
 				return RegisterRepeatProcessingTarget( keyCode ) ;
 			}
 		}
-	}
-}
+
+	}   // class
+
+	// ↑共有可能
+	//-------------------------------------------------------------------------------------------
+
+}   // namespace

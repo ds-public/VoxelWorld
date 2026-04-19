@@ -15,7 +15,41 @@ namespace uGUIHelper.InputAdapter
 	/// </summary>
 	public partial class Keyboard
 	{
+		//-------------------------------------------------------------------------------------------
+		// ↓共有不可
+
 		private static UIEventSystem m_Owner ;
+
+		/// <summary>
+		/// 初期化を行う
+		/// </summary>
+		public static void Initialize( bool inputSystemEnabled, UIEventSystem owner )
+		{
+			m_Owner = owner ;
+
+			if( inputSystemEnabled == false )
+			{
+				// 旧版の実装を採用
+				m_Implementation = new Implementation_OldVersion() ;
+			}
+#if ENABLE_INPUT_SYSTEM
+			else
+			{
+				// 新版の実装を採用
+				m_Implementation = new Implementation_NewVersion() ;
+			}
+#endif
+			m_Implementation.Initialize() ;
+		}
+
+		// ↑共有不可
+		//-------------------------------------------------------------------------------------------
+		// ↓共有可能
+
+		/// <summary>
+		/// 全てキーボードの有効状況
+		/// </summary>
+		public static bool	Enabled { get ; set ; } = true ;
 
 		/// <summary>
 		/// リピートを開始するまでの時間(秒)
@@ -45,7 +79,25 @@ namespace uGUIHelper.InputAdapter
 			void Update() ;
 
 			/// <summary>
-			/// どのキーが押されているか確認する
+			/// いずれかキーが押されているかどどうか
+			/// </summary>
+			/// <returns></returns>
+			bool IsAnyKey() ;
+
+			/// <summary>
+			/// いずれかキーが押されたかどうか
+			/// </summary>
+			/// <returns></returns>
+			bool IsAnyKeyDown() ;
+
+			/// <summary>
+			/// いずれかキーが離されたかどうか
+			/// </summary>
+			/// <returns></returns>
+			bool IsAnyKeyUp() ;
+
+			/// <summary>
+			/// どのキーが押されているか確認する(デバッグ用)
 			/// </summary>
 			void CheckAllKeys() ;
 
@@ -87,28 +139,6 @@ namespace uGUIHelper.InputAdapter
 		// 公開メソッド
 
 		/// <summary>
-		/// 初期化を行う
-		/// </summary>
-		public static void Initialize( bool inputSystemEnabled, UIEventSystem owner )
-		{
-			m_Owner = owner ;
-
-			if( inputSystemEnabled == false )
-			{
-				// 旧版の実装を採用
-				m_Implementation = new Implementation_OldVersion() ;
-			}
-#if ENABLE_INPUT_SYSTEM
-			else
-			{
-				// 新版の実装を採用
-				m_Implementation = new Implementation_NewVersion() ;
-			}
-#endif
-			m_Implementation.Initialize() ;
-		}
-
-		/// <summary>
 		/// 毎フレーム実行する処理
 		/// </summary>
 		/// <param name="buttonNumber"></param>
@@ -133,7 +163,45 @@ namespace uGUIHelper.InputAdapter
 		}
 
 		/// <summary>
-		/// どのキーが押されているか確認する
+		/// いずれかキーが押されているか確認する
+		/// </summary>
+		/// <exception cref="Exception"></exception>
+		public static bool IsAnyKey()
+		{
+			if( Enabled == false )
+			{
+				return false ;
+			}
+
+			if( m_Implementation == null )
+			{
+				throw new Exception( "Not implemented." ) ;
+			}
+
+			return m_Implementation.IsAnyKey() ;
+		}
+
+		/// <summary>
+		/// いずれかキーが押されているか確認する
+		/// </summary>
+		/// <exception cref="Exception"></exception>
+		public static bool IsAnyKeyDown()
+		{
+			if( Enabled == false )
+			{
+				return false ;
+			}
+
+			if( m_Implementation == null )
+			{
+				throw new Exception( "Not implemented." ) ;
+			}
+
+			return m_Implementation.IsAnyKeyDown() ;
+		}
+
+		/// <summary>
+		/// どのキーが押されているか確認する(デバッグ用)
 		/// </summary>
 		/// <exception cref="Exception"></exception>
 		public static void CheckAllKeys()
@@ -156,19 +224,13 @@ namespace uGUIHelper.InputAdapter
 		public static bool GetKey( KeyCodes keyCode )
 		{
 			// modeEnabled を判定条件に入れないのは、マウスとキーボードを同時入力するケースを考慮するため
-			if( m_Owner == null || m_Owner.ControlEnabled == false )
+			if( m_Owner == null || m_Owner.ControlEnabled == false || Enabled == false )
 			{
 				// 無効
 				return false ;
 			}
 
-			if( UIEventSystem.GetFocusedInputFieldCount() >  0 )
-			{
-				// フォーカスを得ている InputField があるためキーボードの入力は無効とする
-				return false ;
-			}
-
-			if ( m_Implementation == null )
+			if( m_Implementation == null )
 			{
 				throw new Exception( "Not implemented." ) ;
 			}
@@ -184,15 +246,9 @@ namespace uGUIHelper.InputAdapter
 		public static bool GetKeyDown( KeyCodes keyCode )
 		{
 			// modeEnabled を判定条件に入れないのは、マウスとキーボードを同時入力するケースを考慮するため
-			if( m_Owner == null || m_Owner.ControlEnabled == false )
+			if( m_Owner == null || m_Owner.ControlEnabled == false || Enabled == false )
 			{
 				// 無効
-				return false ;
-			}
-
-			if( UIEventSystem.GetFocusedInputFieldCount() >  0 )
-			{
-				// フォーカスを得ている InputField があるためキーボードの入力は無効とする
 				return false ;
 			}
 
@@ -212,15 +268,9 @@ namespace uGUIHelper.InputAdapter
 		public static bool GetKeyUp( KeyCodes keyCode )
 		{
 			// modeEnabled を判定条件に入れないのは、マウスとキーボードを同時入力するケースを考慮するため
-			if( m_Owner == null || m_Owner.ControlEnabled == false )
+			if( m_Owner == null || m_Owner.ControlEnabled == false || Enabled == false )
 			{
 				// 無効
-				return false ;
-			}
-
-			if( UIEventSystem.GetFocusedInputFieldCount() >  0 )
-			{
-				// フォーカスを得ている InputField があるためキーボードの入力は無効とする
 				return false ;
 			}
 
@@ -240,15 +290,9 @@ namespace uGUIHelper.InputAdapter
 		public static bool GetKeyRepeat( KeyCodes keyCode )
 		{
 			// modeEnabled を判定条件に入れないのは、マウスとキーボードを同時入力するケースを考慮するため
-			if( m_Owner == null || m_Owner.ControlEnabled == false )
+			if( m_Owner == null || m_Owner.ControlEnabled == false || Enabled == false )
 			{
 				// 無効
-				return false ;
-			}
-
-			if( UIEventSystem.GetFocusedInputFieldCount() >  0 )
-			{
-				// フォーカスを得ている InputField があるためキーボードの入力は無効とする
 				return false ;
 			}
 
@@ -259,5 +303,10 @@ namespace uGUIHelper.InputAdapter
 
 			return m_Implementation.GetKeyRepeat( keyCode ) ;
 		}
-	}
-}
+
+		// ↑共有可能
+		//-------------------------------------------------------------------------------------------
+
+	}   // class
+}   // namespace
+

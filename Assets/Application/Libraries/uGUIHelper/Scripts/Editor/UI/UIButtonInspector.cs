@@ -78,31 +78,67 @@ namespace uGUIHelper
 				EditorUtility.SetDirty( view ) ;
 			}
 
-			bool clickTransitionEnabled = EditorGUILayout.Toggle( "Click Transition Enabled", view.ClickTransitionEnabled ) ;
-			if( clickTransitionEnabled != view.ClickTransitionEnabled )
+			if( view.Cursor != null && view.Cursor == view.PointerCursor )
 			{
-				Undo.RecordObject( view, "UIButton : Click Transition Enabled Change" ) ;	// アンドウバッファに登録
-				view.ClickTransitionEnabled = clickTransitionEnabled ;
-				EditorUtility.SetDirty( view ) ;
-			}
-
-			bool waitForTransition = EditorGUILayout.Toggle( "Wait For Transition", view.WaitForTransition ) ;
-			if( waitForTransition != view.WaitForTransition )
-			{
-				Undo.RecordObject( view, "UIButton : Wait For Transition Change" ) ;	// アンドウバッファに登録
-				view.WaitForTransition = waitForTransition ;
-				EditorUtility.SetDirty( view ) ;
+				EditorGUILayout.HelpBox( GetMessage( "SameCursor" ), MessageType.Info, true ) ;
 			}
 
 			EditorGUILayout.Separator() ;	// 少し区切りスペース
 
-			bool setPivotToCenter = EditorGUILayout.Toggle( new GUIContent( "Set Pivot To Center", "<color=#00FFFF>ランタイム実行時</color>に\nピボットを強制的に中心(0.5,0.5)に変更します" ), view.AutoPivotToCenter ) ;
-			if( setPivotToCenter != view.AutoPivotToCenter )
+			GUILayout.BeginHorizontal() ;	// 横並び
 			{
-				Undo.RecordObject( view, "UIButton : Set Pivot To Center Change" ) ;	// アンドウバッファに登録
-				view.AutoPivotToCenter = setPivotToCenter ;
-				EditorUtility.SetDirty( view ) ;
+				bool clickTransitionEnabled = EditorGUILayout.Toggle( view.ClickTransitionEnabled, GUILayout.Width( 16f ) ) ;
+				if( clickTransitionEnabled != view.ClickTransitionEnabled )
+				{
+					Undo.RecordObject( view, "UIButton : Click Transition Enabled Change" ) ;	// アンドウバッファに登録
+					view.ClickTransitionEnabled = clickTransitionEnabled ;
+					EditorUtility.SetDirty( view ) ;
+				}
+				GUILayout.Label( new GUIContent( "Click Transition Enabled", "<color=#00FFFF>ランタイム実行時</color>に\nクリックを行った場合にトランジションを実行するか設定します" ) ) ;
 			}
+			GUILayout.EndHorizontal() ;		// 横並び終了
+
+			GUILayout.BeginHorizontal() ;	// 横並び
+			{
+				bool waitForTransition = EditorGUILayout.Toggle( view.WaitForTransition, GUILayout.Width( 16f ) ) ;
+				if( waitForTransition != view.WaitForTransition )
+				{
+					Undo.RecordObject( view, "UIButton : Wait For Transition Change" ) ;	// アンドウバッファに登録
+					view.WaitForTransition = waitForTransition ;
+					EditorUtility.SetDirty( view ) ;
+				}
+				GUILayout.Label( new GUIContent( "Wait For Transition", "<color=#00FFFF>ランタイム実行時</color>に\nトランジションが終了するまで入力を禁止するかどうかを設定します" ) ) ;
+			}
+			GUILayout.EndHorizontal() ;		// 横並び終了
+
+			GUILayout.BeginHorizontal() ;	// 横並び
+			{
+				// クリックの排他制御
+				bool clickExclusionEnabled = EditorGUILayout.Toggle( view.ClickExclusionEnabled, GUILayout.Width( 16f ) ) ;
+				if( clickExclusionEnabled != view.ClickExclusionEnabled )
+				{
+					Undo.RecordObject( view, "UIButton : Click Exclusion Enabled Change" ) ;	// アンドウバッファに登録
+					view.ClickExclusionEnabled = clickExclusionEnabled ;
+					EditorUtility.SetDirty( view ) ;
+				}
+				GUILayout.Label( new GUIContent( "Click Exclusion Enabled", "<color=#00FFFF>ランタイム実行時</color>に\n同じボタンに対して同時に複数のクリックを実行できないようにします" ) ) ;
+			}
+			GUILayout.EndHorizontal() ;		// 横並び終了
+
+			EditorGUILayout.Separator() ;	// 少し区切りスペース
+
+			GUILayout.BeginHorizontal() ;	// 横並び
+			{
+				bool setPivotToCenter = EditorGUILayout.Toggle( view.AutoPivotToCenter, GUILayout.Width( 16f ) ) ;
+				if( setPivotToCenter != view.AutoPivotToCenter )
+				{
+					Undo.RecordObject( view, "UIButton : Set Pivot To Center Change" ) ;	// アンドウバッファに登録
+					view.AutoPivotToCenter = setPivotToCenter ;
+					EditorUtility.SetDirty( view ) ;
+				}
+				GUILayout.Label( new GUIContent( "Set Pivot To Center", "<color=#00FFFF>ランタイム実行時</color>に\nピボットを強制的に中心(0.5,0.5)に変更します" ) ) ;
+			}
+			GUILayout.EndHorizontal() ;		// 横並び終了
 
 			EditorGUILayout.Separator() ;	// 少し区切りスペース
 
@@ -114,16 +150,40 @@ namespace uGUIHelper
 				EditorUtility.SetDirty( view ) ;
 			}
 
-			// クリックの排他制御
-			bool clickExclusionEnabled = EditorGUILayout.Toggle( "Click Exclusion Enabled", view.ClickExclusionEnabled ) ;
-			if( clickExclusionEnabled != view.ClickExclusionEnabled )
+		}
+
+		//--------------------------------------------------------------------------
+
+		private static readonly Dictionary<string,string> m_Japanese_Message = new ()
+		{
+			{ "SameCursor",			    "カーソルが重複しています。場合によっては意図しない挙動となる可能性があるため、異なるものを設定する事を推奨します。" },
+		} ;
+		private static readonly Dictionary<string,string> m_English_Message = new ()
+		{
+			{ "SameCursor",			    "The cursors are duplicated. This may lead to unintended behavior in some cases, so it is recommended to set different cursors." },
+		} ;
+
+		private string GetMessage( string label )
+		{
+			if( Application.systemLanguage == SystemLanguage.Japanese )
 			{
-				Undo.RecordObject( view, "UIButton : Click Exclusion Enabled Change" ) ;	// アンドウバッファに登録
-				view.ClickExclusionEnabled = clickExclusionEnabled ;
-				EditorUtility.SetDirty( view ) ;
+				if( m_Japanese_Message.ContainsKey( label ) == false )
+				{
+					return "指定のラベル名が見つかりません" ;
+				}
+				return m_Japanese_Message[ label ] ;
+			}
+			else
+			{
+				if( m_English_Message.ContainsKey( label ) == false )
+				{
+					return "Specifying the label name can not be found" ;
+				}
+				return m_English_Message[ label ] ;
 			}
 		}
-	}
-}
+
+	}   // class
+}   // namespace
 
 #endif

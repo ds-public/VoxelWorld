@@ -10,6 +10,9 @@ using UnityEngine.InputSystem ;
 
 namespace uGUIHelper.InputAdapter
 {
+	//-------------------------------------------------------------------------------------------
+	// ↓共有可能
+
 	/// <summary>
 	/// キーボード制御
 	/// </summary>
@@ -351,6 +354,95 @@ namespace uGUIHelper.InputAdapter
 			//----------------------------------------------------------
 
 			/// <summary>
+			/// 何らかのキーが押されているか判定する
+			/// </summary>
+			public bool IsAnyKey()
+			{
+				UnityEngine.InputSystem.Keyboard keyboard = UnityEngine.InputSystem.Keyboard.current ;
+				if( keyboard == null )
+				{
+					// キーボードデバイスが存在しない
+					return false ;
+				}
+
+				foreach( Key keyCode in Enum.GetValues( typeof( Key ) ) )
+				{
+					if( keyCode == Key.None )
+					{
+						// エラーになってしまうのでスキップ
+						continue ;
+					}
+
+					if( keyboard[ keyCode ] != null && keyboard[ keyCode ].isPressed == true )
+					{
+						return true ;
+					}
+				}
+
+				return false ;
+			}
+
+			/// <summary>
+			/// 何らかのキーが押されたか判定する
+			/// </summary>
+			public bool IsAnyKeyDown()
+			{
+				UnityEngine.InputSystem.Keyboard keyboard = UnityEngine.InputSystem.Keyboard.current ;
+				if( keyboard == null )
+				{
+					// キーボードデバイスが存在しない
+					return false ;
+				}
+
+				foreach( Key keyCode in Enum.GetValues( typeof( Key ) ) )
+				{
+					if( keyCode == Key.None )
+					{
+						// エラーになってしまうのでスキップ
+						continue ;
+					}
+
+					if( keyboard[ keyCode ] != null && keyboard[ keyCode ].wasPressedThisFrame == true )
+					{
+						return true ;
+					}
+				}
+
+				return false ;
+			}
+
+			/// <summary>
+			/// 何らかのキーが離されたか判定する
+			/// </summary>
+			public bool IsAnyKeyUp()
+			{
+				UnityEngine.InputSystem.Keyboard keyboard = UnityEngine.InputSystem.Keyboard.current ;
+				if( keyboard == null )
+				{
+					// キーボードデバイスが存在しない
+					return false ;
+				}
+
+				foreach( Key keyCode in Enum.GetValues( typeof( Key ) ) )
+				{
+					if( keyCode == Key.None )
+					{
+						// エラーになってしまうのでスキップ
+						continue ;
+					}
+
+					if( keyboard[ keyCode ] != null && keyboard[ keyCode ].wasReleasedThisFrame == true )
+					{
+						return true ;
+					}
+				}
+
+				return false ;
+			}
+
+			//-------------------------------------------------
+
+			/// <summary>
 			/// どのキーが押されているか確認する
 			/// </summary>
 			public void CheckAllKeys()
@@ -455,6 +547,11 @@ namespace uGUIHelper.InputAdapter
 				return RegisterRepeatProcessingTarget( keyCode ) ;
 			}
 		}
-	}
-}
+
+	}   // class
+
+	// ↑共有可能
+	//-------------------------------------------------------------------------------------------
+
+}   // namespace
 #endif

@@ -15,9 +15,9 @@ namespace uGUIHelper
 		override protected void DrawInspectorGUI()
 		{
 			UIImage view = target as UIImage ;
-
+            
 			EditorGUILayout.Separator() ;	// 少し区切りスペース
-		
+		    
 			//-------------------------------------------------------------------
 			
 			// アトラススプライトの表示

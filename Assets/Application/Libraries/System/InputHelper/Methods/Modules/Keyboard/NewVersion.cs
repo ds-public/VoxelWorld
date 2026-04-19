@@ -10,6 +10,9 @@ using UnityEngine.InputSystem ;
 
 namespace InputHelper
 {
+	//-------------------------------------------------------------------------------------------
+	// ↓共有可能
+
 	/// <summary>
 	/// キーボード制御
 	/// </summary>
@@ -168,7 +171,7 @@ namespace InputHelper
 				{ KeyCodes.AltGr,				Key.AltGr				},
 				{ KeyCodes.Help,				Key.OEM1				},	// 未対応
 				{ KeyCodes.Print,				Key.PrintScreen			},
-				{ KeyCodes.SysReq,				Key.OEM1		        },	// 未対応
+				{ KeyCodes.SysReq,				Key.OEM1			    },	// 未対応
 				{ KeyCodes.Break,				Key.Pause				},	// 統合
 				{ KeyCodes.Menu,				Key.ContextMenu			},
 			} ;
@@ -191,13 +194,13 @@ namespace InputHelper
 			// リピート監視対象キーと監視中の状態
 			private static Dictionary<KeyCodes,KeyState>	m_KeyHashStates ;
 
-			// リピート監視対象から外す対象の種別
-			private static KeyCodes[]						m_RepeatCleaningTargets ;
-
-			//--------------
-
 			// リピート監視対象キーに入力が無い場合にリピート監視対象キーを解放するまでの時間
 			private const float m_RepeatCleaningTime		= 1.0f ;
+
+			//----------------------------------
+
+			// リピート監視対象から外す対象の種別
+			private static KeyCodes[]						m_RepeatCleaningTargets ;
 
 			//---------------------------------------------------------------------------------
 
@@ -351,6 +354,95 @@ namespace InputHelper
 			//----------------------------------------------------------
 
 			/// <summary>
+			/// 何らかのキーが押されているか判定する
+			/// </summary>
+			public bool IsAnyKey()
+			{
+				UnityEngine.InputSystem.Keyboard keyboard = UnityEngine.InputSystem.Keyboard.current ;
+				if( keyboard == null )
+				{
+					// キーボードデバイスが存在しない
+					return false ;
+				}
+
+				foreach( Key keyCode in Enum.GetValues( typeof( Key ) ) )
+				{
+					if( keyCode == Key.None )
+					{
+						// エラーになってしまうのでスキップ
+						continue ;
+					}
+
+					if( keyboard[ keyCode ] != null && keyboard[ keyCode ].isPressed == true )
+					{
+						return true ;
+					}
+				}
+
+				return false ;
+			}
+
+			/// <summary>
+			/// 何らかのキーが押されたか判定する
+			/// </summary>
+			public bool IsAnyKeyDown()
+			{
+				UnityEngine.InputSystem.Keyboard keyboard = UnityEngine.InputSystem.Keyboard.current ;
+				if( keyboard == null )
+				{
+					// キーボードデバイスが存在しない
+					return false ;
+				}
+
+				foreach( Key keyCode in Enum.GetValues( typeof( Key ) ) )
+				{
+					if( keyCode == Key.None )
+					{
+						// エラーになってしまうのでスキップ
+						continue ;
+					}
+
+					if( keyboard[ keyCode ] != null && keyboard[ keyCode ].wasPressedThisFrame == true )
+					{
+						return true ;
+					}
+				}
+
+				return false ;
+			}
+
+			/// <summary>
+			/// 何らかのキーが離されたか判定する
+			/// </summary>
+			public bool IsAnyKeyUp()
+			{
+				UnityEngine.InputSystem.Keyboard keyboard = UnityEngine.InputSystem.Keyboard.current ;
+				if( keyboard == null )
+				{
+					// キーボードデバイスが存在しない
+					return false ;
+				}
+
+				foreach( Key keyCode in Enum.GetValues( typeof( Key ) ) )
+				{
+					if( keyCode == Key.None )
+					{
+						// エラーになってしまうのでスキップ
+						continue ;
+					}
+
+					if( keyboard[ keyCode ] != null && keyboard[ keyCode ].wasReleasedThisFrame == true )
+					{
+						return true ;
+					}
+				}
+
+				return false ;
+			}
+
+			//-------------------------------------------------
+
+			/// <summary>
 			/// どのキーが押されているか確認する
 			/// </summary>
 			public void CheckAllKeys()
@@ -455,6 +547,11 @@ namespace InputHelper
 				return RegisterRepeatProcessingTarget( keyCode ) ;
 			}
 		}
-	}
-}
+
+	}   // class
+
+	// ↑共有可能
+	//-------------------------------------------------------------------------------------------
+
+}   // namespace
 #endif

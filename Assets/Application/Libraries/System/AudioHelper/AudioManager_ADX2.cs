@@ -33,7 +33,7 @@ using UnityEditor ;
 namespace AudioHelper
 {
 	/// <summary>
-	/// オーディオ全般の管理クラス Version 2025/11/02 0
+	/// オーディオ全般の管理クラス Version 2026/04/07 0
 	/// </summary>
 	public class AudioManager_ADX2 : MonoBehaviour
 	{
@@ -286,9 +286,6 @@ namespace AudioHelper
 		// バックグラウンド中の処理(時間経過)を有効にするかどうか
 		private bool		m_RunInBackground = false ;
 
-		// バックグラウンド中の発音(無音再生)を有効にするかどうか
-		private bool		m_MuteInBackground = false ;
-
 		/// <summary>
 		/// バックグラウンド再生を有効にするかどうか
 		/// </summary>
@@ -312,10 +309,35 @@ namespace AudioHelper
 			}
 		}
 
-#if UNITY_EDITOR
+		// バックグラウンド中の発音(無音再生)を有効にするかどうか
+		private bool		m_MuteInBackground = false ;
+
+		/// <summary>
+		/// バックグラウンド中の発音(無音再生)を有効にするかどうか
+		/// </summary>
+		public	static bool		  MuteInBackground
+		{
+			get
+			{
+				if( m_Instance == null )
+				{
+					return false ;
+				}
+				return m_Instance.m_MuteInBackground ;
+			}
+			set
+			{
+				if( m_Instance == null )
+				{
+					return ;
+				}
+				m_Instance.m_MuteInBackground = value ;
+			}
+		}
+
 		// サスペンド中かどうか
 		private bool        m_IsSuspending = false ;
-#endif
+
 		/// <summary>
 		/// リスナーを有効にするかどうか
 		/// </summary>
@@ -887,8 +909,11 @@ namespace AudioHelper
 #if UNITY_EDITOR
 			if( m_IsSuspending == false )
 			{
-				// GameView の ミュート設定を反映させる
-				CriAtomExAsr.SetBusVolume( "MasterOut", EditorUtility.audioMasterMute ? 0f : AudioListener.volume * MasterVolume ) ;
+				if( m_Mute == false )
+				{
+					// GameView の ミュート設定を反映させる
+					CriAtomExAsr.SetBusVolume( "MasterOut", EditorUtility.audioMasterMute ? 0f : AudioListener.volume * MasterVolume ) ;
+				}
 			}
 #endif
 			//-------------------------
@@ -1084,7 +1109,7 @@ namespace AudioHelper
 				if( m_NumberOfBinders >= m_MaxNumberOfBinders )
 				{
 					// バインド限界数を超える場合使用していないキューシートを破棄
-					RemoveAllCueSheets(false);
+					RemoveAllCueSheets( false ) ;
 #if UNITY_EDITOR
 					if( m_NumberOfBinders >= m_MaxNumberOfBinders )
 					{
@@ -1972,7 +1997,7 @@ namespace AudioHelper
 
 
 		/// <summary>
-		/// サウンドを再生する(オーディオクリップから)
+		/// サウンドを再生する
 		/// </summary>
 		/// <param name="sheetName">キューシート名</param>
 		/// <param name="cueName">キュー名</param>
@@ -2008,7 +2033,7 @@ namespace AudioHelper
 
 		//----------------
 
-		// サウンドを再生する(オーディオクリップから)
+		// サウンドを再生する
 		private int Play_Private
 		(
 			string cueSheetName, string cueName,
@@ -2095,7 +2120,7 @@ namespace AudioHelper
 		//---------------------------------
 
 		/// <summary>
-		/// フェード付きでサウンドを再生する(オーディオクリップから)
+		/// フェード付きでサウンドを再生する
 		/// </summary>
 		/// <param name="sheetName">キューシート名</param>
 		/// <param name="cueName">キュー名</param>
@@ -2240,7 +2265,7 @@ namespace AudioHelper
 		}
 
 		/// <summary>
-		/// ３Ｄ空間想定でサウンドをワンショット再生する(オーディオクリップから)　※３Ｄ効果音用
+		/// ３Ｄ空間想定でサウンドを再生する　※３Ｄ効果音用
 		/// </summary>
 		/// <param name="sheetName">キューシート名</param>
 		/// <param name="cueName">キュー名</param>
@@ -2275,7 +2300,7 @@ namespace AudioHelper
 			) ;
 		}
 
-		// ３Ｄ空間想定でサウンドをワンショット再生する(オーディオクリップから)　※３Ｄ効果音用
+		// ３Ｄ空間想定でサウンドを再生する　※３Ｄ効果音用
 		private int Play3D_Private
 		(
 			string cueSheetName, string cueName,
@@ -2313,6 +2338,151 @@ namespace AudioHelper
 			criAtomExPlayer.SetVolume( volume ) ;
 			criAtomExPlayer.Start() ;
 #endif
+			//----------------------------------------------------------
+
+			int playId = GetPlayId() ;
+
+			//----------------------------------------------------------
+			// 音源位置の設定
+
+			CriAtomListener trueListener ;
+
+			if( m_Listener != null )
+			{
+				trueListener = m_Listener ;
+			}
+			else
+			{
+				trueListener = GameObject.FindAnyObjectByType( typeof( CriAtomListener ) ) as CriAtomListener ;
+			}
+
+			if( trueListener == null )
+			{
+				Debug.LogWarning( "[AudioManager_ADX2] Not found listener." ) ;
+				return -1 ;
+			}
+
+			//----------------------------------
+
+			// その他のものを使用する
+			if( listenerTransform == null )
+			{
+				listenerTransform  = trueListener.transform ;
+			}
+
+			//------------------------------------------------------------------------------------------
+			
+			// 再生する
+			audioChannel.Play
+			(
+				playId,
+				cueSheetName, cueName,
+				loop,
+				GetBaseVolume( tag ), volume, 0,
+				sourceTransform, listenerTransform, trueListener.transform, distanceScale, isRealTimeUpdatimg,
+				pitch,
+				selector, label,
+				tag,
+				m_CueSheetCache_Hash[ cueSheetName ].IsStreaming
+			) ;
+
+			if( string.IsNullOrEmpty( tag ) == false && m_MuteChannels.Contains( tag ) == true )
+			{
+				// ミュート対象のタグ
+				audioChannel.Mute = true ;
+			}
+
+			// 成功したらソースのインスタンスを返す
+			return playId ;
+		}
+
+		/// <summary>
+		/// フェード付きで３Ｄ空間想定でサウンドを再生する　※３Ｄ効果音用
+		/// </summary>
+		/// <param name="sheetName">キューシート名</param>
+		/// <param name="cueName">キュー名</param>
+		/// <param name="position">音源のワールド空間座標</param>
+		/// <param name="listenerTransform">リスナーのトランスフォーム</param>
+		/// <param name="scale">距離の係数</param>
+		/// <param name="volume">ボリューム(0～1)</param>
+		/// <returns>結果(true=成功・false=失敗)</returns>
+		public static int PlayFade3D
+		(
+			string cueSheetName, string cueName,
+			Transform sourceTransform, Transform listenerTransform = null, float distanceScale = 1, bool isRealTimeUpdating = true,
+			float duration = 1.0f,
+			bool loop = false,
+			float volume = 1.0f, float pitch = 0.0f,
+			string selector = null, string label = null,
+			string tag = null
+		)
+		{
+			if( m_Instance == null )
+			{
+				return -1 ;
+			}
+
+			return m_Instance.PlayFade3D_Private
+			(
+				cueSheetName, cueName,
+				sourceTransform, listenerTransform, distanceScale, isRealTimeUpdating,
+				duration,
+				loop,
+				volume, pitch,
+				selector, label,
+				tag
+			) ;
+		}
+
+		// ３Ｄ空間想定でサウンドを再生する(オーディオクリップから)　※３Ｄ効果音用
+		private int PlayFade3D_Private
+		(
+			string cueSheetName, string cueName,
+			Transform sourceTransform, Transform listenerTransform, float distanceScale, bool isRealTimeUpdatimg,
+			float duration,
+			bool loop,
+			float volume, float pitch,
+			string selector, string label,
+			string tag
+		)
+		{
+			var audioChannel = GetChannel_Private( tag, $"{cueSheetName}|{cueName}" ) ;
+			if( audioChannel == null )
+			{
+				// 空きがありません（古いやつから停止させるようにするかどうか）
+				return -1 ;
+			}
+
+			//-----------------------------------------------------
+
+			// キューシートのロード状況を確認する
+			if( m_CueSheetCache_Hash.ContainsKey( cueSheetName ) == false )
+			{
+				// キューシートがロードされていない
+				return -1 ;
+			}
+			m_CueSheetCache_Hash[ cueSheetName ].Count ++ ;
+
+			//-----------------------------------------------------
+
+			// プレイフェードに登録する
+
+			// 一旦破棄
+			RemoveChannelFading( audioChannel ) ;
+
+			var effect = new FadeEffect()
+			{
+				StartTime	= Time.realtimeSinceStartup,
+				Duration	= duration,
+				StartVolume	= 0,
+				EndVolume	= 1
+			} ;
+
+			m_FadePlayChannels.Add( audioChannel, effect ) ;
+
+			// フェード処理中であるというロックをかける
+			audioChannel.Lock() ;
+
 			//----------------------------------------------------------
 
 			int playId = GetPlayId() ;
@@ -3398,15 +3568,19 @@ namespace AudioHelper
 #if UNITY_EDITOR
 			m_IsSuspending = false ;
 #endif
-			if( m_MuteInBackground == true )
+			//-------------------------
+
+			// バックグラウンド時に完全に消音が有効・無効に関わらず全体音量を復帰させる
+			if( m_Mute == false )
 			{
-				// バックグラウンド時に完全に消音が有効
 #if UNITY_EDITOR
 				CriAtomExAsr.SetBusVolume( "MasterOut", EditorUtility.audioMasterMute ? 0f : AudioListener.volume * MasterVolume ) ;
 #else
 				CriAtomExAsr.SetBusVolume( "MasterOut", AudioListener.volume * MasterVolume ) ;
 #endif
 			}
+
+			//-------------------------
 
 			// マネージャを生成するのは一ヶ所だけなのでひとまず Application.runInBackground とは独立管理出来るようにしておく
 			if( m_RunInBackground == true )
@@ -3796,13 +3970,38 @@ namespace AudioHelper
 
 			m_Instance.m_Mute = state ;
 
-			if( m_Instance.m_Mute == false )
+			if( m_Instance.m_IsSuspending == false )
 			{
-				CriAtomExAsr.SetBusVolume( "MasterOut", AudioListener.volume * m_Instance.MasterVolume ) ;
+				if( m_Instance.m_Mute == false )
+				{
+#if UNITY_EDITOR
+					CriAtomExAsr.SetBusVolume( "MasterOut", EditorUtility.audioMasterMute ? 0f : AudioListener.volume * m_Instance.MasterVolume ) ;
+#else
+					CriAtomExAsr.SetBusVolume( "MasterOut", AudioListener.volume * m_Instance.MasterVolume ) ;
+#endif
+				}
+				else
+				{
+					CriAtomExAsr.SetBusVolume( "MasterOut", 0 ) ;
+				}
 			}
 			else
 			{
-				AudioListener.volume = 0 ;
+				if( m_Instance.m_Mute == false )
+				{
+					if( m_Instance.m_MuteInBackground == false )
+					{
+#if UNITY_EDITOR
+						CriAtomExAsr.SetBusVolume( "MasterOut", EditorUtility.audioMasterMute ? 0f : AudioListener.volume * m_Instance.MasterVolume ) ;
+#else
+						CriAtomExAsr.SetBusVolume( "MasterOut", AudioListener.volume * m_Instance.MasterVolume ) ;
+#endif
+					}
+				}
+				else
+				{
+					CriAtomExAsr.SetBusVolume( "MasterOut", 0 ) ;
+				}
 			}
 		}
 
@@ -3829,9 +4028,27 @@ namespace AudioHelper
 
 			m_Instance.MasterVolume = masterVolume ;
 
-			if( m_Instance.m_Mute == false )
+			if( m_Instance.m_IsSuspending == false )
 			{
-				CriAtomExAsr.SetBusVolume( "MasterOut", AudioListener.volume * m_Instance.MasterVolume ) ;
+				if( m_Instance.m_Mute == false )
+				{
+#if UNITY_EDITOR
+					CriAtomExAsr.SetBusVolume( "MasterOut", EditorUtility.audioMasterMute ? 0f : AudioListener.volume * m_Instance.MasterVolume ) ;
+#else
+					CriAtomExAsr.SetBusVolume( "MasterOut", AudioListener.volume * m_Instance.MasterVolume ) ;
+#endif
+				}
+			}
+			else
+			{
+				if( m_Instance.m_Mute == false && m_Instance.m_MuteInBackground == false )
+				{
+#if UNITY_EDITOR
+					CriAtomExAsr.SetBusVolume( "MasterOut", EditorUtility.audioMasterMute ? 0f : AudioListener.volume * m_Instance.MasterVolume ) ;
+#else
+					CriAtomExAsr.SetBusVolume( "MasterOut", AudioListener.volume * m_Instance.MasterVolume ) ;
+#endif
+				}
 			}
 		}
 
@@ -4231,7 +4448,8 @@ namespace AudioHelper
 		{
 			CriAtomExAsr.EnableBinauralizer( isEnabled ) ; 
 		}
-	}
+
+	}   // class
 
 	//--------------------------------------------------------------------------------------------
 
@@ -5282,7 +5500,8 @@ namespace AudioHelper
 
 
 		//-------------------------------------------------------------------------------------
-	}
-}
+
+	}   // class
+}   // mamespace
 
 #endif

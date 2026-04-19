@@ -1,3 +1,5 @@
+#pragma warning disable IDE0350
+
 using System ;
 using System.Collections ;
 using System.Collections.Generic ;
@@ -355,6 +357,11 @@ namespace uGUIHelper
 			/// イメージ
 			/// </summary>
 			public Sprite	Image ;
+
+			/// <summary>
+			/// テキストはローカライズキーかどうか
+			/// </summary>
+			public bool     IsLocalizationKey ;
 		}
 
 		// プルダウン用のアイテム
@@ -457,34 +464,33 @@ namespace uGUIHelper
 			}
 		}
 
-
 		//-------------------------------------------------------------------------------------------
 
 		// 基本的なプルダウンの縦幅
-		protected float					            m_BasePulldownHeight ;
+		protected float					                m_BasePulldownHeight ;
 
 		// 実際の表示用のアイテム
-		protected List<PulldownItem>	            m_DisplayItems ;
+		protected List<PulldownItem>	                m_DisplayItems ;
 
 		// プルダウン用のキャンバス
-		protected UICanvas				            m_PulldownCanvas ;
+		protected UICanvas				                m_PulldownCanvas ;
 
 		// プルダウン用のマスク
-		protected UIImage				            m_PulldownMask ;
+		protected UIImage				                m_PulldownMask ;
 
 		// プルダウン
-		protected UIListView			            m_Pulldown ;
+		protected UIListView			                m_Pulldown ;
 
 		// コールバック
-		protected Action<UIPulldown>                m_OnPulldownOpened ;
+		protected Action<string,UIPulldown>             m_OnPulldownOpened ;
 
-		protected Action<InputTypes,InputTypes>     m_OnInputTypeChanged ;
+		protected Action<string,UIPulldown,InputTypes>  m_OnInputTypeChanged ;
 
-		protected Action<UIPulldown>                m_OnPulldownUpdate ;
+		protected Action<string,UIPulldown>             m_OnPulldownUpdate ;
 
-		protected Action<UIPulldown>                m_OnPulldownClosed ;
+		protected Action<string,UIPulldown>             m_OnPulldownClosed ;
 
-		protected bool                              m_IsPulldownReady ;
+		protected bool                                  m_IsPulldownReady ;
 
 		//-------------------------------------------------------------------------------------------
 
@@ -685,9 +691,9 @@ namespace uGUIHelper
 			UIEventSystem.RemoveOnInputTypeChanged( OnInputTypeChanged ) ;
 		}
 
-		protected void OnInputTypeChanged( InputTypes basisInputType, InputTypes extraInputType )
+		protected void OnInputTypeChanged( InputTypes inputType )
 		{
-			m_OnInputTypeChanged?.Invoke( basisInputType, extraInputType ) ;
+			m_OnInputTypeChanged?.Invoke( Identity, this, inputType ) ;
 
 			UpdatePulldown() ;
 		}
@@ -698,7 +704,7 @@ namespace uGUIHelper
 
 			if( m_PulldownCanvas != null && m_IsPulldownReady == true )
 			{
-				m_OnPulldownUpdate?.Invoke( this ) ;
+				m_OnPulldownUpdate?.Invoke( Identity, this ) ;
 			}
 		}
 
@@ -827,7 +833,7 @@ namespace uGUIHelper
 		/// 入力タイプが変化した際に呼び出すコールバックを設定する
 		/// </summary>
 		/// <param name="onInputTypeChanged"></param>
-		public void SetOnInputTypeChanged( Action<InputTypes,InputTypes> onInputTypeChanged )
+		public void SetOnInputTypeChanged( Action<string,UIPulldown,InputTypes> onInputTypeChanged )
 		{
 			m_OnInputTypeChanged    = onInputTypeChanged ;
 		}
@@ -836,7 +842,7 @@ namespace uGUIHelper
 		/// プルダウンリストが開かれた際に呼び出すコールバックを設定する
 		/// </summary>
 		/// <param name="onPulldownOpened"></param>
-		public void SetOnPulldownOpened( Action<UIPulldown> onPulldownOpened )
+		public void SetOnPulldownOpened( Action<string,UIPulldown> onPulldownOpened )
 		{
 			m_OnPulldownOpened      = onPulldownOpened ;
 		}
@@ -845,7 +851,7 @@ namespace uGUIHelper
 		/// プルダウンリストが表示されている際に毎フレーム呼び出すコールバックを設定する
 		/// </summary>
 		/// <param name="onInputTypeChanged"></param>
-		public void SetOnPulldownUpdate( Action<UIPulldown> onPulldownUpdate )
+		public void SetOnPulldownUpdate( Action<string,UIPulldown> onPulldownUpdate )
 		{
 			m_OnPulldownUpdate      = onPulldownUpdate ;
 		}
@@ -854,7 +860,7 @@ namespace uGUIHelper
 		/// プルダウンリストが閉じられた際に呼び出すコールバックを設定する
 		/// </summary>
 		/// <param name="onPulldownClose"></param>
-		public void SetOnPulldownClosed( Action<UIPulldown> onPulldownClosed )
+		public void SetOnPulldownClosed( Action<string,UIPulldown> onPulldownClosed )
 		{
 			m_OnPulldownClosed      = onPulldownClosed ;
 		}
@@ -868,10 +874,10 @@ namespace uGUIHelper
 		/// <param name="onPulldownClosed"></param>
 		public void SetCallbacks
 		(
-			Action<InputTypes,InputTypes> onInputTypeChanged,
-			Action<UIPulldown> onPulldownOpened,
-			Action<UIPulldown> onPulldownUpdate,
-			Action<UIPulldown> onPulldownClosed
+			Action<string,UIPulldown,InputTypes> onInputTypeChanged,
+			Action<string,UIPulldown> onPulldownOpened,
+			Action<string,UIPulldown> onPulldownUpdate,
+			Action<string,UIPulldown> onPulldownClosed
 		)
 		{
 			m_OnInputTypeChanged    = onInputTypeChanged ;
@@ -907,7 +913,7 @@ namespace uGUIHelper
 
 						m_IsPulldownReady = true ;
 
-						m_OnPulldownOpened?.Invoke( this ) ;
+						m_OnPulldownOpened?.Invoke( Identity, this ) ;
 					} ) ;
 				}
 			}
@@ -932,7 +938,7 @@ namespace uGUIHelper
 				m_PulldownMask		= null ;
 				m_Pulldown			= null ;
 
-				m_OnPulldownClosed?.Invoke( this ) ;
+				m_OnPulldownClosed?.Invoke( Identity, this ) ;
 
 				m_IsPulldownReady   = false ;
 			}
@@ -952,7 +958,16 @@ namespace uGUIHelper
 						if( string.IsNullOrEmpty( m_PulldownItems[ m_Value ].Text ) == false )
 						{
 							m_CaptionText.SetActive( true ) ;
-							m_CaptionText.Text = m_PulldownItems[ m_Value ].Text ;
+
+							if( m_PulldownItems[ m_Value ].IsLocalizationKey == false )
+							{
+								m_CaptionText.Text = m_PulldownItems[ m_Value ].Text ;
+								m_CaptionText.LocalizationKey = string.Empty ;
+							}
+							else
+							{
+								m_CaptionText.LocalizationKey = m_PulldownItems[ m_Value ].Text ;
+							}
 						}
 						else
 						{
@@ -1230,8 +1245,8 @@ namespace uGUIHelper
 							(
 								index,
 								m_PulldownItems[ index ],
-								UIEventSystem.InputType == InputTypes.Pointer,
-								UIEventSystem.InputType == InputTypes.GamePad && m_FocusProcessingEnabled == true && index == m_FocusIndex,
+								( UIEventSystem.InputType == InputTypes.Pointer  || UIEventSystem.InputType == InputTypes.Mouse ),
+								( UIEventSystem.InputType == InputTypes.Keyboard || UIEventSystem.InputType == InputTypes.GamePad ) && m_FocusProcessingEnabled == true && index == m_FocusIndex,
 								isCheck,
 								OnItemSelected, OnItemEntering
 							) ;
@@ -1286,8 +1301,9 @@ namespace uGUIHelper
 					{
 						m_DisplayItems.Add( new ()
 						{
-							Text	= pulldownItem.Text,
-							Image	= pulldownItem.Image,
+							Text	            = pulldownItem.Text,
+							Image	            = pulldownItem.Image,
+							IsLocalizationKey   = pulldownItem.IsLocalizationKey,
 						} ) ;
 					}
 				}
@@ -1319,8 +1335,8 @@ namespace uGUIHelper
 						(
 							index,
 							m_DisplayItems[ index ],
-							UIEventSystem.InputType == InputTypes.Pointer,
-							UIEventSystem.InputType == InputTypes.GamePad && m_FocusProcessingEnabled == true && index == m_FocusIndex,
+							( UIEventSystem.InputType == InputTypes.Pointer ||  UIEventSystem.InputType == InputTypes.Mouse ),
+							( UIEventSystem.InputType == InputTypes.Keyboard || UIEventSystem.InputType == InputTypes.GamePad ) && m_FocusProcessingEnabled == true && index == m_FocusIndex,
 							isCheck,
 							OnItemSelected,
 							OnItemEntering
@@ -1672,7 +1688,7 @@ namespace uGUIHelper
 		/// オプションデータをまとめて設定する
 		/// </summary>
 		/// <param name="dataTexts"></param>
-		public void Set( string[] dataTexts, int initailValue = -1 )
+		public void Set( string[] dataTexts, int initailValue = -1, bool isLocalizationKeys = false )
 		{
 			var items = new List<PulldownItem>() ;
 
@@ -1682,8 +1698,9 @@ namespace uGUIHelper
 				{
 					items.Add( new PulldownItem()
 					{
-						Text	= dataText,
-						Image	= null
+						Text	            = dataText,
+						Image	            = null,
+						IsLocalizationKey   = isLocalizationKeys,
 					} ) ;
 				}
 			}

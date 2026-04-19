@@ -1284,6 +1284,8 @@ namespace uGUIHelper
 		private float					m_ActiveDelay ;
 		private float					m_ActiveDuration ;
 
+        private int                     m_FirstFrameDelay ;
+
 		//-----------------------------------------------------------
 
 		private bool					m_IsInitialized ;
@@ -1337,7 +1339,7 @@ namespace uGUIHelper
 
 		//--------------------------------------------------------
 
-		override protected void OnDisable()
+		protected override void OnDisable()
 		{
 			base.OnDisable() ;
 
@@ -1349,7 +1351,7 @@ namespace uGUIHelper
 			IsChecker = false ;
 		}
 
-		override protected void Awake()
+		protected override void Awake()
 		{
 			base.Awake() ;
 
@@ -1359,7 +1361,7 @@ namespace uGUIHelper
 			}		
 		}
 	
-		override protected void Start()
+		protected override void Start()
 		{
 			base.Start() ;
 
@@ -1446,7 +1448,7 @@ namespace uGUIHelper
 	
 		private bool m_KeepInteractionDisableProcess = false ; 
 
-		private readonly List<Button> m_DisableTargetButtons = new List<Button>() ;
+		private readonly List<Button> m_DisableTargetButtons = new () ;
 
 		private void DisableInteraction( CanvasGroup canvasGroup )
 		{
@@ -1521,8 +1523,7 @@ namespace uGUIHelper
 				foreach( var button in m_DisableTargetButtons )
 				{
 //					button.enabled = true ;
-					Image image = button.GetComponent<Image>() ;
-					if( image != null )
+					if( button.TryGetComponent<Image>( out var image ) == true )
 					{
 						image.raycastTarget = true ;
 					}
@@ -1552,7 +1553,7 @@ namespace uGUIHelper
 		/// </summary>
 		/// <param name="delay"></param>
 		/// <param name="duration"></param>
-		public void Play( float delay = -1, float duration = -1, float offset = 0, Action<string,UITween> onFinishedAction = null, float additionalDeley = 0, float additionalDuration = 0 )
+		public void Play( float delay = -1, float duration = -1, float offset = 0, Action<string,UITween> onFinishedAction = null, float additionalDeley = 0, float additionalDuration = 0, int firstFrameDelay = 0 )
 		{
 			enabled = true ;
 
@@ -1644,8 +1645,7 @@ namespace uGUIHelper
 					}
 
 					// モデルにアニメーターを追加(無ければ)
-					Animator animator = gameObject.GetComponent<Animator>() ;
-					if( animator == null )
+					if( gameObject.TryGetComponent<Animator>( out var animator ) == false )
 					{
 						animator = gameObject.AddComponent<Animator>() ;
 					}
@@ -1675,6 +1675,11 @@ namespace uGUIHelper
 			m_IsPlaying = true ;
 
 			m_Busy = true ;
+
+			//-------------------------
+
+            // 初期フレーム状態を何フレーム維持するか
+			m_FirstFrameDelay = firstFrameDelay ;
 		}
 
 		/// <summary>
@@ -1802,8 +1807,17 @@ namespace uGUIHelper
 			}
 		}
 
-		internal void Update()
+        internal void Update()
 		{
+			if( m_FirstFrameDelay >  0 )
+			{
+                // 最初のフレーム状態を何フレーム維持するか
+				m_FirstFrameDelay  -- ;
+				return ;
+			}
+
+			//-------------------------
+
 			if( m_IsRunning == true && m_IsPlaying == true )
 			{
 				float timeScale = 1 ;
@@ -2673,16 +2687,14 @@ namespace uGUIHelper
 		// モーションチェック専用で現在の状態を退避する
 		public void SaveState()
 		{
-			RectTransform rectTransform = gameObject.GetComponent<RectTransform>() ;
-			if( rectTransform != null )
+			if( gameObject.TryGetComponent<RectTransform>( out var rectTransform ) == true )
 			{
 				m_InitialPosition = rectTransform.anchoredPosition ;
 				m_InitialRotation = rectTransform.localEulerAngles ;
 				m_InitialScale    = rectTransform.localScale ;
 			}
 
-			CanvasGroup canvasGroup = gameObject.GetComponent<CanvasGroup>() ;
-			if( canvasGroup != null )
+			if( gameObject.TryGetComponent<CanvasGroup>( out var canvasGroup ) == true )
 			{
 				m_InitialAlpha = canvasGroup.alpha ;
 			}
@@ -2691,16 +2703,14 @@ namespace uGUIHelper
 		// モーションチェック専用で現在の状態を復帰する
 		private void LoadState()
 		{
-			RectTransform rectTransform = gameObject.GetComponent<RectTransform>() ;
-			if( rectTransform != null )
+			if( gameObject.TryGetComponent<RectTransform>( out var rectTransform ) == true )
 			{
 				rectTransform.anchoredPosition = m_InitialPosition ;
 				rectTransform.localEulerAngles = m_InitialRotation ;
 				rectTransform.localScale       = m_InitialScale ;
 			}
 
-			CanvasGroup canvasGroup = gameObject.GetComponent<CanvasGroup>() ;
-			if( canvasGroup != null )
+			if( gameObject.TryGetComponent<CanvasGroup>( out var canvasGroup ) == true )
 			{
 				canvasGroup.alpha = m_InitialAlpha ;
 			}

@@ -667,14 +667,26 @@ namespace uGUIHelper
 		// Button UIButton で UIInteraction が付いていない場合は必要になる
 
 		// Down
-		public void OnPointerDown( PointerEventData pointer )
+		public void OnPointerDown( PointerEventData eventData )
 		{
+			if( eventData.button != PointerEventData.InputButton.Left )
+			{
+				// 無視
+				return ;
+			}
+
 			OnPressed( true ) ;
 		}
 
 		// Up
-		public void OnPointerUp( PointerEventData pointer )
+		public void OnPointerUp( PointerEventData eventData )
 		{
+			if( eventData.button != PointerEventData.InputButton.Left )
+			{
+				// 無視
+				return ;
+			}
+
 			OnPressed( false ) ;
 		}
 

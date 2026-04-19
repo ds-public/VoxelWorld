@@ -1,4 +1,5 @@
-﻿using UnityEngine ;
+using System ;
+using UnityEngine ;
 using System.Collections.Generic ;
 
 namespace UnityEngine.UI
@@ -6,6 +7,7 @@ namespace UnityEngine.UI
 	/// <summary>
 	/// 文字単位で色を変える(指定したインデックスから配列数分の色を変える
 	/// </summary>
+    [Obsolete( "Not Use" )]
 	public class TextColorModifier : BaseMeshEffect
 	{
 		[SerializeField]

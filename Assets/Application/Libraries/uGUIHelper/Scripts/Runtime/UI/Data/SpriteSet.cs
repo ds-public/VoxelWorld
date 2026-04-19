@@ -7,7 +7,7 @@ using UnityEngine ;
 namespace uGUIHelper
 {
 	/// <summary>
-	/// アトラスタイプのスプライト管理用のクラス
+	/// アトラスタイプのスプライト管理用のクラス Version 2026/02/02
 	/// </summary>
 	[Serializable]
 	public class SpriteSet
@@ -49,6 +49,23 @@ namespace uGUIHelper
 		private List<string> m_Names ;
 
 		//-----------------------------------------------------------
+
+		/// <summary>
+		/// デフォルトコンストラクタ
+		/// </summary>
+		public SpriteSet()
+		{
+
+		}
+
+		/// <summary>
+		/// コンストラクタ
+		/// </summary>
+		/// <param name="sprites"></param>
+		public SpriteSet( Sprite[] sprites )
+		{
+			SetSprites( sprites ) ;
+		}
 
 		/// <summary>
 		/// スプライト情報の展開の有無

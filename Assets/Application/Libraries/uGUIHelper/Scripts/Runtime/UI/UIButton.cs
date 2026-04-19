@@ -12,6 +12,8 @@ using UnityEngine.EventSystems ;
 using UnityEditorInternal ;
 #endif
 
+using uGUIHelper.InputAdapter ;
+
 
 namespace uGUIHelper
 {
@@ -167,6 +169,9 @@ namespace uGUIHelper
 			if( m_FakeInvalidation == true )
 			{
 				// 既にモードが変わっている
+
+			    m_InteractableOfFake = Interactable ;
+
 				return ;
 			}
 
@@ -420,6 +425,7 @@ namespace uGUIHelper
 		[SerializeField]
 		protected UIButtonGroup m_TargetButtonGroup = null ;
 
+
 		//-----------------------------------------------------
 	
 		protected bool	m_IsButtonClicked = false ;
@@ -437,9 +443,6 @@ namespace uGUIHelper
 		private bool	m_PreviousInteractable ;
 
 		//-----------------------------------------------------------
-
-
-		//-----------------------------------------------------
 	
 		// 各派生クラスでの初期化処理を行う（メニューまたは AddView から生成される場合のみ実行れる）
 		protected override void OnBuild( string option = "" )
@@ -570,7 +573,7 @@ namespace uGUIHelper
 			// 有効状態の保存
 			if( m_IsApplyColorToChildren == true )
 			{
-				if( m_EffectiveColorReplacing == true )
+				if( m_UseColorTintInsteadEffectiveColor == true )
 				{
 					if( CButton != null && CButton.targetGraphic != null && CButton.targetGraphic.canvasRenderer != null )
 					{
@@ -672,7 +675,7 @@ namespace uGUIHelper
 		}
 
 		// 更新
-		override protected void OnUpdate()
+		protected override void OnUpdate()
 		{
 //			base.OnUpdate() ;	// UIImage の OnUpdate() は実行してはいけない
 
@@ -895,7 +898,7 @@ namespace uGUIHelper
 			}
 
 			// UIButton のインタラクションで実行する
-			OnClickInner() ;
+			OnClickInner( true ) ;
 		}
 
 		/// <summary>
@@ -903,25 +906,35 @@ namespace uGUIHelper
 		/// </summary>
 		public void ExecuteButtonClick()
 		{
-			OnClickInner() ;
+			OnClickInner( false ) ;
 		}
 
 		// 内部リスナー
-		protected override void OnClickInner()
+		protected override void OnClickInner( bool isInteraction )
 		{
 			//----------------------------------
 			// このクリックが有効か判定する
 
-			if( CanClickExecution() == false )
+			if( isInteraction == true )
 			{
-				// 無効
-				return ;
+				if( CanClickExecution() == false )
+				{
+					// 無効
+					return ;
+				}
 			}
 
 			//----------------------------------
 
 			if( m_FakeInvalidation == false || ( m_FakeInvalidation == true && m_InteractableOfFake == true ) )
 			{
+				// ボタンに Interacton コンポーネントがついているとここが呼ばれてしまう
+				if( CButton.gameObject.activeInHierarchy == false || CButton.enabled == false || CButton.interactable == false )
+				{
+					// コールバックは無効
+					return ;
+				}
+
 				if( ClickTransitionEnabled == false || ( ClickTransitionEnabled == true && WaitForTransition == false ) )
 				{
 					m_IsButtonClicked = true ;
@@ -1685,7 +1698,7 @@ namespace uGUIHelper
 
 				if( m_IsApplyColorToChildren == true )
 				{
-					if( m_EffectiveColorReplacing == true )
+					if( m_UseColorTintInsteadEffectiveColor == true )
 					{
 						if( TryGetComponent<CanvasRenderer>( out var canvasRenderer ) == true )
 						{

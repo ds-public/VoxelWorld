@@ -19,6 +19,7 @@ namespace TMPro
 	/// Editable text input field.
 	/// </summary>
 	[AddComponentMenu("UI/TextMeshPro - Input Field Plus", 11)]
+    [Obsolete( "Not Use instead TMP_InputField")]
 	public class TMP_InputFieldPlus : Selectable,
 		IUpdateSelectedHandler,
 		IBeginDragHandler,
@@ -2092,7 +2093,7 @@ namespace TMPro
 		}
 
 		//--------------------------------------------------------
-		// 機能追加
+		// 機能追加 (1)
 
 		// ＩＭＥ入力完了時に２重に入力されるバグに対処する
 #if UNITY_EDITOR || UNITY_STANDALONE
@@ -2111,7 +2112,7 @@ namespace TMPro
 				return;
 
 			//--------------------------------------------------------
-			// 機能追加
+			// 機能追加 (2)
 
 			// ＩＭＥ入力完了時に２重に入力されるバグに対処する
 
@@ -2149,7 +2150,7 @@ namespace TMPro
 					case EventType.KeyDown:
 
 						//--------------------------------------------------------
-						// 機能追加
+						// 機能追加 (3)
 
 						// 環境ごとのバグ対応
 
@@ -2178,7 +2179,6 @@ namespace TMPro
 							}
 						}
 #endif
-
 						//--------------------------------------------------------
 
 						consumedEvent = true;
@@ -2231,7 +2231,7 @@ namespace TMPro
 			if( consumedEvent )
 			{
 				//---------------------------------
-				// 機能追加
+				// 機能追加 (4)
 
 #if UNITY_EDITOR || UNITY_STANDALONE
 				// Enterキーで全角入力を決定した場合は１フレーム遅れで全角入力文字がクリアされていないので強制的にクリアする
@@ -3345,7 +3345,7 @@ namespace TMPro
 		protected void SendOnEndEdit()
 		{
 			//==========================================================
-			// 機能追加
+			// 機能追加 (5)
 
 			// バグ修正
 			if( m_TextComponent != null )

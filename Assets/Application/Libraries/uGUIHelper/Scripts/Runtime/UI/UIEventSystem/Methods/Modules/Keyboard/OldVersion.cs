@@ -6,6 +6,9 @@ using UnityEngine ;
 
 namespace uGUIHelper.InputAdapter
 {
+	//-------------------------------------------------------------------------------------------
+	// ↓共有可能
+
 	/// <summary>
 	/// キーボード制御
 	/// </summary>
@@ -329,6 +332,59 @@ namespace uGUIHelper.InputAdapter
 			//----------------------------------------------------------
 
 			/// <summary>
+			/// いずれかのキーが押されているか判定する
+			/// </summary>
+			/// <returns></returns>
+			public bool IsAnyKey()
+			{
+				foreach( KeyCode keyCode in Enum.GetValues( typeof( KeyCode ) ) )
+				{
+					if( Input.GetKey( keyCode ) == true )
+					{
+						return true ;
+					}
+				}
+
+				return false ;
+			}
+
+			/// <summary>
+			/// いずれかのキーが押されたか判定する
+			/// </summary>
+			/// <returns></returns>
+			public bool IsAnyKeyDown()
+			{
+				foreach( KeyCode keyCode in Enum.GetValues( typeof( KeyCode ) ) )
+				{
+					if( Input.GetKeyDown( keyCode ) == true )
+					{
+						return true ;
+					}
+				}
+
+				return false ;
+			}
+
+			/// <summary>
+			/// いずれかのキーが離されたか判定する
+			/// </summary>
+			/// <returns></returns>
+			public bool IsAnyKeyUp()
+			{
+				foreach( KeyCode keyCode in Enum.GetValues( typeof( KeyCode ) ) )
+				{
+					if( Input.GetKeyUp( keyCode ) == true )
+					{
+						return true ;
+					}
+				}
+
+				return false ;
+			}
+
+			//----------------------------------
+
+			/// <summary>
 			/// どのキーが押されているか確認する
 			/// </summary>
 			public void CheckAllKeys()
@@ -402,5 +458,10 @@ namespace uGUIHelper.InputAdapter
 				return RegisterRepeatProcessingTarget( keyCode ) ;
 			}
 		}
-	}
-}
+
+	}   // class
+
+	// ↑共有可能
+	//-------------------------------------------------------------------------------------------
+
+}   // namespace

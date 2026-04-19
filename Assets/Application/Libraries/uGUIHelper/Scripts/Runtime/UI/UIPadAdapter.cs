@@ -493,11 +493,11 @@ namespace uGUIHelper
 		}
 
 		// InputProcessingTypes が Swicth の場合に InputType が変化したら呼び出されるコールバック
-		private void OnInputTypeChanged( InputTypes basisInputType, InputTypes extraInputTye )
+		private void OnInputTypeChanged( InputTypes inputType )
 		{
 			if( m_View.ActiveInHierarchy == true && m_View.IsAnyTweenPlayingInParents == false && ( m_View.Alpha >  0 ) && IsPadAvailable() == true )
 			{
-				m_IsPadEnabed = ( basisInputType == InputTypes.GamePad ) ;
+				m_IsPadEnabed = ( inputType == InputTypes.GamePad ) ;
 				m_View.CallOnPadInputStateChanged( m_IsPadEnabed ) ;
 			}
 		}

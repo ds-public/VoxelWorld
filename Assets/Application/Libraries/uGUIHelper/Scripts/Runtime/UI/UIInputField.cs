@@ -13,7 +13,7 @@ namespace uGUIHelper
 	/// <summary>
 	/// uGUI:InputField クラスの機能拡張コンポーネントクラス(複合)
 	/// </summary>
-	[RequireComponent( typeof( TMP_InputFieldPlus ) )]	
+	[RequireComponent( typeof( TMP_InputField ) )]	
 	public class UIInputField : UIImage
 	{
 		/// <summary>
@@ -51,7 +51,7 @@ namespace uGUIHelper
 				var inputField = CTMP_InputField ;
 				if( inputField == null )
 				{
-					return "" ;
+					return string.Empty ;
 				}
 
 				return inputField.text ;
@@ -72,6 +72,7 @@ namespace uGUIHelper
 					text = ProcessInputFilter( text ) ;
 
 					inputField.text = text ;
+					inputField.DeactivateInputField() ; // 確定(バックアップは復帰させない)
 				}
 			}
 		}
@@ -104,14 +105,14 @@ namespace uGUIHelper
 		/// <summary>
 		/// コンテントタイプ(ショートカット)
 		/// </summary>
-		public TMP_InputFieldPlus.ContentType ContentType
+		public TMP_InputField.ContentType ContentType
 		{
 			get
 			{
 				var inputField = CTMP_InputField ;
 				if( inputField == null )
 				{
-					return TMP_InputFieldPlus.ContentType.Standard ;
+					return TMP_InputField.ContentType.Standard ;
 				}
 				return inputField.contentType ;
 			}
@@ -137,14 +138,14 @@ namespace uGUIHelper
 		/// <summary>
 		/// ラインタイプ(ショートカット)
 		/// </summary>
-		public TMP_InputFieldPlus.LineType LineType
+		public TMP_InputField.LineType LineType
 		{
 			get
 			{
 				var inputField = CTMP_InputField ;
 				if( inputField == null )
 				{
-					return TMP_InputFieldPlus.LineType.SingleLine ;
+					return TMP_InputField.LineType.SingleLine ;
 				}
 				return inputField.lineType ;
 			}
@@ -398,21 +399,49 @@ namespace uGUIHelper
 				return false ;
 			}
 
-			if( inputField.isFocused == false )
+			if( index >= 0 )
 			{
-				inputField.ActivateInputField() ;
-				inputField.selectionFocusPosition = index ;
-
-				m_IsFocused = true ;
-
-				if( m_IsFocusMonitering == false )
+				if( inputField.isFocused == false )
 				{
-					m_IsFocusMonitering  = true ;
-					uGUIHelper.InputAdapter.UIEventSystem.AddFocusedInputField( this ) ;
+					inputField.ActivateInputField() ;
+					inputField.selectionFocusPosition = index ;
+
+					m_IsFocused = true ;
+
+					if( m_IsFocusMonitering == false )
+					{
+						m_IsFocusMonitering  = true ;
+						InputAdapter.UIEventSystem.AddFocusedInputField( this ) ;
+					}
 				}
 			}
+			else
+			{
+				if( inputField.isFocused == true )
+				{
+					inputField.DeactivateInputField() ;
+					inputField.selectionFocusPosition = 0 ;
+
+					if( m_IsFocusMonitering == true )
+					{
+						// フォーカスを得ている場合に記録から削除する
+						m_IsFocusMonitering = false ;
+						InputAdapter.UIEventSystem.RemoveFocusedInputField( this, false ) ;
+					}
+				}
+			}
+
 			return true ;
 		}
+
+		//-----------------------------
+
+		/// <summary>
+		/// 汎用カーソル画像
+		/// </summary>
+		public    UIImage     Cursor{ get{ return m_Cursor ; } set{ m_Cursor = value ; } }
+		[SerializeField]
+		protected UIImage   m_Cursor ;
 
 		//-------------------------------------------------------------------------------------------
 
@@ -537,7 +566,7 @@ namespace uGUIHelper
 		// 各派生クラスでの初期化処理を行う（メニューまたは AddView から生成される場合のみ実行れる）
 		protected override void OnBuild( string option = "" )
 		{
-			var inputField = CTMP_InputField != null ? CTMP_InputField : gameObject.AddComponent<TMP_InputFieldPlus>() ;
+			var inputField = CTMP_InputField != null ? CTMP_InputField : gameObject.AddComponent<TMP_InputField>() ;
 			if( inputField == null )
 			{
 				// 異常
@@ -661,7 +690,7 @@ namespace uGUIHelper
 			if( isMultiLine == true )
 			{
 				// マルチラインで生成する
-				inputField.lineType = TMP_InputFieldPlus.LineType.MultiLineNewline ;
+				inputField.lineType = TMP_InputField.LineType.MultiLineNewline ;
 				inputField.textComponent.textWrappingMode = TextWrappingModes.Normal ;
 			}
 
@@ -800,7 +829,6 @@ namespace uGUIHelper
 
 					// ゲームパッドの方向ボタンで勝手にフォーカスが入ってしまうバグ対策
 
-
 					if( ActiveInHierarchy == true )
 					{
 						if( m_IsFocused != CTMP_InputField.isFocused )
@@ -812,7 +840,7 @@ namespace uGUIHelper
 								if( m_IsFocusMonitering == false )
 								{
 									m_IsFocusMonitering = true ;
-									uGUIHelper.InputAdapter.UIEventSystem.AddFocusedInputField( this ) ;
+									InputAdapter.UIEventSystem.AddFocusedInputField( this ) ;
 								}
 							}
 							else
@@ -820,7 +848,7 @@ namespace uGUIHelper
 								if( m_IsFocusMonitering == true )
 								{
 									m_IsFocusMonitering = false ;
-									uGUIHelper.InputAdapter.UIEventSystem.RemoveFocusedInputField( this ) ;
+									InputAdapter.UIEventSystem.RemoveFocusedInputField( this, InputAdapter.Keyboard.GetKey( InputAdapter.KeyCodes.Escape ) ) ;
 								}
 							}
 
@@ -830,7 +858,7 @@ namespace uGUIHelper
 							}
 							else
 							{
-								Debug.LogWarning( "<color=#FFFF00>レイキャストでブロックされているにも関わらずフォーカスに変化があった : Focus = " + m_IsFocused + " | Path = " + Path + "</color>" ) ;
+//								Debug.LogWarning( "<color=#FFFF00>レイキャストでブロックされているにも関わらずフォーカスに変化があった : Focus = " + m_IsFocused + " | Path = " + Path + "</color>" ) ;
 							}
 						}
 					}
@@ -848,7 +876,7 @@ namespace uGUIHelper
 			{
 				// フォーカスを得ている場合に記録から削除する
 				m_IsFocusMonitering = false ;
-				uGUIHelper.InputAdapter.UIEventSystem.RemoveFocusedInputField( this ) ;
+				InputAdapter.UIEventSystem.RemoveFocusedInputField( this, false ) ;
 			}
 
 			m_IsFocused = false ;
@@ -987,7 +1015,7 @@ namespace uGUIHelper
 				{
 					c = value[ i ] ;
 
-					if( CTMP_InputField.lineType == TMP_InputFieldPlus.LineType.MultiLineNewline && ( c == 0x0D || c == 0x0A ) )
+					if( CTMP_InputField.lineType == TMP_InputField.LineType.MultiLineNewline && ( c == 0x0D || c == 0x0A ) )
 					{
 						// 改行コードは許容する
 						s[ i ] = value[ i ] ;

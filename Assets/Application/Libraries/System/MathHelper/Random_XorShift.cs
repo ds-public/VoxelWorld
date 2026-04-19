@@ -1,10 +1,10 @@
-using UnityEngine ;
 using System ;
 using System.Collections ;
+using UnityEngine ;
 
 
 /// <summary>
-/// 乱数生成のパッケージ Version 2024/06/25
+/// 乱数生成のパッケージ Version 2026/02/17
 /// </summary>
 namespace MathHelper
 {
@@ -17,9 +17,11 @@ namespace MathHelper
 
 		static Random_XorShift()
 		{
-			// 初期化時に現在時刻を元にランダムな回数（最大60回）乱数を読み捨てる
+            SetSeed() ; // ０は不可
+
+			// 初期化時に現在時刻を元にランダムな回数（最大10回）乱数を読み捨てる
 			int i, l = DateTime.Now.Second ;
-			for( i = 0; i < l ; i ++ )
+			for( i = 0 ; i < l ; i ++ )
 			{
 				m_XorShift.Get() ;
 			}
@@ -94,16 +96,32 @@ namespace MathHelper
 		}
 	}
 
+	//---------------------------------------------------------
+
 	/// <summary>
 	/// XorShift アルゴリズムの乱数生成クラス
 	/// </summary>
 	public class XorShift
 	{
 		// 初期の根値
-		private ulong m_RandomSeedX = 123456789L ;
-		private ulong m_RandomSeedY = 362436069L ;
-		private ulong m_RandomSeedZ = 521288629L ;
-		private ulong m_RandomSeedW =  88675123L ;
+		private ulong m_RandomSeed0 ;
+		private ulong m_RandomSeed1 ;
+
+		/// <summary>
+		/// コンストラクタ(デフォルト)
+		/// </summary>
+		public XorShift()
+		{
+		}
+
+		/// <summary>
+		/// コンストラクタ
+		/// </summary>
+		/// <param name="seed"></param>
+		public XorShift( ulong seed )
+		{
+			Seed = seed ;
+		}
 
 		/// <summary>
 		/// 疑似乱数根
@@ -112,14 +130,15 @@ namespace MathHelper
 		{
 			get
 			{
-				return m_RandomSeedX ;
+				return m_RandomSeed0 ;
 			}
 			set
 			{
-				m_RandomSeedX = ( ulong )value ;
-				m_RandomSeedY = 362436069L ;
-				m_RandomSeedZ = 521288629L ;
-				m_RandomSeedW =  88675123L ;
+				ulong z = ( value += 0x9E3779B97F4A7C15UL ) ;
+				z = ( z ^ ( z >> 30 ) ) * 0xBF58476D1CE4E5B9UL ;
+				z = ( z ^ ( z >> 27 ) ) * 0x94D049BB133111EBUL ;
+				m_RandomSeed0 = z ^ ( z >> 31 ) ;
+				m_RandomSeed1 = m_RandomSeed0 ^ 0x9E3779B97F4A7C15UL;
 			}
 		}
 
@@ -129,17 +148,14 @@ namespace MathHelper
 		/// <returns></returns>
 		public ulong Get()
 		{
-			ulong t = ( m_RandomSeedX ^ ( m_RandomSeedX << 11 ) ) ;
+            ulong s1 = m_RandomSeed0 ;
+            ulong s0 = m_RandomSeed1 ;
 
-//			Debug.LogWarning( "RX:" + mRandomSeedX + " RY:" + mRandomSeedX + " RZ:" + mRandomSeedZ + " RW:" + mRandomSeedW ) ;
-
-			m_RandomSeedX = m_RandomSeedY ;
-			m_RandomSeedY = m_RandomSeedZ ;
-			m_RandomSeedZ = m_RandomSeedW ;
-			m_RandomSeedW = m_RandomSeedW ^ ( m_RandomSeedW >> 19 ) ^ ( t ^ ( t >> 8 ) )  ;
-
-			return m_RandomSeedW ; 
-		}
+            m_RandomSeed0 = s0 ;
+            s1 ^= s1 << 23 ; // a
+            m_RandomSeed1 = s1 ^ s0 ^ ( s1 >> 17 ) ^ ( s0 >> 26 ) ; // b, c
+            return m_RandomSeed1 + s0 ; // 最後に加算するのが "+" の由来
+        }
 
 		/// <summary>
 		/// ０から最大値の範囲の整数型乱数値を返す
@@ -192,10 +208,10 @@ namespace MathHelper
 				}
 			}
 
-            if( min == max )
-            {
-                return min ;
-            }
+			if( min == max )
+			{
+				return min ;
+			}
 
 			return min + ( int )( Get() % ( ulong )( ( max - min ) + ( limit ? 1 : 0 ) ) ) ;
 		}
@@ -221,16 +237,17 @@ namespace MathHelper
 				}
 			}
 
-            if( min == max )
-            {
-                return min ;
-            }
+			if( min == max )
+			{
+				return min ;
+			}
 
 			ulong r = Get() ;
-			float a = ( float )( r % ( 100000000L + 1L ) ) / ( float )100000000L ;
-//			Debug.LogWarning( "r値:" + r + " a値:" + a ) ;
 
-			return min + ( ( max - min ) * a ) ;
+			double ratio = ( double )r / ( double )0xFFFFFFFFFFFFFFFFL ;   // 百分率に変換する
+
+			return min + ( float )( ( double )( max - min ) * ratio ) ;
 		}
-	}
-}
+
+	}   // class
+}   // namsepace

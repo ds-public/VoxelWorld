@@ -15,6 +15,8 @@ using UnityEditor ;
 using UnityEditor.SceneManagement ;
 #endif
 
+using uGUIHelper.InputAdapter ;
+
 
 namespace uGUIHelper
 {
@@ -27,7 +29,7 @@ namespace uGUIHelper
 	/// </summary>
 	public class UIView : UIBehaviour
 	{
-		public const string Version = "Version 2025/11/27 0" ;
+		public const string Version = "Version 2026/04/17 0" ;
 
 		// ソースコード
 		// https://bitbucket.org/Unity-Technologies/ui/src/2019.1/
@@ -104,13 +106,15 @@ namespace uGUIHelper
 		[SerializeField]
 		protected bool			m_IsApplyColorToChildren = false ;
 
-		/// <summary>
-		/// 親オブジェクトからの色の適用の無視
-		/// </summary>
-		public	  bool			  IgnoreParentEffectiveColor{ get{ return m_IgnoreParentEffectiveColor ; } set{ m_IgnoreParentEffectiveColor = value ; } }
 
+
+
+		/// <summary>
+		/// ボタンの状態により自動的に効果色を置き換えるかどうか
+		/// </summary>
+		public		bool			  UseColorTintInsteadEffectiveColor{ get{ return m_UseColorTintInsteadEffectiveColor ; } set{ m_UseColorTintInsteadEffectiveColor = value ; } }
 		[SerializeField]
-		protected bool			m_IgnoreParentEffectiveColor = false ;
+		protected	bool			m_UseColorTintInsteadEffectiveColor = true ;
 
 
 		/// <summary>
@@ -135,15 +139,18 @@ namespace uGUIHelper
 			}
 		}
 
-		/// <summary>
-		/// ボタンの状態により自動的に効果色を置き換えるかどうか
-		/// </summary>
-		public		bool			  EffectiveColorReplacing{ get{ return m_EffectiveColorReplacing ; } set{ m_EffectiveColorReplacing = value ; } }
-		[SerializeField]
-		protected	bool			m_EffectiveColorReplacing = true ;
-
 		[SerializeField]
 		protected Color			m_EffectiveColor = Color.white ;
+
+		/// <summary>
+		/// 親オブジェクトからの色の適用の無視(子に関する設定)
+		/// </summary>
+		public	  bool			  IgnoreParentEffectiveColor{ get{ return m_IgnoreParentEffectiveColor ; } set{ m_IgnoreParentEffectiveColor = value ; } }
+		[SerializeField]
+		protected bool			m_IgnoreParentEffectiveColor = false ;
+
+
+		//-----------------------------
 
 		protected bool			m_RefreshChildrenColor = true ;
 		protected Color			m_PreviousColor ;
@@ -385,6 +392,31 @@ namespace uGUIHelper
 		{
 			base.Start() ;
 
+			if( Application.isPlaying == true )
+			{
+				if( m_PointerOverEnabled == true )
+				{
+					if( m_PointerCursor != null )
+					{
+						// 注意：アクティブにした瞬間に非表示にされてしまうので明示的な表示制御を行う場合はここでの制御は行わない
+						bool ignore = false ;
+
+						if( this is UIButton button )
+						{
+							if( button.Cursor != null && button.Cursor == m_PointerCursor )
+							{
+								ignore = true ;
+							}
+						}
+
+						if( ignore == false )
+						{
+							m_PointerCursor.SetActive( false ) ;
+						}
+					}
+				}
+			}
+
 			OnStart() ;
 		}
 
@@ -480,12 +512,30 @@ namespace uGUIHelper
 				{
 					m_Click  = false ;
 				}
+
+				//----------------------------------------------------------
+				// ポインターオーバーの処理
+
+				ProcessPointerCursor() ;
+
+				// 注意：UIpadFocusController を用いて自前でカーソルを制御したい場合は PointerCursorEnabled は無効化すること
 			}
 
 			//----------------------------------------------------------
 
 			// 子への色反映(UIButton の場合は別処理を行うのでここでは処理しない)
-			if( m_IsApplyColorToChildren == true && m_EffectiveColorReplacing == false )
+
+			bool isApplyColorToChildren = m_IsApplyColorToChildren ;
+			if( this is UIButton )
+			{
+				if( m_UseColorTintInsteadEffectiveColor == true )
+				{
+					// EffectiveColor 自体の反映は行わない
+					isApplyColorToChildren = false ;
+				}
+			}
+
+			if( isApplyColorToChildren == true )
 			{
 				ApplyColorToChidren( m_EffectiveColor, true ) ;
 			}
@@ -497,6 +547,102 @@ namespace uGUIHelper
 			//----------------------------------------------------------
 		}
 
+		protected override void OnEnable()
+		{
+			base.OnEnable() ;
+
+			if( Application.isPlaying == true )
+			{
+				ProcessPointerCursor() ;
+			}
+		}
+
+		// ポインターオーバーによるポインターカーソルの処理
+		private void ProcessPointerCursor()
+		{
+			if( m_PointerOverEnabled == true )
+			{
+				if( RaycastTarget == true )
+				{
+					bool isPointerOver = IsHover ;
+					if( isPointerOver == true )
+					{
+						var inputType = UIEventSystem.InputType ;
+
+						if( inputType != InputTypes.Pointer && inputType != InputTypes.Mouse )
+						{
+							isPointerOver = false ;
+						}
+					}
+
+					bool interactable = true ;
+					if( this is UIButton button )
+					{
+						interactable = button.Interactable ;
+					}
+
+					if( this is UIToggle toggle )
+					{
+						if( transform.parent != null )
+						{
+							if( transform.parent.TryGetComponent<ToggleGroup>( out var toggleGroup ) == true )
+							{
+								// トグルグループになっている
+								if( toggleGroup.allowSwitchOff == false && toggle.IsOn == true )
+								{
+									interactable = false ;
+								}
+							}
+						}
+					}
+
+					if( interactable == false )
+					{
+						isPointerOver = false ;
+					}
+
+					if( isPointerOver != m_IsPointerOver )
+					{
+						// 状態が変化した
+
+						m_IsPointerOver = isPointerOver ;
+
+						// カーソルの制御を行うかどうか(デフォルトでは行う)
+						bool isPointerCursorProcessing = true ;
+
+						//-------------
+
+						// コールバック処理
+
+						if( OnPointerOverAction != null  )
+						{
+							isPointerCursorProcessing = OnPointerOverAction( Identity, this, m_IsPointerOver ) ;
+						}
+						if( OnPointerOverDelegate != null )
+						{
+							isPointerCursorProcessing = OnPointerOverDelegate( Identity, this, m_IsPointerOver ) ;
+						}
+
+						if( OnSimplePointerOverAction != null  )
+						{
+							isPointerCursorProcessing = OnSimplePointerOverAction( m_IsPointerOver ) ;
+						}
+						if( OnSimplePointerOverDelegate != null )
+						{
+							isPointerCursorProcessing = OnSimplePointerOverDelegate( m_IsPointerOver ) ;
+						}
+
+						//-------------
+
+						if( m_PointerCursor != null && isPointerCursorProcessing == true )
+						{
+							m_PointerCursor.SetActive( m_IsPointerOver ) ;
+						}
+					}
+				}
+			}
+		}
+
 		/// <summary>
 		/// 子のオブジェクトに親のオブジェクトの色を適用
 		/// </summary>
@@ -505,7 +651,7 @@ namespace uGUIHelper
 			if( m_RefreshChildrenColor == false && ( m_PreviousColor.r == color.r && m_PreviousColor.g == color.g && m_PreviousColor.b == color.b && m_PreviousColor.a == color.a ) && withMyself == false )
 			{
 				// 設定済みの色に変化無し
-				return ;	// 何もしない
+//			    return ;	// 何もしない
 			}
 
 			//----------------------------------
@@ -515,13 +661,13 @@ namespace uGUIHelper
 
 			if( withMyself == false )
 			{
-				// 自身を含めない
-				targets = GetComponentsInChildren<CanvasRenderer>().Where( _ => _.gameObject != gameObject ) ;
+				// 自身を含めない(非アクティブのものも書き換える)
+				targets = GetComponentsInChildren<CanvasRenderer>( true ).Where( _ => _.gameObject != gameObject ) ;
 			}
 			else
 			{
-				// 自身を含める
-				targets = GetComponentsInChildren<CanvasRenderer>() ;
+				// 自身を含める(非アクティブのものも書き換える)
+				targets = GetComponentsInChildren<CanvasRenderer>( true ) ;
 			}
 
 			if( targets != null && targets.Any() == true )
@@ -1020,6 +1166,24 @@ namespace uGUIHelper
 				return GetPositionInCanvas( transform as RectTransform ) ;
 			}
 		}
+
+		/// <summary>
+		/// 対象のビューに対する相対的な位置を取得する
+		/// </summary>
+		/// <param name="parent"></param>
+		/// <returns></returns>
+		public Vector2 GetRelativePosition( UIView parent )
+		{
+			if( parent == null )
+			{
+				// 親を指定しない場合は直親のキャンバスに対する絶対座標を返す
+				return PositionInCanvas ;
+			}
+
+			// キャンバスの絶対座標を用いて相対座標を算出する
+			return parent.PositionInCanvas - PositionInCanvas ;
+		}
+
 
 		/// <summary>
 		/// 特定のコンポーネントのついた GameObject を親としてその親上での位置を取得する
@@ -3142,6 +3306,8 @@ namespace uGUIHelper
 		}
 
 
+		private Graphic m_CachedGraphic = null ;
+
 		/// <summary>
 		/// レイキャストターゲット(ショートカット)
 		/// </summary>
@@ -3149,21 +3315,27 @@ namespace uGUIHelper
 		{
 			get
 			{
-				if( TryGetComponent<Graphic>( out var g ) == false )
+				if( m_CachedGraphic == null )
 				{
-					return false ;
+					if( TryGetComponent<Graphic>( out m_CachedGraphic ) == false )
+					{
+						return false ;
+					}
 				}
 
-				return g.raycastTarget ;
+				return m_CachedGraphic.raycastTarget ;
 			}
 			set
 			{
-				if( TryGetComponent<Graphic>( out var g ) == false )
+				if( m_CachedGraphic == null )
 				{
-					return  ;
+					if( TryGetComponent<Graphic>( out m_CachedGraphic ) == false )
+					{
+						return  ;
+					}
 				}
 
-				g.raycastTarget = value ;
+				m_CachedGraphic.raycastTarget = value ;
 			}
 		}
 
@@ -3829,7 +4001,7 @@ namespace uGUIHelper
 		/// <param name="duration"></param>
 		/// <param name="offset"></param>
 		/// <returns></returns>
-		public bool PlayTweenDirect( string identity, float delay = -1, float duration = -1, float offset = 0, Action<string,UITween> onFinishedAction = null, float additionalDelay = 0, float additionalDuration = 0 )
+		public bool PlayTweenDirect( string identity, float delay = -1, float duration = -1, float offset = 0, Action<string,UITween> onFinishedAction = null, float additionalDelay = 0, float additionalDuration = 0, int firstFrameDelay = 0 )
 		{
 			var tween = GetTween( identity ) ;
 			if( tween == null )
@@ -3854,7 +4026,7 @@ namespace uGUIHelper
 //				return true ;
 //			}
 
-			tween.Play( delay, duration, offset, onFinishedAction, additionalDelay, additionalDuration ) ;
+			tween.Play( delay, duration, offset, onFinishedAction, additionalDelay, additionalDuration, firstFrameDelay ) ;
 
 			return true ;
 		}
@@ -3886,7 +4058,7 @@ namespace uGUIHelper
 		/// <param name="delay"></param>
 		/// <param name="duration"></param>
 		/// <returns></returns>
-		public AsyncState PlayTween( string identity, float delay = -1, float duration = -1, float offset = 0, Action<string,UITween> onFinishedAction = null, float additionalDelay = 0, float additionalDuration = 0, bool ifHiding = false, bool autoHide = false )
+		public AsyncState PlayTween( string identity, float delay = -1, float duration = -1, float offset = 0, Action<string,UITween> onFinishedAction = null, float additionalDelay = 0, float additionalDuration = 0, bool ifHiding = false, bool autoHide = false, int firstFrameDelay = 0 )
 		{
 			var tween = GetTween( identity ) ;
 			if( tween == null )
@@ -3922,16 +4094,19 @@ namespace uGUIHelper
 			}
 
 			var state = new AsyncState( this ) ;
-			StartCoroutine( PlayTweenAsync_Private( tween, delay, duration, offset, onFinishedAction, additionalDelay, additionalDuration, autoHide, state ) ) ;
+			StartCoroutine( PlayTweenAsync_Private( tween, delay, duration, offset, onFinishedAction, additionalDelay, additionalDuration, autoHide, firstFrameDelay, state ) ) ;
 			return state ;
 		}
 
-		public IEnumerator PlayTweenAsync_Private( UITween tween, float delay, float duration, float offset, Action<string,UITween> onFinishedAction, float additionalDelay, float additionalDuration, bool autoHide, AsyncState state )
+		public IEnumerator PlayTweenAsync_Private( UITween tween, float delay, float duration, float offset, Action<string,UITween> onFinishedAction, float additionalDelay, float additionalDuration, bool autoHide, int firstFrameDelay, AsyncState state )
 		{
 			// 同じトゥイーンを多重実行出来ないようにする
 			if( tween.IsRunning == true || tween.IsPlaying == true )
 			{
-//				tween.Stop() ;	// ストップを実行してはならない。古い実行の方で停止されるのを待つ
+				if( tween.Loop == true )
+				{
+					tween.Stop() ;	// ストップを実行してはならない。古い実行の方で停止されるのを待つ
+				}
 				yield return new WaitWhile( () => ( ( tween.IsRunning == true ) | ( tween.IsPlaying == true ) ) ) ;
 			}
 
@@ -3940,7 +4115,7 @@ namespace uGUIHelper
 			var destroyAtEnd = tween.DestroyAtEnd ;
 			tween.DestroyAtEnd = false ;
 
-			tween.Play( delay, duration, offset, onFinishedAction, additionalDelay, additionalDuration ) ;
+			tween.Play( delay, duration, offset, onFinishedAction, additionalDelay, additionalDuration, firstFrameDelay ) ;
 
 			yield return new WaitWhile( () => ( tween.IsRunning == true || tween.IsPlaying == true ) ) ;
 			
@@ -7169,11 +7344,13 @@ namespace uGUIHelper
 		//----------
 		
 		// キャッシュ
+		[Obsolete( "Not Use" )]
 		private InputFieldPlus m_InputField = null ;
 
 		/// <summary>
 		/// InputField(ショートカット)
 		/// </summary>
+		[Obsolete( "Not Use" )]
 		public virtual InputFieldPlus CInputField
 		{
 			get
@@ -7189,18 +7366,18 @@ namespace uGUIHelper
 		//----------
 		
 		// キャッシュ
-		private TMP_InputFieldPlus m_TMP_InputField = null ;
+		private TMP_InputField m_TMP_InputField = null ;
 
 		/// <summary>
 		/// InputField(ショートカット)
 		/// </summary>
-		public virtual TMP_InputFieldPlus CTMP_InputField
+		public virtual TMP_InputField CTMP_InputField
 		{
 			get
 			{
 				if( m_TMP_InputField == null )
 				{
-					TryGetComponent<TMP_InputFieldPlus>( out m_TMP_InputField ) ;
+					TryGetComponent<TMP_InputField>( out m_TMP_InputField ) ;
 				}
 				return m_TMP_InputField ;
 			}
@@ -8267,9 +8444,22 @@ namespace uGUIHelper
 		{
 			get
 			{
-				return InputAdapter.UIEventSystem.IsHovering( gameObject ) ;
+				return InputAdapter.UIEventSystem.IsHovering( gameObject, false ) ;
 			}
 		}
+
+		/// <summary>
+		/// ホバー状態(直接)
+		/// </summary>
+		public  bool  IsDirectlyHover
+		{
+			get
+			{
+				return InputAdapter.UIEventSystem.IsHovering( gameObject, true ) ;
+			}
+		}
+
+
 
 		/// <summary>
 		/// プレス状態
@@ -8516,12 +8706,20 @@ namespace uGUIHelper
 
 		// Down
 		// 他の処理が無効化されてしまうため、メソッド内で return を使ってはダメ。本当は処理をメソッド単位に分離した方が良いのだが。
-		protected virtual void OnPointerDownBasic( PointerEventData pointer, bool fromScrollView )
+		protected virtual void OnPointerDownBasic( PointerEventData eventData, bool fromScrollView )
 		{
+			if( eventData.button != PointerEventData.InputButton.Left )
+			{
+				// 無視
+				return ;
+			}
+
+			//-------------------------------------------------
+
 //			Debug.Log( "<color=#FF7F00>OnPointerDownBasic:" + name + "</color>" ) ;
 
-			int identity = pointer.pointerId ;
-			Vector2 position = GetLocalPosition( pointer ) ;
+			int identity = eventData.pointerId ;
+			Vector2 position = GetLocalPosition( eventData ) ;
 
 			// 円形であった場合の範囲内チェック
 			if( CheckCollisionRadius( position ) == false )
@@ -8532,7 +8730,7 @@ namespace uGUIHelper
 			m_FromScrollView = fromScrollView ;
 			if( m_FromScrollView == true )
 			{
-				m_InteractionLimit_StartPoint = pointer.position ;
+				m_InteractionLimit_StartPoint = eventData.position ;
 			}
 
 			m_PressCountTime = Time.frameCount ;
@@ -8564,7 +8762,7 @@ namespace uGUIHelper
 
 			//------------------------------------------------------------------------------------------
 
-			if( pointer.eligibleForClick == false )
+			if( eventData.eligibleForClick == false )
 			{
 				// このプレスではクリックとドラッグの処理はできない
 				return ;
@@ -8660,12 +8858,20 @@ namespace uGUIHelper
 
 		// Up
 		// 他の処理が無効化されてしまうため、メソッド内で return を使ってはダメ。本当は処理をメソッド単位に分離した方が良いのだが。
-		protected virtual void OnPointerUpBasic( PointerEventData pointer, bool fromScrollView )
+		protected virtual void OnPointerUpBasic( PointerEventData eventData, bool fromScrollView )
 		{
+			if( eventData.button != PointerEventData.InputButton.Left )
+			{
+				// 無視
+				return ;
+			}
+
+			//-------------------------------------------------
+
 //			Debug.Log( "<color=#00FFFF>OnPointerUpBasic:" + name + "</color>" ) ;
 
-			int identity = pointer.pointerId ;
-			Vector2 position = GetLocalPosition( pointer ) ;
+			int identity = eventData.pointerId ;
+			Vector2 position = GetLocalPosition( eventData ) ;
 
 			m_FromScrollView = fromScrollView ;
 
@@ -8694,7 +8900,7 @@ namespace uGUIHelper
 						if( m_LongPressExecuted == false )
 						{
 							// クリックとみなす
-							OnClickInner() ;
+							OnClickInner( true ) ;
 						}
 					}
 				}
@@ -8745,7 +8951,7 @@ namespace uGUIHelper
 										// シングルクリックかダブルクリックかを判定するルーチンを起動する
 										if( m_LongPressExecuted == false )
 										{
-											SingleClickCheck( position, pointer.position ) ;
+											SingleClickCheck( position, eventData.position ) ;
 										}
 									}
 								}
@@ -8839,8 +9045,16 @@ namespace uGUIHelper
 		}
 
 		// スクロールビュー用のクリック判定(通常のクリック判定には使用していない)
-		protected virtual void OnPointerClickBasic( PointerEventData pointer, bool fromScrollView )
+		protected virtual void OnPointerClickBasic( PointerEventData eventData, bool fromScrollView )
 		{
+			if( eventData.button != PointerEventData.InputButton.Left )
+			{
+				// 無視
+				return ;
+			}
+
+			//-------------------------------------------------
+
 //			Debug.Log( "<color=#FFFF00>OnPointerClickBasic:" + name + "</color>" ) ;
 
 			if( fromScrollView == false )
@@ -8858,8 +9072,8 @@ namespace uGUIHelper
 
 			//----------------------------------------------------------
 
-			int identity = pointer.pointerId ;
-			Vector2 position = GetLocalPosition( pointer ) ;
+			int identity = eventData.pointerId ;
+			Vector2 position = GetLocalPosition( eventData ) ;
 
 			// 円形であった場合の範囲内チェック
 			if( CheckCollisionRadius( position ) == false )
@@ -8879,7 +9093,7 @@ namespace uGUIHelper
 					if( m_LongPressExecuted == false )
 					{
 						// クリックとみなす
-						OnClickInner() ;
+						OnClickInner( true ) ;
 					}
 				}
 			}
@@ -8931,7 +9145,7 @@ namespace uGUIHelper
 									// シングルクリックかダブルクリックかを判定するルーチンを起動する
 									if( m_LongPressExecuted == false )
 									{
-										SingleClickCheck( position, pointer.position ) ;
+										SingleClickCheck( position, eventData.position ) ;
 									}
 								}
 							}
@@ -9884,19 +10098,22 @@ namespace uGUIHelper
 		/// </summary>
 		public void ExecuteClick()
 		{
-			OnClickInner() ;
+			OnClickInner( false ) ;
 		}
 
 		// 内部リスナー
-		protected virtual void OnClickInner()
+		protected virtual void OnClickInner( bool isInteraction )
 		{
 			//----------------------------------
 			// このクリックが有効か判定する
 
-			if( CanClickExecution() == false )
+			if( isInteraction == true )
 			{
-				// 無効
-				return ;
+				if( CanClickExecution() == false )
+				{
+					// 無効
+					return ;
+				}
 			}
 
 			//----------------------------------
@@ -12422,7 +12639,7 @@ namespace uGUIHelper
 
 			position = InputAdapter.UIEventSystem.MousePosition ;
 
-#elif !UNITY_EDITOR && (UNITY_ANDROID || UNITY_IOS)
+#elif !UNITY_EDITOR && ( UNITY_ANDROID || UNITY_IOS )
 
 			if( Input.touchCount == 1 )
 			{
@@ -12500,6 +12717,21 @@ namespace uGUIHelper
 
 			return false ;
 		}
+		
+		/// <summary>
+		/// 現在のポインター位置にあるレイキャストヒット対象を取得する
+		/// </summary>
+		/// <returns></returns>
+		public List<GameObject> GetRaycastTargets()
+		{
+			PointerEventData pointerEventData =  new ( EventSystem.current ) ;
+			List<RaycastResult>	results = new () ;
+
+			pointerEventData.position = uGUIHelper.InputAdapter.Mouse.Position ;
+			EventSystem.current.RaycastAll( pointerEventData, results ) ;
+
+			return results.Select( _ => _.gameObject ).ToList() ;
+		}
 
 		//-------------------------------------------------------------------------------------------
 
@@ -12557,6 +12789,141 @@ namespace uGUIHelper
 			// 現在実行されるクリックは無効
 			return false ;
 		}
+
+		//-------------------------------------------------------------------------------------------
+		// カーソル関係
+
+		/// <summary>
+		/// ポインターカーソル画像
+		/// </summary>
+		public    UIImage     PointerCursor
+		{
+			get
+			{
+				return m_PointerCursor ;
+			}
+			// ポインターオーバーカーソルの動的セットは禁止
+			set
+			{
+				m_PointerCursor = value ;
+			}
+		}
+		[SerializeField]
+		protected UIImage   m_PointerCursor ;
+
+		/// <summary>
+		/// ポインターオーバー処理を有効にするかどうか
+		/// </summary>
+		public    bool            PointerOverEnabled
+		{
+			get
+			{
+				return m_PointerOverEnabled ;
+			}
+			set
+			{
+				if( m_PointerOverEnabled != value )
+				{
+					m_PointerOverEnabled = value ;
+				}
+			}
+		}
+		[SerializeField]
+		protected bool          m_PointerOverEnabled = false ;
+
+		//---------
+
+		/// <summary>
+		/// ビューにポインターが入る・出るした際に呼び出されるアクション
+		/// </summary>
+		public Func<string,UIView,bool,bool> OnPointerOverAction ;
+		
+		/// <summary>
+		/// ビューにポインターが入る・出るした際に呼び出されるデリゲートの定義
+		/// </summary>
+		public delegate bool OnPointerOver( string identity, UIView view, bool isOver ) ;
+
+		/// <summary>
+		/// ビューにポインターが入る・出るした際に呼び出されるデリゲート
+		/// </summary>
+		public OnPointerOver OnPointerOverDelegate ;
+
+		/// <summary>
+		/// ビューにポインターが入る・出るした際に呼び出されるアクションを設定する
+		/// </summary>
+		public void SetOnPointerOver( Func<string,UIView,bool,bool> onPointerOverAction )
+		{
+			OnPointerOverAction = onPointerOverAction ;
+		}
+
+		/// <summary>
+		/// ビューにポインターが入る・出るした際に呼び出されるデリゲートを追加する
+		/// </summary>
+		/// <param name="onPressDelegate">デリゲートメソッド</param>
+		public void AddOnPointerOver( OnPointerOver onPointerOverDelegate )
+		{
+			OnPointerOverDelegate += onPointerOverDelegate ;
+		}
+
+		/// <summary>
+		/// ビューにポインターが入る・出るした際に呼び出されるデリゲートを削除する
+		/// </summary>
+		/// <param name="onPressDelegate">デリゲートメソッド</param>
+		public void RemoveOnPointerOver( OnPointerOver onPointerOverDelegate )
+		{
+			OnPointerOverDelegate -= onPointerOverDelegate ;
+		}
+
+		//---------
+
+		/// <summary>
+		/// ビューにポインターが入る・出るした際に呼び出されるアクション
+		/// </summary>
+		public Func<bool,bool> OnSimplePointerOverAction ;
+		
+		/// <summary>
+		/// ビューにポインターが入る・出るした際に呼び出されるデリゲートの定義
+		/// </summary>
+		public delegate bool OnSimplePointerOver( bool isOver ) ;
+
+		/// <summary>
+		/// ビューにポインターが入る・出るした際に呼び出されるデリゲート
+		/// </summary>
+		public OnSimplePointerOver OnSimplePointerOverDelegate ;
+
+		/// <summary>
+		/// ビューにポインターが入る・出るした際に呼び出されるアクションを設定する
+		/// </summary>
+		public void SetOnSimplePointerOver( Func<bool,bool> onSimplePointerOverAction )
+		{
+			OnSimplePointerOverAction = onSimplePointerOverAction ;
+		}
+
+		/// <summary>
+		/// ビューにポインターが入る・出るした際に呼び出されるデリゲートを追加する
+		/// </summary>
+		/// <param name="onPressDelegate">デリゲートメソッド</param>
+		public void AddOnSimplePointerOver( OnSimplePointerOver onSimplePointerOverDelegate )
+		{
+			OnSimplePointerOverDelegate += onSimplePointerOverDelegate ;
+		}
+
+		/// <summary>
+		/// ビューにポインターが入る・出るした際に呼び出されるデリゲートを削除する
+		/// </summary>
+		/// <param name="onPressDelegate">デリゲートメソッド</param>
+		public void RemoveOnSimplePointerOver( OnSimplePointerOver onSimplePointerOverDelegate )
+		{
+			OnSimplePointerOverDelegate -= onSimplePointerOverDelegate ;
+		}
+
+		//---------
+
+		/// <summary>
+		/// ビューにポインターが入っているかどうか(キーボード入力・ゲームパッド入力も考慮されている)
+		/// </summary>
+		public    bool   IsPointerOver => m_IsPointerOver ;
+		protected bool m_IsPointerOver = false ;
 
 		//===================================================================================================================
 		// ゲームパッド関係

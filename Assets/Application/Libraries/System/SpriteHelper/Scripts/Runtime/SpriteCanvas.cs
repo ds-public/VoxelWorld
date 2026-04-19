@@ -15,7 +15,7 @@ using UnityEditorInternal ;
 namespace SpriteHelper
 {
 	/// <summary>
-	/// スプライト制御クラス  Version 2024/08/09
+	/// スプライト制御クラス  Version 2026/04/17
 	/// </summary>
 	[ExecuteAlways]
 	[DisallowMultipleComponent]
@@ -29,7 +29,7 @@ namespace SpriteHelper
 		[MenuItem( "SpriteHelper/Add a SpriteCanvas" )]					// ポップアップメニューから
 		public static void CreateSpriteCanvas()
 		{
-			GameObject go = Selection.activeGameObject ;
+			var go = Selection.activeGameObject ;
 			if( go == null )
 			{
 				return ;
@@ -44,7 +44,7 @@ namespace SpriteHelper
 
 			var child = new GameObject( "SpriteCanvas" ) ;
 
-			Transform t = child.transform ;
+			var t = child.transform ;
 			t.SetParent( go.transform, false ) ;
 			t.SetLocalPositionAndRotation( Vector3.zero, Quaternion.identity ) ;
 			t.localScale = Vector3.one ;
@@ -732,6 +732,12 @@ namespace SpriteHelper
 				return ;
 			}
 
+            if( Screen.width <= 0 || Screen.height <= 0 )
+            {
+                // 異常(UnityEditor のバージョンと処理タイミングによってはプロジェクトを開いた直後に 0 になっている事がありえる)
+                return ;
+            }
+
 			//------------------------------------------------------------------------------------------
 
 			// Screen のサイズを更新する
@@ -976,7 +982,6 @@ namespace SpriteHelper
 			{
 				viewportHeight  = m_BasicHeight ;
 			}
-
 
 			// 横方向
 			switch( m_HorizontalAnchorType )

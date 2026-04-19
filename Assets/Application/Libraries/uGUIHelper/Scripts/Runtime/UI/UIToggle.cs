@@ -32,7 +32,14 @@ namespace uGUIHelper
 		[SerializeField]
 		protected UITextMesh m_LabelMesh ;
 		public UITextMesh	   LabelMesh{ get{ return m_LabelMesh ; } set{ m_LabelMesh = value ; } }
-	
+
+		/// <summary>
+		/// カーソル画像
+		/// </summary>
+		public    UIImage     Cursor{ get{ return m_Cursor ; } set{ m_Cursor = value ; } }
+		[SerializeField]
+		protected UIImage   m_Cursor ;
+
 		//-------------------------------------------
 		
 		/// <summary>
@@ -408,5 +415,72 @@ namespace uGUIHelper
 				toggle.onValueChanged.RemoveAllListeners() ;
 			}
 		}
-	}
-}
+
+		//-------------------------------------------------------------------------------------
+
+		/// <summary>
+		/// ラベルのテキストを設定する
+		/// </summary>
+		/// <param name="labelText"></param>
+		public void SetLabelText( string labelText )
+		{
+			if( LabelMesh != null )
+			{
+				LabelMesh.Text = labelText ;
+			}
+		}
+
+		/// <summary>
+		/// ラベルのテキストを設定する
+		/// </summary>
+		/// <param name="labelText"></param>
+		public void SetLabelColor( Color labelColor )
+		{
+			if( LabelMesh != null )
+			{
+				LabelMesh.Color = labelColor ;
+			}
+		}
+
+		/// <summary>
+		/// ラベルのテキストを設定する
+		/// </summary>
+		/// <param name="labelText"></param>
+		public void SetLabelColor( uint labelColor )
+		{
+			if( LabelMesh != null )
+			{
+				LabelMesh.SetColor( labelColor ) ;
+			}
+		}
+
+		/// <summary>
+		/// ラベルのマテリアルを設定する
+		/// </summary>
+		/// <param name="labelText"></param>
+		public void SetLabelMaterial( Material labelMaterial )
+		{
+			if( LabelMesh != null )
+			{
+				LabelMesh.Material = labelMaterial ;
+			}
+		}
+
+		/// <summary>
+		/// ラベルの横幅を取得する
+		/// </summary>
+		/// <param name="labelText"></param>
+		public float GetLabelTextWidth()
+		{
+			if( LabelMesh != null )
+			{
+				return LabelMesh.TextWidth ;
+			}
+
+			return 0 ;
+		}
+
+
+
+	}   //class
+}   // namespace

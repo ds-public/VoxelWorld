@@ -78,9 +78,46 @@ namespace uGUIHelper
 			}
 			set
 			{
-				m_LocalizationKey  = value ;	// Start() 以降に変更される事は想定していない
+				if( m_LocalizationKey != value )
+				{
+					m_LocalizationKey  = value ;
+
+					// ローカライズ用のテキストを更新する
+					SetLocalizationText() ;
+				}
 			}
 		}
+
+		/// <summary>
+		/// 言語が変更された際に呼び出される
+		/// </summary>
+		public void OnLanguageChanged()
+		{
+			// ローカライズ用のテキストを更新する
+			SetLocalizationText() ;
+		}
+
+		// ローカライズ用のテキストを更新する
+		private void SetLocalizationText()
+		{
+			if( string.IsNullOrEmpty( m_LocalizationKey ) == false )
+			{
+				if( m_LocalizeRequest == true )
+				{
+					// ローカライズのリクエスト中である場合はリクエストをキャンセルする
+					UILocalization.RemoveRequest( OnLocalized ) ;
+					m_LocalizeRequest = false ;
+				}
+
+				// ローカライズ対応処理を行う
+				if( UILocalization.AddRequest( OnLocalized, m_LocalizationKey ) == false )
+				{
+					// 準備が整っていないのでキューに貯められた
+					m_LocalizeRequest = true ;
+				}
+			}
+		}
+
 
 		//-----------------------------------------------------------
 

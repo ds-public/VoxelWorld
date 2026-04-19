@@ -21,6 +21,7 @@ namespace UnityEngine.UI
 	/// </summary>
 
 	[AddComponentMenu("UI/Input Field Plus", 31)]
+    [Obsolete( "Not Use" )]
 	public class InputFieldPlus
 		: Selectable,
 		IUpdateSelectedHandler,

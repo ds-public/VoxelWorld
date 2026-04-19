@@ -77,6 +77,7 @@ namespace SpriteHelper
 				EditorUtility.SetDirty( component ) ;
 			}
 
+
 			// テクスチャ
 			var texture = EditorGUILayout.ObjectField( "Texture", component.Texture, typeof( Texture ), false ) as Texture ;
 			if( component.Texture != texture )
@@ -84,6 +85,32 @@ namespace SpriteHelper
 				Undo.RecordObject( component, "SpriteDrawer : Texture Change" ) ;	// アンドウバッファに登録
 				component.Texture  = texture ;
 				EditorUtility.SetDirty( component ) ;
+			}
+
+			if( component.Texture != null )
+			{
+				EditorGUILayout.BeginHorizontal() ;
+				{
+					GUILayout.FlexibleSpace() ;
+					GUILayout.Label( $"{component.Texture.width} x {component.Texture.height}" ) ;
+				}
+				EditorGUILayout.EndHorizontal() ;
+
+				//---------------------
+
+				GUILayout.BeginHorizontal() ;	// 横並び
+				{
+					GUILayout.FlexibleSpace() ;
+					GUI.backgroundColor = Color.white ;	// ボタンの下地を緑に
+					if( GUILayout.Button( new GUIContent( "Set Native Size", "表示サイズを画像サイズに合わせます" ), GUILayout.Width( 144f ) ) == true )
+					{
+				        Undo.RecordObject( component, "SpriteDrawer : Set Sprite Size Change" ) ;	// アンドウバッファに登録
+                        component.SetSize( component.Texture.width, component.Texture.height ) ;
+				        EditorUtility.SetDirty( component ) ;
+					}
+					GUI.backgroundColor = Color.white ;	// ボタンの下地を緑に
+				}
+				GUILayout.EndHorizontal() ;		// 横並び終了
 			}
 
 			//-----------------------------------------------------------
@@ -290,6 +317,22 @@ namespace SpriteHelper
 						GUILayout.Label( $"{component.Sprite.rect.width} x {component.Sprite.rect.height}" ) ;
 					}
 					EditorGUILayout.EndHorizontal() ;
+
+				    //---------------------
+
+				    GUILayout.BeginHorizontal() ;	// 横並び
+				    {
+					    GUILayout.FlexibleSpace() ;
+					    GUI.backgroundColor = Color.white ;	// ボタンの下地を緑に
+					    if( GUILayout.Button( new GUIContent( "Set Native Size", "表示サイズを画像サイズに合わせます" ), GUILayout.Width( 144f ) ) == true )
+					    {
+				            Undo.RecordObject( component, "SpriteDrawer : Set Sprite Size Change" ) ;	// アンドウバッファに登録
+                            component.SetSize( component.Sprite.rect.width, component.Sprite.rect.height ) ;
+				            EditorUtility.SetDirty( component ) ;
+					    }
+					    GUI.backgroundColor = Color.white ;	// ボタンの下地を緑に
+				    }
+				    GUILayout.EndHorizontal() ;		// 横並び終了
 				}
 			}
 
@@ -437,6 +480,22 @@ namespace SpriteHelper
 							GUILayout.Label( $"{component.Sprite.rect.width} x {component.Sprite.rect.height}" ) ;
 						}
 						EditorGUILayout.EndHorizontal() ;
+
+				        //---------------------
+
+				        GUILayout.BeginHorizontal() ;	// 横並び
+				        {
+					        GUILayout.FlexibleSpace() ;
+					        GUI.backgroundColor = Color.white ;	// ボタンの下地を緑に
+					        if( GUILayout.Button( new GUIContent( "Set Native Size", "表示サイズを画像サイズに合わせます" ), GUILayout.Width( 144f ) ) == true )
+					        {
+				                Undo.RecordObject( component, "SpriteDrawer : Set Sprite Size Change" ) ;	// アンドウバッファに登録
+                                component.SetSize( component.Sprite.rect.width, component.Sprite.rect.height ) ;
+				                EditorUtility.SetDirty( component ) ;
+					        }
+					        GUI.backgroundColor = Color.white ;	// ボタンの下地を緑に
+				        }
+				        GUILayout.EndHorizontal() ;		// 横並び終了
 					}
 				}
 			}
@@ -451,6 +510,13 @@ namespace SpriteHelper
 		/// <returns></returns>
 		private Sprite[] GetSprites( SpriteAtlas spriteAtlas )
 		{
+			if( spriteAtlas == null )
+			{
+				return null ;
+			}
+
+			//----------------------------------
+
 			var so = new SerializedObject( spriteAtlas ) ;
 			if( so == null )
 			{

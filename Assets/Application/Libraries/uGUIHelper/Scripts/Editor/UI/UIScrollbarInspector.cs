@@ -52,14 +52,14 @@ namespace uGUIHelper
 
 		//--------------------------------------------------------------------------
 
-		private readonly Dictionary<string,string> m_Japanese_Message = new Dictionary<string, string>()
+		private static readonly Dictionary<string,string> m_Japanese_Message = new ()
 		{
 			{ "SetAutoHide",			"Visibility を 'Auto Hide' に設定する事をお勧めします" },
 			{ "InteractionNone",		"UIInteraction クラスが必要です" },
 			{ "HSB_CanvasGroupNone",	"Horizontal Scrollbar に CanvasGroup クラスが必要です" },
 			{ "VSB_CanvasGroupNone",	"Vertical Scrollbar に CanvasGroup クラスが必要です" },
 		} ;
-		private readonly Dictionary<string,string> m_English_Message = new Dictionary<string, string>()
+		private static readonly Dictionary<string,string> m_English_Message = new ()
 		{
 			{ "SetAutoHide",			"Recommend to set Visibility to 'Auto Hide'" },
 			{ "InteractionNone",		"'UIInteraction' is necessary" },

@@ -37,6 +37,24 @@ namespace uGUIHelper.InputAdapter
 
 			private ButtonState[] m_ButtonStates ;
 
+			/// <summary>
+			/// アクシス用状態
+			/// </summary>
+			public class AxisState
+			{
+				public int      AxisNumber ;
+
+				public bool		RepeatKeepFlag ;
+				public Vector2  RepeatKeepData ;
+				public float	RepeatWakeTime ;
+				public float	RepeatLoopTime ;
+				public Vector2	IsRepeat ;
+				public Vector2	IsDown ;
+				public Vector2	IsUp ;
+			}
+
+			private AxisState[] m_AxisStates ;
+
 			//-----------------------------------------------------------------------------------------
 
 			/// <summary>
@@ -52,6 +70,10 @@ namespace uGUIHelper.InputAdapter
 					m_ButtonStates[ buttonIndex ] = new ButtonState() ;	// Update 用
 				}
 
+				// アクシスの状態
+				m_AxisStates = new AxisState[ 1 ] ;
+				m_AxisStates[ 0 ] = new AxisState(){ AxisNumber = Mouse.Wheel_Roll } ;
+
 				// 基準位置を初期化する
 				m_PointerPosition = Position ;
 			}
@@ -59,55 +81,62 @@ namespace uGUIHelper.InputAdapter
 			/// <summary>
 			/// フレーム毎の更新呼び出し
 			/// </summary>
-			public void Update( out bool button_0, out bool button_1, out bool button_2 )
+			public void Update( out bool button_0, out bool button_1, out bool button_2, out bool button_3, out bool button_4 )
 			{
 				button_0 = false ;
 				button_1 = false ;
 				button_2 = false ;
+				button_3 = false ;
+				button_4 = false ;
 
-				//---------------------------------
+				//-----------------------------------------------------------------------------
+				// ホイールに関する特殊処理を実行する
+
+				UpdateWheelButton() ;
+
+				float time = Time.realtimeSinceStartup ;
+
+				//-----------------------------------------------------------------------------
 
 				int buttonIndex ;
 				int numberOfButtons = m_ButtonStates.GetLength( 0 ) ;
 
-				ButtonState state ;
-
-				float time = Time.realtimeSinceStartup ;
+				ButtonState buttonState ;
 
 				for( buttonIndex  = 0 ; buttonIndex <  numberOfButtons ; buttonIndex ++ )
 				{
-					state = m_ButtonStates[ buttonIndex ] ;
+					buttonState = m_ButtonStates[ buttonIndex ] ;
 
 					//---------------------------------
 
-					state.IsRepeat	= false ;
-					state.IsDown	= false ;
-					state.IsUp		= false ;
+					buttonState.IsRepeat	= false ;
+					buttonState.IsDown	= false ;
+					buttonState.IsUp		= false ;
 
 					if( GetButton( buttonIndex ) == true )
 					{
-						if( state.RepeatKeepFlag == false )
+						if( buttonState.RepeatKeepFlag == false )
 						{
 							// リピート開始
-							state.IsRepeat	= true ;
+							buttonState.IsRepeat	= true ;
 
-							state.RepeatKeepFlag = true ;
-							state.RepeatWakeTime = time ;
-							state.RepeatLoopTime = time ;
+							buttonState.RepeatKeepFlag = true ;
+							buttonState.RepeatWakeTime = time ;
+							buttonState.RepeatLoopTime = time ;
 
-							state.IsDown = true ;
+							buttonState.IsDown = true ;
 						}
 						else
 						{
 							// リピート最中
-							if( ( time - state.RepeatWakeTime ) >= RepeatStartingTime )
+							if( ( time - buttonState.RepeatWakeTime ) >= RepeatStartingTime )
 							{
 								// リピート中
-								if( ( time - state.RepeatLoopTime ) >= RepeatIntervalTime )
+								if( ( time - buttonState.RepeatLoopTime ) >= RepeatIntervalTime )
 								{
-									state.RepeatLoopTime = time ;
+									buttonState.RepeatLoopTime = time ;
 
-									state.IsRepeat = true ;
+									buttonState.IsRepeat = true ;
 								}
 							}
 						}
@@ -117,16 +146,81 @@ namespace uGUIHelper.InputAdapter
 							case 0 : button_0 = true ; break ;
 							case 1 : button_1 = true ; break ;
 							case 2 : button_2 = true ; break ;
+							case 3 : button_3 = true ; break ;
+							case 4 : button_4 = true ; break ;
 						}
 					}
 					else
 					{
 						// リピート解除
-						if( state.RepeatKeepFlag == true )
+						if( buttonState.RepeatKeepFlag == true )
 						{
-							state.IsUp = true ;
+							buttonState.IsUp = true ;
 
-							state.RepeatKeepFlag  = false ;
+							buttonState.RepeatKeepFlag  = false ;
+						}
+					}
+				}
+
+				//-----------------------------------------------------------------------------
+				// アクシスに関する更新処理
+
+				int axisIndex ;
+				int numberOfAxs = m_AxisStates.GetLength( 0 ) ;
+
+				AxisState axisState ;
+				Vector2 axis ;
+
+				for( axisIndex  = 0 ; axisIndex <  numberOfAxs ; axisIndex ++ )
+				{
+					axisState = m_AxisStates[ axisIndex ] ;
+
+					//---------------------------------
+
+					axisState.IsRepeat	= Vector2.zero ;
+					axisState.IsDown	= Vector2.zero ;
+					axisState.IsUp		= Vector2.zero ;
+
+					axis = GetAxis( axisState.AxisNumber ) ;
+
+					if( axis.x != 0 && axis.y != 0 )
+					{
+						if( axisState.RepeatKeepFlag == false )
+						{
+							// リピート開始
+							axisState.IsRepeat	= axis ;
+
+							axisState.RepeatKeepFlag = true ;
+							axisState.RepeatKeepData = axis ;
+							axisState.RepeatWakeTime = time ;
+							axisState.RepeatLoopTime = time ;
+
+							axisState.IsDown = axis ;
+						}
+						else
+						{
+							// リピート最中
+							if( ( time - axisState.RepeatWakeTime ) >= RepeatStartingTime )
+							{
+								// リピート中
+								if( ( time - axisState.RepeatLoopTime ) >= RepeatIntervalTime )
+								{
+									axisState.IsRepeat = axis ;
+
+									axisState.RepeatLoopTime = time ;
+								}
+							}
+						}
+					}
+					else
+					{
+						// リピート解除
+						if( axisState.RepeatKeepFlag == true )
+						{
+							axisState.IsUp = axisState.RepeatKeepData ;
+
+							axisState.RepeatKeepFlag = false ;
+							axisState.RepeatKeepData = Vector2.zero ;
 						}
 					}
 				}
@@ -283,6 +377,90 @@ namespace uGUIHelper.InputAdapter
 				}
 			}
 
+			//----------------------------------------------------------
+
+			// ホイール回転(上)
+			private bool  m_IsWheelRolling_U = false ;
+			private float m_WheelRollingVelocity_U = 0 ;
+			private float m_WheelRollingStaringTime_U = 0 ;
+
+			// ホイール回転(下)
+			private bool  m_IsWheelRolling_D = false ;
+			private float m_WheelRollingVelocity_D = 0 ;
+			private float m_WheelRollingStaringTime_D = 0 ;
+
+			// ホイールをボタンとして扱う場合の状態値を更新する
+			private void UpdateWheelButton()
+			{
+				float dy = Input.mouseScrollDelta.y ;
+
+				// ↑回転
+				if( m_IsWheelRolling_U == false )
+				{
+					if( dy >  0 )
+					{
+						m_IsWheelRolling_U = true ;
+
+						m_WheelRollingVelocity_U  = dy ;
+
+						// 時間設定
+						m_WheelRollingStaringTime_U = Time.realtimeSinceStartup ;
+					}
+				}
+				else
+				{
+					if( dy >  0 )
+					{
+						m_WheelRollingVelocity_U += dy ;
+
+						// 時間更新
+						m_WheelRollingStaringTime_U = Time.realtimeSinceStartup ;
+					}
+					else
+					{
+						if( ( Time.realtimeSinceStartup - m_WheelRollingStaringTime_U ) >= 0.1f )
+						{
+							// 解放
+							m_IsWheelRolling_U = false ;
+							m_WheelRollingVelocity_U = 0 ;
+						}
+					}
+				}
+
+				// ↓回転
+				if( m_IsWheelRolling_D == false )
+				{
+					if( dy <  0 )
+					{
+						m_IsWheelRolling_D = true ;
+
+						m_WheelRollingVelocity_D  = dy ;
+
+						// 時間設定
+						m_WheelRollingStaringTime_D = Time.realtimeSinceStartup ;
+					}
+				}
+				else
+				{
+					if( dy <  0 )
+					{
+						m_WheelRollingVelocity_D -= dy ;
+
+						// 時間更新
+						m_WheelRollingStaringTime_D = Time.realtimeSinceStartup ;
+					}
+					else
+					{
+						if( ( Time.realtimeSinceStartup - m_WheelRollingStaringTime_D ) >= 0.1f )
+						{
+							// 解放
+							m_IsWheelRolling_D = false ;
+							m_WheelRollingVelocity_D = 0 ;
+						}
+					}
+				}
+			}
+
 			/// <summary>
 			/// ボタンが押されているかどうかの判定
 			/// </summary>
@@ -290,14 +468,36 @@ namespace uGUIHelper.InputAdapter
 			/// <returns></returns>
 			public bool GetButton( int buttonNumber )
 			{
-				bool state = Input.GetMouseButton( buttonNumber ) ;
+				bool state = false ;
 
-				// NewVersion と挙動を共通化するためボタン１・ボタン２のタッチエミュレーションは無効化する
-				if( buttonNumber != 0 )
+				if( buttonNumber >= 0 && buttonNumber <= 2 )
 				{
-					if( Input.touchCount >  0 )
+					state = Input.GetMouseButton( buttonNumber ) ;
+
+					// NewVersion と挙動を共通化するためボタン１・ボタン２のタッチエミュレーションは無効化する
+					if( buttonNumber != 0 )
 					{
-						state = false ;
+						if( Input.touchCount >  0 )
+						{
+							state = false ;
+						}
+					}
+				}
+				else
+				if( buttonNumber >= 3 && buttonNumber <= 4 )
+				{
+					switch( buttonNumber )
+					{
+						case 3 :
+						{
+							state = ( m_WheelRollingVelocity_U >  0 ) ; // 閾値に大きな値が必要かと思ったが 1 ずつしか変化しない模様
+						}
+						break ;
+						case 4 :
+						{
+							state = ( m_WheelRollingVelocity_D <  0 ) ; // 閾値に大きな値が必要かと思ったが 1 ずつしか変化しない模様
+						}
+						break ;
 					}
 				}
 
@@ -337,6 +537,88 @@ namespace uGUIHelper.InputAdapter
 			//----------------------------------
 
 			/// <summary>
+			/// アクシスが押されているかどうかの判定
+			/// </summary>
+			/// <param name="axisNumber"></param>
+			/// <returns></returns>
+			public Vector2 GetAxis( int axisNumber )
+			{
+				if( axisNumber == Mouse.Wheel_Roll )
+				{
+					float y = 0 ;
+
+					if( m_WheelRollingVelocity_U >  0 )
+					{
+						y += 1.0f ;
+					}
+					if( m_WheelRollingVelocity_D <  0 )
+					{
+						y -= 1.0f ;
+					}
+
+					return new Vector2( 0, y ) ;
+				}
+
+				return Vector2.zero ;
+			}
+
+			/// <summary>
+			/// アクシスが押されたかどうかの判定
+			/// </summary>
+			/// <param name="buttonNumber"></param>
+			/// <returns></returns>
+			public Vector2 GetAxisDown( int axisNumber )
+			{
+				int axisIndex = 0 ;
+				switch( axisNumber )
+				{
+					case Mouse.Wheel_Roll :
+						axisIndex = 0 ;
+					break ;
+				}
+
+				return m_AxisStates[ axisIndex ].IsDown ;
+			}
+
+			/// <summary>
+			/// アクシスが離されたかどうかの判定
+			/// </summary>
+			/// <param name="buttonNumber"></param>
+			/// <returns></returns>
+			public Vector2 GetAxisUp( int axisNumber )
+			{
+				int axisIndex = 0 ;
+				switch( axisNumber )
+				{
+					case Mouse.Wheel_Roll :
+						axisIndex = 0 ;
+					break ;
+				}
+
+				return m_AxisStates[ axisIndex ].IsUp ;
+			}
+
+			/// <summary>
+			/// リピート付きでアクシスが押されているかどうかの判定
+			/// </summary>
+			/// <param name="buttonNumber"></param>
+			/// <returns></returns>
+			public Vector2 GetAxisRepeat( int axisNumber )
+			{
+				int axisIndex = 0 ;
+				switch( axisNumber )
+				{
+					case Mouse.Wheel_Roll :
+						axisIndex = 0 ;
+					break ;
+				}
+
+				return m_AxisStates[ axisIndex ].IsRepeat ;
+			}
+
+			//----------------------------------
+
+			/// <summary>
 			/// ホイールの移動量
 			/// </summary>
 			public Vector2 ScrollDelta
@@ -347,5 +629,6 @@ namespace uGUIHelper.InputAdapter
 				}
 			}
 		}
-	}
-}
+
+	}   // class
+}   // namespace

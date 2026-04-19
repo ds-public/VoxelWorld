@@ -13,7 +13,7 @@ using uGUIHelper.InputAdapter ;
 namespace uGUIHelper
 {
 	/// <summary>
-	/// メニューに生成機能追加 Version 2024/11/12
+	/// メニューに生成機能追加 Version 2026/04/01
 	/// </summary>
 	public static class MenuExtension
 	{

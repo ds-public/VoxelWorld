@@ -1,12 +1,12 @@
-using UnityEngine ;
-using UnityEngine.UI ;
-using UnityEngine.Events ;
-using UnityEngine.EventSystems ;
-
 using System ;
 using System.Collections ;
 using System.Collections.Generic ;
 using System.Linq ;
+
+using UnityEngine ;
+using UnityEngine.UI ;
+using UnityEngine.Events ;
+using UnityEngine.EventSystems ;
 
 #if UNITY_EDITOR
 using UnityEditor ;
@@ -3259,7 +3259,8 @@ namespace uGUIHelper
 			}
 			set
 			{
-				m_SelectedIndex = value ;
+				m_SelectedIndex         = value ;
+                m_SelectedIndex_Keep    = value ;
 			}
 		}
 

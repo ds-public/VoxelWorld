@@ -6,7 +6,7 @@ using UnityEngine.EventSystems ;
 namespace ScreenSizeHelper
 {
 	/// <summary>
-	/// スクリーンのサイズ調整クラス Version 2025/11/28 0
+	/// スクリーンのサイズ調整クラス Version 2026/02/19 0
 	/// </summary>
 	[ExecuteAlways]
 	[DisallowMultipleComponent]
@@ -124,6 +124,15 @@ namespace ScreenSizeHelper
 		// 自身の RectTransform
 		protected RectTransform			m_RectTransform ;
 
+		// キャンバス
+		protected Canvas                m_Canvas ;
+
+		// レンダーモード
+		protected RenderMode            m_RenderMode = RenderMode.ScreenSpaceOverlay ;
+
+		// 投影モード
+		protected bool                  m_Orthographic ;
+
 		// パースペクティブの変化検知用
 		protected float                 m_Perspective_Active ;
 
@@ -193,7 +202,7 @@ namespace ScreenSizeHelper
 						}
 
 						// 解像度を設定する
-						safeAreaCorrector.SetResolution( m_BasicWidth, m_BasicHeight, m_LimitHeight, m_LimitHeight, GetSafeArea ) ;
+						safeAreaCorrector.SetResolution( m_BasicWidth, m_BasicHeight, m_LimitWidth, m_LimitHeight, GetSafeArea ) ;
 
 						// セーフエリアの部分に外枠を表示しないようにするか
 						safeAreaCorrector.SafeAreaVisible = m_SafeAreaVisible ;
@@ -341,6 +350,28 @@ namespace ScreenSizeHelper
 
 			//----------------------------------------------------------
 
+			// 投影変化
+			if( m_Canvas != null )
+			{
+				if( m_Canvas.renderMode != m_RenderMode )
+				{
+					m_RenderMode = m_Canvas.renderMode ;
+					m_IsDirty = true ;
+				}
+
+				if( m_Canvas.renderMode != RenderMode.ScreenSpaceOverlay )
+				{
+					if( m_Canvas.worldCamera != null )
+					{
+						if( m_Canvas.worldCamera.orthographic != m_Orthographic )
+						{
+							m_Orthographic  = m_Canvas.worldCamera.orthographic ;
+							m_IsDirty = true ;
+						}
+					}
+				}
+			}
+
 			// 画角変化
 			if( m_Perspective_Active != m_Perspective )
 			{
@@ -362,17 +393,17 @@ namespace ScreenSizeHelper
 
 			float width, height ;
 
-			var canvas = GetCanvas() ;
-			if( canvas != null )
+			m_Canvas = GetCanvas() ;
+			if( m_Canvas != null )
 			{
-				if( canvas.renderMode == RenderMode.WorldSpace && canvas.worldCamera != null )
+				if( m_Canvas.renderMode != RenderMode.ScreenSpaceOverlay && m_Canvas.worldCamera != null )
 				{
-					// ３Ｄパースあり
+					// カメラあり
 
 					float screenWidth  = Screen.width ;
 					float screenHeight = Screen.height ;
 
-					if( screenWidth >  screenHeight )
+					if( screenWidth >= screenHeight )
 					{
 						// 画面は横長
 						float screenAspect = screenWidth    / screenHeight ;
@@ -407,7 +438,7 @@ namespace ScreenSizeHelper
 						if( screenAspect >  basicAspect )
 						{
 							// より縦長
-							height  = screenAspect * m_BasicHeight ;
+							height  = screenAspect * m_BasicWidth ;
 							width	= m_BasicWidth  ;
 						}
 						else
@@ -415,7 +446,7 @@ namespace ScreenSizeHelper
 						{
 							// 基準より少ない縦長
 							height = m_BasicHeight ;
-							width  = m_BasicWidth / screenAspect ;
+							width  = m_BasicHeight / screenAspect ;
 						}
 						else
 						{
@@ -427,19 +458,47 @@ namespace ScreenSizeHelper
 
 					//--------------------------------------------------------
 
-					var canvasRectTransform = canvas.transform as RectTransform ;
+					var canvasRectTransform = m_Canvas.transform as RectTransform ;
 
-					// サイズ
-					canvasRectTransform.sizeDelta	= new Vector2( width, height ) ;
+					if( m_Canvas.renderMode == RenderMode.WorldSpace )
+					{
+						// WorldSpace のみ設定する(ScreenSpace は自動設定)
 
-					canvasRectTransform.SetPositionAndRotation( Vector3.zero, Quaternion.identity ) ;
-					canvasRectTransform.localScale = Vector3.one ;
-					canvasRectTransform.anchorMin	= new Vector2( 0.5f, 0.5f ) ;
-					canvasRectTransform.anchorMax	= new Vector2( 0.5f, 0.5f ) ;
-					canvasRectTransform.pivot		= new Vector2( 0.5f, 0.5f ) ;
+						// サイズ
+						canvasRectTransform.sizeDelta	= new Vector2( width, height ) ;
 
-					// 強制更新
-					canvasRectTransform.ForceUpdateRectTransforms() ;
+						// トランスフォーム
+						canvasRectTransform.SetPositionAndRotation( Vector3.zero, Quaternion.identity ) ;
+						canvasRectTransform.localScale = Vector3.one ;
+						canvasRectTransform.anchorMin	= new Vector2( 0.5f, 0.5f ) ;
+						canvasRectTransform.anchorMax	= new Vector2( 0.5f, 0.5f ) ;
+						canvasRectTransform.pivot		= new Vector2( 0.5f, 0.5f ) ;
+
+						// 強制更新
+						canvasRectTransform.ForceUpdateRectTransforms() ;
+					}
+					else
+					{
+
+						// ScreenSpace - Camera
+
+						// 自動設定ではあるがなぜか sizeDelta を設定しないと即時に切り替わってくれない
+						canvasRectTransform.sizeDelta	= new Vector2( width, height ) ;
+
+						// 自動設定ではあるがなぜか PositionAndRotation を設定しないと ScreenSpace - Overlay から切り替えた際にカメラの位置(X,Y)がおかしくなる
+						canvasRectTransform.SetPositionAndRotation( Vector3.zero, Quaternion.identity ) ;
+
+						// 自動設定ではあるがなぜか localScale を 1 にしないときちんと動かない(最重要) ※設定しないとこの後カメラの位置(X,Y,Z)がおかしくなる
+						canvasRectTransform.localScale = Vector3.one ;
+
+						// 自動設定ではあるが保険のため設定しておく
+						canvasRectTransform.anchorMin	= new Vector2( 0.5f, 0.5f ) ;
+						canvasRectTransform.anchorMax	= new Vector2( 0.5f, 0.5f ) ;
+						canvasRectTransform.pivot		= new Vector2( 0.5f, 0.5f ) ;
+
+						// 強制更新
+						canvasRectTransform.ForceUpdateRectTransforms() ;
+					}
 
 					//--------------------------------------------------------
 
@@ -447,7 +506,7 @@ namespace ScreenSizeHelper
 
 					float canvasHeight = canvasRectTransform.sizeDelta.y ;
 
-					var uiCamera = canvas.worldCamera ;
+					var uiCamera = m_Canvas.worldCamera ;
 
 					if( uiCamera.orthographic == true )
 					{
@@ -455,7 +514,7 @@ namespace ScreenSizeHelper
 
 						uiCamera.orthographicSize = canvasHeight * 0.5f ;
 
-						uiCamera.transform.SetPositionAndRotation( new Vector3( 0, 0, - canvasHeight ), Quaternion.identity );
+						uiCamera.transform.SetPositionAndRotation( new Vector3( 0, 0, - canvasHeight ), Quaternion.identity ) ; // マイナス方向であれば -1 でも構わないが UI が -1 より小さい値だと裏側に回って見えなくなるのである程度大きな値は必要
 						uiCamera.transform.localScale = Vector3.one ;
 
 						float farClipPlane = uiCamera.orthographicSize + 100.0f ;
@@ -467,13 +526,14 @@ namespace ScreenSizeHelper
 					else
 					{
 						// 投射投影
+
 						float perspective = m_Perspective ;
-//						perspective  = Mathf.Clamp( perspective,  0,  1 ) ;
+//						perspective  = Mathf.Clamp( perspective,  0,  1 ) ; // プロパティが 0～1 の割合設定のケース
 						perspective  = Mathf.Clamp( perspective, 28, 90 ) ;
 
 						// 0 = 28.08度 距離が縦幅の２倍
 						// 1 = 90.00度 距離が縦幅の１／２
-//						float degree = Mathf.Lerp( 28.08f, 90.00f, perspective ) ;
+//						float degree = Mathf.Lerp( 28.08f, 90.00f, perspective ) ; // プロパティが 0～1 の割合設定のケース
 						float degree = perspective ;
 
 						//-------------------------------
@@ -485,9 +545,9 @@ namespace ScreenSizeHelper
 
 						float tan = Mathf.Tan( Mathf.PI * degree / 360.0f ) ;
 
-						float distance = canvasHeight * ( 0.5f / tan ) ;
+						float distance = canvasHeight * 0.5f / tan ;
 
-						uiCamera.transform.SetPositionAndRotation( new Vector3( 0, 0, - distance ), Quaternion.identity );
+						uiCamera.transform.SetPositionAndRotation( new Vector3( 0, 0, - distance ), Quaternion.identity ) ;
 						uiCamera.transform.localScale = Vector3.one ;
 
 						float farClipPlane = distance * 1.25f ;
@@ -496,6 +556,9 @@ namespace ScreenSizeHelper
 							uiCamera.farClipPlane  = farClipPlane ;
 						}
 					}
+
+					// 全体を対象とする(投影を変更した際に時々バグる事があるため強制的に値を設定してやる)
+					uiCamera.rect = new Rect( 0, 0, 1, 1 ) ;
 				}
 			}
 
@@ -772,7 +835,7 @@ namespace ScreenSizeHelper
 		//-------------------------------------------------------------------------------------------
 
 #if UNITY_EDITOR
-		// RectTransform のトラッカーをせってする
+		// RectTransform のトラッカーを設定する
 		private void SetRectTransformTracker( bool isSet )
 		{
 			if( m_RectTransform != null )
@@ -825,7 +888,7 @@ namespace ScreenSizeHelper
 		}
 
 		//-----------------------------------
-
+#if false
 		/// <summary>
 		/// RectTransform に変化があった際に呼び出される(Canvas 内全ての RectTransform が反応)
 		/// </summary>
@@ -853,6 +916,7 @@ namespace ScreenSizeHelper
 #endif
 			}
 		}
+#endif
 
 #if UNITY_EDITOR
 		/// <summary>

@@ -1,3 +1,5 @@
+#if false
+
 #if UNITY_EDITOR
 
 using UnityEngine;
@@ -281,5 +283,7 @@ namespace TMPro.EditorUtilities
 		}
 	}
 }
+
+#endif
 
 #endif

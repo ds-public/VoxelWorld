@@ -1,3 +1,4 @@
+using System ;
 using System.Collections ;
 using System.Collections.Generic ;
 using System.Linq ;
@@ -640,8 +641,30 @@ namespace uGUIHelper
 				COutline.effectColor = value ;
 			}
 		}
-		
-		//-----------------------------------------------------
+
+		//-----------------------------------------------------------
+
+		private Action<UIImage> m_OnLanguageChanged ;
+
+		/// <summary>
+		/// 言語が変更された際に呼び出されるコールバックを設定する
+		/// </summary>
+		/// <param name="onLanguageChanged"></param>
+		public void OnSetLanguageChanged( Action<UIImage> onLanguageChanged )
+		{
+			m_OnLanguageChanged = onLanguageChanged ;
+		}
+
+		/// <summary>
+		/// 言語が変更された際に呼び出される
+		/// </summary>
+		public void OnLanguageChanged()
+		{
+			// ローカライズ用のテキストを更新する
+			m_OnLanguageChanged?.Invoke( this ) ;
+		}
+
+		//-----------------------------------------------------------
 	
 		// 各派生クラスでの初期化処理を行う（メニューまたは AddView から生成される場合のみ実行れる）
 		protected override void OnBuild( string option = "" )

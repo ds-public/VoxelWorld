@@ -60,8 +60,9 @@ namespace InputHelper
 			}
 		}
 
-		// 共有不可
+		// ↑共有不可
 		//-----------------------------------------------------------
+		// ↓共有可能
 
 		/// <summary>
 		/// 全てゲームパッドの有効状況
@@ -1138,18 +1139,8 @@ namespace InputHelper
 		public class ButtonActionElement
 		{
 			public int[]			ButtonIdentities ;
-			public KeyCodes[]		ButtonKeyCodes ;
-			public InputCategories	InputCategory ;
-
-			//----------------------------------
-
-			public bool				KeyRepeatKeepFlag ;
-			public float			KeyRepeatWakeTime ;
-			public float			KeyRepeatLoopTime ;
-
-			public bool				IsKeyRepeat ;
-			public bool				IsKeyDown ;
-			public bool				IsKeyUp ;
+			public KeyCodes[]		KeyCodes ;
+			public int[]            MouseButtons ;
 		}
 
 		private static readonly Dictionary<string,ButtonActionElement>	m_ButtonActionElements = new () ;
@@ -1162,7 +1153,7 @@ namespace InputHelper
 		/// <param name="buttonKeyCodes"></param>
 		/// <param name="inputCategory"></param>
 		/// <returns></returns>
-		public static bool RegisterButtonAction( string actionName, int[] buttonIdentities, KeyCodes[] buttonKeyCodes = null, InputCategories inputCategory = InputCategories.Basis )
+		public static bool RegisterButtonAction( string actionName, int[] buttonIdentities, KeyCodes[] keyCodes = null, int[] mouseButtons = null )
 		{
 			if( string.IsNullOrEmpty( actionName ) == true )
 			{
@@ -1170,7 +1161,7 @@ namespace InputHelper
 				return false ;
 			}
 
-			if( ( buttonIdentities == null || buttonIdentities.Length == 0 ) && ( buttonKeyCodes == null || buttonKeyCodes.Length == 0 ) )
+			if( ( buttonIdentities == null || buttonIdentities.Length == 0 ) && ( keyCodes == null || keyCodes.Length == 0 ) && ( mouseButtons == null || mouseButtons.Length == 0 ) )
 			{
 				// 不可
 				return false ;
@@ -1186,8 +1177,8 @@ namespace InputHelper
 				m_ButtonActionElements.Add( actionName, new ButtonActionElement()
 				{
 					ButtonIdentities	= buttonIdentities,
-					ButtonKeyCodes		= buttonKeyCodes,
-					InputCategory		= inputCategory
+					KeyCodes		    = keyCodes,
+					MouseButtons        = mouseButtons
 				} ) ;
 			}
 			else
@@ -1198,8 +1189,8 @@ namespace InputHelper
 				m_ButtonActionElements[ actionName ] = new ButtonActionElement()
 				{
 					ButtonIdentities	= buttonIdentities,
-					ButtonKeyCodes		= buttonKeyCodes,
-					InputCategory		= inputCategory
+					KeyCodes		    = keyCodes,
+					MouseButtons        = mouseButtons
 				} ;
 			}
 
@@ -1215,11 +1206,11 @@ namespace InputHelper
 		/// <param name="buttonKeyCodes"></param>
 		/// <param name="inputCategory"></param>
 		/// <returns></returns>
-		public static bool AcquireButtonAction( string actionName, out int[] buttonIdentities, out KeyCodes[] buttonKeyCodes, out InputCategories inputCategory )
+		public static bool AcquireButtonAction( string actionName, out int[] buttonIdentities, out KeyCodes[] keyCodes, out int[] mouseButtons )
 		{
 			buttonIdentities    = null ;
-			buttonKeyCodes      = null ;
-			inputCategory       = InputCategories.Basis ;
+			keyCodes            = null ;
+			mouseButtons        = null ;
 
 			if( string.IsNullOrEmpty( actionName ) == true )
 			{
@@ -1239,8 +1230,8 @@ namespace InputHelper
 			var buttonActionElement = m_ButtonActionElements[ actionName ] ;
 
 			buttonIdentities    = buttonActionElement.ButtonIdentities ;
-			buttonKeyCodes      = buttonActionElement.ButtonKeyCodes ;
-			inputCategory       = buttonActionElement.InputCategory ;
+			keyCodes            = buttonActionElement.KeyCodes ;
+			mouseButtons        = buttonActionElement.MouseButtons ;
 
 			//-------------------------
 
@@ -1256,11 +1247,11 @@ namespace InputHelper
 		/// <param name="buttonKeyCodes"></param>
 		/// <param name="inputCategory"></param>
 		/// <returns></returns>
-		public static bool AcquireButtonActionInFirstElement( string actionName, out int buttonIdentity, out KeyCodes buttonKeyCode, out InputCategories inputCategory )
+		public static bool AcquireButtonActionInFirstElement( string actionName, out int buttonIdentity, out KeyCodes keyCode, out int mouseButton )
 		{
 			buttonIdentity      = GamePad.None ;
-			buttonKeyCode       = KeyCodes.None ;
-			inputCategory       = InputCategories.Basis ;
+			keyCode             = KeyCodes.None ;
+			mouseButton         = Mouse.None ;
 
 			if( string.IsNullOrEmpty( actionName ) == true )
 			{
@@ -1281,15 +1272,18 @@ namespace InputHelper
 
 			if( buttonActionElement.ButtonIdentities != null && buttonActionElement.ButtonIdentities.Length >  0 )
 			{
-				buttonIdentity  = buttonActionElement.ButtonIdentities[ 0 ] ;
+				buttonIdentity      = buttonActionElement.ButtonIdentities[ 0 ] ;
 			}
 
-			if( buttonActionElement.ButtonKeyCodes != null && buttonActionElement.ButtonKeyCodes.Length >  0 )
+			if( buttonActionElement.KeyCodes != null && buttonActionElement.KeyCodes.Length >  0 )
 			{
-				buttonKeyCode   = buttonActionElement.ButtonKeyCodes[ 0 ] ;
+				keyCode             = buttonActionElement.KeyCodes[ 0 ] ;
 			}
 
-			inputCategory       = buttonActionElement.InputCategory ;
+			if( buttonActionElement.MouseButtons != null && buttonActionElement.MouseButtons.Length >  0 )
+			{
+				mouseButton         = buttonActionElement.MouseButtons[ 0 ] ;
+			}
 
 			//-------------------------
 
@@ -1340,19 +1334,8 @@ namespace InputHelper
 		public class AxisActionElement
 		{
 			public int[]			AxisNumbers ;
-			public KeyCodes[][]		AxisKeyCodeSets ;
-			public InputCategories	InputCategory ;
-
-			//----------------------------------
-
-			public bool				KeyRepeatKeepFlag ;
-			public Vector2			KeyRepeatKeepData ;
-			public float			KeyRepeatWakeTime ;
-			public float			KeyRepeatLoopTime ;
-
-			public Vector2			IsKeyRepeat ;
-			public Vector2			IsKeyDown ;
-			public Vector2			IsKeyUp ;
+			public KeyCodes[][]		KeyCodeSets ;
+			public int[]            MouseAxes ;
 		}
 
 		private static readonly Dictionary<string,AxisActionElement>	m_AxisActionElements = new () ;
@@ -1365,7 +1348,7 @@ namespace InputHelper
 		/// <param name="buttonKeyCodes"></param>
 		/// <param name="inputCategory"></param>
 		/// <returns></returns>
-		public static bool RegisterAxisAction( string actionName, int[] axisNumbers, KeyCodes[][] axisKeyCodeSets = null, InputCategories inputCategory = InputCategories.Basis )
+		public static bool RegisterAxisAction( string actionName, int[] axisNumbers, KeyCodes[][] keyCodeSets = null, int[] mouseAxes = null )
 		{
 			if( string.IsNullOrEmpty( actionName ) == true )
 			{
@@ -1373,7 +1356,7 @@ namespace InputHelper
 				return false ;
 			}
 
-			if( ( axisNumbers == null || axisNumbers.Length == 0 ) && ( axisKeyCodeSets == null || axisKeyCodeSets.Length == 0 ) )
+			if( ( axisNumbers == null || axisNumbers.Length == 0 ) && ( keyCodeSets == null || keyCodeSets.Length == 0 ) )
 			{
 				// 不可
 				return false ;
@@ -1389,8 +1372,8 @@ namespace InputHelper
 				m_AxisActionElements.Add( actionName, new AxisActionElement()
 				{
 					AxisNumbers			= axisNumbers,
-					AxisKeyCodeSets		= axisKeyCodeSets,
-					InputCategory		= inputCategory
+					KeyCodeSets		    = keyCodeSets,
+					MouseAxes           = mouseAxes
 				} ) ;
 			}
 			else
@@ -1401,8 +1384,8 @@ namespace InputHelper
 				m_AxisActionElements[ actionName ] = new AxisActionElement()
 				{
 					AxisNumbers			= axisNumbers,
-					AxisKeyCodeSets		= axisKeyCodeSets,
-					InputCategory		= inputCategory
+					KeyCodeSets		    = keyCodeSets,
+					MouseAxes           = mouseAxes
 				} ;
 			}
 
@@ -1418,11 +1401,11 @@ namespace InputHelper
 		/// <param name="buttonKeyCodes"></param>
 		/// <param name="inputCategory"></param>
 		/// <returns></returns>
-		public static bool AcquireAxisAction( string actionName, out int[] axisNumbers, out KeyCodes[][] axisKeyCodeSets, out InputCategories inputCategory )
+		public static bool AcquireAxisAction( string actionName, out int[] axisNumbers, out KeyCodes[][] keyCodeSets, out int[] mouseAxes )
 		{
 			axisNumbers     = null ;
-			axisKeyCodeSets = null ;
-			inputCategory   = InputCategories.Basis ;
+			keyCodeSets     = null ;
+			mouseAxes       = null ;
 
 			if( string.IsNullOrEmpty( actionName ) == true )
 			{
@@ -1444,8 +1427,8 @@ namespace InputHelper
 			var axisActionElement = m_AxisActionElements[ actionName ] ;
 
 			axisNumbers     = axisActionElement.AxisNumbers ;
-			axisKeyCodeSets = axisActionElement.AxisKeyCodeSets ;
-			inputCategory   = axisActionElement.InputCategory ;
+			keyCodeSets     = axisActionElement.KeyCodeSets ;
+			mouseAxes       = axisActionElement.MouseAxes ;
 
 			//-------------------------
 
@@ -1461,11 +1444,11 @@ namespace InputHelper
 		/// <param name="buttonKeyCodes"></param>
 		/// <param name="inputCategory"></param>
 		/// <returns></returns>
-		public static bool AcquireAxisActionInFirstElement( string actionName, out int axisNumber, out KeyCodes[] axisKeyCodeSet, out InputCategories inputCategory )
+		public static bool AcquireAxisActionInFirstElement( string actionName, out int axisNumber, out KeyCodes[] keyCodeSet, out int mouseAxes )
 		{
 			axisNumber      = -1 ;
-			axisKeyCodeSet  = null ;
-			inputCategory   = InputCategories.Basis ;
+			keyCodeSet      = null ;
+			mouseAxes       = Mouse.None ;
 
 			if( string.IsNullOrEmpty( actionName ) == true )
 			{
@@ -1491,16 +1474,19 @@ namespace InputHelper
 				axisNumber     = axisActionElement.AxisNumbers[ 0 ] ;
 			}
 
-			if( axisActionElement.AxisKeyCodeSets != null && axisActionElement.AxisKeyCodeSets.Length >  0 )
+			if( axisActionElement.KeyCodeSets != null && axisActionElement.KeyCodeSets.Length >  0 )
 			{
-				var primaryAxisKeyCodeSet = axisActionElement.AxisKeyCodeSets[ 0 ] ;
-				if( primaryAxisKeyCodeSet != null && primaryAxisKeyCodeSet.Length == 4 )
+				var primaryKeyCodeSet = axisActionElement.KeyCodeSets[ 0 ] ;
+				if( primaryKeyCodeSet != null && primaryKeyCodeSet.Length == 4 )
 				{
-					axisKeyCodeSet = primaryAxisKeyCodeSet ;
+					keyCodeSet = primaryKeyCodeSet ;
 				}
 			}
 
-			inputCategory   = axisActionElement.InputCategory ;
+			if( axisActionElement.MouseAxes != null && axisActionElement.MouseAxes.Length >  0 )
+			{
+				mouseAxes = axisActionElement.MouseAxes[ 0 ] ;
+			}
 
 			//-------------------------
 
@@ -1726,26 +1712,6 @@ namespace InputHelper
 				// Haptics
 				player.ClearHapticsState() ;
 			}
-
-			// ボタン
-			foreach( var buttonActionElement in m_ButtonActionElements.Values )
-			{
-				buttonActionElement.KeyRepeatKeepFlag   = false ;
-
-				buttonActionElement.IsKeyRepeat	        = false ;
-				buttonActionElement.IsKeyDown	        = false ;
-				buttonActionElement.IsKeyUp		        = false ;
-			}
-
-			// アクシス
-			foreach( var axisActionElement in m_AxisActionElements.Values )
-			{
-				axisActionElement.KeyRepeatKeepFlag     = false ;
-
-				axisActionElement.IsKeyRepeat	        = Vector2.zero ;
-				axisActionElement.IsKeyDown		        = Vector2.zero ;
-				axisActionElement.IsKeyUp		        = Vector2.zero ;
-			}
 		}
 
 		/// <summary>
@@ -1785,180 +1751,6 @@ namespace InputHelper
 
 				// Haptics
 				player.UpdateHapticsState() ;
-			}
-
-			//------------------------------------------------------------------------------------------
-			// アクション系のアップデート(キーボードのみ)
-
-			float time = Time.realtimeSinceStartup ;
-
-			// ボタン
-			foreach( var buttonActionElement in m_ButtonActionElements.Values )
-			{
-				buttonActionElement.IsKeyRepeat	= false ;
-				buttonActionElement.IsKeyDown	= false ;
-				buttonActionElement.IsKeyUp		= false ;
-
-				if( m_Owner.InputSwitching == false )
-				{
-					bool isPressed = false ;
-
-					// キーボード
-					var buttonKeyCodes = buttonActionElement.ButtonKeyCodes ;
-					if( buttonKeyCodes != null && buttonKeyCodes.Length >  0 )
-					{
-						foreach( var buttonKeyCode in buttonKeyCodes )
-						{
-							if( Keyboard.GetKey( buttonKeyCode ) == true )
-							{
-								isPressed = true ;
-								break ;
-							}
-						}
-					}
-
-					//------------
-
-					if( isPressed == true )
-					{
-						// 押されている
-
-						if( buttonActionElement.KeyRepeatKeepFlag == false )
-						{
-							// リピート開始
-							buttonActionElement.IsKeyRepeat = true ;
-
-							buttonActionElement.KeyRepeatKeepFlag = true ;
-							buttonActionElement.KeyRepeatWakeTime = time ;
-							buttonActionElement.KeyRepeatLoopTime = time ;
-
-							buttonActionElement.IsKeyDown = true ;
-						}
-						else
-						{
-							// リピート最中
-							if( ( time - buttonActionElement.KeyRepeatWakeTime ) >= RepeatStartingTime )
-							{
-								// リピート中
-								if( ( time - buttonActionElement.KeyRepeatLoopTime ) >= RepeatIntervalTime )
-								{
-									buttonActionElement.IsKeyRepeat = true ;
-								
-									buttonActionElement.KeyRepeatLoopTime = time ;
-								}
-							}
-						}
-					}
-					else
-					{
-						// 離されている
-
-						if( buttonActionElement.KeyRepeatKeepFlag == true )
-						{
-							// リピート解除
-							buttonActionElement.IsKeyUp = true ;
-
-							buttonActionElement.KeyRepeatKeepFlag  = false ;
-						}
-					}
-				}
-			}
-
-			// アクシス
-			foreach( var axisActionElement in m_AxisActionElements.Values )
-			{
-				axisActionElement.IsKeyRepeat	= Vector2.zero ;
-				axisActionElement.IsKeyDown		= Vector2.zero ;
-				axisActionElement.IsKeyUp		= Vector2.zero ;
-
-				if( m_Owner.InputSwitching == false )
-				{
-					Vector2 axis = Vector2.zero ;
-
-					// キーボード
-					var axisKeyCodeSets = axisActionElement.AxisKeyCodeSets ;
-					if( axisKeyCodeSets != null && axisKeyCodeSets.Length >  0 )
-					{
-						foreach( var axisKeyCodeSet in axisKeyCodeSets )
-						{
-							if( axisKeyCodeSet != null && axisKeyCodeSet.Length == 4 )
-							{
-								if( axis.x == 0 )
-								{
-									// →
-									if( Keyboard.GetKey( axisKeyCodeSet[ 0 ] ) == true )
-									{
-										axis.x += 1 ;
-									}
-									// ←
-									if( Keyboard.GetKey( axisKeyCodeSet[ 1 ] ) == true )
-									{
-										axis.x -= 1 ;
-									}
-								}
-								if( axis.y == 0 )
-								{
-									// ↑
-									if( Keyboard.GetKey( axisKeyCodeSet[ 2 ] ) == true )
-									{
-										axis.y += 1 ;
-									}
-									// ↓
-									if( Keyboard.GetKey( axisKeyCodeSet[ 3 ] ) == true )
-									{
-										axis.y -= 1 ;
-									}
-								}
-							}
-						}
-					}
-
-					//------------
-
-					if( axis.x != 0 || axis.y != 0 )
-					{
-						// 押されている
-						if( axisActionElement.KeyRepeatKeepFlag == false )
-						{
-							// リピート開始
-							axisActionElement.IsKeyRepeat = axis ;
-
-							axisActionElement.KeyRepeatKeepFlag = true ;
-							axisActionElement.KeyRepeatKeepData = axis ;
-							axisActionElement.KeyRepeatWakeTime = time ;
-							axisActionElement.KeyRepeatLoopTime = time ;
-
-							axisActionElement.IsKeyDown = axis ;
-						}
-						else
-						{
-							// リピート最中
-							if( ( time - axisActionElement.KeyRepeatWakeTime ) >= RepeatStartingTime )
-							{
-								// リピート中
-								if( ( time - axisActionElement.KeyRepeatLoopTime ) >= RepeatIntervalTime )
-								{
-									axisActionElement.IsKeyRepeat = axis ;
-	
-									axisActionElement.KeyRepeatLoopTime = time ;
-								}
-							}
-						}
-					}
-					else
-					{
-						// 離されている
-
-						if( axisActionElement.KeyRepeatKeepFlag == true )
-						{
-							// リピート解除
-							axisActionElement.IsKeyUp = axisActionElement.KeyRepeatKeepData ;
-
-							axisActionElement.KeyRepeatKeepFlag = false ;
-							axisActionElement.KeyRepeatKeepData = Vector2.zero ;
-						}
-					}
-				}
 			}
 		}
 
@@ -2061,18 +1853,6 @@ namespace InputHelper
 				return false ;
 			}
 
-			if( m_Owner.IgnoreInputSwitching == false && _Owner.InputProcessingType == InputProcessingTypes.Switching )
-			{
-				if( buttonActionElement.InputCategory == InputCategories.Basis )
-				{
-					if( m_Owner.ActiveBasisInputType != InputTypes.Keyboard && m_Owner.ActiveBasisInputType != InputTypes.GamePad )
-					{
-						// 無効
-						return false ;
-					}
-				}
-			}
-
 			// ゲームパッドの接続数が 0 でもキーボード入力があるので以下の処理は必要
 
 			//----------------------------------
@@ -2091,10 +1871,27 @@ namespace InputHelper
 			{
 				foreach( var buttonIdentity in buttonIdentities )
 				{
-					if( m_Implementation.GetButton( buttonIdentity, playerNumber ) == true )
+					bool isIgnore = false ;
+					if( buttonIdentity == GamePad.B1 )
 					{
-						isPressed = true ;
-						break ;
+						// 例外処理
+						if( m_Owner.IgnoreInputSwitching == false && _Owner.InputProcessingType == InputProcessingTypes.Switching )
+						{
+							if( m_Owner.ActiveInputType != InputTypes.Keyboard && m_Owner.ActiveInputType != InputTypes.GamePad )
+							{
+								// 無効
+								isIgnore = true ;
+							}
+						}
+					}
+
+					if( isIgnore == false )
+					{
+						if( m_Implementation.GetButton( buttonIdentity, playerNumber ) == true )
+						{
+							isPressed = true ;
+							break ;
+						}
 					}
 				}
 			}
@@ -2102,15 +1899,49 @@ namespace InputHelper
 			{
 				if( playerNumber <= 0 )
 				{
-					var buttonKeyCodes = buttonActionElement.ButtonKeyCodes ;
-					if( buttonKeyCodes != null && buttonKeyCodes.Length >  0 )
+					var keyCodes = buttonActionElement.KeyCodes ;
+					if( keyCodes != null && keyCodes.Length >  0 )
 					{
-						foreach( var buttonKeyCode in buttonKeyCodes )
+						foreach( var keyCode in keyCodes )
 						{
-							if( Keyboard.GetKey( buttonKeyCode ) == true )
+							bool isIgnore = false ;
+							if( keyCode == KeyCodes.Return )
 							{
-								isPressed = true ;
-								break ;
+								// 例外処理
+
+								if( m_Owner.IgnoreInputSwitching == false && _Owner.InputProcessingType == InputProcessingTypes.Switching )
+								{
+									if( m_Owner.ActiveInputType != InputTypes.Keyboard && m_Owner.ActiveInputType != InputTypes.GamePad )
+									{
+										// 無効
+										isIgnore = true ;
+									}
+								}
+							}
+
+							if( isIgnore == false )
+							{
+								if( Keyboard.GetKey( keyCode ) == true )
+								{
+									isPressed = true ;
+									break ;
+								}
+							}
+						}
+					}
+
+					if( isPressed == false )
+					{
+						var mouseButtons = buttonActionElement.MouseButtons ;
+						if( mouseButtons != null && mouseButtons.Length >  0 )
+						{
+							foreach( var mouseButton in mouseButtons )
+							{
+								if( mouseButton >= 0 && Mouse.GetButton( mouseButton ) == true )
+								{
+									isPressed = true ;
+									break ;
+								}
 							}
 						}
 					}
@@ -2215,18 +2046,6 @@ namespace InputHelper
 				return false ;
 			}
 
-			if( m_Owner.IgnoreInputSwitching == false && _Owner.InputProcessingType == InputProcessingTypes.Switching )
-			{
-				if( buttonActionElement.InputCategory == InputCategories.Basis )
-				{
-					if( m_Owner.ActiveBasisInputType != InputTypes.Keyboard && m_Owner.ActiveBasisInputType != InputTypes.GamePad )
-					{
-						// 無効
-						return false ;
-					}
-				}
-			}
-
 			// ゲームパッドの接続数が 0 でもキーボード入力があるので以下の処理は必要
 
 			//----------------------------------
@@ -2245,10 +2064,27 @@ namespace InputHelper
 			{
 				foreach( var buttonIdentity in buttonIdentities )
 				{
-					if( CheckButtonDown( buttonIdentity, playerNumber ) == true )
+					bool isIgnore = false ;
+					if( buttonIdentity == GamePad.B1 )
 					{
-						isDown = true ;
-						break ;
+						// 例外処理
+						if( m_Owner.IgnoreInputSwitching == false && _Owner.InputProcessingType == InputProcessingTypes.Switching )
+						{
+							if( m_Owner.ActiveInputType != InputTypes.Keyboard && m_Owner.ActiveInputType != InputTypes.GamePad )
+							{
+								// 無効
+								isIgnore = true ;
+							}
+						}
+					}
+
+					if( isIgnore == false )
+					{
+						if( CheckButtonDown( buttonIdentity, playerNumber ) == true )
+						{
+							isDown = true ;
+							break ;
+						}
 					}
 				}
 			}
@@ -2256,10 +2092,51 @@ namespace InputHelper
 			{
 				if( playerNumber <= 0 )
 				{
-					var buttonKeyCodes = buttonActionElement.ButtonKeyCodes ;
-					if( buttonKeyCodes != null && buttonKeyCodes.Length >  0 )
+					var keyCodes = buttonActionElement.KeyCodes ;
+					if( keyCodes != null && keyCodes.Length >  0 )
 					{
-						isDown = buttonActionElement.IsKeyDown ;
+						foreach( var keyCode in keyCodes )
+						{
+							bool isIgnore = false ;
+							if( keyCode == KeyCodes.Return )
+							{
+								// 例外処理
+
+								if( m_Owner.IgnoreInputSwitching == false && _Owner.InputProcessingType == InputProcessingTypes.Switching )
+								{
+									if( m_Owner.ActiveInputType != InputTypes.Keyboard && m_Owner.ActiveInputType != InputTypes.GamePad )
+									{
+										// 無効
+										isIgnore = true ;
+									}
+								}
+							}
+
+							if( isIgnore == false )
+							{
+								if( Keyboard.GetKeyDown( keyCode ) == true )
+								{
+									isDown = true ;
+									break ;
+								}
+							}
+						}
+					}
+
+					if( isDown == false )
+					{
+						var mouseButtons = buttonActionElement.MouseButtons ;
+						if( mouseButtons != null && mouseButtons.Length >  0 )
+						{
+							foreach( var mouseButton in mouseButtons )
+							{
+								if( mouseButton >= 0 && Mouse.GetButtonDown( mouseButton ) == true )
+								{
+									isDown = true ;
+									break ;
+								}
+							}
+						}
 					}
 				}
 			}
@@ -2362,18 +2239,6 @@ namespace InputHelper
 				return false ;
 			}
 
-			if( m_Owner.IgnoreInputSwitching == false && _Owner.InputProcessingType == InputProcessingTypes.Switching )
-			{
-				if( buttonActionElement.InputCategory == InputCategories.Basis )
-				{
-					if( m_Owner.ActiveBasisInputType != InputTypes.Keyboard && m_Owner.ActiveBasisInputType != InputTypes.GamePad )
-					{
-						// 無効
-						return false ;
-					}
-				}
-			}
-
 			// ゲームパッドの接続数が 0 でもキーボード入力があるので以下の処理は必要
 
 			//----------------------------------
@@ -2392,10 +2257,27 @@ namespace InputHelper
 			{
 				foreach( var buttonIdentity in buttonIdentities )
 				{
-					if( CheckButtonUp( buttonIdentity, playerNumber ) == true )
+					bool isIgnore = false ;
+					if( buttonIdentity == GamePad.B1 )
 					{
-						isUp = true ;
-						break ;
+						// 例外処理
+						if( m_Owner.IgnoreInputSwitching == false && _Owner.InputProcessingType == InputProcessingTypes.Switching )
+						{
+							if( m_Owner.ActiveInputType != InputTypes.Keyboard && m_Owner.ActiveInputType != InputTypes.GamePad )
+							{
+								// 無効
+								isIgnore = true ;
+							}
+						}
+					}
+
+					if( isIgnore == false )
+					{
+						if( CheckButtonUp( buttonIdentity, playerNumber ) == true )
+						{
+							isUp = true ;
+							break ;
+						}
 					}
 				}
 			}
@@ -2403,10 +2285,51 @@ namespace InputHelper
 			{
 				if( playerNumber <= 0 )
 				{
-					var buttonKeyCodes = buttonActionElement.ButtonKeyCodes ;
-					if( buttonKeyCodes != null && buttonKeyCodes.Length >  0 )
+					var keyCodes = buttonActionElement.KeyCodes ;
+					if( keyCodes != null && keyCodes.Length >  0 )
 					{
-						isUp = buttonActionElement.IsKeyUp ;
+						foreach( var keyCode in keyCodes )
+						{
+							bool isIgnore = false ;
+							if( keyCode == KeyCodes.Return )
+							{
+								// 例外処理
+
+								if( m_Owner.IgnoreInputSwitching == false && _Owner.InputProcessingType == InputProcessingTypes.Switching )
+								{
+									if( m_Owner.ActiveInputType != InputTypes.Keyboard && m_Owner.ActiveInputType != InputTypes.GamePad )
+									{
+										// 無効
+										isIgnore = true ;
+									}
+								}
+							}
+
+							if( isIgnore == false )
+							{
+								if( Keyboard.GetKeyUp( keyCode ) == true )
+								{
+									isUp = true ;
+									break ;
+								}
+							}
+						}
+					}
+
+					if( isUp == false )
+					{
+						var mouseButtons = buttonActionElement.MouseButtons ;
+						if( mouseButtons != null && mouseButtons.Length >  0 )
+						{
+							foreach( var mouseButton in mouseButtons )
+							{
+								if( mouseButton >= 0 && Mouse.GetButtonUp( mouseButton ) == true )
+								{
+									isUp = true ;
+									break ;
+								}
+							}
+						}
 					}
 				}
 			}
@@ -2508,18 +2431,6 @@ namespace InputHelper
 				return false ;
 			}
 
-			if( m_Owner.IgnoreInputSwitching == false && _Owner.InputProcessingType == InputProcessingTypes.Switching )
-			{
-				if( buttonActionElement.InputCategory == InputCategories.Basis )
-				{
-					if( m_Owner.ActiveBasisInputType != InputTypes.Keyboard && m_Owner.ActiveBasisInputType != InputTypes.GamePad )
-					{
-						// 無効
-						return false ;
-					}
-				}
-			}
-
 			// ゲームパッドの接続数が 0 でもキーボード入力があるので以下の処理は必要
 
 			//----------------------------------
@@ -2538,10 +2449,27 @@ namespace InputHelper
 			{
 				foreach( var buttonIdentity in buttonIdentities )
 				{
-					if( CheckButtonRepeat( buttonIdentity, playerNumber ) == true )
+					bool isIgnore = false ;
+					if( buttonIdentity == GamePad.B1 )
 					{
-						isRepeat = true ;
-						break ;
+						// 例外処理
+						if( m_Owner.IgnoreInputSwitching == false && _Owner.InputProcessingType == InputProcessingTypes.Switching )
+						{
+							if( m_Owner.ActiveInputType != InputTypes.Keyboard && m_Owner.ActiveInputType != InputTypes.GamePad )
+							{
+								// 無効
+								isIgnore = true ;
+							}
+						}
+					}
+
+					if( isIgnore == false )
+					{
+						if( CheckButtonRepeat( buttonIdentity, playerNumber ) == true )
+						{
+							isRepeat = true ;
+							break ;
+						}
 					}
 				}
 			}
@@ -2549,10 +2477,51 @@ namespace InputHelper
 			{
 				if( playerNumber <= 0 )
 				{
-					var buttonKeyCodes = buttonActionElement.ButtonKeyCodes ;
-					if( buttonKeyCodes != null && buttonKeyCodes.Length >  0 )
+					var keyCodes = buttonActionElement.KeyCodes ;
+					if( keyCodes != null && keyCodes.Length >  0 )
 					{
-						isRepeat = buttonActionElement.IsKeyRepeat ;
+						foreach( var keyCode in keyCodes )
+						{
+							bool isIgnore = false ;
+							if( keyCode == KeyCodes.Return )
+							{
+								// 例外処理
+
+								if( m_Owner.IgnoreInputSwitching == false && _Owner.InputProcessingType == InputProcessingTypes.Switching )
+								{
+									if( m_Owner.ActiveInputType != InputTypes.Keyboard && m_Owner.ActiveInputType != InputTypes.GamePad )
+									{
+										// 無効
+										isIgnore = true ;
+									}
+								}
+							}
+
+							if( isIgnore == false )
+							{
+								if( Keyboard.GetKeyRepeat( keyCode ) == true )
+								{
+									isRepeat = true ;
+									break ;
+								}
+							}
+						}
+					}
+
+					if( isRepeat == false )
+					{
+						var mouseButtons = buttonActionElement.MouseButtons ;
+						if( mouseButtons != null && mouseButtons.Length >  0 )
+						{
+							foreach( var mouseButton in mouseButtons )
+							{
+								if( mouseButton >= 0 && Mouse.GetButtonRepeat( mouseButton ) == true )
+								{
+									isRepeat = true ;
+									break ;
+								}
+							}
+						}
 					}
 				}
 			}
@@ -2614,18 +2583,6 @@ namespace InputHelper
 				return Vector2.zero ;
 			}
 
-			if( m_Owner.IgnoreInputSwitching == false && _Owner.InputProcessingType == InputProcessingTypes.Switching )
-			{
-				if( axisActionElement.InputCategory == InputCategories.Basis )
-				{
-					if( m_Owner.ActiveBasisInputType != InputTypes.Keyboard && m_Owner.ActiveBasisInputType != InputTypes.GamePad )
-					{
-						// 無効
-						return Vector2.zero ;
-					}
-				}
-			}
-
 			// ゲームパッドの接続数が 0 でもキーボード入力があるので以下の処理は必要
 
 			//----------------------------------
@@ -2639,57 +2596,114 @@ namespace InputHelper
 
 			Vector2 fixedAxis = Vector2.zero ;
 
+			// ゲームパッド
 			var axisNumbers = axisActionElement.AxisNumbers ;
 			if( axisNumbers != null && axisNumbers.Length >  0 )
 			{
 				foreach( var axisNumber in axisNumbers )
 				{
-					var axis = m_Implementation.GetAxis( axisNumber, playerNumber ) ;
-					if( axis.x != 0 )
+					bool isIgnore = false ;
+					if( axisNumber == 0 || axisNumber == 1 )
 					{
-						fixedAxis.x = axis.x ;
+						// 例外処理
+						if( m_Owner.IgnoreInputSwitching == false && _Owner.InputProcessingType == InputProcessingTypes.Switching )
+						{
+							if( m_Owner.ActiveInputType != InputTypes.Keyboard && m_Owner.ActiveInputType != InputTypes.GamePad )
+							{
+								// 無効
+								isIgnore = true ;
+							}
+						}
 					}
-					if( axis.y != 0 )
+
+					if( isIgnore == false )
 					{
-						fixedAxis.y = axis.y ;
+						var axis = m_Implementation.GetAxis( axisNumber, playerNumber ) ;
+						if( Mathf.Abs( axis.x ) >  0.1f )
+						{
+							fixedAxis.x = axis.x ;
+						}
+						if( Mathf.Abs( axis.y ) >  0.1f )
+						{
+							fixedAxis.y = axis.y ;
+						}
 					}
 				}
 			}
+
+			// キーボード＆マウス
 			if( playerNumber <= 0 )
 			{
-				var axisKeyCodeSets = axisActionElement.AxisKeyCodeSets ;
-				if( axisKeyCodeSets != null && axisKeyCodeSets.Length >  0 )
+				// キーボード
+				var keyCodeSets = axisActionElement.KeyCodeSets ;
+				if( keyCodeSets != null && keyCodeSets.Length >  0 )
 				{
-					foreach( var axisKeyCodeSet in axisKeyCodeSets )
+					foreach( var keyCodeSet in keyCodeSets )
 					{
-						if( axisKeyCodeSet != null && axisKeyCodeSet.Length == 4 )
+						if( keyCodeSet != null && keyCodeSet.Length == 4 )
 						{
-							if( fixedAxis.x == 0 )
+							bool isIgnore = false ;
+							if( keyCodeSet[ 0 ] == KeyCodes.RightArrow && keyCodeSet[ 1 ] == KeyCodes.LeftArrow && keyCodeSet[ 2 ] == KeyCodes.UpArrow && keyCodeSet[ 3 ] == KeyCodes.DownArrow )
 							{
-								// →
-								if( Keyboard.GetKey( axisKeyCodeSet[ 0 ] ) == true )
+								// 例外処理
+								if( m_Owner.IgnoreInputSwitching == false && _Owner.InputProcessingType == InputProcessingTypes.Switching )
 								{
-									fixedAxis.x += 1 ;
-								}
-								// ←
-								if( Keyboard.GetKey( axisKeyCodeSet[ 1 ] ) == true )
-								{
-									fixedAxis.x -= 1 ;
+									if( m_Owner.ActiveInputType != InputTypes.Keyboard && m_Owner.ActiveInputType != InputTypes.GamePad )
+									{
+										// 無効
+										isIgnore = true ;
+									}
 								}
 							}
-							if( fixedAxis.y == 0 )
+
+							if( isIgnore == false )
 							{
-								// ↑
-								if( Keyboard.GetKey( axisKeyCodeSet[ 2 ] ) == true )
+								if( fixedAxis.x == 0 )
 								{
-									fixedAxis.y += 1 ;
+									// →
+									if( Keyboard.GetKey( keyCodeSet[ 0 ] ) == true )
+									{
+										fixedAxis.x += 1 ;
+									}
+									// ←
+									if( Keyboard.GetKey( keyCodeSet[ 1 ] ) == true )
+									{
+										fixedAxis.x -= 1 ;
+									}
 								}
-								// ↓
-								if( Keyboard.GetKey( axisKeyCodeSet[ 3 ] ) == true )
+								if( fixedAxis.y == 0 )
 								{
-									fixedAxis.y -= 1 ;
+									// ↑
+									if( Keyboard.GetKey( keyCodeSet[ 2 ] ) == true )
+									{
+										fixedAxis.y += 1 ;
+									}
+									// ↓
+									if( Keyboard.GetKey( keyCodeSet[ 3 ] ) == true )
+									{
+										fixedAxis.y -= 1 ;
+									}
 								}
 							}
+						}
+					}
+				}
+
+				// マウス
+				var mouseAxes = axisActionElement.MouseAxes ;
+
+				if( mouseAxes != null && mouseAxes.Length >  0 )
+				{
+					foreach( var mouseAxis in mouseAxes )
+					{
+						var axis = Mouse.GetAxis( mouseAxis ) ;
+						if( axis.x != 0 )
+						{
+							fixedAxis.x = axis.x ;
+						}
+						if( axis.y != 0 )
+						{
+							fixedAxis.y = axis.y ;
 						}
 					}
 				}
@@ -2791,18 +2805,6 @@ namespace InputHelper
 				return Vector2.zero ;
 			}
 
-			if( m_Owner.IgnoreInputSwitching == false && _Owner.InputProcessingType == InputProcessingTypes.Switching )
-			{
-				if( axisActionElement.InputCategory == InputCategories.Basis )
-				{
-					if( m_Owner.ActiveBasisInputType != InputTypes.Keyboard && m_Owner.ActiveBasisInputType != InputTypes.GamePad )
-					{
-						// 無効
-						return Vector2.zero ;
-					}
-				}
-			}
-
 			// ゲームパッドの接続数が 0 でもキーボード入力があるので以下の処理は必要
 
 			//----------------------------------
@@ -2816,35 +2818,115 @@ namespace InputHelper
 
 			Vector2 fixedAxisDown = Vector2.zero ;
 
+			// ゲームパッド
 			var axisNumbers = axisActionElement.AxisNumbers ;
 			if( axisNumbers != null && axisNumbers.Length >  0 )
 			{
 				foreach( var axisNumber in axisNumbers )
 				{
-					var axis = CheckAxisDown( axisNumber, playerNumber ) ;
-					if( axis.x != 0 )
+					bool isIgnore = false ;
+					if( axisNumber == 0 || axisNumber == 1 )
 					{
-						fixedAxisDown.x = axis.x ;
+						// 例外処理
+						if( m_Owner.IgnoreInputSwitching == false && _Owner.InputProcessingType == InputProcessingTypes.Switching )
+						{
+							if( m_Owner.ActiveInputType != InputTypes.Keyboard && m_Owner.ActiveInputType != InputTypes.GamePad )
+							{
+								// 無効
+								isIgnore = true ;
+							}
+						}
 					}
-					if( axis.y != 0 )
+
+					if( isIgnore == false )
 					{
-						fixedAxisDown.y = axis.y ;
+						var axis = CheckAxisDown( axisNumber, playerNumber ) ;
+						if( Mathf.Abs( axis.x ) >  0.1f )
+						{
+							fixedAxisDown.x = axis.x ;
+						}
+						if( Mathf.Abs( axis.y ) >  0.1f )
+						{
+							fixedAxisDown.y = axis.y ;
+						}
 					}
 				}
 			}
+
+			// キーボード＆マウス
 			if( playerNumber <= 0 )
 			{
-				var axisKeyCodeSets = axisActionElement.AxisKeyCodeSets ;
-				if( axisKeyCodeSets != null && axisKeyCodeSets.Length >  0 )
+				// キーボード
+				var keyCodeSets = axisActionElement.KeyCodeSets ;
+				if( keyCodeSets != null && keyCodeSets.Length >  0 )
 				{
-					var axis = axisActionElement.IsKeyDown ;
-					if( axis.x != 0 )
+					foreach( var keyCodeSet in keyCodeSets )
 					{
-						fixedAxisDown.x = axis.x ;
+						if( keyCodeSet != null && keyCodeSet.Length == 4 )
+						{
+							bool isIgnore = false ;
+							if( keyCodeSet[ 0 ] == KeyCodes.RightArrow && keyCodeSet[ 1 ] == KeyCodes.LeftArrow && keyCodeSet[ 2 ] == KeyCodes.UpArrow && keyCodeSet[ 3 ] == KeyCodes.DownArrow )
+							{
+								// 例外処理
+								if( m_Owner.IgnoreInputSwitching == false && _Owner.InputProcessingType == InputProcessingTypes.Switching )
+								{
+									if( m_Owner.ActiveInputType != InputTypes.Keyboard && m_Owner.ActiveInputType != InputTypes.GamePad )
+									{
+										// 無効
+										isIgnore = true ;
+									}
+								}
+							}
+
+							if( isIgnore == false )
+							{
+								if( fixedAxisDown.x == 0 )
+								{
+									// →
+									if( Keyboard.GetKeyDown( keyCodeSet[ 0 ] ) == true )
+									{
+										fixedAxisDown.x += 1 ;
+									}
+									// ←
+									if( Keyboard.GetKeyDown( keyCodeSet[ 1 ] ) == true )
+									{
+										fixedAxisDown.x -= 1 ;
+									}
+								}
+								if( fixedAxisDown.y == 0 )
+								{
+									// ↑
+									if( Keyboard.GetKeyDown( keyCodeSet[ 2 ] ) == true )
+									{
+										fixedAxisDown.y += 1 ;
+									}
+									// ↓
+									if( Keyboard.GetKeyDown( keyCodeSet[ 3 ] ) == true )
+									{
+										fixedAxisDown.y -= 1 ;
+									}
+								}
+							}
+						}
 					}
-					if( axis.y != 0 )
+				}
+
+				// マウス
+				var mouseAxes = axisActionElement.MouseAxes ;
+
+				if( mouseAxes != null && mouseAxes.Length >  0 )
+				{
+					foreach( var mouseAxis in mouseAxes )
 					{
-						fixedAxisDown.y = axis.y ;
+						var axis = Mouse.GetAxisDown( mouseAxis ) ;
+						if( axis.x != 0 )
+						{
+							fixedAxisDown.x = axis.x ;
+						}
+						if( axis.y != 0 )
+						{
+							fixedAxisDown.y = axis.y ;
+						}
 					}
 				}
 			}
@@ -2946,18 +3028,6 @@ namespace InputHelper
 				return Vector2.zero ;
 			}
 
-			if( m_Owner.IgnoreInputSwitching == false && _Owner.InputProcessingType == InputProcessingTypes.Switching )
-			{
-				if( axisActionElement.InputCategory == InputCategories.Basis )
-				{
-					if( m_Owner.ActiveBasisInputType != InputTypes.Keyboard && m_Owner.ActiveBasisInputType != InputTypes.GamePad )
-					{
-						// 無効
-						return Vector2.zero ;
-					}
-				}
-			}
-
 			// ゲームパッドの接続数が 0 でもキーボード入力があるので以下の処理は必要
 
 			//----------------------------------
@@ -2971,35 +3041,115 @@ namespace InputHelper
 
 			Vector2 fixedAxisUp = Vector2.zero ;
 
+			// ゲームパッド
 			var axisNumbers = axisActionElement.AxisNumbers ;
 			if( axisNumbers != null && axisNumbers.Length >  0 )
 			{
 				foreach( var axisNumber in axisNumbers )
 				{
-					var axis = CheckAxisUp( axisNumber, playerNumber ) ;
-					if( axis.x != 0 )
+					bool isIgnore = false ;
+					if( axisNumber == 0 || axisNumber == 1 )
 					{
-						fixedAxisUp.x = axis.x ;
+						// 例外処理
+						if( m_Owner.IgnoreInputSwitching == false && _Owner.InputProcessingType == InputProcessingTypes.Switching )
+						{
+							if( m_Owner.ActiveInputType != InputTypes.Keyboard && m_Owner.ActiveInputType != InputTypes.GamePad )
+							{
+								// 無効
+								isIgnore = true ;
+							}
+						}
 					}
-					if( axis.y != 0 )
+
+					if( isIgnore == false )
 					{
-						fixedAxisUp.y = axis.y ;
+						var axis = CheckAxisUp( axisNumber, playerNumber ) ;
+						if( Mathf.Abs( axis.x ) >  0.1f )
+						{
+							fixedAxisUp.x = axis.x ;
+						}
+						if( Mathf.Abs( axis.y ) >  0.1f )
+						{
+							fixedAxisUp.y = axis.y ;
+						}
 					}
 				}
 			}
+
+			// キーボード＆マウス
 			if( playerNumber <= 0 )
 			{
-				var axisKeyCodeSets = axisActionElement.AxisKeyCodeSets ;
-				if( axisKeyCodeSets!= null && axisKeyCodeSets.Length >  0 )
+				// キーボード
+				var keyCodeSets = axisActionElement.KeyCodeSets ;
+				if( keyCodeSets!= null && keyCodeSets.Length >  0 )
 				{
-					var axis = axisActionElement.IsKeyUp ;
-					if( axis.x != 0 )
+					foreach( var keyCodeSet in keyCodeSets )
 					{
-						fixedAxisUp.x = axis.x ;
+						if( keyCodeSet != null && keyCodeSet.Length == 4 )
+						{
+							bool isIgnore = false ;
+							if( keyCodeSet[ 0 ] == KeyCodes.RightArrow && keyCodeSet[ 1 ] == KeyCodes.LeftArrow && keyCodeSet[ 2 ] == KeyCodes.UpArrow && keyCodeSet[ 3 ] == KeyCodes.DownArrow )
+							{
+								// 例外処理
+								if( m_Owner.IgnoreInputSwitching == false && _Owner.InputProcessingType == InputProcessingTypes.Switching )
+								{
+									if( m_Owner.ActiveInputType != InputTypes.Keyboard && m_Owner.ActiveInputType != InputTypes.GamePad )
+									{
+										// 無効
+										isIgnore = true ;
+									}
+								}
+							}
+
+							if( isIgnore == false )
+							{
+								if( fixedAxisUp.x == 0 )
+								{
+									// →
+									if( Keyboard.GetKeyUp( keyCodeSet[ 0 ] ) == true )
+									{
+										fixedAxisUp.x += 1 ;
+									}
+									// ←
+									if( Keyboard.GetKeyUp( keyCodeSet[ 1 ] ) == true )
+									{
+										fixedAxisUp.x -= 1 ;
+									}
+								}
+								if( fixedAxisUp.y == 0 )
+								{
+									// ↑
+									if( Keyboard.GetKeyUp( keyCodeSet[ 2 ] ) == true )
+									{
+										fixedAxisUp.y += 1 ;
+									}
+									// ↓
+									if( Keyboard.GetKeyUp( keyCodeSet[ 3 ] ) == true )
+									{
+										fixedAxisUp.y -= 1 ;
+									}
+								}
+							}
+						}
 					}
-					if( axis.y != 0 )
+				}
+
+				// マウス
+				var mouseAxes = axisActionElement.MouseAxes ;
+
+				if( mouseAxes != null && mouseAxes.Length >  0 )
+				{
+					foreach( var mouseAxis in mouseAxes )
 					{
-						fixedAxisUp.y = axis.y ;
+						var axis = Mouse.GetAxisUp( mouseAxis ) ;
+						if( axis.x != 0 )
+						{
+							fixedAxisUp.x = axis.x ;
+						}
+						if( axis.y != 0 )
+						{
+							fixedAxisUp.y = axis.y ;
+						}
 					}
 				}
 			}
@@ -3101,18 +3251,6 @@ namespace InputHelper
 				return Vector2.zero ;
 			}
 
-			if( m_Owner.IgnoreInputSwitching == false && _Owner.InputProcessingType == InputProcessingTypes.Switching )
-			{
-				if( axisActionElement.InputCategory == InputCategories.Basis )
-				{
-					if( m_Owner.ActiveBasisInputType != InputTypes.Keyboard && m_Owner.ActiveBasisInputType != InputTypes.GamePad )
-					{
-						// 無効
-						return Vector2.zero ;
-					}
-				}
-			}
-
 			// ゲームパッドの接続数が 0 でもキーボード入力があるので以下の処理は必要
 
 			//----------------------------------
@@ -3126,35 +3264,115 @@ namespace InputHelper
 
 			Vector2 fixedAxisRepeat = Vector2.zero ;
 
+			// ゲームパッド
 			var axisNumbers = axisActionElement.AxisNumbers ;
 			if( axisNumbers != null && axisNumbers.Length >  0 )
 			{
 				foreach( var axisNumber in axisNumbers )
 				{
-					var axis = CheckAxisRepeat( axisNumber, playerNumber ) ;
-					if( axis.x != 0 )
+					bool isIgnore = false ;
+					if( axisNumber == 0 || axisNumber == 1 )
 					{
-						fixedAxisRepeat.x = axis.x ;
+						// 例外処理
+						if( m_Owner.IgnoreInputSwitching == false && _Owner.InputProcessingType == InputProcessingTypes.Switching )
+						{
+							if( m_Owner.ActiveInputType != InputTypes.Keyboard && m_Owner.ActiveInputType != InputTypes.GamePad )
+							{
+								// 無効
+								isIgnore = true ;
+							}
+						}
 					}
-					if( axis.y != 0 )
+
+					if( isIgnore == false )
 					{
-						fixedAxisRepeat.y = axis.y ;
+						var axis = CheckAxisRepeat( axisNumber, playerNumber ) ;
+						if( Mathf.Abs( axis.x ) >  0.1f )
+						{
+							fixedAxisRepeat.x = axis.x ;
+						}
+						if( Mathf.Abs( axis.y ) >  0.1f )
+						{
+							fixedAxisRepeat.y = axis.y ;
+						}
 					}
 				}
 			}
+
+			// キーボード＆マウス
 			if( playerNumber <= 0 )
 			{
-				var axisKeyCodeSets = axisActionElement.AxisKeyCodeSets ;
-				if( axisKeyCodeSets != null && axisKeyCodeSets.Length >  0 )
+				// キーボード
+				var keyCodeSets = axisActionElement.KeyCodeSets ;
+				if( keyCodeSets != null && keyCodeSets.Length >  0 )
 				{
-					var axis = axisActionElement.IsKeyRepeat ;
-					if( axis.x != 0 )
+					foreach( var keyCodeSet in keyCodeSets )
 					{
-						fixedAxisRepeat.x = axis.x ;
+						if( keyCodeSet != null && keyCodeSet.Length == 4 )
+						{
+							bool isIgnore = false ;
+							if( keyCodeSet[ 0 ] == KeyCodes.RightArrow && keyCodeSet[ 1 ] == KeyCodes.LeftArrow && keyCodeSet[ 2 ] == KeyCodes.UpArrow && keyCodeSet[ 3 ] == KeyCodes.DownArrow )
+							{
+								// 例外処理
+								if( m_Owner.IgnoreInputSwitching == false && _Owner.InputProcessingType == InputProcessingTypes.Switching )
+								{
+									if( m_Owner.ActiveInputType != InputTypes.Keyboard && m_Owner.ActiveInputType != InputTypes.GamePad )
+									{
+										// 無効
+										isIgnore = true ;
+									}
+								}
+							}
+
+							if( isIgnore == false )
+							{
+								if( fixedAxisRepeat.x == 0 )
+								{
+									// →
+									if( Keyboard.GetKeyRepeat( keyCodeSet[ 0 ] ) == true )
+									{
+										fixedAxisRepeat.x += 1 ;
+									}
+									// ←
+									if( Keyboard.GetKeyRepeat( keyCodeSet[ 1 ] ) == true )
+									{
+										fixedAxisRepeat.x -= 1 ;
+									}
+								}
+								if( fixedAxisRepeat.y == 0 )
+								{
+									// ↑
+									if( Keyboard.GetKeyRepeat( keyCodeSet[ 2 ] ) == true )
+									{
+										fixedAxisRepeat.y += 1 ;
+									}
+									// ↓
+									if( Keyboard.GetKeyRepeat( keyCodeSet[ 3 ] ) == true )
+									{
+										fixedAxisRepeat.y -= 1 ;
+									}
+								}
+							}
+						}
 					}
-					if( axis.y != 0 )
+				}
+
+				// マウス
+				var mouseAxes = axisActionElement.MouseAxes ;
+
+				if( mouseAxes != null && mouseAxes.Length >  0 )
+				{
+					foreach( var mouseAxis in mouseAxes )
 					{
-						fixedAxisRepeat.y = axis.y ;
+						var axis = Mouse.GetAxisRepeat( mouseAxis ) ;
+						if( axis.x != 0 )
+						{
+							fixedAxisRepeat.x = axis.x ;
+						}
+						if( axis.y != 0 )
+						{
+							fixedAxisRepeat.y = axis.y ;
+						}
 					}
 				}
 			}
@@ -3169,59 +3387,47 @@ namespace InputHelper
 		/// キーボードの入力が行われているかどうか判定する
 		/// </summary>
 		/// <returns></returns>
-		public static bool IsKeyboardInput( InputCategories inputCategory )
+		public static bool IsKeyboardInput( bool isBasis )
 		{
-			// ボタンのキーボード判定
-			foreach( var buttonActionElement in m_ButtonActionElements.Values )
+			if( isBasis == true )
 			{
-				if( buttonActionElement.InputCategory == inputCategory )
+				// リターンキーのみ判定に使用する
+				if( Keyboard.GetKey( KeyCodes.Return ) == true )
 				{
-					if( buttonActionElement.ButtonKeyCodes != null && buttonActionElement.ButtonKeyCodes.Length >  0 )
-					{
-						foreach( var buttonKeyCode in buttonActionElement.ButtonKeyCodes )
-						{
-							if( Keyboard.GetKey( buttonKeyCode ) == true )
-							{
-								return true ;
-							}
-						}
-					}					
+					return true ;
+				}
+
+//				if( Keyboard.GetKey( KeyCodes.Escape ) == true )
+//				{
+//					return true ;
+//				}
+
+				// カーソルキーのみ判定に使用する
+				if( Keyboard.GetKey( KeyCodes.LeftArrow ) == true )
+				{
+					return true ;
+				}
+				if( Keyboard.GetKey( KeyCodes.RightArrow ) == true )
+				{
+					return true ;
+				}
+				if( Keyboard.GetKey( KeyCodes.UpArrow ) == true )
+				{
+					return true ;
+				}
+				if( Keyboard.GetKey( KeyCodes.DownArrow ) == true )
+				{
+					return true ;
 				}
 			}
-
-			// アクシスのキーボード判定
-			foreach( var axisActionElement in m_AxisActionElements.Values )
+			else
 			{
-				if( axisActionElement.InputCategory == inputCategory )
-				{
-					if( axisActionElement.AxisKeyCodeSets != null && axisActionElement.AxisKeyCodeSets.Length >  0 )
-					{
-						foreach( var axisKeyCodeSet in axisActionElement.AxisKeyCodeSets )
-						{
-							if( axisKeyCodeSet != null && axisKeyCodeSet.Length == 4 )
-							{
-								if( Keyboard.GetKey( axisKeyCodeSet[ 0 ] ) == true )
-								{
-									return true ;
-								}
-								if( Keyboard.GetKey( axisKeyCodeSet[ 1 ] ) == true )
-								{
-									return true ;
-								}
-								if( Keyboard.GetKey( axisKeyCodeSet[ 2 ] ) == true )
-								{
-									return true ;
-								}
-								if( Keyboard.GetKey( axisKeyCodeSet[ 3 ] ) == true )
-								{
-									return true ;
-								}
-							}
-						}
-					}
-				}
+				return Keyboard.IsAnyKeyDown() ;
 			}
 
+			//---------------------------------------------------------------------------------
+
+			// キーボードによる入力は無い
 			return false ;
 		}
 
@@ -3229,48 +3435,35 @@ namespace InputHelper
 		/// ゲームパッドの入力が行われているかどうか判定する
 		/// </summary>
 		/// <returns></returns>
-		public static bool IsGamePadInput( InputCategories inputCategory )
+		public static bool IsGamePadInput()
 		{
-			// ボタンのゲームパッド判定
-			foreach( var buttonActionElement in m_ButtonActionElements.Values )
+			var buttons = GamePad.GetButtonAll() ;
+			if( buttons != 0 )
 			{
-				if( buttonActionElement.InputCategory == inputCategory )
-				{
-					if( buttonActionElement.ButtonIdentities != null && buttonActionElement.ButtonIdentities.Length >  0 )
-					{
-						foreach( var buttonItentity in buttonActionElement.ButtonIdentities )
-						{
-							if( GamePad.GetButton( buttonItentity ) == true )
-							{
-								return true ;
-							}
-						}
-					}
-				}
+				return true ;
 			}
 
-			// アクシスのゲームパッド判定
-			foreach( var axisActionElement in m_AxisActionElements.Values )
+			var dpad = GamePad.GetAxis( GamePad.DPad ) ;
+			if( Mathf.Abs( dpad.x ) > 0.5f || Mathf.Abs( dpad.y ) >  0.5f )
 			{
-				if( axisActionElement.InputCategory == inputCategory )
-				{
-					if( axisActionElement.AxisNumbers != null && axisActionElement.AxisNumbers.Length >  0 )
-					{
-						foreach( var axisNumber in axisActionElement.AxisNumbers )
-						{
-							var axis = GamePad.GetAxis( axisNumber ) ;
-							axis.x = axis.x <  0 ? - axis.x : axis.x ;
-							axis.y = axis.y <  0 ? - axis.y : axis.y ;
-
-							if( axis.x >  0.1f || axis.y >  0.1f )
-							{
-								return true ;
-							}
-						}
-					}
-				}
+				return true ;
 			}
 
+			var rstick = GamePad.GetAxis( GamePad.RStick ) ;
+			if( Mathf.Abs( rstick.x ) > 0.5f || Mathf.Abs( rstick.y ) >  0.5f )
+			{
+				return true ;
+			}
+
+			var lstick = GamePad.GetAxis( GamePad.LStick ) ;
+			if( Mathf.Abs( lstick.x ) > 0.5f || Mathf.Abs( lstick.y ) >  0.5f )
+			{
+				return true ;
+			}
+
+			//---------------------------------------------------------------------------------
+
+			// ゲームパッドによる入力は無い
 			return false ;
 		}
 
@@ -4158,5 +4351,9 @@ namespace InputHelper
 				Player4Axis00, Player4Axis01, Player4Axis02, Player4Axis03, Player4Axis04, Player4Axis05, Player4Axis06, Player4Axis07, Player4Axis08, Player4Axis09, Player4Axis10, Player4Axis11, Player4Axis12, Player4Axis13, Player4Axis14, Player4Axis15,
 			},
 		} ;
-	}
-}
+
+		// ↑共有可能
+		//-----------------------------------------------------------
+
+	}   // class
+}   // namespace

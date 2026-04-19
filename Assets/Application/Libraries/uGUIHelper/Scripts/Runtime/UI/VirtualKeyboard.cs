@@ -327,53 +327,53 @@ namespace uGUIHelper
 				inputField.Height = ( bh * 5 ) - 4 ;
 
 				// デフォルトでニューラインになっているのでサブミットに変える
-				inputField.LineType = TMP_InputFieldPlus.LineType.MultiLineSubmit ;
+				inputField.LineType = TMP_InputField.LineType.MultiLineSubmit ;
 			}
 			inputField.SetFontSize( tFontSize ) ;
 
 			if( keyboardType == KeyboardTypes.Default )
 			{
-				inputField.ContentType = TMP_InputFieldPlus.ContentType.Standard ;
+				inputField.ContentType = TMP_InputField.ContentType.Standard ;
 			}
 			else
 			if( keyboardType == KeyboardTypes.ASCIICapable )
 			{
-				inputField.ContentType = TMP_InputFieldPlus.ContentType.Alphanumeric ;
+				inputField.ContentType = TMP_InputField.ContentType.Alphanumeric ;
 			}
 			else
 			if( keyboardType == KeyboardTypes.NumbersAndPunctuation )
 			{
-				inputField.ContentType = TMP_InputFieldPlus.ContentType.IntegerNumber ;
+				inputField.ContentType = TMP_InputField.ContentType.IntegerNumber ;
 			}
 			else
 			if( keyboardType == KeyboardTypes.URL )
 			{
-				inputField.ContentType = TMP_InputFieldPlus.ContentType.Autocorrected ;
+				inputField.ContentType = TMP_InputField.ContentType.Autocorrected ;
 			}
 			else
 			if( keyboardType == KeyboardTypes.NumberPad )
 			{
-				inputField.ContentType = TMP_InputFieldPlus.ContentType.DecimalNumber ;
+				inputField.ContentType = TMP_InputField.ContentType.DecimalNumber ;
 			}
 			else
 			if( keyboardType == KeyboardTypes.PhonePad )
 			{
-				inputField.ContentType = TMP_InputFieldPlus.ContentType.Pin ;
+				inputField.ContentType = TMP_InputField.ContentType.Pin ;
 			}
 			else
 			if( keyboardType == KeyboardTypes.NamePhonePad )
 			{
-				inputField.ContentType = TMP_InputFieldPlus.ContentType.Name ;
+				inputField.ContentType = TMP_InputField.ContentType.Name ;
 			}
 			else
 			if( keyboardType == KeyboardTypes.EmailAddress )
 			{
-				inputField.ContentType = TMP_InputFieldPlus.ContentType.EmailAddress ;
+				inputField.ContentType = TMP_InputField.ContentType.EmailAddress ;
 			}
 
 			if( isSecure == true )
 			{
-				inputField.ContentType = TMP_InputFieldPlus.ContentType.Password ;
+				inputField.ContentType = TMP_InputField.ContentType.Password ;
 			}
 
 			// 状態が変化した際に呼び出される

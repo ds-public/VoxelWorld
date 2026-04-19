@@ -17,13 +17,10 @@ namespace InputHelper
 			public static InputProcessingTypes  InputProcessingType = InputProcessingTypes.Parallel ;
 
 			// 現在の入力タイプ(UIEventSystem がシーン単位で破棄されてしまうため、この値のみ static で保持する)
-			public static InputTypes	        BasisInputType	        = InputTypes.Pointer ;	// デフォルトはポインターモード
+			public static InputTypes	        InputType	        = InputTypes.Pointer ;	// デフォルトはポインターモード
 
 			// 変化前の入力タイプ
-			public static InputTypes			PreviousBasisInputType	= InputTypes.Pointer ;
-
-			// 現在の入力タイプ(UIEventSystem がシーン単位で破棄されてしまうため、この値のみ static で保持する)
-			public static InputTypes	        ExtraInputType	        = InputTypes.Keyboard ;	// デフォルトはキーボードモード
+			public static InputTypes			PreviousInputType	= InputTypes.Pointer ;
 
 			//-------------------------------------------------
 
@@ -51,7 +48,7 @@ namespace InputHelper
 		/// 入力の処理タイプを設定する
 		/// </summary>
 		/// <returns></returns>
-		public static void SetInputProcessingType( InputProcessingTypes inputProcessingType, InputTypes inputType = InputTypes.Pointer )
+		public static void SetInputProcessingType( InputProcessingTypes inputProcessingType, InputTypes inputType = InputTypes.Unknown )
 		{
 			if( Settings.InputProcessingType == inputProcessingType )
 			{
@@ -63,41 +60,61 @@ namespace InputHelper
 
 			Settings.InputProcessingType = inputProcessingType ;
 
-			if( Settings.InputProcessingType == InputProcessingTypes.Switching )
+			if( inputType == InputTypes.Unknown )
 			{
-				if( inputType == InputTypes.Pointer )
+				if( m_Instance != null )
 				{
-					Settings.BasisInputType = InputTypes.Pointer ;
-					Settings.ExtraInputType = InputTypes.Pointer ;
-
-					UnityEngine.Cursor.visible = true ;
-				}
-				else
-				if( inputType == InputTypes.Keyboard )
-				{
-					Settings.BasisInputType = InputTypes.Keyboard ;
-					Settings.ExtraInputType = InputTypes.Keyboard ;
-
-					UnityEngine.Cursor.visible = false ;
-				}
-				else
-				if( inputType == InputTypes.GamePad )
-				{
-					Settings.BasisInputType = InputTypes.GamePad ;
-					Settings.ExtraInputType = InputTypes.GamePad ;
-
-					UnityEngine.Cursor.visible = false ;
+					m_Instance.SetInputType_Private( Settings.InputType ) ;
 				}
 			}
 			else
-			if( Settings.InputProcessingType == InputProcessingTypes.Parallel )
 			{
-				// デュアルにする場合は念のためポインターを表示する(シングルのゲームパッド状態からの移行)
+				if( Settings.InputProcessingType == InputProcessingTypes.Switching )
+				{
+					if( m_Instance == null )
+					{
+						if( inputType == InputTypes.Pointer )
+						{
+							Settings.InputType = InputTypes.Pointer ;
 
-				UnityEngine.Cursor.visible = true ;
+							UnityEngine.Cursor.visible = true ;
+						}
+						else
+						if( inputType == InputTypes.Keyboard )
+						{
+							Settings.InputType = InputTypes.Keyboard ;
 
-				Settings.BasisInputType = inputType ;
-				Settings.ExtraInputType = inputType ;
+							UnityEngine.Cursor.visible = false ;
+						}
+						else
+						if( inputType == InputTypes.GamePad )
+						{
+							Settings.InputType = InputTypes.GamePad ;
+
+							UnityEngine.Cursor.visible = false ;
+						}
+					}
+					else
+					{
+						m_Instance.SetInputType_Private( inputType ) ;
+					}
+				}
+				else
+				if( Settings.InputProcessingType == InputProcessingTypes.Parallel )
+				{
+					// デュアルにする場合は念のためポインターを表示する(シングルのゲームパッド状態からの移行)
+
+					if( m_Instance == null )
+					{
+						Settings.InputType = inputType ;
+
+						UnityEngine.Cursor.visible = true ;
+					}
+					else
+					{
+						m_Instance.SetInputType_Private( inputType ) ;
+					}
+				}
 			}
 		}
 
@@ -109,23 +126,13 @@ namespace InputHelper
 		/// <summary>
 		/// 現在の入力タイプ
 		/// </summary>
-		public static InputTypes InputType  => Settings.BasisInputType ;
-
-		/// <summary>
-		/// 現在の基本入力タイプ
-		/// </summary>
-		public static InputTypes BasisInputType  => Settings.BasisInputType ;
-
-		/// <summary>
-		/// 現在の拡張入力タイプ
-		/// </summary>
-		public static InputTypes ExtraInputType  => Settings.ExtraInputType ;
+		public static InputTypes InputType  => Settings.InputType ;
 
 
 		/// <summary>
 		/// 最後の入力タイプ(ダイナミック)
 		/// </summary>
-		public InputTypes ActiveBasisInputType => Settings.BasisInputType ;
+		public InputTypes ActiveInputType => Settings.InputType ;
 
 		//-------------------------------------------------------------------------------------------
 		// コンポーネントなので Dynamic なフィールドを使ってはいけない(インスタンスが生成された際にデフォルト値で初期化されてしまい事前に設定した値は無効化される)

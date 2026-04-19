@@ -140,10 +140,15 @@ namespace uGUIHelper
 				DrawPadAdapter( view ) ;
 			}
 
+			// ポインターカーソル
+			DrawPointerCursor( view ) ;
+
 			EditorGUILayout.Separator() ;	// 少し区切りスペース
 
 			// アニメーター
 			DrawAnimator( view ) ;
+
+			//-------------------------------------------------
 
 			if( serializedObject.hasModifiedProperties )
 			{
@@ -498,6 +503,36 @@ namespace uGUIHelper
 			}
 		}
 
+		// ポインターカーソル関連のプロパティを描画する
+		protected void DrawPointerCursor( UIView view )
+		{
+			EditorGUILayout.Separator() ;	// 少し区切りスペース
+
+			GUILayout.BeginHorizontal() ;	// 横並び
+			{
+				bool pointerOverEnabled = EditorGUILayout.Toggle( view.PointerOverEnabled, GUILayout.Width( 16f ) ) ;
+				if( pointerOverEnabled != view.PointerOverEnabled )
+				{
+					Undo.RecordObject( view, "UIView : Pointer Over Enabled Change" ) ;	// アンドウバッファに登録
+					view.PointerOverEnabled = pointerOverEnabled ;
+					EditorUtility.SetDirty( view ) ;
+				}
+				GUILayout.Label( new GUIContent( "Pointer Over Enabled", "<color=#00FFFF>ランタイム実行時</color>に\nマウスオーバー時の判定を処理します" ) ) ;
+			}
+			GUILayout.EndHorizontal() ;		// 横並び終了
+
+			if( view.PointerOverEnabled == true )
+			{
+				UIImage pointerCursor = EditorGUILayout.ObjectField( "Pointer Cursor", view.PointerCursor, typeof( UIImage ), true ) as UIImage ;
+				if( pointerCursor != view.PointerCursor )
+				{
+					Undo.RecordObject( view, "UIView : Pointer Cursor Change" ) ;	// アンドウバッファに登録
+					view.PointerCursor = pointerCursor ;
+					EditorUtility.SetDirty( view ) ;
+				}
+			}
+		}
+
 		// アニメーターの生成破棄チェックボックスを描画する
 		protected void DrawAnimator( UIView view )
 		{
@@ -662,6 +697,11 @@ namespace uGUIHelper
 					}
 				}
 				GUILayout.EndHorizontal() ;		// 横並び終了
+			}
+
+			if( view.ActiveInHierarchy == false )
+			{
+				EditorGUILayout.HelpBox( GetMessage( "ProcessTween" ), MessageType.Info, true ) ;
 			}
 		}
 
@@ -1029,20 +1069,30 @@ namespace uGUIHelper
 
 			if( view.IsApplyColorToChildren == true )
 			{
-				GUILayout.BeginHorizontal() ;	// 横並び
-				{
-					bool effeciveColorReplcaing = EditorGUILayout.Toggle( view.EffectiveColorReplacing, GUILayout.Width( 16f ) ) ;
-					if( effeciveColorReplcaing != view.EffectiveColorReplacing )
-					{
-						Undo.RecordObject( view, "UIView : Effective Color Replacing Change" ) ;	// アンドウバッファに登録
-						view.EffectiveColorReplacing = effeciveColorReplcaing ;
-						EditorUtility.SetDirty( view ) ;
-					}
-					GUILayout.Label( "Effective Color Replacing" ) ;
-				}
-				GUILayout.EndHorizontal() ;     // 横並び終了
+				bool isVisible = true ;
 
-				if( view.EffectiveColorReplacing == false )
+				if( view is UIButton )
+				{
+					GUILayout.BeginHorizontal() ;	// 横並び
+					{
+						bool useColorTintInsteadEffectiveColor = EditorGUILayout.Toggle( view.UseColorTintInsteadEffectiveColor, GUILayout.Width( 16f ) ) ;
+						if( useColorTintInsteadEffectiveColor != view.UseColorTintInsteadEffectiveColor )
+						{
+							Undo.RecordObject( view, "UIView : Use Color Tint Instead Effective Color Change" ) ;	// アンドウバッファに登録
+							view.UseColorTintInsteadEffectiveColor = useColorTintInsteadEffectiveColor ;
+							EditorUtility.SetDirty( view ) ;
+						}
+						GUILayout.Label( "Use Color Tint Instead Effective Color" ) ;
+					}
+					GUILayout.EndHorizontal() ;     // 横並び終了
+
+					if( view.UseColorTintInsteadEffectiveColor == true )
+					{
+						isVisible = false ;
+					}
+				}
+
+				if( isVisible == true )
 				{
 					// 影響色
 					var effectiveColor = new Color( view.EffectiveColor.r, view.EffectiveColor.g, view.EffectiveColor.b, view.EffectiveColor.a ) ;
@@ -1518,14 +1568,16 @@ namespace uGUIHelper
 			{ "RemoveTweenOK?",   "Tween [ %1 ] を削除してもよろしいですか？" },
 			{ "RemoveFlipperOK?", "Flipper [ %1 ] を削除してもよろしいですか？" },
 			{ "EventTriggerNone", "EventTrigger クラスが必要です" },
-			{ "InputIdentity",   "識別子を入力してください" },
+			{ "InputIdentity",    "識別子を入力してください" },
+			{ "ProcessTween",     "Tween の操作の際は、GameObject をアクティブにしてください" },
 		} ;
 		private static readonly Dictionary<string,string> m_English_Message = new ()
 		{
 			{ "RemoveTweenOK?",   "It does really may be to remove tween %1 ?" },
 			{ "RemoveFlipperOK?", "It does really may be to remove flipper %1 ?" },
 			{ "EventTriggerNone", "'EventTrigger' is necessary." },
-			{ "InputIdentity",   "Input identity !" },
+			{ "InputIdentity",    "Input identity !" },
+			{ "ProcessTween",     "When using Tween, make sure the GameObject is active." },
 		} ;
 
 		private static string GetMessage( string label )

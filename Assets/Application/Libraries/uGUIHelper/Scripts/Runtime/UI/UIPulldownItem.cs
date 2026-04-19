@@ -224,7 +224,15 @@ namespace uGUIHelper
 
 			if( CaptionText != null )
 			{
-				m_CaptionText.Text = pulldownItem.Text ;
+                if( pulldownItem.IsLocalizationKey == false )
+                {
+				    m_CaptionText.Text = pulldownItem.Text ;
+				    m_CaptionText.LocalizationKey = string.Empty ;
+                }
+                else
+                {
+				    m_CaptionText.LocalizationKey = pulldownItem.Text ;
+                }
 			}
 
 			if( m_CaptionImage != null )

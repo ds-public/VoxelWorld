@@ -14,7 +14,7 @@ using UnityEngine.InputSystem.UI ;
 namespace uGUIHelper.InputAdapter
 {
 	/// <summary>
-	/// uGUI:EventSystem の機能拡張コンポーネントクラス Version 2025/12/02
+	/// uGUI:EventSystem の機能拡張コンポーネントクラス Version 2026/04/02
 	/// </summary>
 	[ExecuteInEditMode][DefaultExecutionOrder( -900 )]
 	public partial class UIEventSystem : MonoBehaviour
@@ -461,7 +461,7 @@ namespace uGUIHelper.InputAdapter
 			{
 				// いずれか片方の入力のみ可能(Pointer・GamePadの最初の入力は無効＝切り替え扱い)
 
-				if( Settings.BasisInputType == InputTypes.Pointer )
+				if( Settings.InputType == InputTypes.Pointer )
 				{
 					// 現在は Pointer モード
 					if( m_InputSwitching == true )
@@ -502,8 +502,7 @@ namespace uGUIHelper.InputAdapter
 						// 拡張操作用にアップデートが必要
 						GamePad.Update() ;
 
-						InputTypes basisInputType = InputTypes.Unknown ;
-						InputTypes extraInputType = Settings.ExtraInputType ;
+						InputTypes inputType = Settings.InputType ;
 
 						//-------------
 						// 一時的に入力を強制有効化
@@ -511,53 +510,33 @@ namespace uGUIHelper.InputAdapter
 						m_IgnoreInputSwitching = true ;
 
 						// キーボードの基本操作が行われた
-						if( GamePad.IsKeyboardInput( InputCategories.Basis ) == true )
+						if( GamePad.IsKeyboardInput( true ) == true )
 						{
-							basisInputType = InputTypes.Keyboard ;
+							inputType = InputTypes.Keyboard ;
 						}
 
 						// ゲームパッドの基本操作が行われた
-						if( GamePad.IsGamePadInput( InputCategories.Basis ) == true )
+						if( GamePad.IsGamePadInput() == true )
 						{
-							basisInputType = InputTypes.GamePad ;
-						}
-
-						// キーボードの拡張操作が行われた
-						if( GamePad.IsKeyboardInput( InputCategories.Extra ) == true )
-						{
-							extraInputType = InputTypes.Keyboard ;
-						}
-
-						// ゲームパッドの基本操作が行われた
-						if( GamePad.IsGamePadInput( InputCategories.Extra ) == true )
-						{
-							extraInputType = InputTypes.GamePad ;
+							inputType = InputTypes.GamePad ;
 						}
 
 						m_IgnoreInputSwitching = false ;
 
 						//-------------
 
-						if( basisInputType == InputTypes.Keyboard || basisInputType == InputTypes.GamePad )
+						if( inputType == InputTypes.Keyboard || inputType == InputTypes.GamePad )
 						{
 							// 状態を消去する
 							GamePad.Clear() ;
 
 							// 入力モード移行
-							SetInputType_Private( basisInputType, basisInputType ) ;
-						}
-						else
-						{
-							if( Settings.ExtraInputType != extraInputType )
-							{
-								// 拡張操作の入力モードのみ変更
-								SetInputType_Private( Settings.BasisInputType, extraInputType ) ;
-							}
+							SetInputType_Private( inputType ) ;
 						}
 					}
 				}
 				else
-				if( Settings.BasisInputType == InputTypes.Keyboard )
+				if( Settings.InputType == InputTypes.Keyboard )
 				{
 					// 現在はキーボード入力モード
 					if( m_InputSwitching == true )
@@ -570,13 +549,11 @@ namespace uGUIHelper.InputAdapter
 						m_IgnoreInputSwitching = true ;
 
 						// キーボードの操作が行われたかどうか
-						bool isBasisAction = false ;
-						bool isExtraAction = false ;
+						bool isKeyboardInput = false ;
 
-						if( Settings.PreviousBasisInputType == InputTypes.Pointer || Settings.PreviousBasisInputType == InputTypes.Mouse )
+						if( Settings.PreviousInputType == InputTypes.Pointer || Settings.PreviousInputType == InputTypes.Mouse )
 						{
-							isBasisAction = GamePad.IsKeyboardInput( InputCategories.Basis ) ;
-							isExtraAction = GamePad.IsKeyboardInput( InputCategories.Extra ) ;
+							isKeyboardInput = GamePad.IsKeyboardInput( false ) ;
 						}
 
 						m_IgnoreInputSwitching = false ;
@@ -584,7 +561,7 @@ namespace uGUIHelper.InputAdapter
 						//-------------
 
 						// 切り替えた直後は一度全開放しないと入力できない
-						if( isBasisAction == false && isExtraAction == false )
+						if( isKeyboardInput == false )
 						{
 							// 本当にキーボード入力モードに移行する
 							m_InputSwitching = false ;
@@ -632,28 +609,27 @@ namespace uGUIHelper.InputAdapter
 						)
 						{
 							// Pointer モードへ移行
-							SetInputType_Private( InputTypes.Pointer, InputTypes.Keyboard ) ;
+							SetInputType_Private( InputTypes.Pointer ) ;
 						}
 						else
 						{
 							m_IgnoreInputSwitching = true ;
 
 							// ゲームパッドの操作が行われたかどうか
-							bool isBasisAction = GamePad.IsGamePadInput( InputCategories.Basis ) ;
-							bool isExtraAction = GamePad.IsGamePadInput( InputCategories.Extra ) ;
+							bool isGamePadInput = GamePad.IsGamePadInput() ;
 
 							m_IgnoreInputSwitching = false ;
 
-							if( isBasisAction == true || isExtraAction == true )
+							if( isGamePadInput == true )
 							{
 								// GamePad モードへ移行
-								SetInputType_Private( InputTypes.GamePad, InputTypes.GamePad ) ;
+								SetInputType_Private( InputTypes.GamePad ) ;
 							}
 						}
 					}
 				}
 				else
-				if( Settings.BasisInputType == InputTypes.GamePad )
+				if( Settings.InputType == InputTypes.GamePad )
 				{
 					// 現在は GamePad モード
 					if( m_InputSwitching == true )
@@ -665,14 +641,12 @@ namespace uGUIHelper.InputAdapter
 
 						m_IgnoreInputSwitching = true ;
 
-						bool isBasisAction = false ;
-						bool isExtraAction = false ;
+						bool isGamePadInput = false ;
 
-						if( Settings.PreviousBasisInputType == InputTypes.Pointer || Settings.PreviousBasisInputType == InputTypes.Mouse )
+						if( Settings.PreviousInputType == InputTypes.Pointer || Settings.PreviousInputType == InputTypes.Mouse )
 						{
 							// ゲームパッドの操作が行われたかどうか
-							isBasisAction = GamePad.IsGamePadInput( InputCategories.Basis ) ;
-							isExtraAction = GamePad.IsGamePadInput( InputCategories.Extra ) ;
+							isGamePadInput = GamePad.IsGamePadInput() ;
 						}
 
 						m_IgnoreInputSwitching = false ;
@@ -680,7 +654,7 @@ namespace uGUIHelper.InputAdapter
 						//-------------
 
 						// 切り替えた直後は一度全開放しないと入力できない
-						if( isBasisAction == false && isExtraAction == false )
+						if( isGamePadInput == false )
 						{
 							// 本当にキーボード入力モードに移行する
 							m_InputSwitching = false ;
@@ -728,22 +702,21 @@ namespace uGUIHelper.InputAdapter
 						)
 						{
 							// ポインターモードへ移行
-							SetInputType_Private( InputTypes.Pointer, InputTypes.GamePad ) ;
+							SetInputType_Private( InputTypes.Pointer ) ;
 						}
 						else
 						{
 							m_IgnoreInputSwitching = true ;
 
 							// キーボードの操作が行われたかどうか
-							bool isBasisAction = GamePad.IsKeyboardInput( InputCategories.Basis ) ;
-							bool isExtraAction = GamePad.IsKeyboardInput( InputCategories.Extra ) ;
+							bool isKeyboardInput = GamePad.IsKeyboardInput( false ) ;
 
 							m_IgnoreInputSwitching = false ;
 
-							if( isBasisAction == true || isExtraAction == true )
+							if( isKeyboardInput == true )
 							{
 								// キーボード入力モードへ移行
-								SetInputType_Private( InputTypes.Keyboard, InputTypes.Keyboard ) ;
+								SetInputType_Private( InputTypes.Keyboard ) ;
 							}
 						}
 					}
@@ -755,7 +728,7 @@ namespace uGUIHelper.InputAdapter
 				// 両方の入力が同時に可能(Pointer・GamePadの最初の入力は有効＝切り替えと同時に効果を発揮する)
 
 				// Mouse
-				Mouse.Update( out bool button_0, out bool button_1, out bool button_2 ) ;
+				Mouse.Update( out bool button_0, out bool button_1, out bool button_2, out bool button_3, out bool button_4 ) ;
 
 				// GamePad
 				GamePad.Update() ;
@@ -766,67 +739,72 @@ namespace uGUIHelper.InputAdapter
 				m_IgnoreInputSwitching = true ;
 
 				// 最後に入力された方を現在のモードとする
-				if( Settings.BasisInputType == InputTypes.Pointer )
+				if( Settings.InputType == InputTypes.Pointer )
 				{
 					// 現在はポインター入力モード扱い
 
-					InputTypes inputType = InputTypes.Unknown ;
+					InputTypes inputType = Settings.InputType ;
+
+					//-------------
 
 					// キーボードの基本操作が行われた
-					if( GamePad.IsKeyboardInput( InputCategories.Basis ) == true )
+					if( GamePad.IsKeyboardInput( true ) == true )
 					{
 						inputType = InputTypes.Keyboard ;
 					}
 
 					// ゲームパッドの基本操作が行われた
-					if( GamePad.IsGamePadInput( InputCategories.Basis ) == true )
+					if( GamePad.IsGamePadInput() == true )
 					{
 						inputType = InputTypes.GamePad ;
 					}
 
 					if( inputType == InputTypes.Keyboard || inputType == InputTypes.GamePad )
 					{
-						// モード移行
-						SetInputType_Private( inputType, inputType ) ;
+						// 状態を消去する
+						GamePad.Clear() ;
+
+						// 入力モード移行
+						SetInputType_Private( inputType ) ;
 					}
 				}
 				else
-				if( Settings.BasisInputType == InputTypes.Keyboard )
+				if( Settings.InputType == InputTypes.Keyboard )
 				{
 					// 現在はキーボード入力モード扱い
 
-					if( Settings.MousePosition.Equals( MousePosition ) == false || button_0 == true || button_1 == true || button_2 == true )
+					if( Settings.MousePosition.Equals( MousePosition ) == false || button_0 == true || button_1 == true || button_2 == true || button_3 == true || button_4 == true )
 					{
 						// ポインター入力モードへ移行
-						SetInputType_Private( InputTypes.Pointer, InputTypes.Keyboard ) ;
+						SetInputType_Private( InputTypes.Pointer ) ;
 					}
 					else
 					{
 						// ゲームパッドの基本操作・拡張操作が行われた
-						if( GamePad.IsGamePadInput( InputCategories.Basis ) == true || GamePad.IsGamePadInput( InputCategories.Extra ) == true )
+						if( GamePad.IsGamePadInput() == true )
 						{
 							// ゲームパッド入力モードへ移行
-							SetInputType_Private( InputTypes.GamePad, InputTypes.GamePad ) ;
+							SetInputType_Private( InputTypes.GamePad ) ;
 						}
 					}
 				}
 				else
-				if( Settings.BasisInputType == InputTypes.GamePad )
+				if( Settings.InputType == InputTypes.GamePad )
 				{
 					// 現在はゲームパッド入力モード扱い
 
-					if( Settings.MousePosition.Equals( MousePosition ) == false || button_0 == true || button_1 == true || button_2 == true )
+					if( Settings.MousePosition.Equals( MousePosition ) == false || button_0 == true || button_1 == true || button_2 == true || button_3 == true || button_4 == true )
 					{
 						// Pointer モードへ移行
-						SetInputType_Private( InputTypes.Pointer, InputTypes.GamePad ) ;
+						SetInputType_Private( InputTypes.Pointer ) ;
 					}
 					else
 					{
 						// キーボードの基本操作・拡張操作が行われた
-						if( GamePad.IsKeyboardInput( InputCategories.Basis ) == true || GamePad.IsKeyboardInput( InputCategories.Extra ) == true )
+						if( GamePad.IsKeyboardInput( false ) == true )
 						{
 							// キーボード入力モードへ移行
-							SetInputType_Private( InputTypes.Keyboard, InputTypes.Keyboard ) ;
+							SetInputType_Private( InputTypes.Keyboard ) ;
 						}
 					}
 				}
@@ -861,26 +839,7 @@ namespace uGUIHelper.InputAdapter
 				return false ;
 			}
 
-			m_Instance.SetInputType_Private( inputType, inputType ) ;
-
-			// 共通ルーチンの呼び出し
-			m_Instance.ExecuteCommonProcessing() ;
-
-			return true ;
-		}
-
-		/// <summary>
-		/// 入力タイプを強制指定する
-		/// </summary>
-		/// <param name="inputType"></param>
-		public static bool SetInputType( InputTypes basisInputType, InputTypes extraInputType )
-		{
-			if( m_Instance == null )
-			{
-				return false ;
-			}
-
-			m_Instance.SetInputType_Private( basisInputType, extraInputType ) ;
+			m_Instance.SetInputType_Private( inputType ) ;
 
 			// 共通ルーチンの呼び出し
 			m_Instance.ExecuteCommonProcessing() ;
@@ -889,60 +848,53 @@ namespace uGUIHelper.InputAdapter
 		}
 
 		// 入力タイプを強制指定する
-		private void SetInputType_Private( InputTypes basisInputType, InputTypes extraInputType )
+		private void SetInputType_Private( InputTypes inputType )
 		{
 			bool inputSwitching = true ;
 
 			if( Settings.InputProcessingType != InputProcessingTypes.None )
 			{
-				if( basisInputType == InputTypes.Pointer || basisInputType == InputTypes.Mouse )
+				if( inputType == InputTypes.Pointer || inputType == InputTypes.Mouse )
 				{
 					// ポインター入力モードへ移行
 
 					// 基本操作
-					if( Settings.BasisInputType != basisInputType )
+					if( Settings.InputType != inputType )
 					{
-						Settings.PreviousBasisInputType = Settings.BasisInputType ;
-						Settings.BasisInputType = basisInputType ;
+						Settings.PreviousInputType = Settings.InputType ;
+						Settings.InputType = inputType ;
 
 						Settings.SystemCursorVisible = true ;
 
 						inputSwitching = true ;
 					}
 
-					// ※拡張操作のみ変更される事がある
-
-					// 拡張操作
-					Settings.ExtraInputType = extraInputType ;
-
-					m_OnInputTypeChanged?.Invoke( Settings.BasisInputType, Settings.ExtraInputType ) ;
-					m_OnInputTypeChangedDelegate?.Invoke( Settings.BasisInputType, Settings.ExtraInputType ) ;
+					m_OnInputTypeChanged?.Invoke( Settings.InputType ) ;
+					m_OnInputTypeChangedDelegate?.Invoke( Settings.InputType ) ;
 				}
 				else
-				if( basisInputType == InputTypes.Keyboard || basisInputType == InputTypes.GamePad )
+				if( inputType == InputTypes.Keyboard || inputType == InputTypes.GamePad )
 				{
 					// キーボード入力モードまたはゲームパッド入力モードへ移行
 
-					inputSwitching = ( Settings.BasisInputType != InputTypes.Keyboard && Settings.BasisInputType != InputTypes.GamePad ) ;
+					inputSwitching = ( Settings.InputType != InputTypes.Keyboard && Settings.InputType != InputTypes.GamePad ) ;
 
 					//---------------------------------
 
-					Settings.PreviousBasisInputType = Settings.BasisInputType ;
-					Settings.BasisInputType = basisInputType ;
-					Settings.ExtraInputType = extraInputType ;
+					Settings.PreviousInputType = Settings.InputType ;
+					Settings.InputType = inputType ;
 
 					Settings.SystemCursorVisible = false ;
 
-					m_OnInputTypeChanged?.Invoke( Settings.BasisInputType, Settings.ExtraInputType ) ;
-					m_OnInputTypeChangedDelegate?.Invoke( Settings.BasisInputType, Settings.ExtraInputType ) ;
+					m_OnInputTypeChanged?.Invoke( Settings.InputType ) ;
+					m_OnInputTypeChangedDelegate?.Invoke( Settings.InputType ) ;
 				}
 			}
 			else
 			{
-				Settings.BasisInputType = basisInputType ;
-				Settings.ExtraInputType = extraInputType ;
+				Settings.InputType = inputType ;
 
-				Settings.SystemCursorVisible = ( basisInputType == InputTypes.Pointer || basisInputType == InputTypes.Mouse ) ;
+				Settings.SystemCursorVisible = ( inputType == InputTypes.Pointer || inputType == InputTypes.Mouse ) ;
 			}
 
 			//--------------
@@ -1007,7 +959,7 @@ namespace uGUIHelper.InputAdapter
 		//-------------------------------------------------------------------------------------------------------------------
 		// Hover と Press は独自に監視する
 
-		private GameObject								m_ActiveHover_GameObject ;
+		private readonly List<GameObject>				m_ActiveHover_GameObjects = new () ;
 		private readonly List<GameObject>				m_ActivePress_GameObjects = new () ;
 		private GameObject								m_ActivePress_MouseGameObject ;
 		private readonly Dictionary<int,GameObject>		m_ActivePress_TouchGameObjects = new () ;
@@ -1021,7 +973,7 @@ namespace uGUIHelper.InputAdapter
 		// Hover と Press の監視
 		private void ProcessHoverAndPress_OnApplicationFocus()
 		{
-			m_ActiveHover_GameObject		= null ;
+			m_ActiveHover_GameObjects.Clear() ;
 			m_ActivePress_GameObjects.Clear() ;
 			m_ActivePress_MouseGameObject	= null ;
 			m_ActivePress_TouchGameObjects.Clear() ;
@@ -1052,6 +1004,8 @@ namespace uGUIHelper.InputAdapter
 			//------------------------------------------------------------------------------------------
 			// Hover
 
+			m_ActiveHover_GameObjects.Clear() ;
+
 			// Raycast
 			m_CT_EventDataCurrentPosition.position = MousePosition ;
 			m_CT_Results.Clear() ;
@@ -1059,11 +1013,10 @@ namespace uGUIHelper.InputAdapter
 
 			if( m_CT_Results.Count >= 1 )
 			{
-				m_ActiveHover_GameObject = m_CT_Results[ 0 ].gameObject ;
-			}
-			else
-			{
-				m_ActiveHover_GameObject = null ;
+				foreach( var result in m_CT_Results )
+				{
+					m_ActiveHover_GameObjects.Add( result.gameObject ) ;
+				}
 			}
 
 			//----------------------------------------------------------
@@ -1261,6 +1214,18 @@ namespace uGUIHelper.InputAdapter
 					}
 				}
 			}
+
+			//------------------------------------------------------------------------------------------
+            // InputField 固有の処理
+
+            if( m_InputFieldFocusReleasedByEscapeKey == true )
+            {
+                if( Keyboard.GetKey( KeyCodes.Escape ) == false )
+                {
+                    // 解放
+                    m_InputFieldFocusReleasedByEscapeKey = false ;
+                }
+            }
 		}
 
 		/// <summary>
@@ -1304,19 +1269,57 @@ namespace uGUIHelper.InputAdapter
 		/// </summary>
 		/// <param name="target"></param>
 		/// <returns></returns>
-		public static bool IsHovering( GameObject target )
+		public static bool IsHovering( GameObject target, bool isDirectly )
 		{
 			if( m_Instance == null )
 			{
 				return false ;
 			}
 
-			if( m_Instance.m_ActiveHover_GameObject == null )
+			if( isDirectly == true )
 			{
+				// 直接ポインターがオーバーしているか
+				if( m_Instance.m_ActiveHover_GameObjects.Count == 0 )
+				{
+					return false ;
+				}
+
+				//---------------------
+
+				return ( m_Instance.m_ActiveHover_GameObjects[ 0 ] == target ) ;
+			}
+			else
+			{
+				// レイキャスト内のいずれかにホバーしているか
+				if( m_Instance.m_ActiveHover_GameObjects.Count == 0 )
+				{
+					return false ;
+				}
+
+				//---------------------
+
+				if( m_Instance.m_ActiveHover_GameObjects[ 0 ] == target )
+				{
+					return true ;
+				}
+
+				//---------------------------------------------
+
+				var parent = m_Instance.m_ActiveHover_GameObjects[ 0 ].transform.parent ;
+
+				while( parent != null )
+				{
+					if( parent.gameObject == target )
+					{
+						// ヒットした
+						return true ;
+					}
+
+					parent = parent.parent ;
+				}
+
 				return false ;
 			}
-
-			return ( m_Instance.m_ActiveHover_GameObject == target ) ;
 		}
 
 		/// <summary>
@@ -1343,6 +1346,9 @@ namespace uGUIHelper.InputAdapter
 
 		// フォーカスを得た InputField 情報
 		protected HashSet<UIInputField> m_FocusedInputFields = new () ;
+
+		// フォーカスの解除で Escapse キーが使用されたか
+		protected bool m_InputFieldFocusReleasedByEscapeKey = false ;
 
 		/// <summary>
 		/// フォーカスを得た InputField を記録に追加する
@@ -1379,7 +1385,7 @@ namespace uGUIHelper.InputAdapter
 		/// フォーカスを失った InputField を記録から削除する
 		/// </summary>
 		/// <param name="inputField"></param>
-		public static bool RemoveFocusedInputField( UIInputField inputField )
+		public static bool RemoveFocusedInputField( UIInputField inputField, bool isEscapeKey )
 		{
 			if( m_Instance == null )
 			{
@@ -1395,7 +1401,7 @@ namespace uGUIHelper.InputAdapter
 
 			if( m_Instance.m_FocusedInputFields.Contains( inputField ) == true )
 			{
-				// 新たにフォーカスを得た InputField を記録に追加する
+				// 新たにフォーカスを得た InputField を記録から削除する
 				m_Instance.m_FocusedInputFields.Remove( inputField ) ;
 			}
 			else
@@ -1404,6 +1410,8 @@ namespace uGUIHelper.InputAdapter
 				return false ;
 			}
 
+			m_Instance.m_InputFieldFocusReleasedByEscapeKey = isEscapeKey ;
+
 			return true ;
 		}
 
@@ -1411,6 +1419,7 @@ namespace uGUIHelper.InputAdapter
 		/// フォーカスを得ている InputField の数を取得する
 		/// </summary>
 		/// <returns></returns>
+        [Obsolete( "Not Use" )]
 		public static int GetFocusedInputFieldCount()
 		{
 			if( m_Instance == null )
@@ -1421,5 +1430,21 @@ namespace uGUIHelper.InputAdapter
 
 			return m_Instance.m_FocusedInputFields.Count ;
 		}
-	}
-}
+
+		/// <summary>
+		/// フォーカスを得ている InputField の数を取得する
+		/// </summary>
+		/// <returns></returns>
+		public static bool IsInputFieldFocused()
+		{
+			if( m_Instance == null )
+			{
+				// インスタンスが生成されていない
+				return false ;
+			}
+
+			return ( m_Instance.m_FocusedInputFields.Count >  0 ) || ( m_Instance.m_InputFieldFocusReleasedByEscapeKey == true ) ;
+		}
+
+	}   // class
+}   // namespace
